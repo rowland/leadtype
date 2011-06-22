@@ -24,3 +24,9 @@ type InUseXRefEntry struct {
 func (entry *InUseXRefEntry) Write(w io.Writer) {
 	fmt.Fprintf(w, "%.10d %.5d n\n", entry.byteOffset, entry.gen)
 }
+
+type PdfInteger int
+
+func (i PdfInteger) Write(w io.Writer) {
+	fmt.Fprintf(w, "%d ", i)
+}
