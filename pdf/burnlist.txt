@@ -1,7 +1,8 @@
 [ ] Empty document
     [ ] PdfFile
-        [ ] Header
+        [x] Header
         [ ] Body
+            [x] InUseXRefEntry
         [ ] Trailer
         [ ] XRefTable
         [ ] XRefSubSection

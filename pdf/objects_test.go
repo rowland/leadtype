@@ -15,3 +15,14 @@ func TestHeader(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, buf.String())
 	}
 }
+
+func TestInUseXRefEntry(t *testing.T) {
+	var buf bytes.Buffer
+	e := &InUseXRefEntry{500, 0}
+	e.Write(&buf)
+
+	const expected = "0000000500 00000 n\n"
+	if buf.String() != expected {
+		t.Errorf("Expected %s, got %s", expected, buf.String())
+	}
+}
