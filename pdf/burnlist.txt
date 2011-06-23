@@ -16,7 +16,7 @@
             [ ] Rectangle
             [x] PdfNumber
             [x] PdfBoolean
-        [ ] PdfName
+        [x] PdfName
         [x] PdfInteger
         [ ] PdfArray
     [ ] PdfOutlines

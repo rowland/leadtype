@@ -67,3 +67,13 @@ func TestPdfBoolean(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, buf.String())
 	}
 }
+
+func TestPdfName(t *testing.T) {
+	var buf bytes.Buffer
+	PdfName("name").Write(&buf)
+
+	const expected = "/name "
+	if buf.String() != expected {
+		t.Errorf("Expected %s, got %s", expected, buf.String())
+	}
+}

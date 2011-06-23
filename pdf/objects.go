@@ -44,3 +44,9 @@ type PdfBoolean bool
 func (b PdfBoolean) Write(w io.Writer) {
 	fmt.Fprintf(w, "%t ", b)
 }
+
+type PdfName string
+
+func (n PdfName) Write(w io.Writer) {
+	fmt.Fprintf(w, "/%s ", n)
+}
