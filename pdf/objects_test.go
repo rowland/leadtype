@@ -5,15 +5,18 @@ import (
 	"bytes"
 )
 
+func expect(t *testing.T, expected, actual string) {
+	if expected != actual {
+		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}
+
 func TestHeader(t *testing.T) {
 	var buf bytes.Buffer
 	h := &Header{}
 	h.Write(&buf)
 
-	const expected = "%PDF-1.3\n"
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "%PDF-1.3\n", buf.String())
 }
 
 func TestInUseXRefEntry(t *testing.T) {
@@ -21,10 +24,7 @@ func TestInUseXRefEntry(t *testing.T) {
 	e := &InUseXRefEntry{500, 0}
 	e.Write(&buf)
 
-	const expected = "0000000500 00000 n\n"
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "0000000500 00000 n\n", buf.String())
 }
 
 func TestPdfInteger(t *testing.T) {
@@ -32,10 +32,7 @@ func TestPdfInteger(t *testing.T) {
 	pi := PdfInteger(7)
 	pi.Write(&buf)
 
-	const expected = "7 "
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "7 ", buf.String())
 }
 
 func TestPdfNumber(t *testing.T) {
@@ -51,10 +48,7 @@ func TestPdfNumber(t *testing.T) {
 	PdfNumber{f32}.Write(&buf)
 	PdfNumber{f64}.Write(&buf)
 
-	const expected = "7 8 9 10.5 11.5 "
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "7 8 9 10.5 11.5 ", buf.String())
 }
 
 func TestPdfBoolean(t *testing.T) {
@@ -62,20 +56,14 @@ func TestPdfBoolean(t *testing.T) {
 	PdfBoolean(true).Write(&buf)
 	PdfBoolean(false).Write(&buf)
 
-	const expected = "true false "
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "true false ", buf.String())
 }
 
 func TestPdfName(t *testing.T) {
 	var buf bytes.Buffer
 	PdfName("name").Write(&buf)
 
-	const expected = "/name "
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "/name ", buf.String())
 }
 
 func TestRectangle(t *testing.T) {
@@ -83,8 +71,5 @@ func TestRectangle(t *testing.T) {
 	r := &Rectangle{1, 2, 3, 4}
 	r.Write(&buf)
 
-	const expected = "[1 2 3 4 ] "
-	if buf.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, buf.String())
-	}
+	expect(t, "[1 2 3 4 ] ", buf.String())
 }
