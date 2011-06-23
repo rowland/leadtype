@@ -7,7 +7,7 @@ import (
 
 func expect(t *testing.T, expected, actual string) {
 	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
+		t.Errorf("Expected |%s|, got |%s|", expected, actual)
 	}
 }
 
@@ -25,6 +25,14 @@ func TestBoolean(t *testing.T) {
 	Boolean(false).Write(&buf)
 
 	expect(t, "true false ", buf.String())
+}
+
+func TestDictionary(t *testing.T) {
+	var buf bytes.Buffer
+	d := Dictionary{"foo": String("bar"), "baz": Integer(7)}
+	d.Write(&buf)
+
+	expect(t, "<<\n/baz 7 \n/foo (bar) \n>>\n", buf.String())
 }
 
 func TestHeader(t *testing.T) {
@@ -80,4 +88,12 @@ func TestRectangle(t *testing.T) {
 	r.Write(&buf)
 
 	expect(t, "[1 2 3 4 ] ", buf.String())
+}
+
+func TestString(t *testing.T) {
+	var buf bytes.Buffer
+	s := String("a\\b(cd)")
+	expect(t, "a\\\\b\\(cd\\)", s.escape())
+	s.Write(&buf)
+	expect(t, "(a\\\\b\\(cd\\)) ", buf.String())
 }

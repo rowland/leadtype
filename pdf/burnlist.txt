@@ -10,7 +10,8 @@
     [ ] PdfPages
         [ ] PdfPageBase
             [ ] PdfDictionaryObject
-                [ ] PdfDictionary
+                [x] PdfDictionary
+                    [x] PdfString
             [ ] IndirectObjectRef
                 [ ] IndirectObject (interface)
             [x] Rectangle

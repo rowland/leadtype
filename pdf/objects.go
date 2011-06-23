@@ -3,6 +3,8 @@ package pdf
 import (
 	"io"
 	"fmt"
+	"strings"
+	"sort"
 )
 
 type Writer interface {
@@ -23,6 +25,29 @@ type Boolean bool
 
 func (b Boolean) Write(w io.Writer) {
 	fmt.Fprintf(w, "%t ", b)
+}
+
+type Dictionary map[string]Writer
+
+func (d Dictionary) keys() []string {
+	sa := make([]string, len(d))
+	i := 0
+	for k, _ := range d {
+		sa[i] = k
+		i++
+	}
+	sort.SortStrings(sa)
+	return sa
+}
+
+func (d Dictionary) Write(w io.Writer) {
+	fmt.Fprintf(w, "<<\n")
+	for _, k := range d.keys() {
+		Name(k).Write(w)
+		d[k].Write(w)
+		fmt.Fprintf(w, "\n")
+	}
+	fmt.Fprintf(w, ">>\n")
 }
 
 type Header struct {
@@ -76,4 +101,17 @@ func (r *Rectangle) Write(w io.Writer) {
 	Number{r.x2}.Write(w)
 	Number{r.y2}.Write(w)
 	fmt.Fprintf(w, "] ")
+}
+
+type String string
+
+func (s String) escape() string {
+	s1 := strings.Replace(string(s), "\\", "\\\\", -1)
+	s2 := strings.Replace(s1, "(", "\\(", -1)
+	s3 := strings.Replace(s2, ")", "\\)", -1)
+	return s3
+}
+
+func (s String) Write(w io.Writer) {
+	fmt.Fprintf(w, "(%s) ", s.escape())
 }
