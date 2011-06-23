@@ -50,3 +50,16 @@ type PdfName string
 func (n PdfName) Write(w io.Writer) {
 	fmt.Fprintf(w, "/%s ", n)
 }
+
+type Rectangle struct {
+	x1, y1, x2, y2 float32
+}
+
+func (r *Rectangle) Write(w io.Writer) {
+	fmt.Fprintf(w, "[")
+	PdfNumber{r.x1}.Write(w)
+	PdfNumber{r.y1}.Write(w)
+	PdfNumber{r.x2}.Write(w)
+	PdfNumber{r.y2}.Write(w)
+	fmt.Fprintf(w, "] ")
+}

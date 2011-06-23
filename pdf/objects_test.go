@@ -77,3 +77,14 @@ func TestPdfName(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, buf.String())
 	}
 }
+
+func TestRectangle(t *testing.T) {
+	var buf bytes.Buffer
+	r := &Rectangle{1, 2, 3, 4}
+	r.Write(&buf)
+
+	const expected = "[1 2 3 4 ] "
+	if buf.String() != expected {
+		t.Errorf("Expected %s, got %s", expected, buf.String())
+	}
+}
