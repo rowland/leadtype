@@ -11,12 +11,28 @@ func expect(t *testing.T, expected, actual string) {
 	}
 }
 
+func TestBoolean(t *testing.T) {
+	var buf bytes.Buffer
+	Boolean(true).Write(&buf)
+	Boolean(false).Write(&buf)
+
+	expect(t, "true false ", buf.String())
+}
+
 func TestHeader(t *testing.T) {
 	var buf bytes.Buffer
 	h := &Header{}
 	h.Write(&buf)
 
 	expect(t, "%PDF-1.3\n", buf.String())
+}
+
+func TestInteger(t *testing.T) {
+	var buf bytes.Buffer
+	pi := Integer(7)
+	pi.Write(&buf)
+
+	expect(t, "7 ", buf.String())
 }
 
 func TestInUseXRefEntry(t *testing.T) {
@@ -27,43 +43,27 @@ func TestInUseXRefEntry(t *testing.T) {
 	expect(t, "0000000500 00000 n\n", buf.String())
 }
 
-func TestPdfInteger(t *testing.T) {
+func TestName(t *testing.T) {
 	var buf bytes.Buffer
-	pi := PdfInteger(7)
-	pi.Write(&buf)
+	Name("name").Write(&buf)
 
-	expect(t, "7 ", buf.String())
+	expect(t, "/name ", buf.String())
 }
 
-func TestPdfNumber(t *testing.T) {
+func TestNumber(t *testing.T) {
 	var buf bytes.Buffer
 	ni := int(7)
 	ni32 := int32(8)
 	ni64 := int64(9)
 	f32 := float32(10.5)
 	f64 := float64(11.5)
-	PdfNumber{ni}.Write(&buf)
-	PdfNumber{ni32}.Write(&buf)
-	PdfNumber{ni64}.Write(&buf)
-	PdfNumber{f32}.Write(&buf)
-	PdfNumber{f64}.Write(&buf)
+	Number{ni}.Write(&buf)
+	Number{ni32}.Write(&buf)
+	Number{ni64}.Write(&buf)
+	Number{f32}.Write(&buf)
+	Number{f64}.Write(&buf)
 
 	expect(t, "7 8 9 10.5 11.5 ", buf.String())
-}
-
-func TestPdfBoolean(t *testing.T) {
-	var buf bytes.Buffer
-	PdfBoolean(true).Write(&buf)
-	PdfBoolean(false).Write(&buf)
-
-	expect(t, "true false ", buf.String())
-}
-
-func TestPdfName(t *testing.T) {
-	var buf bytes.Buffer
-	PdfName("name").Write(&buf)
-
-	expect(t, "/name ", buf.String())
 }
 
 func TestRectangle(t *testing.T) {

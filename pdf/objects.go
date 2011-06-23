@@ -5,50 +5,50 @@ import (
 	"fmt"
 )
 
+type Boolean bool
+
+func (b Boolean) Write(w io.Writer) {
+	fmt.Fprintf(w, "%t ", b)
+}
+
 type Header struct {
 	Version float32
 }
 
-func (header *Header) Write(w io.Writer) {
-	v := header.Version
+func (h *Header) Write(w io.Writer) {
+	v := h.Version
 	if v == 0.0 {
 		v = 1.3
 	}
 	fmt.Fprintf(w, "%%PDF-%1.1f\n", v)
 }
 
+type Integer int
+
+func (i Integer) Write(w io.Writer) {
+	fmt.Fprintf(w, "%d ", i)
+}
+
 type InUseXRefEntry struct {
 	byteOffset, gen int
 }
 
-func (entry *InUseXRefEntry) Write(w io.Writer) {
-	fmt.Fprintf(w, "%.10d %.5d n\n", entry.byteOffset, entry.gen)
+func (e *InUseXRefEntry) Write(w io.Writer) {
+	fmt.Fprintf(w, "%.10d %.5d n\n", e.byteOffset, e.gen)
 }
 
-type PdfInteger int
+type Name string
 
-func (i PdfInteger) Write(w io.Writer) {
-	fmt.Fprintf(w, "%d ", i)
+func (n Name) Write(w io.Writer) {
+	fmt.Fprintf(w, "/%s ", n)
 }
 
-type PdfNumber struct {
+type Number struct {
 	value interface{}
 }
 
-func (n PdfNumber) Write(w io.Writer) {
+func (n Number) Write(w io.Writer) {
 	fmt.Fprintf(w, "%v ", n.value)
-}
-
-type PdfBoolean bool
-
-func (b PdfBoolean) Write(w io.Writer) {
-	fmt.Fprintf(w, "%t ", b)
-}
-
-type PdfName string
-
-func (n PdfName) Write(w io.Writer) {
-	fmt.Fprintf(w, "/%s ", n)
 }
 
 type Rectangle struct {
@@ -57,9 +57,9 @@ type Rectangle struct {
 
 func (r *Rectangle) Write(w io.Writer) {
 	fmt.Fprintf(w, "[")
-	PdfNumber{r.x1}.Write(w)
-	PdfNumber{r.y1}.Write(w)
-	PdfNumber{r.x2}.Write(w)
-	PdfNumber{r.y2}.Write(w)
+	Number{r.x1}.Write(w)
+	Number{r.y1}.Write(w)
+	Number{r.x2}.Write(w)
+	Number{r.y2}.Write(w)
 	fmt.Fprintf(w, "] ")
 }
