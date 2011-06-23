@@ -30,3 +30,11 @@ type PdfInteger int
 func (i PdfInteger) Write(w io.Writer) {
 	fmt.Fprintf(w, "%d ", i)
 }
+
+type PdfNumber struct {
+	value interface{}
+}
+
+func (n PdfNumber) Write(w io.Writer) {
+	fmt.Fprintf(w, "%v ", n.value)
+}

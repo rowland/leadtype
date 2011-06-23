@@ -37,3 +37,22 @@ func TestPdfInteger(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, buf.String())
 	}
 }
+
+func TestPdfNumber(t *testing.T) {
+	var buf bytes.Buffer
+	ni := int(7)
+	ni32 := int32(8)
+	ni64 := int64(9)
+	f32 := float32(10.5)
+	f64 := float64(11.5)
+	PdfNumber{ni}.Write(&buf)
+	PdfNumber{ni32}.Write(&buf)
+	PdfNumber{ni64}.Write(&buf)
+	PdfNumber{f32}.Write(&buf)
+	PdfNumber{f64}.Write(&buf)
+
+	const expected = "7 8 9 10.5 11.5 "
+	if buf.String() != expected {
+		t.Errorf("Expected %s, got %s", expected, buf.String())
+	}
+}
