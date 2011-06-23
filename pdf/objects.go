@@ -5,6 +5,20 @@ import (
 	"fmt"
 )
 
+type Writer interface {
+	Write(io.Writer)
+}
+
+type Array []Writer
+
+func (a Array) Write(w io.Writer) {
+	fmt.Fprintf(w, "[")
+	for _, v := range a {
+		v.Write(w)
+	}
+	fmt.Fprintf(w, "] ")
+}
+
 type Boolean bool
 
 func (b Boolean) Write(w io.Writer) {

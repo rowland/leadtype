@@ -11,6 +11,14 @@ func expect(t *testing.T, expected, actual string) {
 	}
 }
 
+func TestArray(t *testing.T) {
+	var buf bytes.Buffer
+	ary := Array{Name("name"), Integer(7)}
+	ary.Write(&buf)
+
+	expect(t, "[/name 7 ] ", buf.String())
+}
+
 func TestBoolean(t *testing.T) {
 	var buf bytes.Buffer
 	Boolean(true).Write(&buf)
