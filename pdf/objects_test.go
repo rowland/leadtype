@@ -56,3 +56,14 @@ func TestPdfNumber(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, buf.String())
 	}
 }
+
+func TestPdfBoolean(t *testing.T) {
+	var buf bytes.Buffer
+	PdfBoolean(true).Write(&buf)
+	PdfBoolean(false).Write(&buf)
+
+	const expected = "true false "
+	if buf.String() != expected {
+		t.Errorf("Expected %s, got %s", expected, buf.String())
+	}
+}

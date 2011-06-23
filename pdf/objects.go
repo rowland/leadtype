@@ -38,3 +38,9 @@ type PdfNumber struct {
 func (n PdfNumber) Write(w io.Writer) {
 	fmt.Fprintf(w, "%v ", n.value)
 }
+
+type PdfBoolean bool
+
+func (b PdfBoolean) Write(w io.Writer) {
+	fmt.Fprintf(w, "%t ", b)
+}

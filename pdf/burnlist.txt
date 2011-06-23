@@ -15,7 +15,7 @@
                 [ ] IndirectObject (interface)
             [ ] Rectangle
             [x] PdfNumber
-            [ ] PdfBoolean
+            [x] PdfBoolean
         [ ] PdfName
         [x] PdfInteger
         [ ] PdfArray
