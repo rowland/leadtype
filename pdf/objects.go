@@ -62,6 +62,18 @@ func (h *Header) Write(w io.Writer) {
 	fmt.Fprintf(w, "%%PDF-%1.1f\n", v)
 }
 
+type IndirectObject struct {
+	seq, gen int
+}
+
+func (obj *IndirectObject) WriteHeader(w io.Writer) {
+	fmt.Fprintf(w, "%d %d obj\n", obj.seq, obj.gen)
+}
+
+func (obj *IndirectObject) WriteFooter(w io.Writer) {
+	fmt.Fprintf(w, "endobj\n")
+}
+
 type Integer int
 
 func (i Integer) Write(w io.Writer) {

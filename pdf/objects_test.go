@@ -43,6 +43,15 @@ func TestHeader(t *testing.T) {
 	expect(t, "%PDF-1.3\n", buf.String())
 }
 
+func TestIndirectObject(t *testing.T) {
+	var buf bytes.Buffer
+	obj := &IndirectObject{1, 0}
+	obj.WriteHeader(&buf)
+	expect(t, "1 0 obj\n", buf.String())
+	obj.WriteFooter(&buf)
+	expect(t, "1 0 obj\nendobj\n", buf.String())
+}
+
 func TestInteger(t *testing.T) {
 	var buf bytes.Buffer
 	pi := Integer(7)

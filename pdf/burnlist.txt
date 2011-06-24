@@ -13,7 +13,7 @@
                 [x] PdfDictionary
                     [x] PdfString
             [ ] IndirectObjectRef
-                [ ] IndirectObject (interface)
+                [x] IndirectObject (interface)
             [x] Rectangle
             [x] PdfNumber
             [x] PdfBoolean
