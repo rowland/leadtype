@@ -3,7 +3,7 @@
         [x] Header
         [ ] Body
             [x] InUseXRefEntry
-        [ ] Trailer
+        [x] Trailer
         [ ] XRefTable
         [ ] XRefSubSection
         [ ] PdfResources

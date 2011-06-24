@@ -146,3 +146,31 @@ func (s String) escape() string {
 func (s String) Write(w io.Writer) {
 	fmt.Fprintf(w, "(%s) ", s.escape())
 }
+
+type Trailer struct {
+	dict           Dictionary
+	xrefTableStart int
+}
+
+func newTrailer() *Trailer {
+	return &Trailer{Dictionary{}, 0}
+}
+
+func (tr *Trailer) setXrefTableSize(size int) {
+	tr.dict["Size"] = Integer(size)
+}
+
+func (tr *Trailer) xrefTableSize() int {
+	if size, ok := tr.dict["Size"]; ok {
+		return int(size.(Integer))
+	}
+	return 0
+}
+
+func (tr *Trailer) Write(w io.Writer) {
+	fmt.Fprintf(w, "trailer\n")
+	tr.dict.Write(w)
+	fmt.Fprintf(w, "startxref\n")
+	fmt.Fprintf(w, "%d\n", tr.xrefTableStart)
+	fmt.Fprintf(w, "%%%%EOF\n")
+}

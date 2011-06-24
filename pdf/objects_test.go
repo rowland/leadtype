@@ -121,3 +121,26 @@ func TestString(t *testing.T) {
 	s.Write(&buf)
 	expect(t, "(a\\\\b\\(cd\\)) ", buf.String())
 }
+
+func TestTrailer(t *testing.T) {
+	var buf bytes.Buffer
+	tr := newTrailer()
+
+	if tr.xrefTableSize() != 0 {
+		t.Errorf("xrefTableSize: Expected, %d, got %d", 0, tr.xrefTableSize())
+	}
+
+	tr.setXrefTableSize(3)
+
+	if tr.xrefTableStart != 0 {
+		t.Errorf("xrefTableStart: Expected %d, got %d", 0, tr.xrefTableStart)
+	}
+	if tr.xrefTableSize() != 3 {
+		t.Errorf("xrefTableSize: Expected %d, got %d", 3, tr.xrefTableSize())
+	}
+	if tr.dict["Size"] != Integer(3) {
+		t.Errorf("Size: Expected %d, got %d", 3, tr.dict["Size"])
+	}
+	tr.Write(&buf)
+	expect(t, "trailer\n<<\n/Size 3 \n>>\nstartxref\n0\n%%EOF\n", buf.String())
+}
