@@ -9,7 +9,7 @@
         [ ] PdfResources
     [ ] PdfPages
         [ ] PdfPageBase
-            [ ] PdfDictionaryObject
+            [x] PdfDictionaryObject
                 [x] PdfDictionary
                     [x] PdfString
             [ ] IndirectObjectRef

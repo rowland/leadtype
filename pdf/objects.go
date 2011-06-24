@@ -50,6 +50,17 @@ func (d Dictionary) Write(w io.Writer) {
 	fmt.Fprintf(w, ">>\n")
 }
 
+type DictionaryObject struct {
+	IndirectObject
+	dict Dictionary
+}
+
+func (d *DictionaryObject) Write(w io.Writer) {
+	d.WriteHeader(w)
+	d.dict.Write(w)
+	d.WriteFooter(w)
+}
+
 type Header struct {
 	Version float32
 }

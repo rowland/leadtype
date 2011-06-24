@@ -35,6 +35,13 @@ func TestDictionary(t *testing.T) {
 	expect(t, "<<\n/baz 7 \n/foo (bar) \n>>\n", buf.String())
 }
 
+func TestDictionaryObject(t *testing.T) {
+	var buf bytes.Buffer
+	d := &DictionaryObject{IndirectObject{1, 0}, Dictionary{"foo": String("bar"), "baz": Integer(7)}}
+	d.Write(&buf)
+	expect(t, "1 0 obj\n<<\n/baz 7 \n/foo (bar) \n>>\nendobj\n", buf.String())
+}
+
 func TestHeader(t *testing.T) {
 	var buf bytes.Buffer
 	h := &Header{}
