@@ -85,6 +85,14 @@ func (obj *IndirectObject) WriteFooter(w io.Writer) {
 	fmt.Fprintf(w, "endobj\n")
 }
 
+type IndirectObjectRef struct {
+	obj *IndirectObject
+}
+
+func (ref *IndirectObjectRef) Write(w io.Writer) {
+	fmt.Fprintf(w, "%d %d R ", ref.obj.seq, ref.obj.gen)
+}
+
 type Integer int
 
 func (i Integer) Write(w io.Writer) {

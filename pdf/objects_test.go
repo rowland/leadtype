@@ -59,6 +59,14 @@ func TestIndirectObject(t *testing.T) {
 	expect(t, "1 0 obj\nendobj\n", buf.String())
 }
 
+func TestIndirectObjectRef(t *testing.T) {
+	var buf bytes.Buffer
+	obj := &IndirectObject{1, 0}
+	ind := &IndirectObjectRef{obj}
+	ind.Write(&buf)
+	expect(t, "1 0 R ", buf.String())
+}
+
 func TestInteger(t *testing.T) {
 	var buf bytes.Buffer
 	pi := Integer(7)
