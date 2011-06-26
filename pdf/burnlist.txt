@@ -4,8 +4,9 @@
         [ ] Body
             [x] InUseXRefEntry
         [x] Trailer
-        [ ] XRefTable
-        [ ] XRefSubSection
+        [x] XRefTable
+            [x] XRefSubSection
+                [x] FreeXRefEntry
         [ ] PdfResources
     [ ] PdfPages
         [ ] PdfPageBase

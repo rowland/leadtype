@@ -42,6 +42,13 @@ func TestDictionaryObject(t *testing.T) {
 	expect(t, "1 0 obj\n<<\n/baz 7 \n/foo (bar) \n>>\nendobj\n", buf.String())
 }
 
+func TestFreeXRefEntry(t *testing.T) {
+	var buf bytes.Buffer
+	e := &FreeXRefEntry{1, 0}
+	e.Write(&buf)
+	expect(t, "0000000001 00000 f\n", buf.String())
+}
+
 func TestHeader(t *testing.T) {
 	var buf bytes.Buffer
 	h := &Header{}
@@ -143,4 +150,24 @@ func TestTrailer(t *testing.T) {
 	}
 	tr.Write(&buf)
 	expect(t, "trailer\n<<\n/Size 3 \n>>\nstartxref\n0\n%%EOF\n", buf.String())
+}
+
+func TestXRefSubSection(t *testing.T) {
+	var buf bytes.Buffer
+	ss := newXRefSubSection()
+	ss.add(&InUseXRefEntry{0, 0})
+	ss.add(&InUseXRefEntry{100, 1})
+	ss.Write(&buf)
+	expect(t, "0 3\n0000000000 65535 f\n0000000000 00000 n\n0000000100 00001 n\n", buf.String())
+}
+
+func TestXRefTable(t *testing.T) {
+	var buf bytes.Buffer
+	table := &XRefTable{}
+	ss := newXRefSubSection()
+	ss.add(&InUseXRefEntry{0, 0})
+	ss.add(&InUseXRefEntry{100, 1})
+	table.add(ss)
+	table.Write(&buf)
+	expect(t, "xref\n0 3\n0000000000 65535 f\n0000000000 00000 n\n0000000100 00001 n\n", buf.String())
 }

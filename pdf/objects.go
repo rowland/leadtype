@@ -61,6 +61,12 @@ func (d *DictionaryObject) Write(w io.Writer) {
 	d.WriteFooter(w)
 }
 
+type FreeXRefEntry IndirectObject
+
+func (e *FreeXRefEntry) Write(w io.Writer) {
+	fmt.Fprintf(w, "%.10d %.5d f\n", e.seq, e.gen)
+}
+
 type Header struct {
 	Version float32
 }
@@ -173,4 +179,38 @@ func (tr *Trailer) Write(w io.Writer) {
 	fmt.Fprintf(w, "startxref\n")
 	fmt.Fprintf(w, "%d\n", tr.xrefTableStart)
 	fmt.Fprintf(w, "%%%%EOF\n")
+}
+
+type XRefSubSection struct {
+	list Array
+}
+
+func newXRefSubSection() *XRefSubSection {
+	return &XRefSubSection{Array{&FreeXRefEntry{0, 65535}}}
+}
+
+func (ss *XRefSubSection) add(w Writer) {
+	ss.list = append(ss.list, w)
+}
+
+func (ss *XRefSubSection) Write(w io.Writer) {
+	fmt.Fprintf(w, "%d %d\n", 0, len(ss.list))
+	for _, e := range ss.list {
+		e.Write(w)
+	}
+}
+
+type XRefTable struct {
+	list []*XRefSubSection
+}
+
+func (table *XRefTable) add(ss *XRefSubSection) {
+	table.list = append(table.list, ss)
+}
+
+func (table *XRefTable) Write(w io.Writer) {
+	fmt.Fprintf(w, "xref\n")
+	for _, e := range table.list {
+		e.Write(w)
+	}
 }
