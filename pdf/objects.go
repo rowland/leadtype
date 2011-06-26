@@ -55,6 +55,10 @@ type DictionaryObject struct {
 	dict Dictionary
 }
 
+func newDictionaryObject(seq, gen int, dict Dictionary) *DictionaryObject {
+	return &DictionaryObject{IndirectObject{seq, gen}, dict}
+}
+
 func (d *DictionaryObject) Write(w io.Writer) {
 	d.WriteHeader(w)
 	d.dict.Write(w)
@@ -119,6 +123,14 @@ func (n Name) Write(w io.Writer) {
 	fmt.Fprintf(w, "/%s ", n)
 }
 
+func NameArray(names ...string) Array {
+	na := make(Array, len(names))
+	for i, n := range names {
+		na[i] = Name(n)
+	}
+	return na
+}
+
 type Number struct {
 	value interface{}
 }
@@ -138,6 +150,36 @@ func (r *Rectangle) Write(w io.Writer) {
 	Number{r.x2}.Write(w)
 	Number{r.y2}.Write(w)
 	fmt.Fprintf(w, "] ")
+}
+
+type Resources struct {
+	DictionaryObject
+	fonts Dictionary
+	xObjects Dictionary
+}
+
+func newResources(seq, gen int) *Resources {
+	return &Resources{DictionaryObject{IndirectObject{seq, gen}, Dictionary{}}, nil, nil}
+}
+
+func (r *Resources) setFont(name string, ref *IndirectObjectRef) {
+	if r.fonts == nil {
+		r.fonts = Dictionary{}
+		r.dict["Font"] = r.fonts
+	}
+	r.fonts[name] = ref
+}
+
+func (r *Resources) setProcSet(w Writer) {
+	r.dict["ProcSet"] = w
+}
+
+func (r *Resources) setXObject(name string, ref *IndirectObjectRef) {
+	if r.xObjects == nil {
+		r.xObjects = Dictionary{}
+		r.dict["XObject"] = r.xObjects
+	}
+	r.xObjects[name] = ref
 }
 
 type String string
@@ -201,6 +243,7 @@ func (ss *XRefSubSection) Write(w io.Writer) {
 }
 
 type XRefTable struct {
+	// TODO: Can list be just a Writer?
 	list []*XRefSubSection
 }
 

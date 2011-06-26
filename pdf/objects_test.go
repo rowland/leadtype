@@ -97,6 +97,20 @@ func TestName(t *testing.T) {
 	expect(t, "/name ", buf.String())
 }
 
+func nameShouldEqual(t *testing.T, expected string, actual Writer) {
+	if Name(expected) != actual {
+		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}
+
+func TestNameArray(t *testing.T) {
+	a := NameArray("PDF", "Text", "ImageB", "ImageC")
+	nameShouldEqual(t, "PDF", a[0])
+	nameShouldEqual(t, "Text", a[1])
+	nameShouldEqual(t, "ImageB", a[2])
+	nameShouldEqual(t, "ImageC", a[3])
+}
+
 func TestNumber(t *testing.T) {
 	var buf bytes.Buffer
 	ni := int(7)
@@ -119,6 +133,38 @@ func TestRectangle(t *testing.T) {
 	r.Write(&buf)
 
 	expect(t, "[1 2 3 4 ] ", buf.String())
+}
+
+func TestResources_ProcSet(t *testing.T) {
+	r := newResources(1, 0)
+	a := NameArray("PDF", "Text", "ImageB", "ImageC")
+	r.setProcSet(a)
+
+	if r.dict["ProcSet"] == nil {
+		t.Error("setProcSet: failed")
+	}
+}
+
+func TestResources_Font(t *testing.T) {
+	var buf bytes.Buffer
+	r := newResources(1, 0)
+	obj := &IndirectObject{2, 0}
+	ref := &IndirectObjectRef{obj}
+	r.setFont("F1", ref)
+	r.Write(&buf)
+
+	expect(t, "1 0 obj\n<<\n/Font <<\n/F1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
+}
+
+func TestResources_XObject(t *testing.T) {
+	var buf bytes.Buffer
+	r := newResources(1, 0)
+	obj := &IndirectObject{2, 0}
+	ref := &IndirectObjectRef{obj}
+	r.setXObject("Im1", ref)
+	r.Write(&buf)
+
+	expect(t, "1 0 obj\n<<\n/XObject <<\n/Im1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
 }
 
 func TestString(t *testing.T) {
