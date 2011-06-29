@@ -13,98 +13,98 @@ func expect(t *testing.T, expected, actual string) {
 
 func TestArray(t *testing.T) {
 	var buf bytes.Buffer
-	ary := Array{Name("name"), Integer(7)}
-	ary.Write(&buf)
+	ary := array{name("name"), integer(7)}
+	ary.write(&buf)
 
 	expect(t, "[/name 7 ] ", buf.String())
 }
 
 func TestBoolean(t *testing.T) {
 	var buf bytes.Buffer
-	Boolean(true).Write(&buf)
-	Boolean(false).Write(&buf)
+	boolean(true).write(&buf)
+	boolean(false).write(&buf)
 
 	expect(t, "true false ", buf.String())
 }
 
 func TestDictionary(t *testing.T) {
 	var buf bytes.Buffer
-	d := Dictionary{"foo": String("bar"), "baz": Integer(7)}
-	d.Write(&buf)
+	d := dictionary{"foo": str("bar"), "baz": integer(7)}
+	d.write(&buf)
 
 	expect(t, "<<\n/baz 7 \n/foo (bar) \n>>\n", buf.String())
 }
 
 func TestDictionaryObject(t *testing.T) {
 	var buf bytes.Buffer
-	d := &DictionaryObject{IndirectObject{1, 0}, Dictionary{"foo": String("bar"), "baz": Integer(7)}}
-	d.Write(&buf)
+	d := &dictionaryObject{indirectObject{1, 0}, dictionary{"foo": str("bar"), "baz": integer(7)}}
+	d.write(&buf)
 	expect(t, "1 0 obj\n<<\n/baz 7 \n/foo (bar) \n>>\nendobj\n", buf.String())
 }
 
 func TestFreeXRefEntry(t *testing.T) {
 	var buf bytes.Buffer
-	e := &FreeXRefEntry{1, 0}
-	e.Write(&buf)
+	e := &freeXRefEntry{1, 0}
+	e.write(&buf)
 	expect(t, "0000000001 00000 f\n", buf.String())
 }
 
 func TestHeader(t *testing.T) {
 	var buf bytes.Buffer
-	h := &Header{}
-	h.Write(&buf)
+	h := &header{}
+	h.write(&buf)
 
 	expect(t, "%PDF-1.3\n", buf.String())
 }
 
 func TestIndirectObject(t *testing.T) {
 	var buf bytes.Buffer
-	obj := &IndirectObject{1, 0}
-	obj.WriteHeader(&buf)
+	obj := &indirectObject{1, 0}
+	obj.writeHeader(&buf)
 	expect(t, "1 0 obj\n", buf.String())
-	obj.WriteFooter(&buf)
+	obj.writeFooter(&buf)
 	expect(t, "1 0 obj\nendobj\n", buf.String())
 }
 
 func TestIndirectObjectRef(t *testing.T) {
 	var buf bytes.Buffer
-	obj := &IndirectObject{1, 0}
-	ind := &IndirectObjectRef{obj}
-	ind.Write(&buf)
+	obj := &indirectObject{1, 0}
+	ind := &indirectObjectRef{obj}
+	ind.write(&buf)
 	expect(t, "1 0 R ", buf.String())
 }
 
 func TestInteger(t *testing.T) {
 	var buf bytes.Buffer
-	pi := Integer(7)
-	pi.Write(&buf)
+	pi := integer(7)
+	pi.write(&buf)
 
 	expect(t, "7 ", buf.String())
 }
 
 func TestInUseXRefEntry(t *testing.T) {
 	var buf bytes.Buffer
-	e := &InUseXRefEntry{500, 0}
-	e.Write(&buf)
+	e := &inUseXRefEntry{500, 0}
+	e.write(&buf)
 
 	expect(t, "0000000500 00000 n\n", buf.String())
 }
 
 func TestName(t *testing.T) {
 	var buf bytes.Buffer
-	Name("name").Write(&buf)
+	name("name").write(&buf)
 
 	expect(t, "/name ", buf.String())
 }
 
-func nameShouldEqual(t *testing.T, expected string, actual Writer) {
-	if Name(expected) != actual {
+func nameShouldEqual(t *testing.T, expected string, actual writer) {
+	if name(expected) != actual {
 		t.Errorf("Expected %s, got %s", expected, actual)
 	}
 }
 
 func TestNameArray(t *testing.T) {
-	a := NameArray("PDF", "Text", "ImageB", "ImageC")
+	a := nameArray("PDF", "Text", "ImageB", "ImageC")
 	nameShouldEqual(t, "PDF", a[0])
 	nameShouldEqual(t, "Text", a[1])
 	nameShouldEqual(t, "ImageB", a[2])
@@ -118,26 +118,26 @@ func TestNumber(t *testing.T) {
 	ni64 := int64(9)
 	f32 := float32(10.5)
 	f64 := float64(11.5)
-	Number{ni}.Write(&buf)
-	Number{ni32}.Write(&buf)
-	Number{ni64}.Write(&buf)
-	Number{f32}.Write(&buf)
-	Number{f64}.Write(&buf)
+	number{ni}.write(&buf)
+	number{ni32}.write(&buf)
+	number{ni64}.write(&buf)
+	number{f32}.write(&buf)
+	number{f64}.write(&buf)
 
 	expect(t, "7 8 9 10.5 11.5 ", buf.String())
 }
 
 func TestRectangle(t *testing.T) {
 	var buf bytes.Buffer
-	r := &Rectangle{1, 2, 3, 4}
-	r.Write(&buf)
+	r := &rectangle{1, 2, 3, 4}
+	r.write(&buf)
 
 	expect(t, "[1 2 3 4 ] ", buf.String())
 }
 
 func TestResources_ProcSet(t *testing.T) {
 	r := newResources(1, 0)
-	a := NameArray("PDF", "Text", "ImageB", "ImageC")
+	a := nameArray("PDF", "Text", "ImageB", "ImageC")
 	r.setProcSet(a)
 
 	if r.dict["ProcSet"] == nil {
@@ -148,10 +148,10 @@ func TestResources_ProcSet(t *testing.T) {
 func TestResources_Font(t *testing.T) {
 	var buf bytes.Buffer
 	r := newResources(1, 0)
-	obj := &IndirectObject{2, 0}
-	ref := &IndirectObjectRef{obj}
+	obj := &indirectObject{2, 0}
+	ref := &indirectObjectRef{obj}
 	r.setFont("F1", ref)
-	r.Write(&buf)
+	r.write(&buf)
 
 	expect(t, "1 0 obj\n<<\n/Font <<\n/F1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
 }
@@ -159,19 +159,19 @@ func TestResources_Font(t *testing.T) {
 func TestResources_XObject(t *testing.T) {
 	var buf bytes.Buffer
 	r := newResources(1, 0)
-	obj := &IndirectObject{2, 0}
-	ref := &IndirectObjectRef{obj}
+	obj := &indirectObject{2, 0}
+	ref := &indirectObjectRef{obj}
 	r.setXObject("Im1", ref)
-	r.Write(&buf)
+	r.write(&buf)
 
 	expect(t, "1 0 obj\n<<\n/XObject <<\n/Im1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
 }
 
-func TestString(t *testing.T) {
+func TestStr(t *testing.T) {
 	var buf bytes.Buffer
-	s := String("a\\b(cd)")
+	s := str("a\\b(cd)")
 	expect(t, "a\\\\b\\(cd\\)", s.escape())
-	s.Write(&buf)
+	s.write(&buf)
 	expect(t, "(a\\\\b\\(cd\\)) ", buf.String())
 }
 
@@ -191,29 +191,29 @@ func TestTrailer(t *testing.T) {
 	if tr.xrefTableSize() != 3 {
 		t.Errorf("xrefTableSize: Expected %d, got %d", 3, tr.xrefTableSize())
 	}
-	if tr.dict["Size"] != Integer(3) {
+	if tr.dict["Size"] != integer(3) {
 		t.Errorf("Size: Expected %d, got %d", 3, tr.dict["Size"])
 	}
-	tr.Write(&buf)
+	tr.write(&buf)
 	expect(t, "trailer\n<<\n/Size 3 \n>>\nstartxref\n0\n%%EOF\n", buf.String())
 }
 
 func TestXRefSubSection(t *testing.T) {
 	var buf bytes.Buffer
 	ss := newXRefSubSection()
-	ss.add(&InUseXRefEntry{0, 0})
-	ss.add(&InUseXRefEntry{100, 1})
-	ss.Write(&buf)
+	ss.add(&inUseXRefEntry{0, 0})
+	ss.add(&inUseXRefEntry{100, 1})
+	ss.write(&buf)
 	expect(t, "0 3\n0000000000 65535 f\n0000000000 00000 n\n0000000100 00001 n\n", buf.String())
 }
 
 func TestXRefTable(t *testing.T) {
 	var buf bytes.Buffer
-	table := &XRefTable{}
+	table := &xRefTable{}
 	ss := newXRefSubSection()
-	ss.add(&InUseXRefEntry{0, 0})
-	ss.add(&InUseXRefEntry{100, 1})
+	ss.add(&inUseXRefEntry{0, 0})
+	ss.add(&inUseXRefEntry{100, 1})
 	table.add(ss)
-	table.Write(&buf)
+	table.write(&buf)
 	expect(t, "xref\n0 3\n0000000000 65535 f\n0000000000 00000 n\n0000000100 00001 n\n", buf.String())
 }

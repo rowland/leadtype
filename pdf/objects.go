@@ -7,29 +7,29 @@ import (
 	"sort"
 )
 
-type Writer interface {
-	Write(io.Writer)
+type writer interface {
+	write(io.Writer)
 }
 
-type Array []Writer
+type array []writer
 
-func (a Array) Write(w io.Writer) {
+func (a array) write(w io.Writer) {
 	fmt.Fprintf(w, "[")
 	for _, v := range a {
-		v.Write(w)
+		v.write(w)
 	}
 	fmt.Fprintf(w, "] ")
 }
 
-type Boolean bool
+type boolean bool
 
-func (b Boolean) Write(w io.Writer) {
+func (b boolean) write(w io.Writer) {
 	fmt.Fprintf(w, "%t ", b)
 }
 
-type Dictionary map[string]Writer
+type dictionary map[string]writer
 
-func (d Dictionary) keys() []string {
+func (d dictionary) keys() []string {
 	sa := make([]string, len(d))
 	i := 0
 	for k, _ := range d {
@@ -40,42 +40,42 @@ func (d Dictionary) keys() []string {
 	return sa
 }
 
-func (d Dictionary) Write(w io.Writer) {
+func (d dictionary) write(w io.Writer) {
 	fmt.Fprintf(w, "<<\n")
 	for _, k := range d.keys() {
-		Name(k).Write(w)
-		d[k].Write(w)
+		name(k).write(w)
+		d[k].write(w)
 		fmt.Fprintf(w, "\n")
 	}
 	fmt.Fprintf(w, ">>\n")
 }
 
-type DictionaryObject struct {
-	IndirectObject
-	dict Dictionary
+type dictionaryObject struct {
+	indirectObject
+	dict dictionary
 }
 
-func newDictionaryObject(seq, gen int, dict Dictionary) *DictionaryObject {
-	return &DictionaryObject{IndirectObject{seq, gen}, dict}
+func newDictionaryObject(seq, gen int, dict dictionary) *dictionaryObject {
+	return &dictionaryObject{indirectObject{seq, gen}, dict}
 }
 
-func (d *DictionaryObject) Write(w io.Writer) {
-	d.WriteHeader(w)
-	d.dict.Write(w)
-	d.WriteFooter(w)
+func (d *dictionaryObject) write(w io.Writer) {
+	d.writeHeader(w)
+	d.dict.write(w)
+	d.writeFooter(w)
 }
 
-type FreeXRefEntry IndirectObject
+type freeXRefEntry indirectObject
 
-func (e *FreeXRefEntry) Write(w io.Writer) {
+func (e *freeXRefEntry) write(w io.Writer) {
 	fmt.Fprintf(w, "%.10d %.5d f\n", e.seq, e.gen)
 }
 
-type Header struct {
+type header struct {
 	Version float32
 }
 
-func (h *Header) Write(w io.Writer) {
+func (h *header) write(w io.Writer) {
 	v := h.Version
 	if v == 0.0 {
 		v = 1.3
@@ -83,177 +83,177 @@ func (h *Header) Write(w io.Writer) {
 	fmt.Fprintf(w, "%%PDF-%1.1f\n", v)
 }
 
-type IndirectObject struct {
+type indirectObject struct {
 	seq, gen int
 }
 
-func (obj *IndirectObject) WriteHeader(w io.Writer) {
+func (obj *indirectObject) writeHeader(w io.Writer) {
 	fmt.Fprintf(w, "%d %d obj\n", obj.seq, obj.gen)
 }
 
-func (obj *IndirectObject) WriteFooter(w io.Writer) {
+func (obj *indirectObject) writeFooter(w io.Writer) {
 	fmt.Fprintf(w, "endobj\n")
 }
 
-type IndirectObjectRef struct {
-	obj *IndirectObject
+type indirectObjectRef struct {
+	obj *indirectObject
 }
 
-func (ref *IndirectObjectRef) Write(w io.Writer) {
+func (ref *indirectObjectRef) write(w io.Writer) {
 	fmt.Fprintf(w, "%d %d R ", ref.obj.seq, ref.obj.gen)
 }
 
-type Integer int
+type integer int
 
-func (i Integer) Write(w io.Writer) {
+func (i integer) write(w io.Writer) {
 	fmt.Fprintf(w, "%d ", i)
 }
 
-type InUseXRefEntry struct {
+type inUseXRefEntry struct {
 	byteOffset, gen int
 }
 
-func (e *InUseXRefEntry) Write(w io.Writer) {
+func (e *inUseXRefEntry) write(w io.Writer) {
 	fmt.Fprintf(w, "%.10d %.5d n\n", e.byteOffset, e.gen)
 }
 
-type Name string
+type name string
 
-func (n Name) Write(w io.Writer) {
+func (n name) write(w io.Writer) {
 	fmt.Fprintf(w, "/%s ", n)
 }
 
-func NameArray(names ...string) Array {
-	na := make(Array, len(names))
+func nameArray(names ...string) array {
+	na := make(array, len(names))
 	for i, n := range names {
-		na[i] = Name(n)
+		na[i] = name(n)
 	}
 	return na
 }
 
-type Number struct {
+type number struct {
 	value interface{}
 }
 
-func (n Number) Write(w io.Writer) {
+func (n number) write(w io.Writer) {
 	fmt.Fprintf(w, "%v ", n.value)
 }
 
-type Rectangle struct {
+type rectangle struct {
 	x1, y1, x2, y2 float32
 }
 
-func (r *Rectangle) Write(w io.Writer) {
+func (r *rectangle) write(w io.Writer) {
 	fmt.Fprintf(w, "[")
-	Number{r.x1}.Write(w)
-	Number{r.y1}.Write(w)
-	Number{r.x2}.Write(w)
-	Number{r.y2}.Write(w)
+	number{r.x1}.write(w)
+	number{r.y1}.write(w)
+	number{r.x2}.write(w)
+	number{r.y2}.write(w)
 	fmt.Fprintf(w, "] ")
 }
 
-type Resources struct {
-	DictionaryObject
-	fonts Dictionary
-	xObjects Dictionary
+type resources struct {
+	dictionaryObject
+	fonts dictionary
+	xObjects dictionary
 }
 
-func newResources(seq, gen int) *Resources {
-	return &Resources{DictionaryObject{IndirectObject{seq, gen}, Dictionary{}}, nil, nil}
+func newResources(seq, gen int) *resources {
+	return &resources{dictionaryObject{indirectObject{seq, gen}, dictionary{}}, nil, nil}
 }
 
-func (r *Resources) setFont(name string, ref *IndirectObjectRef) {
+func (r *resources) setFont(name string, ref *indirectObjectRef) {
 	if r.fonts == nil {
-		r.fonts = Dictionary{}
+		r.fonts = dictionary{}
 		r.dict["Font"] = r.fonts
 	}
 	r.fonts[name] = ref
 }
 
-func (r *Resources) setProcSet(w Writer) {
+func (r *resources) setProcSet(w writer) {
 	r.dict["ProcSet"] = w
 }
 
-func (r *Resources) setXObject(name string, ref *IndirectObjectRef) {
+func (r *resources) setXObject(name string, ref *indirectObjectRef) {
 	if r.xObjects == nil {
-		r.xObjects = Dictionary{}
+		r.xObjects = dictionary{}
 		r.dict["XObject"] = r.xObjects
 	}
 	r.xObjects[name] = ref
 }
 
-type String string
+type str string
 
-func (s String) escape() string {
+func (s str) escape() string {
 	s1 := strings.Replace(string(s), "\\", "\\\\", -1)
 	s2 := strings.Replace(s1, "(", "\\(", -1)
 	s3 := strings.Replace(s2, ")", "\\)", -1)
 	return s3
 }
 
-func (s String) Write(w io.Writer) {
+func (s str) write(w io.Writer) {
 	fmt.Fprintf(w, "(%s) ", s.escape())
 }
 
-type Trailer struct {
-	dict           Dictionary
+type trailer struct {
+	dict           dictionary
 	xrefTableStart int
 }
 
-func newTrailer() *Trailer {
-	return &Trailer{Dictionary{}, 0}
+func newTrailer() *trailer {
+	return &trailer{dictionary{}, 0}
 }
 
-func (tr *Trailer) setXrefTableSize(size int) {
-	tr.dict["Size"] = Integer(size)
+func (tr *trailer) setXrefTableSize(size int) {
+	tr.dict["Size"] = integer(size)
 }
 
-func (tr *Trailer) xrefTableSize() int {
+func (tr *trailer) xrefTableSize() int {
 	if size, ok := tr.dict["Size"]; ok {
-		return int(size.(Integer))
+		return int(size.(integer))
 	}
 	return 0
 }
 
-func (tr *Trailer) Write(w io.Writer) {
+func (tr *trailer) write(w io.Writer) {
 	fmt.Fprintf(w, "trailer\n")
-	tr.dict.Write(w)
+	tr.dict.write(w)
 	fmt.Fprintf(w, "startxref\n")
 	fmt.Fprintf(w, "%d\n", tr.xrefTableStart)
 	fmt.Fprintf(w, "%%%%EOF\n")
 }
 
-type XRefSubSection struct {
-	list Array
+type xRefSubSection struct {
+	list array
 }
 
-func newXRefSubSection() *XRefSubSection {
-	return &XRefSubSection{Array{&FreeXRefEntry{0, 65535}}}
+func newXRefSubSection() *xRefSubSection {
+	return &xRefSubSection{array{&freeXRefEntry{0, 65535}}}
 }
 
-func (ss *XRefSubSection) add(w Writer) {
+func (ss *xRefSubSection) add(w writer) {
 	ss.list = append(ss.list, w)
 }
 
-func (ss *XRefSubSection) Write(w io.Writer) {
+func (ss *xRefSubSection) write(w io.Writer) {
 	fmt.Fprintf(w, "%d %d\n", 0, len(ss.list))
 	for _, e := range ss.list {
-		e.Write(w)
+		e.write(w)
 	}
 }
 
-type XRefTable struct {
-	// TODO: Can list be just a Writer?
-	list []*XRefSubSection
+type xRefTable struct {
+	// TODO: Can list be just a writer?
+	list []*xRefSubSection
 }
 
-func (table *XRefTable) add(ss *XRefSubSection) {
+func (table *xRefTable) add(ss *xRefSubSection) {
 	table.list = append(table.list, ss)
 }
 
-func (table *XRefTable) Write(w io.Writer) {
+func (table *xRefTable) write(w io.Writer) {
 	fmt.Fprintf(w, "xref\n")
 	for _, e := range table.list {
-		e.Write(w)
+		e.write(w)
 	}
 }
