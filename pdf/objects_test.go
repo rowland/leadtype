@@ -19,6 +19,20 @@ func TestArray(t *testing.T) {
 	expect(t, "[/name 7 ] ", buf.String())
 }
 
+func TestBody(t *testing.T) {
+	ioInt := &indirectObject{1, 0, integer(7)}
+	ioStr := &indirectObject{2, 0, str("Hello")}
+	var b body
+	b.add(ioInt)
+	b.add(ioStr)
+	ss := newXRefSubSection()
+	var buf bytes.Buffer
+	b.write(&buf, ss)
+	buf.Reset()
+	ss.write(&buf)
+	expect(t, "0 3\n0000000000 65535 f\n0000000000 00000 n\n0000000018 00000 n\n", buf.String())
+}
+
 func TestBoolean(t *testing.T) {
 	var buf bytes.Buffer
 	boolean(true).write(&buf)
@@ -37,14 +51,14 @@ func TestDictionary(t *testing.T) {
 
 func TestDictionaryObject(t *testing.T) {
 	var buf bytes.Buffer
-	d := &dictionaryObject{indirectObject{1, 0}, dictionary{"foo": str("bar"), "baz": integer(7)}}
+	d := &dictionaryObject{indirectObject{1, 0, nil}, dictionary{"foo": str("bar"), "baz": integer(7)}}
 	d.write(&buf)
 	expect(t, "1 0 obj\n<<\n/baz 7 \n/foo (bar) \n>>\nendobj\n", buf.String())
 }
 
 func TestFreeXRefEntry(t *testing.T) {
 	var buf bytes.Buffer
-	e := &freeXRefEntry{1, 0}
+	e := &freeXRefEntry{1, 0, nil}
 	e.write(&buf)
 	expect(t, "0000000001 00000 f\n", buf.String())
 }
@@ -59,16 +73,20 @@ func TestHeader(t *testing.T) {
 
 func TestIndirectObject(t *testing.T) {
 	var buf bytes.Buffer
-	obj := &indirectObject{1, 0}
+	obj := &indirectObject{1, 0, nil}
 	obj.writeHeader(&buf)
 	expect(t, "1 0 obj\n", buf.String())
+	buf.Reset()
 	obj.writeFooter(&buf)
+	expect(t, "endobj\n", buf.String())
+	buf.Reset()
+	obj.write(&buf)
 	expect(t, "1 0 obj\nendobj\n", buf.String())
 }
 
 func TestIndirectObjectRef(t *testing.T) {
 	var buf bytes.Buffer
-	obj := &indirectObject{1, 0}
+	obj := &indirectObject{1, 0, nil}
 	ind := &indirectObjectRef{obj}
 	ind.write(&buf)
 	expect(t, "1 0 R ", buf.String())
@@ -148,7 +166,7 @@ func TestResources_ProcSet(t *testing.T) {
 func TestResources_Font(t *testing.T) {
 	var buf bytes.Buffer
 	r := newResources(1, 0)
-	obj := &indirectObject{2, 0}
+	obj := &indirectObject{2, 0, nil}
 	ref := &indirectObjectRef{obj}
 	r.setFont("F1", ref)
 	r.write(&buf)
@@ -159,7 +177,7 @@ func TestResources_Font(t *testing.T) {
 func TestResources_XObject(t *testing.T) {
 	var buf bytes.Buffer
 	r := newResources(1, 0)
-	obj := &indirectObject{2, 0}
+	obj := &indirectObject{2, 0, nil}
 	ref := &indirectObjectRef{obj}
 	r.setXObject("Im1", ref)
 	r.write(&buf)
