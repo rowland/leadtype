@@ -7,10 +7,6 @@ import (
 	"sort"
 )
 
-type writer interface {
-	write(io.Writer)
-}
-
 type array []writer
 
 func (a array) write(w io.Writer) {
@@ -19,6 +15,22 @@ func (a array) write(w io.Writer) {
 		v.write(w)
 	}
 	fmt.Fprintf(w, "] ")
+}
+
+type body struct {
+	list genWriterArray
+}
+
+func (b *body) add(w genWriter) {
+	b.list = append(b.list, w)
+}
+
+func (b *body) write(w lenWriter, ss *xRefSubSection) {
+	for _, e := range b.list {
+		xe := &inUseXRefEntry{w.Len(), e.Gen()}
+		ss.add(xe)
+		e.write(w)
+	}
 }
 
 type boolean bool
@@ -56,7 +68,7 @@ type dictionaryObject struct {
 }
 
 func newDictionaryObject(seq, gen int, dict dictionary) *dictionaryObject {
-	return &dictionaryObject{indirectObject{seq, gen}, dict}
+	return &dictionaryObject{indirectObject{seq, gen, nil}, dict}
 }
 
 func (d *dictionaryObject) write(w io.Writer) {
@@ -70,6 +82,13 @@ type freeXRefEntry indirectObject
 func (e *freeXRefEntry) write(w io.Writer) {
 	fmt.Fprintf(w, "%.10d %.5d f\n", e.seq, e.gen)
 }
+
+type genWriter interface {
+	writer
+	Gen() int
+}
+
+type genWriterArray []genWriter
 
 type header struct {
 	Version float32
@@ -85,13 +104,27 @@ func (h *header) write(w io.Writer) {
 
 type indirectObject struct {
 	seq, gen int
+	obj      writer
 }
 
-func (obj *indirectObject) writeHeader(w io.Writer) {
-	fmt.Fprintf(w, "%d %d obj\n", obj.seq, obj.gen)
+func (indObj *indirectObject) Gen() int {
+	return indObj.gen
 }
 
-func (obj *indirectObject) writeFooter(w io.Writer) {
+func (indObj *indirectObject) write(w io.Writer) {
+	indObj.writeHeader(w)
+	if indObj.obj != nil {
+		indObj.obj.write(w)
+		fmt.Fprintf(w, "\n")
+	}
+	indObj.writeFooter(w)
+}
+
+func (indObj *indirectObject) writeHeader(w io.Writer) {
+	fmt.Fprintf(w, "%d %d obj\n", indObj.seq, indObj.gen)
+}
+
+func (indObj *indirectObject) writeFooter(w io.Writer) {
 	fmt.Fprintf(w, "endobj\n")
 }
 
@@ -115,6 +148,11 @@ type inUseXRefEntry struct {
 
 func (e *inUseXRefEntry) write(w io.Writer) {
 	fmt.Fprintf(w, "%.10d %.5d n\n", e.byteOffset, e.gen)
+}
+
+type lenWriter interface {
+	io.Writer
+	Len() int
 }
 
 type name string
@@ -154,12 +192,12 @@ func (r *rectangle) write(w io.Writer) {
 
 type resources struct {
 	dictionaryObject
-	fonts dictionary
+	fonts    dictionary
 	xObjects dictionary
 }
 
 func newResources(seq, gen int) *resources {
-	return &resources{dictionaryObject{indirectObject{seq, gen}, dictionary{}}, nil, nil}
+	return &resources{dictionaryObject{indirectObject{seq, gen, nil}, dictionary{}}, nil, nil}
 }
 
 func (r *resources) setFont(name string, ref *indirectObjectRef) {
@@ -223,12 +261,16 @@ func (tr *trailer) write(w io.Writer) {
 	fmt.Fprintf(w, "%%%%EOF\n")
 }
 
+type writer interface {
+	write(io.Writer)
+}
+
 type xRefSubSection struct {
 	list array
 }
 
 func newXRefSubSection() *xRefSubSection {
-	return &xRefSubSection{array{&freeXRefEntry{0, 65535}}}
+	return &xRefSubSection{array{&freeXRefEntry{0, 65535, nil}}}
 }
 
 func (ss *xRefSubSection) add(w writer) {
