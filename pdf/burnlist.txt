@@ -9,7 +9,7 @@
                 [x] FreeXRefEntry
         [x] PdfResources
     [ ] PdfPages
-        [ ] PdfPageBase
+        [x] PdfPageBase
             [x] PdfDictionaryObject
                 [x] PdfDictionary
                     [x] PdfString
