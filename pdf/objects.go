@@ -67,8 +67,14 @@ type dictionaryObject struct {
 	dict dictionary
 }
 
-func newDictionaryObject(seq, gen int, dict dictionary) *dictionaryObject {
-	return &dictionaryObject{indirectObject{seq, gen, nil}, dict}
+func (d *dictionaryObject) init(seq, gen int) *dictionaryObject {
+	d.indirectObject.init(seq, gen, nil)
+	d.dict = dictionary{}
+	return d
+}
+
+func newDictionaryObject(seq, gen int) *dictionaryObject {
+	return new(dictionaryObject).init(seq, gen)
 }
 
 func (d *dictionaryObject) write(w io.Writer) {
@@ -107,8 +113,18 @@ type indirectObject struct {
 	obj      writer
 }
 
+func (indObj *indirectObject) init(seq, gen int, obj writer) {
+	indObj.seq = seq
+	indObj.gen = gen
+	indObj.obj = obj
+}
+
 func (indObj *indirectObject) Gen() int {
 	return indObj.gen
+}
+
+func (indObj *indirectObject) Seq() int {
+	return indObj.seq
 }
 
 func (indObj *indirectObject) write(w io.Writer) {
@@ -129,11 +145,11 @@ func (indObj *indirectObject) writeFooter(w io.Writer) {
 }
 
 type indirectObjectRef struct {
-	obj *indirectObject
+	obj seqGen
 }
 
 func (ref *indirectObjectRef) write(w io.Writer) {
-	fmt.Fprintf(w, "%d %d R ", ref.obj.seq, ref.obj.gen)
+	fmt.Fprintf(w, "%d %d R ", ref.obj.Seq(), ref.obj.Gen())
 }
 
 type integer int
@@ -177,6 +193,44 @@ func (n number) write(w io.Writer) {
 	fmt.Fprintf(w, "%v ", n.value)
 }
 
+type pageBase struct {
+	dictionaryObject
+}
+
+func (pb *pageBase) init(seq, gen int, parent *indirectObject) *pageBase {
+	pb.dictionaryObject.init(seq, gen)
+	pb.dict["Parent"] = &indirectObjectRef{parent}
+	return pb
+}
+
+func newPageBase(seq, gen int, parent *indirectObject) *pageBase {
+	return new(pageBase).init(seq, gen, parent)
+}
+
+func (pb *pageBase) setCropBox(r *rectangle) {
+	pb.dict["CropBox"] = r
+}
+
+func (pb *pageBase) setDuration(duration interface{}) {
+	pb.dict["Dur"] = number{duration}
+}
+
+func (pb *pageBase) setHidden(hidden bool) {
+	pb.dict["Hid"] = boolean(hidden)
+}
+
+func (pb *pageBase) setMediaBox(r *rectangle) {
+	pb.dict["MediaBox"] = r
+}
+
+func (pb *pageBase) setResources(r *resources) {
+	pb.dict["Resources"] = &indirectObjectRef{r}
+}
+
+func (pb *pageBase) setRotate(rotate int) {
+	pb.dict["Rotate"] = integer(rotate)
+}
+
 type rectangle struct {
 	x1, y1, x2, y2 float32
 }
@@ -196,8 +250,13 @@ type resources struct {
 	xObjects dictionary
 }
 
+func (r *resources) init(seq, gen int) *resources {
+	r.dictionaryObject.init(seq, gen)
+	return r
+}
+
 func newResources(seq, gen int) *resources {
-	return &resources{dictionaryObject{indirectObject{seq, gen, nil}, dictionary{}}, nil, nil}
+	return new(resources).init(seq, gen)
 }
 
 func (r *resources) setFont(name string, ref *indirectObjectRef) {
@@ -218,6 +277,11 @@ func (r *resources) setXObject(name string, ref *indirectObjectRef) {
 		r.dict["XObject"] = r.xObjects
 	}
 	r.xObjects[name] = ref
+}
+
+type seqGen interface {
+	Seq() int
+	Gen() int
 }
 
 type str string

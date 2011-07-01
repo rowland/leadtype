@@ -145,6 +145,48 @@ func TestNumber(t *testing.T) {
 	expect(t, "7 8 9 10.5 11.5 ", buf.String())
 }
 
+func TestPageBase(t *testing.T) {
+	obj := &indirectObject{1, 0, nil}
+	base := newPageBase(2, 0, obj)
+	var buf bytes.Buffer
+	base.dict["Parent"].write(&buf)
+	expect(t, "1 0 R ", buf.String())
+
+	r := &rectangle{1, 2, 3, 4}
+	base.setMediaBox(r)
+	buf.Reset()
+	base.dict["MediaBox"].write(&buf)
+	expect(t, "[1 2 3 4 ] ", buf.String())
+
+	resources := newResources(3, 0)
+	base.setResources(resources)
+	buf.Reset()
+	base.dict["Resources"].write(&buf)
+	expect(t, "3 0 R ", buf.String())
+
+	base.setCropBox(r)
+	buf.Reset()
+	base.dict["CropBox"].write(&buf)
+	expect(t, "[1 2 3 4 ] ", buf.String())
+
+	base.setRotate(90)
+	if base.dict["Rotate"] != integer(90) {
+		t.Errorf("Error setting rotate")
+	}
+
+	base.setDuration(5)
+	buf.Reset()
+	base.dict["Dur"].write(&buf)
+	expect(t, "5 ", buf.String())
+
+	base.setHidden(true)
+	buf.Reset()
+	base.dict["Hid"].write(&buf)
+	expect(t, "true ", buf.String())
+
+	// TODO: setTransition & setAdditionalActions
+}
+
 func TestRectangle(t *testing.T) {
 	var buf bytes.Buffer
 	r := &rectangle{1, 2, 3, 4}
