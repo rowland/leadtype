@@ -187,6 +187,37 @@ func TestPageBase(t *testing.T) {
 	// TODO: setTransition & setAdditionalActions
 }
 
+func TestPages(t *testing.T) {
+	ps := newPages(1, 0)
+	p := newPage(2, 0, ps)
+	if ps.dict["Type"] != name("Pages") {
+		t.Errorf("pages not initialized properly")
+	}
+	ps.add(p)
+	var buf bytes.Buffer
+	ps.write(&buf)
+	expect(t, "1 0 obj\n<<\n/Count 1 \n/Kids [2 0 R ] \n/Type /Pages \n>>\nendobj\n", buf.String())
+}
+
+/*
+class PdfPagesTestCases < Test::Unit::TestCase
+  def setup
+    @pages = PdfPages.new(1, 0)
+    @page = PdfPage.new(2, 0, @pages)
+  end
+
+  def test_initialize
+    assert_equal(PdfName.new('Pages'), @pages.dictionary['Type'])
+    assert_equal([], @pages.kids)
+  end
+
+  def test_to_s
+    @pages.kids << @page
+    assert_equal("1 0 obj\n<<\n/Count 1 \n/Kids [2 0 R ] \n/Type /Pages \n>>\nendobj\n", @pages.to_s)
+  end
+end
+*/
+
 func TestRectangle(t *testing.T) {
 	var buf bytes.Buffer
 	r := &rectangle{1, 2, 3, 4}

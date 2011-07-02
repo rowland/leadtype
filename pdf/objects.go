@@ -197,9 +197,11 @@ type pageBase struct {
 	dictionaryObject
 }
 
-func (pb *pageBase) init(seq, gen int, parent *indirectObject) *pageBase {
+func (pb *pageBase) init(seq, gen int, parent seqGen) *pageBase {
 	pb.dictionaryObject.init(seq, gen)
-	pb.dict["Parent"] = &indirectObjectRef{parent}
+	if parent != nil {
+		pb.dict["Parent"] = &indirectObjectRef{parent}
+	}
 	return pb
 }
 
@@ -229,6 +231,48 @@ func (pb *pageBase) setResources(r *resources) {
 
 func (pb *pageBase) setRotate(rotate int) {
 	pb.dict["Rotate"] = integer(rotate)
+}
+
+type page struct {
+	pageBase
+}
+
+func (p *page) init(seq, gen int, parent seqGen) *page {
+	p.pageBase.init(seq, gen, parent)
+	return p
+}
+
+func newPage(seq, gen int, parent seqGen) *page {
+	return new(page).init(seq, gen, parent)
+}
+
+type pages struct {
+	pageBase
+	kids []*page
+}
+
+func (ps *pages) init(seq, gen int) *pages {
+	ps.pageBase.init(seq, gen, nil)
+	ps.dict["Type"] = name("Pages")
+	return ps
+}
+
+func newPages(seq, gen int) *pages {
+	return new(pages).init(seq, gen)
+}
+
+func (ps *pages) add(p *page) {
+	ps.kids = append(ps.kids, p)
+}
+
+func (ps *pages) write(w io.Writer) {
+	ps.dict["Count"] = integer(len(ps.kids))
+	kidsRefs := make(array, len(ps.kids))
+	for i, kid := range ps.kids {
+		kidsRefs[i] = &indirectObjectRef{kid}
+	}
+	ps.dict["Kids"] = kidsRefs
+	ps.pageBase.write(w)
 }
 
 type rectangle struct {
