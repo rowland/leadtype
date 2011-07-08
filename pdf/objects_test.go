@@ -11,6 +11,12 @@ func expect(t *testing.T, expected, actual string) {
 	}
 }
 
+func stringFromWriter(w writer) string {
+	var buf bytes.Buffer
+	w.write(&buf)
+	return buf.String()
+}
+
 func TestArray(t *testing.T) {
 	var buf bytes.Buffer
 	ary := array{name("name"), integer(7)}
@@ -145,6 +151,39 @@ func TestNumber(t *testing.T) {
 	expect(t, "7 8 9 10.5 11.5 ", buf.String())
 }
 
+func TestPage(t *testing.T) {
+	ps := newPages(1, 0)
+	p := newPage(2, 0, ps)
+	s := newStream(3, 0, []byte("test"))
+	p.add(s)
+
+	// initialization
+	if p.dict["Type"] != name("Page") {
+		t.Error("page not initialized properly")
+	}
+
+	// writeBody
+	var buf bytes.Buffer
+	p.writeBody(&buf)
+	expect(t, "<<\n/Contents 3 0 R \n/Length 4 \n/Parent 1 0 R \n/Type /Page \n>>\n", buf.String())
+
+	// Contents
+	expect(t, stringFromWriter(&indirectObjectRef{s}), stringFromWriter(p.dict["Contents"]))
+	p.add(s)
+	p.writeBody(&buf)
+	buf.Reset()
+	p.dict["Contents"].write(&buf)
+	expect(t, "[3 0 R 3 0 R ] ", buf.String())
+
+	// setThumb
+	p.setThumb(s)
+	expect(t, stringFromWriter(&indirectObjectRef{s}), stringFromWriter(p.dict["Thumb"]))
+	// setAnnots
+	// TODO
+	// setBeads
+	// TODO
+}
+
 func TestPageBase(t *testing.T) {
 	obj := &indirectObject{1, 0, nil}
 	base := newPageBase(2, 0, obj)
@@ -191,32 +230,13 @@ func TestPages(t *testing.T) {
 	ps := newPages(1, 0)
 	p := newPage(2, 0, ps)
 	if ps.dict["Type"] != name("Pages") {
-		t.Errorf("pages not initialized properly")
+		t.Error("pages not initialized properly")
 	}
 	ps.add(p)
 	var buf bytes.Buffer
 	ps.write(&buf)
 	expect(t, "1 0 obj\n<<\n/Count 1 \n/Kids [2 0 R ] \n/Type /Pages \n>>\nendobj\n", buf.String())
 }
-
-/*
-class PdfPagesTestCases < Test::Unit::TestCase
-  def setup
-    @pages = PdfPages.new(1, 0)
-    @page = PdfPage.new(2, 0, @pages)
-  end
-
-  def test_initialize
-    assert_equal(PdfName.new('Pages'), @pages.dictionary['Type'])
-    assert_equal([], @pages.kids)
-  end
-
-  def test_to_s
-    @pages.kids << @page
-    assert_equal("1 0 obj\n<<\n/Count 1 \n/Kids [2 0 R ] \n/Type /Pages \n>>\nendobj\n", @pages.to_s)
-  end
-end
-*/
 
 func TestRectangle(t *testing.T) {
 	var buf bytes.Buffer
@@ -264,6 +284,24 @@ func TestStr(t *testing.T) {
 	expect(t, "a\\\\b\\(cd\\)", s.escape())
 	s.write(&buf)
 	expect(t, "(a\\\\b\\(cd\\)) ", buf.String())
+}
+
+func TestStream(t *testing.T) {
+	s := newStream(1, 0, []byte("test"))
+	s.setFilter("bogus")
+
+	if s.dict["Filter"] != name("bogus") {
+		t.Error("setFilter: failed")
+	}
+	if s.dict["Length"] != integer(4) {
+		t.Errorf("Length: expected %v, got %v", integer(4), s.dict["Length"])
+	}
+	var buf bytes.Buffer
+	s.writeBody(&buf)
+	expect(t, "<<\n/Filter /bogus \n/Length 4 \n>>\nstream\ntestendstream\n", buf.String())
+	buf.Reset()
+	s.write(&buf)
+	expect(t, "1 0 obj\n<<\n/Filter /bogus \n/Length 4 \n>>\nstream\ntestendstream\nendobj\n", buf.String())
 }
 
 func TestTrailer(t *testing.T) {

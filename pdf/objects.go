@@ -193,6 +193,63 @@ func (n number) write(w io.Writer) {
 	fmt.Fprintf(w, "%v ", n.value)
 }
 
+type page struct {
+	pageBase
+	contents []*stream
+}
+
+func (p *page) init(seq, gen int, parent seqGen) *page {
+	p.pageBase.init(seq, gen, parent)
+	p.dict["Type"] = name("Page")
+	return p
+}
+
+func newPage(seq, gen int, parent seqGen) *page {
+	return new(page).init(seq, gen, parent)
+}
+
+func (p *page) add(s *stream) {
+	p.contents = append(p.contents, s)
+}
+
+func (p *page) contentLength() (result int) {
+	for _, s := range p.contents {
+		result += s.len()
+	}
+	return
+}
+
+func (p *page) contentRefs() (result array) {
+	result = make(array, len(p.contents))
+	for i, s := range p.contents {
+		result[i] = &indirectObjectRef{s}
+	}
+	return
+}
+
+// TODO: setAnnots
+// TODO: setBeads
+
+func (p *page) setThumb(thumb seqGen) {
+	p.dict["Thumb"] = &indirectObjectRef{thumb}
+}
+
+func (p *page) write(w io.Writer) {
+	p.writeHeader(w)
+	p.writeBody(w)
+	p.writeFooter(w)
+}
+
+func (p *page) writeBody(w io.Writer) {
+	if len(p.contents) > 1 {
+		p.dict["Contents"] = p.contentRefs()
+	} else if len(p.contents) == 1 {
+		p.dict["Contents"] = &indirectObjectRef{p.contents[0]}
+	}
+	p.dict["Length"] = integer(p.contentLength())
+	p.dict.write(w)
+}
+
 type pageBase struct {
 	dictionaryObject
 }
@@ -231,19 +288,6 @@ func (pb *pageBase) setResources(r *resources) {
 
 func (pb *pageBase) setRotate(rotate int) {
 	pb.dict["Rotate"] = integer(rotate)
-}
-
-type page struct {
-	pageBase
-}
-
-func (p *page) init(seq, gen int, parent seqGen) *page {
-	p.pageBase.init(seq, gen, parent)
-	return p
-}
-
-func newPage(seq, gen int, parent seqGen) *page {
-	return new(page).init(seq, gen, parent)
 }
 
 type pages struct {
@@ -339,6 +383,47 @@ func (s str) escape() string {
 
 func (s str) write(w io.Writer) {
 	fmt.Fprintf(w, "(%s) ", s.escape())
+}
+
+type stream struct {
+	dictionaryObject
+	data []byte
+}
+
+func (s *stream) init(seq, gen int, data []byte) *stream {
+	s.dictionaryObject.init(seq, gen)
+	s.data = make([]byte, len(data))
+	copy(s.data, data)
+	s.dict["Length"] = integer(len(data))
+	return s
+}
+
+func newStream(seq, gen int, data []byte) *stream {
+	return new(stream).init(seq, gen, data)
+}
+
+func (s *stream) len() int {
+	return len(s.data)
+}
+
+func (s *stream) setFilter(filter string) {
+	s.dict["Filter"] = name(filter)
+}
+
+func (s *stream) write(w io.Writer) {
+	s.writeHeader(w)
+	s.writeBody(w)
+	s.writeFooter(w)
+}
+
+func (s *stream) writeBody(w io.Writer) {
+	s.dict["Length"] = integer(len(s.data))
+	s.dict.write(w)
+	fmt.Fprintf(w, "stream\n")
+	if s.data != nil {
+		w.Write(s.data)
+	}
+	fmt.Fprintf(w, "endstream\n")
 }
 
 type trailer struct {

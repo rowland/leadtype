@@ -23,5 +23,6 @@
         [x] PdfArray
     [ ] PdfOutlines
     [ ] PdfCatalog
-    [ ] PdfPage
+    [x] PdfPage
+    [x] PdfStream
 [ ] Hello, World
