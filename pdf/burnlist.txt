@@ -22,7 +22,7 @@
         [x] PdfInteger
         [x] PdfArray
     [x] PdfOutlines
-    [ ] PdfCatalog
+    [x] PdfCatalog
     [x] PdfPage
     [x] PdfStream
 [ ] Hello, World

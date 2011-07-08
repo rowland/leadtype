@@ -39,6 +39,29 @@ func (b boolean) write(w io.Writer) {
 	fmt.Fprintf(w, "%t ", b)
 }
 
+type catalog struct {
+	dictionaryObject
+	pageMode string
+	pages    *pages
+	outlines *outlines
+}
+
+func (c *catalog) init(seq, gen int, pageMode string, pages *pages, outlines *outlines) *catalog {
+	c.dictionaryObject.init(seq, gen)
+	c.dict["Type"] = name("Catalog")
+	c.pageMode = pageMode
+	c.dict["PageMode"] = name(pageMode)
+	c.pages = pages
+	c.dict["Pages"] = &indirectObjectRef{pages}
+	c.outlines = outlines
+	c.dict["Outlines"] = &indirectObjectRef{outlines}
+	return c
+}
+
+func newCatalog(seq, gen int, pageMode string, pages *pages, outlines *outlines) *catalog {
+	return new(catalog).init(seq, gen, pageMode, pages, outlines)
+}
+
 type dictionary map[string]writer
 
 func (d dictionary) keys() []string {
