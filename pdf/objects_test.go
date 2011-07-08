@@ -151,6 +151,17 @@ func TestNumber(t *testing.T) {
 	expect(t, "7 8 9 10.5 11.5 ", buf.String())
 }
 
+func TestOutlines(t *testing.T) {
+	o := newOutlines(1, 0)
+	
+	if o.dict["Type"] != name("Outlines") {
+		t.Error("outlines not initialized properly")
+	}
+	var buf bytes.Buffer
+	o.write(&buf)
+	expect(t, "1 0 obj\n<<\n/Count 0 \n/Type /Outlines \n>>\nendobj\n", buf.String())
+}
+
 func TestPage(t *testing.T) {
 	ps := newPages(1, 0)
 	p := newPage(2, 0, ps)

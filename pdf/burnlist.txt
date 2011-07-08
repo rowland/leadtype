@@ -21,7 +21,7 @@
         [x] PdfName
         [x] PdfInteger
         [x] PdfArray
-    [ ] PdfOutlines
+    [x] PdfOutlines
     [ ] PdfCatalog
     [x] PdfPage
     [x] PdfStream

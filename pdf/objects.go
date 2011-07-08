@@ -193,6 +193,25 @@ func (n number) write(w io.Writer) {
 	fmt.Fprintf(w, "%v ", n.value)
 }
 
+type outlines struct {
+	dictionaryObject
+}
+
+func (o *outlines) init(seq, gen int) *outlines {
+	o.dictionaryObject.init(seq, gen)
+	o.dict["Type"] = name("Outlines")
+	return o
+}
+
+func newOutlines(seq, gen int) *outlines {
+	return new(outlines).init(seq, gen)
+}
+
+func (o *outlines) write(w io.Writer) {
+	o.dict["Count"] = integer(0)
+	o.dictionaryObject.write(w)
+}
+
 type page struct {
 	pageBase
 	contents []*stream
