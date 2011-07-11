@@ -1,5 +1,5 @@
 [ ] Empty document
-    [ ] PdfFile
+    [x] PdfFile
         [x] Header
         [x] Body
             [x] InUseXRefEntry

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sort"
+	"bytes"
 )
 
 type array []writer
@@ -104,6 +105,30 @@ func (d *dictionaryObject) write(w io.Writer) {
 	d.writeHeader(w)
 	d.dict.write(w)
 	d.writeFooter(w)
+}
+
+type file struct {
+	header  header
+	body    body
+	trailer trailer
+}
+
+func newFile() *file {
+	return &file{header{}, body{}, trailer{dictionary{}, 0}}
+}
+
+func (f *file) write(w io.Writer) {
+	var buf bytes.Buffer
+	var table xRefTable
+	ss := newXRefSubSection()
+	table.add(ss)
+	f.header.write(&buf)
+	f.body.write(&buf, ss)
+	f.trailer.xrefTableStart = buf.Len()
+	f.trailer.setXrefTableSize(ss.len())
+	table.write(&buf)
+	f.trailer.write(&buf)
+	buf.WriteTo(w)
 }
 
 type freeXRefEntry indirectObject
@@ -510,6 +535,10 @@ func newXRefSubSection() *xRefSubSection {
 
 func (ss *xRefSubSection) add(w writer) {
 	ss.list = append(ss.list, w)
+}
+
+func (ss *xRefSubSection) len() int {
+	return len(ss.list)
 }
 
 func (ss *xRefSubSection) write(w io.Writer) {

@@ -71,6 +71,17 @@ func TestDictionaryObject(t *testing.T) {
 	expect(t, "1 0 obj\n<<\n/baz 7 \n/foo (bar) \n>>\nendobj\n", buf.String())
 }
 
+func TestFile(t *testing.T) {
+	f := newFile()
+	expect(t, "%PDF-1.3\n", stringFromWriter(&f.header))
+	var buf bytes.Buffer
+	var ss xRefSubSection
+	f.body.write(&buf, &ss)
+	expect(t, "", buf.String())
+	expect(t, "trailer\n<<\n>>\nstartxref\n0\n%%EOF\n", stringFromWriter(&f.trailer))
+	expect(t, "%PDF-1.3\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<\n/Size 1 \n>>\nstartxref\n9\n%%EOF\n", stringFromWriter(f))
+}
+
 func TestFreeXRefEntry(t *testing.T) {
 	var buf bytes.Buffer
 	e := &freeXRefEntry{1, 0, nil}
