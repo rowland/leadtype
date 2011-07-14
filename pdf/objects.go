@@ -22,8 +22,8 @@ type body struct {
 	list genWriterArray
 }
 
-func (b *body) add(w genWriter) {
-	b.list = append(b.list, w)
+func (b *body) add(w ...genWriter) {
+	b.list = append(b.list, w...)
 }
 
 func (b *body) write(w lenWriter, ss *xRefSubSection) {
@@ -118,7 +118,7 @@ func newFile() *file {
 }
 
 func (f *file) write(w io.Writer) {
-	var buf bytes.Buffer
+	var buf bytes.Buffer // TODO: replace with io.Writer wrapper that implements lenWriter interface
 	var table xRefTable
 	ss := newXRefSubSection()
 	table.add(ss)
@@ -500,6 +500,10 @@ type trailer struct {
 
 func newTrailer() *trailer {
 	return &trailer{dictionary{}, 0}
+}
+
+func (tr *trailer) setRoot(root seqGen) {
+	tr.dict["Root"] = &indirectObjectRef{root}
 }
 
 func (tr *trailer) setXrefTableSize(size int) {
