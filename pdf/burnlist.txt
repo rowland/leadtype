@@ -25,4 +25,5 @@
     [x] PdfCatalog
     [x] PdfPage
     [x] PdfStream
+    [x] PageStyle
 [ ] Hello, World
