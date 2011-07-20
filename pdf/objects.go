@@ -333,8 +333,8 @@ func newPageBase(seq, gen int, parent *indirectObject) *pageBase {
 	return new(pageBase).init(seq, gen, parent)
 }
 
-func (pb *pageBase) setCropBox(r *rectangle) {
-	pb.dict["CropBox"] = r
+func (pb *pageBase) setCropBox(r rectangle) {
+	pb.dict["CropBox"] = &r
 }
 
 func (pb *pageBase) setDuration(duration interface{}) {
@@ -345,8 +345,8 @@ func (pb *pageBase) setHidden(hidden bool) {
 	pb.dict["Hid"] = boolean(hidden)
 }
 
-func (pb *pageBase) setMediaBox(r *rectangle) {
-	pb.dict["MediaBox"] = r
+func (pb *pageBase) setMediaBox(r rectangle) {
+	pb.dict["MediaBox"] = &r
 }
 
 func (pb *pageBase) setResources(r *resources) {

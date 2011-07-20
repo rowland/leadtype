@@ -20,3 +20,29 @@ func expectI(t *testing.T, expected, actual int) {
 	}
 }
 
+func expectS(t *testing.T, expected, actual string) {
+	if expected != actual {
+		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}
+
+func expectV(t *testing.T, expected, actual interface{}) {
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
+
+func TestMerge(t *testing.T) {
+	a := Options{"a": "a", "b": 1}
+	b := Options{"c": 3.5, "d": "d2"}
+	c := a.Merge(b)
+	// a and b should be unchanged
+	expectI(t, 2, len(a))
+	expectI(t, 2, len(b))
+	// result should include all keys and values
+	expectI(t, 4, len(c))
+	expectV(t, "a", c["a"])
+	expectV(t, 1, c["b"])
+	expectV(t, 3.5, c["c"])
+	expectV(t, "d2", c["d"])
+}

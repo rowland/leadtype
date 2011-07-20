@@ -1,4 +1,4 @@
-[ ] Empty document
+[x] Empty document
     [x] PdfFile
         [x] Header
         [x] Body

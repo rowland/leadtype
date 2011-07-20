@@ -9,6 +9,17 @@ func (this Options) StringDefault(key, def string) string {
 	return def
 }
 
+func (this Options) Merge(other Options) Options {
+	result := make(Options, len(this) + len(other))
+	for k, v := range this {
+		result[k] = v
+	}
+	for k, v := range other {
+		result[k] = v
+	}
+	return result
+}
+
 type Size struct {
 	Width, Height float32
 }

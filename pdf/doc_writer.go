@@ -14,6 +14,7 @@ type DocWriter struct {
 	pagesAcross int
 	pagesDown   int
 	curPage     *PageWriter
+	options     Options
 }
 
 func NewDocWriter(wr io.Writer) *DocWriter {
@@ -40,11 +41,12 @@ func nextSeqFunc() func() int {
 
 func (dw *DocWriter) Close() {
 	if len(dw.pages) == 0 {
-		dw.OpenPage()
+		dw.OpenPage(Options{})
 	}
 	if dw.inPage() {
 		dw.ClosePage()
 	}
+	dw.file.write(dw.wr)
 }
 
 func (dw *DocWriter) ClosePage() {
@@ -58,15 +60,15 @@ func (dw *DocWriter) inPage() bool {
 	return dw.curPage != nil
 }
 
-func (dw *DocWriter) Open() {
-	// TODO: assign options
+func (dw *DocWriter) Open(options Options) {
+	dw.options = options
 }
 
-func (dw *DocWriter) OpenPage() *PageWriter {
+func (dw *DocWriter) OpenPage(options Options) *PageWriter {
 	if dw.inPage() {
 		dw.ClosePage()
 	}
-	dw.curPage = newPageWriter()
+	dw.curPage = newPageWriter(dw, dw.options.Merge(options))
 	dw.pages = append(dw.pages, dw.curPage)
 	return dw.curPage
 }

@@ -222,7 +222,7 @@ func TestPageBase(t *testing.T) {
 	base.dict["Parent"].write(&buf)
 	expect(t, "1 0 R ", buf.String())
 
-	r := &rectangle{1, 2, 3, 4}
+	r := rectangle{1, 2, 3, 4}
 	base.setMediaBox(r)
 	buf.Reset()
 	base.dict["MediaBox"].write(&buf)
