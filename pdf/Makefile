@@ -8,5 +8,6 @@ GOFILES=\
   page_writer.go\
   page_style.go\
   support.go\
+  units.go\
 
 include $(GOROOT)/src/Make.pkg
