@@ -1,12 +1,12 @@
 package pdf
 
 type units struct {
-	name   string
-	factor float32
+	name  string
+	ratio float32
 }
 
 func (units *units) toPts(measurement float32) float32 {
-	return units.factor * measurement
+	return units.ratio * measurement
 }
 
 type UnitConversionMap map[string]*units
