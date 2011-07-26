@@ -10,6 +10,7 @@ type PageWriter struct {
 	pageHeight float64
 	stream     bytes.Buffer
 	units      *units
+	loc        location
 }
 
 func newPageWriter(dw *DocWriter, options Options) *PageWriter {
@@ -38,6 +39,11 @@ func (pw *PageWriter) Close() {
 	pw.page.add(pdf_stream)
 	pw.dw.catalog.pages.add(pw.page) // unless reusing page
 	pw.stream.Reset()
+}
+
+func (pw *PageWriter) MoveTo(x, y float64) {
+	xpts, ypts := pw.units.toPts(x), pw.units.toPts(y)
+	pw.loc = pw.translate(xpts, ypts)
 }
 
 func (pw *PageWriter) PageHeight() float64 {

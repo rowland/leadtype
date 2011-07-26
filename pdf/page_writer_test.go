@@ -69,3 +69,14 @@ func TestPageWriter_translate(t *testing.T) {
 	expectF(t, 100, loc.x)
 	expectF(t, 792 - 200, loc.y)
 }
+
+func TestPageWriter_MoveTo(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+	expectF(t, 0, pw.loc.x)
+	expectF(t, 0, pw.loc.y)
+	pw.MoveTo(222, 333)
+	expectF(t, 222, pw.loc.x)
+	expectF(t, 792 - 333, pw.loc.y)
+}

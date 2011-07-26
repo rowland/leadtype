@@ -27,7 +27,7 @@
     [x] PdfStream
     [x] PageStyle
 [ ] Hello, World
-    [ ] MoveTo
+    [x] MoveTo
         [x] Translate
             [x] PageHeight
     [ ] LineTo
