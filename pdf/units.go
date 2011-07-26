@@ -2,16 +2,20 @@ package pdf
 
 type units struct {
 	name  string
-	ratio float32
+	ratio float64
 }
 
-func (units *units) toPts(measurement float32) float32 {
+func (units *units) fromPts(measurement float64) float64 {
+	return measurement / units.ratio
+}
+
+func (units *units) toPts(measurement float64) float64 {
 	return units.ratio * measurement
 }
 
 type UnitConversionMap map[string]*units
 
-func (ucm UnitConversionMap) Add(name string, factor float32) {
+func (ucm UnitConversionMap) Add(name string, factor float64) {
 	ucm[name] = &units{name, factor}
 }
 

@@ -21,7 +21,7 @@ func (this Options) Merge(other Options) Options {
 }
 
 type Size struct {
-	Width, Height float32
+	Width, Height float64
 }
 
 type SizeMap map[string]Size

@@ -387,7 +387,7 @@ func (ps *pages) write(w io.Writer) {
 }
 
 type rectangle struct {
-	x1, y1, x2, y2 float32
+	x1, y1, x2, y2 float64
 }
 
 func (r *rectangle) write(w io.Writer) {

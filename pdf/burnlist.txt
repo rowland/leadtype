@@ -29,7 +29,7 @@
 [ ] Hello, World
     [ ] MoveTo
         [ ] Translate
-            [ ] PageHeight
+            [x] PageHeight
     [ ] LineTo
         [ ] StartGraph
             [ ] GraphWriter
