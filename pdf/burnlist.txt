@@ -28,7 +28,7 @@
     [x] PageStyle
 [ ] Hello, World
     [ ] MoveTo
-        [ ] Translate
+        [x] Translate
             [x] PageHeight
     [ ] LineTo
         [ ] StartGraph

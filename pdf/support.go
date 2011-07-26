@@ -20,6 +20,10 @@ func (this Options) Merge(other Options) Options {
 	return result
 }
 
+type location struct {
+	x, y float64
+}
+
 type Size struct {
 	Width, Height float64
 }

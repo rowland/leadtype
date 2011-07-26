@@ -60,3 +60,12 @@ func TestPageWriter_SetUnits(t *testing.T) {
 	pw.SetUnits("dp")
 	expectS(t, "dp", pw.Units())
 }
+
+func TestPageWriter_translate(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+	loc := pw.translate(100, 200)
+	expectF(t, 100, loc.x)
+	expectF(t, 792 - 200, loc.y)
+}

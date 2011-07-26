@@ -48,6 +48,10 @@ func (pw *PageWriter) SetUnits(units string) {
 	pw.units = UnitConversions[units]
 }
 
+func (pw *PageWriter) translate(x, y float64) location {
+	return location{x, pw.pageHeight - y}
+}
+
 func (pw *PageWriter) Units() string {
 	return pw.units.name
 }
