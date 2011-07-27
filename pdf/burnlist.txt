@@ -31,7 +31,7 @@
         [x] Translate
             [x] PageHeight
     [ ] LineTo
-        [ ] StartGraph
+        [x] StartGraph
             [x] GraphWriter
         [ ] CheckSetLineColor
         [ ] CheckSetLineWidth

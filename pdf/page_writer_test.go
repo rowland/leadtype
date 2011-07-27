@@ -50,6 +50,22 @@ func TestPageWriter_SetUnits(t *testing.T) {
 	expectS(t, "dp", pw.Units())
 }
 
+func TestPageWriter_startGraph(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.gw == nil, "GraphWriter should be nil by default.")
+	check(t, !pw.inGraph, "Should not be in graph mode by default.")
+	pw.lastLoc = location{7, 7} // prove lastLoc gets reset
+
+	pw.startGraph()
+
+	check(t, pw.inGraph, "Should be in graph mode now.")
+	check(t, pw.lastLoc.equal(location{0, 0}), "startGraph should reset location")
+	check(t, pw.gw != nil, "GraphWriter should no longer be nil.")
+}
+
 func TestPageWriter_translate(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)

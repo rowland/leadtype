@@ -6,11 +6,15 @@ import (
 
 type PageWriter struct {
 	dw         *DocWriter
+	gw         *graphWriter
+	inGraph    bool
+	inText     bool
+	lastLoc    location
+	loc        location
 	page       *page
 	pageHeight float64
 	stream     bytes.Buffer
 	units      *units
-	loc        location
 }
 
 func newPageWriter(dw *DocWriter, options Options) *PageWriter {
@@ -41,6 +45,10 @@ func (pw *PageWriter) Close() {
 	pw.stream.Reset()
 }
 
+func (pw *PageWriter) endText() {
+	
+}
+
 func (pw *PageWriter) MoveTo(x, y float64) {
 	xpts, ypts := pw.units.toPts(x), pw.units.toPts(y)
 	pw.loc = pw.translate(xpts, ypts)
@@ -52,6 +60,18 @@ func (pw *PageWriter) PageHeight() float64 {
 
 func (pw *PageWriter) SetUnits(units string) {
 	pw.units = UnitConversions[units]
+}
+
+func (pw *PageWriter) startGraph() {
+	if pw.inGraph {
+		panic("Already in graph mode")
+	}
+	if pw.inText {
+		pw.endText()
+	}
+	pw.lastLoc = location{0, 0}
+	pw.gw = newGraphWriter(&pw.stream)
+	pw.inGraph = true
 }
 
 func (pw *PageWriter) translate(x, y float64) location {

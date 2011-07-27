@@ -40,6 +40,10 @@ type location struct {
 	x, y float64
 }
 
+func (this location) equal(other location) bool {
+	return this.x == other.x && this.y == other.y
+}
+
 type Size struct {
 	Width, Height float64
 }
