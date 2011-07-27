@@ -9,5 +9,6 @@ GOFILES=\
   page_style.go\
   support.go\
   units.go\
+  graph_writer.go\
 
 include $(GOROOT)/src/Make.pkg

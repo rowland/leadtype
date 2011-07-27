@@ -32,7 +32,7 @@
             [x] PageHeight
     [ ] LineTo
         [ ] StartGraph
-            [ ] GraphWriter
+            [x] GraphWriter
         [ ] CheckSetLineColor
         [ ] CheckSetLineWidth
         [ ] CheckSetLineDashPattern
