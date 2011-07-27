@@ -10,5 +10,6 @@ GOFILES=\
   support.go\
   units.go\
   graph_writer.go\
+  misc_writer.go\
 
 include $(GOROOT)/src/Make.pkg

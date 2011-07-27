@@ -57,6 +57,14 @@ type Size struct {
 
 type SizeMap map[string]Size
 
+func stringSliceFromFloat64Slice(values []float64) (result []string) {
+	result = make([]string, len(values))
+	for i, v := range values {
+		result[i] = g(v)
+	}
+	return
+}
+
 func stringSliceFromIntSlice(values []int) (result []string) {
 	result = make([]string, len(values))
 	for i, v := range values {

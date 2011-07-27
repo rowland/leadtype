@@ -35,7 +35,7 @@
             [x] GraphWriter
         [ ] CheckSetLineColor
             [x] rgb_from_color (int32)
-            [ ] MiscWriter
+            [x] MiscWriter
         [ ] CheckSetLineWidth
         [ ] CheckSetLineDashPattern
     [x] UnitConversions
