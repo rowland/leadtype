@@ -44,13 +44,6 @@ func (this location) equal(other location) bool {
 	return this.x == other.x && this.y == other.y
 }
 
-func rgbFromColor(color int32) (r, g, b int8) {
-	b = int8(color & 0xFF)
-	g = int8((color >> 8) & 0xFF)
-	r = int8((color >> 16) & 0xFF)
-	return
-}
-
 type Size struct {
 	Width, Height float64
 }

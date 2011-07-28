@@ -55,10 +55,3 @@ func TestMerge(t *testing.T) {
 	expectV(t, 3.5, c["c"])
 	expectV(t, "d2", c["d"])
 }
-
-func TestRGBfromColor(t *testing.T) {
-	r, g, b := rgbFromColor(0x030507)
-	expectI(t, 3, int(r))
-	expectI(t, 5, int(g))
-	expectI(t, 7, int(b))
-}
