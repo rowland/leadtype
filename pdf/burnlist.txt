@@ -33,7 +33,7 @@
     [ ] LineTo
         [x] StartGraph
             [x] GraphWriter
-        [ ] CheckSetLineColor
+        [x] checkSetLineColor, SetLineColor, LineColor, startMisc
             [x] rgb_from_color (int32)
             [x] MiscWriter
         [ ] CheckSetLineWidth

@@ -5,6 +5,42 @@ import (
 	"bytes"
 )
 
+const (
+	black = 0
+	red = 0xFF0000
+	green = 0x00FF00
+)
+
+func TestPageWriter_SetLineColor(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.LineColor() == black, "Should default to black") // defaults to black
+
+	last := pw.SetLineColor(red) // previous color was black
+	check(t, pw.LineColor() == red, "Should have changed to red")
+	check(t, last == black, "Previous color was black")
+
+	last = pw.SetLineColor(green)
+	check(t, last == red, "Previous color was red")
+	check(t, pw.LineColor() == green, "New color is green")
+}
+
+func TestPageWriter_checkSetLineColor(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+	check(t, pw.lineColor == black, "lineColor should default to black")
+	check(t, pw.lastLineColor == black, "lastLineColor should default to black")
+	pw.SetLineColor(red)
+	check(t, pw.lineColor == red, "lineColor should now be red")
+	check(t, pw.lastLineColor == black, "lastLineColor should still be black")
+	pw.checkSetLineColor()
+	check(t, pw.lastLineColor == red, "lastLineColor should now be red")
+	// TODO: test for autoPath behavior
+}
+
 func TestPageWriter_MoveTo(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)

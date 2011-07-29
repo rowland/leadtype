@@ -5,37 +5,61 @@ import (
 )
 
 type PageWriter struct {
-	dw         *DocWriter
-	gw         *graphWriter
-	inGraph    bool
-	inText     bool
-	lastLoc    location
-	loc        location
-	page       *page
-	pageHeight float64
-	stream     bytes.Buffer
-	units      *units
+	autoPath      bool
+	dw            *DocWriter
+	gw            *graphWriter
+	inGraph       bool
+	inMisc        bool
+	inPath        bool
+	inText        bool
+	lastLineColor Color
+	lastLoc       location
+	lineColor     Color
+	loc           location
+	mw            *miscWriter
+	page          *page
+	pageHeight    float64
+	stream        bytes.Buffer
+	units         *units
 }
 
 func newPageWriter(dw *DocWriter, options Options) *PageWriter {
+	return new(PageWriter).init(dw, options)
+}
+
+func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
+	pw.dw = dw
+	pw.units = UnitConversions[options.StringDefault("units", "pt")]
 	ps := newPageStyle(options)
-	units := UnitConversions[options.StringDefault("units", "pt")]
-	pageHeight := ps.pageSize.y2
-	page := newPage(dw.nextSeq(), 0, dw.catalog.pages)
-	page.setMediaBox(ps.pageSize)
-	page.setCropBox(ps.cropSize)
-	page.setRotate(ps.rotate)
-	page.setResources(dw.resources)
-	dw.file.body.add(page)
-	return &PageWriter{dw: dw, page: page, units: units, pageHeight: pageHeight}
+	pw.pageHeight = ps.pageSize.y2
+	pw.page = newPage(pw.dw.nextSeq(), 0, pw.dw.catalog.pages)
+	pw.page.setMediaBox(ps.pageSize)
+	pw.page.setCropBox(ps.cropSize)
+	pw.page.setRotate(ps.rotate)
+	pw.page.setResources(pw.dw.resources)
+	pw.dw.file.body.add(pw.page)
+	pw.startMisc()
+	return pw
+}
+
+func (pw *PageWriter) checkSetLineColor() {
+	if pw.lineColor == pw.lastLineColor {
+		return
+	}
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	pw.mw.setRgbColorStroke(pw.lineColor.RGB64())
+	pw.lastLineColor = pw.lineColor
 }
 
 func (pw *PageWriter) Close() {
 	// end margins
 	// end sub page
-	// end text
+	pw.endText()
 	// end graph
-	// end misc
+	pw.endMisc()
 	// compress stream
 	pdf_stream := newStream(pw.dw.nextSeq(), 0, pw.stream.Bytes())
 	pw.dw.file.body.add(pdf_stream)
@@ -45,8 +69,20 @@ func (pw *PageWriter) Close() {
 	pw.stream.Reset()
 }
 
+func (pw *PageWriter) endMisc() {
+	if !pw.inMisc {
+		panic("Not in misc mode")
+	}
+	pw.mw = nil
+	pw.inMisc = false
+}
+
 func (pw *PageWriter) endText() {
-	
+
+}
+
+func (pw *PageWriter) LineColor() Color {
+	return pw.lineColor
 }
 
 func (pw *PageWriter) MoveTo(x, y float64) {
@@ -56,6 +92,12 @@ func (pw *PageWriter) MoveTo(x, y float64) {
 
 func (pw *PageWriter) PageHeight() float64 {
 	return pw.units.fromPts(pw.pageHeight)
+}
+
+func (pw *PageWriter) SetLineColor(color Color) (prev Color) {
+	prev = pw.lineColor
+	pw.lineColor = color
+	return
 }
 
 func (pw *PageWriter) SetUnits(units string) {
@@ -72,6 +114,14 @@ func (pw *PageWriter) startGraph() {
 	pw.lastLoc = location{0, 0}
 	pw.gw = newGraphWriter(&pw.stream)
 	pw.inGraph = true
+}
+
+func (pw *PageWriter) startMisc() {
+	if pw.inMisc {
+		panic("Already in misc mode")
+	}
+	pw.mw = newMiscWriter(&pw.stream)
+	pw.inMisc = true
 }
 
 func (pw *PageWriter) translate(x, y float64) location {
