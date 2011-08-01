@@ -1,5 +1,7 @@
 package pdf
 
+import "fmt"
+
 type units struct {
 	name  string
 	ratio float64
@@ -23,4 +25,20 @@ var UnitConversions = UnitConversionMap{
 	"pt": &units{"pt", 1},
 	"in": &units{"in", 72},
 	"cm": &units{"cm", 28.35},
+}
+
+func unitsFromPts(units string, measurement float64) float64 {
+	u := UnitConversions[units]
+	if u == nil {
+		panic(fmt.Sprintf("Invalid units %s", units))
+	}
+	return u.fromPts(measurement)
+}
+
+func unitsToPts(units string, measurement float64) float64 {
+	u := UnitConversions[units]
+	if u == nil {
+		panic(fmt.Sprintf("Invalid units %s", units))
+	}
+	return u.toPts(measurement)	
 }
