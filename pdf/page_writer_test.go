@@ -25,6 +25,22 @@ func TestPageWriter_checkSetLineColor(t *testing.T) {
 	// TODO: test for autoPath behavior
 }
 
+func TestPageWriter_checkSetLineWidth(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+	check(t, pw.lineWidth == 0, "lineWidth should default to 0")
+	check(t, pw.lastLineWidth == 0, "lastLineWidth should default to 0")
+	pw.SetLineWidth(72, "pt")
+	check(t, pw.lineWidth == 72, "lineWidth should now be red")
+	check(t, pw.lastLineWidth == 0, "lastLineWidth should still be 0")
+	pw.checkSetLineWidth()
+	check(t, pw.lastLineWidth == 72, "lastLineWidth should now be 72")
+	pw.SetLineWidth(2, "in")
+	check(t, pw.lineWidth == 144, "lineWidth should be stored in points")
+	// TODO: test for autoPath behavior
+}
+
 func TestPageWriter_LineColor(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
@@ -39,6 +55,19 @@ func TestPageWriter_LineColor(t *testing.T) {
 	last = pw.SetLineColor(green)
 	check(t, last == red, "Previous color was red")
 	check(t, pw.LineColor() == green, "New color is green")
+}
+
+func TestPageWriter_LineWidth(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.LineWidth("pt") == 0, "Should default to zero")
+	prev := pw.SetLineWidth(72, "pt")
+	check(t, prev == 0, "Should return previous value")
+	check(t, pw.LineWidth("pt") == 72, "Should now be 72")
+	check(t, pw.LineWidth("in") == 1, "72 points is 1 inch")
+	check(t, pw.SetLineWidth(200, "in") == 1, "Previous value was 1 inch")
 }
 
 func TestPageWriter_MoveTo(t *testing.T) {

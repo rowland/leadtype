@@ -13,8 +13,10 @@ type PageWriter struct {
 	inPath        bool
 	inText        bool
 	lastLineColor Color
+	lastLineWidth float64
 	lastLoc       location
 	lineColor     Color
+	lineWidth     float64
 	loc           location
 	mw            *miscWriter
 	page          *page
@@ -54,6 +56,19 @@ func (pw *PageWriter) checkSetLineColor() {
 	pw.lastLineColor = pw.lineColor
 }
 
+func (pw *PageWriter) checkSetLineWidth() {
+	if pw.lineWidth == pw.lastLineWidth {
+		return
+	}
+	pw.startGraph()
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	pw.gw.setLineWidth(pw.lineWidth)
+	pw.lastLineWidth = pw.lineWidth
+}
+
 func (pw *PageWriter) Close() {
 	// end margins
 	// end sub page
@@ -70,9 +85,6 @@ func (pw *PageWriter) Close() {
 }
 
 func (pw *PageWriter) endMisc() {
-	if !pw.inMisc {
-		panic("Not in misc mode")
-	}
 	pw.mw = nil
 	pw.inMisc = false
 }
@@ -83,6 +95,10 @@ func (pw *PageWriter) endText() {
 
 func (pw *PageWriter) LineColor() Color {
 	return pw.lineColor
+}
+
+func (pw *PageWriter) LineWidth(units string) float64 {
+	return unitsFromPts(units, pw.lineWidth)
 }
 
 func (pw *PageWriter) MoveTo(x, y float64) {
@@ -100,13 +116,19 @@ func (pw *PageWriter) SetLineColor(color Color) (prev Color) {
 	return
 }
 
+func (pw *PageWriter) SetLineWidth(width float64, units string) (prev float64) {
+	prev = unitsFromPts(units, pw.lineWidth)
+	pw.lineWidth = unitsToPts(units, width)
+	return
+}
+
 func (pw *PageWriter) SetUnits(units string) {
 	pw.units = UnitConversions[units]
 }
 
 func (pw *PageWriter) startGraph() {
 	if pw.inGraph {
-		panic("Already in graph mode")
+		return
 	}
 	if pw.inText {
 		pw.endText()
@@ -118,7 +140,7 @@ func (pw *PageWriter) startGraph() {
 
 func (pw *PageWriter) startMisc() {
 	if pw.inMisc {
-		panic("Already in misc mode")
+		return
 	}
 	pw.mw = newMiscWriter(&pw.stream)
 	pw.inMisc = true
