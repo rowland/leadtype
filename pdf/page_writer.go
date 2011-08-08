@@ -137,6 +137,27 @@ func (pw *PageWriter) LineDashPattern() string {
 	return pw.lineDashPattern
 }
 
+func (pw *PageWriter) LineTo(x, y float64) {
+	pw.startGraph()
+	if !pw.lastLoc.equal(pw.loc) {
+		if pw.inPath && pw.autoPath {
+			pw.gw.stroke()
+		}
+		pw.inPath = false
+	}
+	pw.checkSetLineColor()
+	pw.checkSetLineWidth()
+	pw.checkSetLineDashPattern()
+
+	if !pw.inPath {
+		pw.gw.moveTo(pw.loc.x, pw.loc.y)
+	}
+	pw.MoveTo(x, y)
+	pw.gw.lineTo(pw.loc.x, pw.loc.y)
+	pw.inPath = true
+	pw.lastLoc = pw.loc
+}
+
 func (pw *PageWriter) LineWidth(units string) float64 {
 	return unitsFromPts(units, pw.lineWidth)
 }

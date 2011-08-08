@@ -124,6 +124,32 @@ func TestPageWriter_LineDashPattern(t *testing.T) {
 	check(t, last == "solid", "Previous pattern was solid")
 }
 
+func TestPageWriter_LineTo(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.stream.String() == "", "Stream should default to empty")
+	check(t, pw.inPath == false, "Should not be in path by default")
+	pw.SetLineColor(Blue)
+	pw.SetLineWidth(3, "pt")
+	pw.SetLineDashPattern("dashed")
+
+	pw.SetUnits("in")
+	pw.MoveTo(1, 1)
+	pw.LineTo(2, 2)
+
+	check(t, pw.inPath == true, "Should now be in path")
+	// 0 0 1 RG = Blue
+	// 3 w = 3 pts wide
+	// [4 2] 0 = dashed
+	// 0 J = ButtCap
+	// 72 = 1 inch
+	// 792 - 72 = 720 = 1 inch from top
+	// 792 - 144 = 648 = 2 inches from top
+	expectS(t, "0 0 1 RG\n3 w\n[4 2] 0 d\n0 J\n72 720 m\n144 648 l\n", pw.stream.String())
+}
+
 func TestPageWriter_LineWidth(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
