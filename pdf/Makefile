@@ -12,5 +12,6 @@ GOFILES=\
   graph_writer.go\
   misc_writer.go\
   color.go\
+  line_pattern.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -37,7 +37,7 @@
             [x] rgb_from_color (int32)
             [x] MiscWriter
         [x] CheckSetLineWidth, SetLineWidth, LineWidth
-        [ ] CheckSetLineDashPattern
+        [x] CheckSetLineDashPattern, SetLineDashPattern, LineDashPattern, SetLineCapStyle, LineCapStyle
     [x] UnitConversions
         [x] UnitConversionMap
             [x] Units
