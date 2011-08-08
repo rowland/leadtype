@@ -179,9 +179,3 @@ func TestGraphWriter_stroke(t *testing.T) {
 	gw.stroke()
 	expectS(t, "S\n", buf.String())
 }
-
-func TestMakeLineDashPattern(t *testing.T) {
-	expectS(t, "[1 2 3] 2", makeLineDashPattern([]int{1, 2, 3}, 2))
-}
-
-

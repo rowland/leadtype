@@ -114,7 +114,3 @@ func (gw *graphWriter) setMiterLimit(miterLimit float64) {
 func (gw *graphWriter) stroke() {
 	fmt.Fprintf(gw.wr, "S\n")
 }
-
-func makeLineDashPattern(pattern []int, phase int) string {
-	return fmt.Sprintf("[%s] %d", intSlice(pattern).join(" "), phase)
-}
