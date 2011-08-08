@@ -23,6 +23,8 @@ func TestPageWriter_checkSetLineColor(t *testing.T) {
 	check(t, pw.lastLineColor == black, "lastLineColor should still be black")
 	pw.checkSetLineColor()
 	check(t, pw.lastLineColor == red, "lastLineColor should now be red")
+
+	expectS(t, "1 0 0 RG\n", pw.stream.String())
 	// TODO: test for autoPath behavior
 }
 
@@ -69,6 +71,8 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 
 	pw.SetLineWidth(2, "in")
 	check(t, pw.lineWidth == 144, "lineWidth should be stored in points")
+
+	expectS(t, "72 w\n", pw.stream.String())
 	// TODO: test for autoPath behavior
 }
 
