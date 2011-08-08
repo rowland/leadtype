@@ -3,7 +3,6 @@ package pdf
 import (
 	"io"
 	"fmt"
-	"strings"
 )
 
 type miscWriter struct {
@@ -31,11 +30,11 @@ func (mw *miscWriter) setColorSpaceStroke(name string) {
 }
 
 func (mw *miscWriter) setColorFill(colors []float64) {
-	fmt.Fprintf(mw.wr, "%s sc\n", strings.Join(stringSliceFromFloat64Slice(colors), " "))
+	fmt.Fprintf(mw.wr, "%s sc\n", float64Slice(colors).join(" "))
 }
 
 func (mw *miscWriter) setColorStroke(colors []float64) {
-	fmt.Fprintf(mw.wr, "%s SC\n", strings.Join(stringSliceFromFloat64Slice(colors), " "))
+	fmt.Fprintf(mw.wr, "%s SC\n", float64Slice(colors).join(" "))
 }
 
 // TODO: scn, SCN: patterns and separations

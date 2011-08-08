@@ -3,7 +3,6 @@ package pdf
 import (
 	"io"
 	"fmt"
-	"strings"
 )
 
 type graphWriter struct {
@@ -117,5 +116,5 @@ func (gw *graphWriter) stroke() {
 }
 
 func makeLineDashPattern(pattern []int, phase int) string {
-	return fmt.Sprintf("[%s] %d", strings.Join(stringSliceFromIntSlice(pattern), " "), phase)
+	return fmt.Sprintf("[%s] %d", intSlice(pattern).join(" "), phase)
 }

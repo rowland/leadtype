@@ -1,6 +1,7 @@
 package pdf
 
 import (
+	"bytes"
 	"strconv"
 )
 
@@ -50,18 +51,28 @@ type Size struct {
 
 type SizeMap map[string]Size
 
-func stringSliceFromFloat64Slice(values []float64) (result []string) {
-	result = make([]string, len(values))
-	for i, v := range values {
-		result[i] = g(v)
+type intSlice []int
+
+func (s intSlice) join(separator string) string {
+	var buf bytes.Buffer
+	for i, v := range s {
+		if i > 0 {
+			buf.WriteString(separator)
+		}
+		buf.WriteString(strconv.Itoa(v))
 	}
-	return
+	return buf.String()
 }
 
-func stringSliceFromIntSlice(values []int) (result []string) {
-	result = make([]string, len(values))
-	for i, v := range values {
-		result[i] = strconv.Itoa(v)
+type float64Slice []float64
+
+func (s float64Slice) join(separator string) string {
+	var buf bytes.Buffer
+	for i, v := range s {
+		if i > 0 {
+			buf.WriteString(separator)
+		}
+		buf.WriteString(g(v))
 	}
-	return
+	return buf.String()
 }

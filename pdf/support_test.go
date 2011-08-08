@@ -55,3 +55,15 @@ func TestMerge(t *testing.T) {
 	expectV(t, 3.5, c["c"])
 	expectV(t, "d2", c["d"])
 }
+
+func TestIntSlice(t *testing.T) {
+	values := []int{1, 20, 3000000}
+	expectS(t, "1 20 3000000", intSlice(values).join(" "))
+	expectS(t, "1, 20, 3000000", intSlice(values).join(", "))
+}
+
+func TestFloat64Slice(t *testing.T) {
+	values := []float64{1, 2.5, 3.1415926}
+	expectS(t, "1 2.5 3.1416", float64Slice(values).join(" "))
+	expectS(t, "1, 2.5, 3.1416", float64Slice(values).join(", "))
+}
