@@ -41,3 +41,19 @@
     [x] UnitConversions
         [x] UnitConversionMap
             [x] Units
+    [ ] Print
+        [ ] text_clipping_mode
+        [ ] check_set_font
+            [ ] set_default_font
+                [ ] font
+                    [ ] select_font
+                        [ ] Font struct
+            [ ] check_set_v_text_align
+        [ ] check_set_font_color
+        [ ] check_set_spacing
+        [ ] check_set_scale
+        [ ] check_set_text_rendering_mode
+        [ ] width
+        [ ] add_vector
+        [ ] set_text_angle
+        [ ] draw_underline
