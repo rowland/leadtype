@@ -30,7 +30,7 @@
     [x] MoveTo
         [x] Translate
             [x] PageHeight
-    [ ] LineTo
+    [x] LineTo
         [x] StartGraph
             [x] GraphWriter
         [x] checkSetLineColor, SetLineColor, LineColor, startMisc
