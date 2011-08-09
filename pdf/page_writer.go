@@ -52,6 +52,7 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	pw.page.setRotate(ps.rotate)
 	pw.page.setResources(pw.dw.resources)
 	pw.dw.file.body.add(pw.page)
+	pw.autoPath = true
 	pw.startMisc()
 	return pw
 }
@@ -105,7 +106,7 @@ func (pw *PageWriter) Close() {
 	// end margins
 	// end sub page
 	pw.endText()
-	// end graph
+	pw.endGraph()
 	pw.endMisc()
 	// compress stream
 	pdf_stream := newStream(pw.dw.nextSeq(), 0, pw.stream.Bytes())
@@ -116,9 +117,24 @@ func (pw *PageWriter) Close() {
 	pw.stream.Reset()
 }
 
+func (pw *PageWriter) endGraph() {
+	if pw.inPath {
+		pw.endPath()
+	}
+	pw.gw = nil
+	pw.inGraph = false
+}
+
 func (pw *PageWriter) endMisc() {
 	pw.mw = nil
 	pw.inMisc = false
+}
+
+func (pw *PageWriter) endPath() {
+	if pw.autoPath {
+		pw.gw.stroke()
+	}
+	pw.inPath = false
 }
 
 func (pw *PageWriter) endText() {
