@@ -60,6 +60,14 @@ func (dw *DocWriter) inPage() bool {
 	return dw.curPage != nil
 }
 
+func (dw *DocWriter) LineTo(x, y float64) {
+	dw.curPage.LineTo(x, y)
+}
+
+func (dw *DocWriter) MoveTo(x, y float64) {
+	dw.curPage.MoveTo(x, y)
+}
+
 func (dw *DocWriter) Open(options Options) {
 	dw.options = options
 }
@@ -89,4 +97,20 @@ func (dw *DocWriter) PagesDown() int {
 
 func (dw *DocWriter) PagesUp() int {
 	return dw.PagesAcross() * dw.PagesDown()
+}
+
+func (dw *DocWriter) SetLineColor(color Color) (prev Color) {
+	return dw.curPage.SetLineColor(color)
+}
+
+func (dw *DocWriter) SetLineDashPattern(lineDashPattern string) (prev string) {
+	return dw.curPage.SetLineDashPattern(lineDashPattern)
+}
+
+func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
+	return dw.curPage.SetLineWidth(width, units)
+}
+
+func (dw *DocWriter) SetUnits(units string) {
+	dw.curPage.SetUnits(units)
 }
