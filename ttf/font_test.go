@@ -10,11 +10,46 @@ func TestNewFont(t *testing.T) {
 	if f == nil {
 		t.Fatal("Font not created")
 	}
-	
-	if f.scalar != 0x00010000 {
-		t.Errorf("Scalar: expected %d, got %d", 0x00010000, f.scalar)
+
+	expectUI32(t, "Scalar", 0x00010000, f.scalar)
+	expectUI16(t, "nTables", 0x0018, f.nTables)
+	expectUI16(t, "searchRange", 0x0100, f.searchRange)
+	expectUI16(t, "entrySelector", 0x0004, f.entrySelector)
+	expectUI16(t, "rangeShift", 0x0080, f.rangeShift)
+
+	for i, entry := range f.tableDir.entries {
+		expectS(t, "arialTableNames", arialTableNames[i], entry.tag)
 	}
-	if f.nTables != 0x0018 {
-		t.Errorf("nTables: expected %d, got %d", 0x0018, f.nTables)
+	for _, tag := range arialTableNames {
+		if f.tableDir.table(tag) == nil {
+			t.Fatalf("Table for tag %s not found", tag)
+		}
 	}
+}
+
+var arialTableNames = []string{
+	"DSIG",
+	"GDEF",
+	"GPOS",
+	"GSUB",
+	"JSTF",
+	"LTSH",
+	"OS/2",
+	"PCLT",
+	"VDMX",
+	"cmap",
+	"cvt ",
+	"fpgm",
+	"gasp",
+	"glyf",
+	"hdmx",
+	"head",
+	"hhea",
+	"hmtx",
+	"kern",
+	"loca",
+	"maxp",
+	"name",
+	"post",
+	"prep",
 }
