@@ -2,13 +2,13 @@ package ttf
 
 import "testing"
 
-func TestNewFont(t *testing.T) {
-	f, err := NewFont("/Library/Fonts/Arial.ttf")
+func TestLoadFont(t *testing.T) {
+	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatalf("Error creating font: %s", err)
+		t.Fatalf("Error loading font: %s", err)
 	}
 	if f == nil {
-		t.Fatal("Font not created")
+		t.Fatal("Font not loaded")
 	}
 
 	expectUI32(t, "Scalar", 0x00010000, f.scalar)

@@ -15,7 +15,7 @@ type Font struct {
 	tableDir      tableDir
 }
 
-func NewFont(filename string) (font *Font, err os.Error) {
+func LoadFont(filename string) (font *Font, err os.Error) {
 	var file *os.File
 	file, err = os.Open(filename)
 	if err != nil {
