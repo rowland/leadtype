@@ -1,7 +1,11 @@
+// Read some of the tables specified in http://developer.apple.com/fonts/ttrefman/
+
 package ttf
 
 import (
+	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 )
@@ -32,6 +36,16 @@ func LoadFont(filename string) (font *Font, err os.Error) {
 
 	font.tableDir.read(file, font.nTables)
 	return
+}
+
+func (font *Font) String() string {
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "scalar = %d\n", font.scalar)
+	fmt.Fprintf(&buf, "nTables = %d\n", font.nTables)
+	fmt.Fprintf(&buf, "searchRange = %d\n", font.searchRange)
+	fmt.Fprintf(&buf, "entrySelector = %d\n", font.entrySelector)
+	fmt.Fprintf(&buf, "rangeShift = %d\n", font.rangeShift)
+	return buf.String()
 }
 
 type tableDir struct {
