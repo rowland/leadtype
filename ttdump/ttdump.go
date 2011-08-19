@@ -9,6 +9,10 @@ import (
 func main() {
 	fontname := os.Args[1]
 	fmt.Println("ttdump", fontname)
-	font, _ := ttf.LoadFont(fontname)
-	fmt.Print(font)
+	font, err := ttf.LoadFont(fontname)
+	if err == nil {
+		fmt.Print(font)
+	} else {
+		fmt.Println(err)
+	}
 }
