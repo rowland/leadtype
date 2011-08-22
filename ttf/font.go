@@ -299,6 +299,8 @@ func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 		table.names = MacRomanPostNames
 	case 2.0:
 		err = table.readFormat2Names(file)
+	case 3.0:
+		// no subtable for format 3
 	default:
 		return os.NewError(fmt.Sprintf("Unsupported post table format: %g", table.format()))
 	}
