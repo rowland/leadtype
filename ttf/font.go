@@ -17,6 +17,7 @@ type Font struct {
 	entrySelector uint16
 	rangeShift    uint16
 	tableDir      tableDir
+	cmapTable     cmapTable
 	nameTable     nameTable
 	postTable     postTable
 }
@@ -53,6 +54,11 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 	if err = font.tableDir.read(file, font.nTables); err != nil {
 		return
 	}
+	if entry := font.tableDir.table("cmap"); entry != nil {
+		if err = font.cmapTable.init(file, entry); err != nil {
+			return
+		}
+	}
 	if entry := font.tableDir.table("name"); entry != nil {
 		if err = font.nameTable.init(file, entry); err != nil {
 			return
@@ -81,6 +87,7 @@ func (font *Font) write(wr io.Writer) {
 	font.tableDir.write(wr)
 	font.nameTable.write(wr)
 	font.postTable.write(wr)
+	font.cmapTable.write(wr)
 }
 
 type tableDir struct {
