@@ -25,6 +25,7 @@ type postTable struct {
 func float64FromFixed(base int16, frac uint16) float64 {
 	return float64(base) + float64(frac)/65536
 }
+
 func (table *postTable) format() float64 {
 	return float64FromFixed(table.formatBase, table.formatFrac)
 }
