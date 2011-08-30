@@ -8,10 +8,8 @@ import (
 )
 
 type postTable struct {
-	formatBase         int16
-	formatFrac         uint16
-	italicAngleBase    int16
-	italicAngleFrac    uint16
+	format Fixed
+	italicAngle Fixed
 	underlinePosition  int16
 	underlineThickness int16
 	isFixedPitch       uint32
@@ -22,34 +20,16 @@ type postTable struct {
 	names              []string
 }
 
-func float64FromFixed(base int16, frac uint16) float64 {
-	return float64(base) + float64(frac)/65536
-}
-
-func (table *postTable) format() float64 {
-	return float64FromFixed(table.formatBase, table.formatFrac)
-}
-
-func (table *postTable) italicAngle() float64 {
-	return float64FromFixed(table.italicAngleBase, table.italicAngleFrac)
-}
-
 func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
 	_, err = file.Seek(int64(entry.offset), os.SEEK_SET)
 	if err != nil {
 		return
 	}
 
-	if err = binary.Read(file, binary.BigEndian, &table.formatBase); err != nil {
+	if err = table.format.Read(file); err != nil {
 		return
 	}
-	if err = binary.Read(file, binary.BigEndian, &table.formatFrac); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.italicAngleBase); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.italicAngleFrac); err != nil {
+	if err = table.italicAngle.Read(file); err != nil {
 		return
 	}
 	if err = binary.Read(file, binary.BigEndian, &table.underlinePosition); err != nil {
@@ -74,7 +54,7 @@ func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 		return
 	}
 
-	switch table.format() {
+	switch table.format.Tof64() {
 	case 1.0:
 		table.names = MacRomanPostNames
 	case 2.0:
@@ -82,7 +62,7 @@ func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	case 3.0:
 		// no subtable for format 3
 	default:
-		return os.NewError(fmt.Sprintf("Unsupported post table format: %g", table.format()))
+		return os.NewError(fmt.Sprintf("Unsupported post table format: %g", table.format.Tof64()))
 	}
 
 	return
@@ -128,8 +108,8 @@ func (table *postTable) readFormat2Names(file io.ReadSeeker) (err os.Error) {
 func (table *postTable) write(wr io.Writer) {
 	fmt.Fprintln(wr, "----------")
 	fmt.Fprintln(wr, "post Table")
-	fmt.Fprintf(wr, "format = %g\n", table.format())
-	fmt.Fprintf(wr, "italicAngle = %g\n", table.italicAngle())
+	fmt.Fprintf(wr, "format = %g\n", table.format.Tof64())
+	fmt.Fprintf(wr, "italicAngle = %g\n", table.italicAngle.Tof64())
 	fmt.Fprintf(wr, "underlinePosition  = %d\n", table.underlinePosition)
 	fmt.Fprintf(wr, "underlineThickness = %d\n", table.underlineThickness)
 	fmt.Fprintf(wr, "isFixedPitch = %d\n", table.isFixedPitch)
