@@ -80,21 +80,39 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 
 func (font *Font) String() string {
 	var buf bytes.Buffer
-	font.write(&buf)
+	font.Dump(&buf, "all")
 	return buf.String()
 }
 
-func (font *Font) write(wr io.Writer) {
+var features = []string{"header", "dir", "name", "post", "cmap", "head"}
+
+func (font *Font) Dump(wr io.Writer, feature string) {
+	switch feature {
+	case "header":
+		font.writeHeader(wr)
+	case "dir":
+		font.tableDir.write(wr)
+	case "name":
+		font.nameTable.write(wr)
+	case "post":
+		font.postTable.write(wr)
+	case "cmap":
+		font.cmapTable.write(wr)
+	case "head":
+		font.headTable.write(wr)
+	default:
+		for _, feature2 := range features {
+			font.Dump(wr, feature2)
+		}
+	}
+}
+
+func (font *Font) writeHeader(wr io.Writer) {
 	fmt.Fprintf(wr, "scalar = %d\n", font.scalar)
 	fmt.Fprintf(wr, "nTables = %d\n", font.nTables)
 	fmt.Fprintf(wr, "searchRange = %d\n", font.searchRange)
 	fmt.Fprintf(wr, "entrySelector = %d\n", font.entrySelector)
 	fmt.Fprintf(wr, "rangeShift = %d\n", font.rangeShift)
-	font.tableDir.write(wr)
-	font.nameTable.write(wr)
-	font.postTable.write(wr)
-	font.cmapTable.write(wr)
-	font.headTable.write(wr)
 }
 
 type tableDir struct {
