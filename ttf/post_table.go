@@ -8,8 +8,8 @@ import (
 )
 
 type postTable struct {
-	format Fixed
-	italicAngle Fixed
+	format             Fixed
+	italicAngle        Fixed
 	underlinePosition  int16
 	underlineThickness int16
 	isFixedPitch       uint32
@@ -21,8 +21,7 @@ type postTable struct {
 }
 
 func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	_, err = file.Seek(int64(entry.offset), os.SEEK_SET)
-	if err != nil {
+	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
 
@@ -32,25 +31,14 @@ func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	if err = table.italicAngle.Read(file); err != nil {
 		return
 	}
-	if err = binary.Read(file, binary.BigEndian, &table.underlinePosition); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.underlineThickness); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.isFixedPitch); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.minMemType42); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.maxMemType42); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.minMemType1); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.maxMemType1); err != nil {
+	if err = readValues(file,
+		&table.underlinePosition,
+		&table.underlineThickness,
+		&table.isFixedPitch,
+		&table.minMemType42,
+		&table.maxMemType42,
+		&table.minMemType1,
+		&table.maxMemType1); err != nil {
 		return
 	}
 

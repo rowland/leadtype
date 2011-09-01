@@ -11,14 +11,8 @@ type Fixed struct {
 	frac uint16
 }
 
-func (f *Fixed) Read(file io.Reader) (err os.Error) {
-	if err = binary.Read(file, binary.BigEndian, &f.base); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &f.frac); err != nil {
-		return
-	}
-	return
+func (f *Fixed) Read(file io.Reader) os.Error {
+	return readValues(file, &f.base, &f.frac)
 }
 
 func (f *Fixed) Tof64() float64 {

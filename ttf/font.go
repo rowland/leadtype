@@ -4,7 +4,6 @@ package ttf
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -26,8 +25,7 @@ type Font struct {
 
 func LoadFont(filename string) (font *Font, err os.Error) {
 	var file *os.File
-	file, err = os.Open(filename)
-	if err != nil {
+	if file, err = os.Open(filename); err != nil {
 		return
 	}
 	defer file.Close()
@@ -37,19 +35,12 @@ func LoadFont(filename string) (font *Font, err os.Error) {
 }
 
 func (font *Font) init(file io.ReadSeeker) (err os.Error) {
-	if err = binary.Read(file, binary.BigEndian, &font.scalar); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &font.nTables); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &font.searchRange); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &font.entrySelector); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &font.rangeShift); err != nil {
+	if err = readValues(file,
+		&font.scalar,
+		&font.nTables,
+		&font.searchRange,
+		&font.entrySelector,
+		&font.rangeShift); err != nil {
 		return
 	}
 
@@ -167,17 +158,11 @@ type tableDirEntry struct {
 
 func (entry *tableDirEntry) read(file io.Reader) (err os.Error) {
 	tag := make([]byte, 4)
-	_, err = file.Read(tag)
+	if _, err = file.Read(tag); err != nil {
+		return
+	}
 	entry.tag = string(tag)
-	if err = binary.Read(file, binary.BigEndian, &entry.checkSum); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &entry.offset); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &entry.length); err != nil {
-		return
-	}
+	err = readValues(file, &entry.checkSum, &entry.offset, &entry.length)
 	return
 }
 

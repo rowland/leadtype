@@ -28,8 +28,7 @@ type hheaTable struct {
 }
 
 func (table *hheaTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	_, err = file.Seek(int64(entry.offset), os.SEEK_SET)
-	if err != nil {
+	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
 

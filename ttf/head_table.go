@@ -1,7 +1,6 @@
 package ttf
 
 import (
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -28,8 +27,7 @@ type headTable struct {
 }
 
 func (table *headTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	_, err = file.Seek(int64(entry.offset), os.SEEK_SET)
-	if err != nil {
+	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
 
@@ -39,51 +37,23 @@ func (table *headTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	if err = table.fontRevision.Read(file); err != nil {
 		return
 	}
-	if err = binary.Read(file, binary.BigEndian, &table.checkSumAdjustment); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.magicNumber); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.flags); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.unitsPerEm); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.created); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.modified); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.xMin); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.yMin); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.xMax); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.yMax); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.macStyle); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.lowestRecPPEM); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.fontDirectionHint); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.indexToLocFormat); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.glyphDataFormat); err != nil {
-		return
-	}
+	err = readValues(file, 
+		&table.checkSumAdjustment,
+		&table.magicNumber,
+		&table.flags,
+		&table.unitsPerEm,
+		&table.created,
+		&table.modified,
+		&table.xMin,
+		&table.yMin,
+		&table.xMax,
+		&table.yMax,
+		&table.macStyle,
+		&table.lowestRecPPEM,
+		&table.fontDirectionHint,
+		&table.indexToLocFormat,
+		&table.glyphDataFormat,
+	)
 	return
 }
 

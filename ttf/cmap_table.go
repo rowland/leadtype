@@ -14,15 +14,11 @@ type cmapTable struct {
 }
 
 func (table *cmapTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	_, err = file.Seek(int64(entry.offset), os.SEEK_SET)
-	if err != nil {
+	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
 
-	if err = binary.Read(file, binary.BigEndian, &table.version); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &table.numberSubtables); err != nil {
+	if err = readValues(file, &table.version, &table.numberSubtables); err != nil {
 		return
 	}
 	table.encodingRecords = make([]cmapEncodingRecord, table.numberSubtables)
@@ -69,13 +65,7 @@ type cmapEncodingRecord struct {
 }
 
 func (rec *cmapEncodingRecord) read(file io.Reader) (err os.Error) {
-	if err = binary.Read(file, binary.BigEndian, &rec.platformID); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.platformSpecificID); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.offset); err != nil {
+	if err = readValues(file, &rec.platformID, &rec.platformSpecificID, &rec.offset); err != nil {
 		return
 	}
 	return
@@ -97,10 +87,7 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
 }
 
 func (rec *cmapEncodingRecord) readMappingFormat0(file io.Reader) (err os.Error) {
-	if err = binary.Read(file, binary.BigEndian, &rec.length); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.language); err != nil {
+	if readValues(file, &rec.length, &rec.language); err != nil {
 		return
 	}
 	glyphIndexArray := make([]uint8, 256)
@@ -115,22 +102,13 @@ func (rec *cmapEncodingRecord) readMappingFormat0(file io.Reader) (err os.Error)
 }
 
 func (rec *cmapEncodingRecord) readMappingFormat4(file io.Reader) (err os.Error) {
-	if err = binary.Read(file, binary.BigEndian, &rec.length); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.language); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.segCountX2); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.searchRange); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.entrySelector); err != nil {
-		return
-	}
-	if err = binary.Read(file, binary.BigEndian, &rec.rangeShift); err != nil {
+	if err = readValues(file,
+		&rec.length,
+		&rec.language,
+		&rec.segCountX2,
+		&rec.searchRange,
+		&rec.entrySelector,
+		&rec.rangeShift); err != nil {
 		return
 	}
 	rec.endCode = make([]uint16, rec.segCountX2/2)

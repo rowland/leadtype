@@ -1,8 +1,6 @@
 package ttf
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -16,23 +14,20 @@ type nameTable struct {
 }
 
 func (table *nameTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	_, err = file.Seek(int64(entry.offset), os.SEEK_SET)
-	if err != nil {
+	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	bs := make([]byte, entry.length)
-	_, err = file.Read(bs)
-	if err != nil {
-		return err
+	if err = readValues(file,
+		&table.format,
+		&table.count,
+		&table.stringOffset); err != nil {
+		return
 	}
-
-	buf := bytes.NewBuffer(bs)
-	binary.Read(buf, binary.BigEndian, &table.format)
-	binary.Read(buf, binary.BigEndian, &table.count)
-	binary.Read(buf, binary.BigEndian, &table.stringOffset)
 	table.nameRecords = make([]nameRecord, table.count)
 	for i := uint16(0); i < table.count; i++ {
-		table.nameRecords[i].read(buf)
+		if err = table.nameRecords[i].read(file); err != nil {
+			return
+		}
 	}
 
 	return
@@ -55,27 +50,13 @@ type nameRecord struct {
 	offset             uint16
 }
 
-func (rec *nameRecord) read(file io.Reader) (err os.Error) {
-	err = binary.Read(file, binary.BigEndian, &rec.platformID)
-	if err != nil {
-		return
-	}
-	err = binary.Read(file, binary.BigEndian, &rec.platformSpecificID)
-	if err != nil {
-		return
-	}
-	err = binary.Read(file, binary.BigEndian, &rec.languageID)
-	if err != nil {
-		return
-	}
-	err = binary.Read(file, binary.BigEndian, &rec.nameID)
-	if err != nil {
-		return
-	}
-	err = binary.Read(file, binary.BigEndian, &rec.length)
-	if err != nil {
-		return
-	}
-	err = binary.Read(file, binary.BigEndian, &rec.offset)
-	return
+func (rec *nameRecord) read(file io.Reader) os.Error {
+	return readValues(file,
+		&rec.platformID,
+		&rec.platformSpecificID,
+		&rec.languageID,
+		&rec.nameID,
+		&rec.length,
+		&rec.offset,
+	)
 }
