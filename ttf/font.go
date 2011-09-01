@@ -19,6 +19,8 @@ type Font struct {
 	cmapTable     cmapTable
 	headTable     headTable
 	hheaTable     hheaTable
+	hmtxTable     hmtxTable
+	maxpTable     maxpTable
 	nameTable     nameTable
 	postTable     postTable
 }
@@ -72,6 +74,16 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 			return
 		}
 	}
+	if entry := font.tableDir.table("maxp"); entry != nil {
+		if err = font.maxpTable.init(file, entry); err != nil {
+			return
+		}
+	}
+	if entry := font.tableDir.table("hmtx"); entry != nil {
+		if err = font.hmtxTable.init(file, entry, font.maxpTable.numGlyphs, font.hheaTable.numOfLongHorMetrics); err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -81,7 +93,7 @@ func (font *Font) String() string {
 	return buf.String()
 }
 
-var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea"}
+var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx"}
 
 func (font *Font) Dump(wr io.Writer, feature string) {
 	switch feature {
@@ -99,6 +111,10 @@ func (font *Font) Dump(wr io.Writer, feature string) {
 		font.headTable.write(wr)
 	case "hhea":
 		font.hheaTable.write(wr)
+	case "hmtx":
+		font.hmtxTable.write(wr)
+	case "maxp":
+		font.maxpTable.write(wr)
 	default:
 		for _, feature2 := range features {
 			font.Dump(wr, feature2)
