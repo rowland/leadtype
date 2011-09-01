@@ -24,6 +24,8 @@ type uFWord uint16
 
 type longDateTime int64
 
+type PANOSE [10]byte
+
 func readValues(r io.Reader, values ...interface{}) (err os.Error) {
 	for _, v := range values {
 		if err = binary.Read(r, binary.BigEndian, v); err != nil {

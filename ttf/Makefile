@@ -10,6 +10,7 @@ GOFILES=\
   hmtx_table.go\
   maxp_table.go\
   name_table.go\
+  os2_table.go\
   post_table.go\
   vhea_table.go\
   vmtx_table.go\

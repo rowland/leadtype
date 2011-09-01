@@ -1,7 +1,6 @@
 package ttf
 
 import (
-	// "encoding/binary"
 	"fmt"
 	"io"
 	"os"
