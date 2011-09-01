@@ -11,6 +11,8 @@ GOFILES=\
   maxp_table.go\
   name_table.go\
   post_table.go\
+  vhea_table.go\
+  vmtx_table.go\
   mac_roman_post_names.go\
   support.go\
 

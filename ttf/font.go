@@ -23,6 +23,8 @@ type Font struct {
 	maxpTable     maxpTable
 	nameTable     nameTable
 	postTable     postTable
+	vheaTable     vheaTable
+	vmtxTable     vmtxTable
 }
 
 func LoadFont(filename string) (font *Font, err os.Error) {
@@ -84,6 +86,16 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 			return
 		}
 	}
+	if entry := font.tableDir.table("vhea"); entry != nil {
+		if err = font.vheaTable.init(file, entry); err != nil {
+			return
+		}
+	}
+	if entry := font.tableDir.table("vmtx"); entry != nil {
+		if err = font.vmtxTable.init(file, entry, font.maxpTable.numGlyphs, font.vheaTable.numOfLongVerMetrics); err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -93,7 +105,7 @@ func (font *Font) String() string {
 	return buf.String()
 }
 
-var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx"}
+var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx", "vhea", "vmtx"}
 
 func (font *Font) Dump(wr io.Writer, feature string) {
 	switch feature {
@@ -115,6 +127,10 @@ func (font *Font) Dump(wr io.Writer, feature string) {
 		font.hmtxTable.write(wr)
 	case "maxp":
 		font.maxpTable.write(wr)
+	case "vhea":
+		font.vheaTable.write(wr)
+	case "vmtx":
+		font.vmtxTable.write(wr)
 	default:
 		for _, feature2 := range features {
 			font.Dump(wr, feature2)
