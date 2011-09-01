@@ -6,6 +6,7 @@ GOFILES=\
   font.go\
   cmap_table.go\
   head_table.go\
+  hhea_table.go\
   name_table.go\
   post_table.go\
   mac_roman_post_names.go\

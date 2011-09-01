@@ -26,5 +26,15 @@ func (f *Fixed) Tof64() float64 {
 }
 
 type FWord int16
+type uFWord uint16
 
 type longDateTime int64
+
+func readValues(r io.Reader, values ...interface{}) (err os.Error) {
+	for _, v := range values {
+		if err = binary.Read(r, binary.BigEndian, v); err != nil {
+			return
+		}
+	}
+	return
+}
