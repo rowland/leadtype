@@ -7,6 +7,10 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ttdump fontname [table1 [table2...]]")
+		os.Exit(-1)
+	}
 	fontname := os.Args[1]
 	fmt.Println("ttdump", fontname)
 	font, err := ttf.LoadFont(fontname)
