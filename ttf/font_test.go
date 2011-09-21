@@ -11,7 +11,7 @@ func TestLoadFont(t *testing.T) {
 		t.Fatal("Font not loaded")
 	}
 
-	expectUI32(t, "Scalar", 0x00010000, f.scalar)
+	expectUI32(t, "scalar", 0x00010000, f.scalar)
 	expectUI16(t, "nTables", 0x0018, f.nTables)
 	expectUI16(t, "searchRange", 0x0100, f.searchRange)
 	expectUI16(t, "entrySelector", 0x0004, f.entrySelector)

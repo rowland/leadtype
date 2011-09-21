@@ -16,5 +16,6 @@ GOFILES=\
   vmtx_table.go\
   mac_roman_post_names.go\
   support.go\
+  codepoint_ranges.go\
 
 include $(GOROOT)/src/Make.pkg
