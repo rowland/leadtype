@@ -27,6 +27,18 @@ func (table *hmtxTable) init(file io.ReadSeeker, entry *tableDirEntry, numGlyphs
 	return
 }
 
+func (table *hmtxTable) lookup(glyphIndex int) longHorMetric {
+	if glyphIndex >= 0 {
+		if glyphIndex < len(table.hMetrics) {
+			return table.hMetrics[glyphIndex]
+		}
+		if glyphIndex < len(table.hMetrics)+len(table.leftSideBearing) {
+			return longHorMetric{table.hMetrics[len(table.hMetrics)-1].advanceWidth, int16(table.leftSideBearing[glyphIndex-len(table.hMetrics)])}
+		}
+	}
+	return longHorMetric{}
+}
+
 func (table *hmtxTable) write(wr io.Writer) {
 	fmt.Fprintln(wr, "----------")
 	fmt.Fprintln(wr, "hmtx Table")
