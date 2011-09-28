@@ -8,9 +8,10 @@ import (
 )
 
 type cmapTable struct {
-	version         uint16
-	numberSubtables uint16
-	encodingRecords []cmapEncodingRecord
+	version           uint16
+	numberSubtables   uint16
+	encodingRecords   []cmapEncodingRecord
+	preferredEncoding int
 }
 
 func (table *cmapTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
@@ -32,7 +33,45 @@ func (table *cmapTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 			return
 		}
 	}
+	table.preferredEncoding = -1
+	for i := uint16(0); i < table.numberSubtables; i++ {
+		enc := &table.encodingRecords[i]
+		if enc.platformID == UnicodePlatformID && enc.platformSpecificID == Unicode2PlatformSpecificID {
+			table.preferredEncoding = int(i)
+			break
+		}
+		if enc.platformID == MicrosoftPlatformID && enc.platformSpecificID == UCS2PlatformSpecificID {
+			table.preferredEncoding = int(i)
+		}
+	}
 	return
+}
+
+func (table *cmapTable) glyphIndex(codepoint uint16) int {
+	if table.preferredEncoding < 0 {
+		return 0
+	}
+	enc := &table.encodingRecords[table.preferredEncoding]
+
+	low, high := 0, len(enc.endCode)-1
+	for low <= high {
+		i := (low + high) / 2
+		if codepoint > enc.endCode[i] {
+			low = i + 1
+			continue
+		}
+		if codepoint < enc.startCode[i] {
+			high = i - 1
+			continue
+		}
+		if enc.idRangeOffset[i] == 0 {
+			return int((enc.idDelta[i] + codepoint) & 0xFFFF)
+		}
+		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
+		gi := enc.idRangeOffset[i]/2 + (codepoint - enc.startCode[i]) + uint16(i - len(enc.idRangeOffset))
+		return int(enc.glyphIndexArray[gi])
+	}
+	return 0
 }
 
 func (table *cmapTable) write(wr io.Writer) {

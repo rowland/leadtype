@@ -6,6 +6,24 @@ import (
 	"os"
 )
 
+// Platform ID's http://developer.apple.com/fonts/TTRefMan/RM06/Chap6name.html
+const (
+	UnicodePlatformID   = 0
+	MacintoshPlatformID = 1
+	MicrosoftPlatformID = 3
+)
+
+// Unicode Platform Specific ID's http://developer.apple.com/fonts/TTRefMan/RM06/Chap6name.html
+const (
+	DefaultPlatformSpecificID  = 0
+	Unicode2PlatformSpecificID = 3
+)
+
+// Microsoft Platform Specific ID's http://www.microsoft.com/typography/otspec/name.htm
+const (
+	UCS2PlatformSpecificID = 1
+)
+
 type nameTable struct {
 	format       uint16
 	count        uint16
