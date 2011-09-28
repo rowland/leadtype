@@ -105,10 +105,8 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 	return
 }
 
-func (font *Font) String() string {
-	var buf bytes.Buffer
-	font.Dump(&buf, "all")
-	return buf.String()
+func (font *Font) BoundingBox() BoundingBox {
+	return BoundingBox{int(font.headTable.xMin), int(font.headTable.yMin), int(font.headTable.xMax), int(font.headTable.yMax)}
 }
 
 var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx", "vhea", "vmtx", "OS/2"}
@@ -146,12 +144,30 @@ func (font *Font) Dump(wr io.Writer, feature string) {
 	}
 }
 
+func (font *Font) NumGlyphs() int {
+	return int(font.maxpTable.numGlyphs)
+}
+
+func (font *Font) String() string {
+	var buf bytes.Buffer
+	font.Dump(&buf, "all")
+	return buf.String()
+}
+
+func (font *Font) UnitsPerEm() int {
+	return int(font.headTable.unitsPerEm)
+}
+
 func (font *Font) writeHeader(wr io.Writer) {
 	fmt.Fprintf(wr, "scalar = %d\n", font.scalar)
 	fmt.Fprintf(wr, "nTables = %d\n", font.nTables)
 	fmt.Fprintf(wr, "searchRange = %d\n", font.searchRange)
 	fmt.Fprintf(wr, "entrySelector = %d\n", font.entrySelector)
 	fmt.Fprintf(wr, "rangeShift = %d\n", font.rangeShift)
+}
+
+type BoundingBox struct {
+	XMin, YMin, XMax, YMax int
 }
 
 type tableDir struct {

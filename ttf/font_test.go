@@ -25,6 +25,12 @@ func TestLoadFont(t *testing.T) {
 			t.Fatalf("Table for tag %s not found", tag)
 		}
 	}
+	expectI(t, "UnitsPerEm", 2048, f.UnitsPerEm())
+	expectI(t, "NumGlyphs", 3381, f.NumGlyphs())
+	expectI(t, "BoundingBox.XMin", -1361, f.BoundingBox().XMin)
+	expectI(t, "BoundingBox.YMin", -665, f.BoundingBox().YMin)
+	expectI(t, "BoundingBox.XMax", 4096, f.BoundingBox().XMax)
+	expectI(t, "BoundingBox.YMax", 2060, f.BoundingBox().YMax)
 }
 
 var arialTableNames = []string{
