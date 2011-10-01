@@ -37,7 +37,7 @@ func (table *headTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	if err = table.fontRevision.Read(file); err != nil {
 		return
 	}
-	err = readValues(file, 
+	err = readValues(file,
 		&table.checkSumAdjustment,
 		&table.magicNumber,
 		&table.flags,

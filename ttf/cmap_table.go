@@ -68,7 +68,7 @@ func (table *cmapTable) glyphIndex(codepoint uint16) uint16 {
 			return enc.idDelta[i] + codepoint
 		}
 		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
-		gi := enc.idRangeOffset[i]/2 + (codepoint - enc.startCode[i]) + uint16(i - len(enc.idRangeOffset))
+		gi := enc.idRangeOffset[i]/2 + (codepoint - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
 		return enc.glyphIndexArray[gi]
 	}
 	return 0
