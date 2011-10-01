@@ -105,6 +105,10 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 	return
 }
 
+func (font *Font) AdvanceWidth(codepoint int) int {
+	return int(font.hmtxTable.lookupAdvanceWidth(int(font.cmapTable.glyphIndex(uint16(codepoint)))))
+}
+
 func (font *Font) BoundingBox() BoundingBox {
 	return BoundingBox{int(font.headTable.xMin), int(font.headTable.yMin), int(font.headTable.xMax), int(font.headTable.yMax)}
 }
