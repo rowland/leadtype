@@ -39,6 +39,25 @@ func (table *hmtxTable) lookup(glyphIndex int) longHorMetric {
 	return longHorMetric{}
 }
 
+func (table *hmtxTable) lookupAdvanceWidth(glyphIndex int) uint16 {
+	if glyphIndex >= 0 && glyphIndex < len(table.hMetrics) {
+		return table.hMetrics[glyphIndex].advanceWidth
+	}
+	return 0
+}
+
+func (table *hmtxTable) lookupLeftSideBearing(glyphIndex int) int16 {
+	if glyphIndex >= 0 {
+		if glyphIndex < len(table.hMetrics) {
+			return table.hMetrics[glyphIndex].leftSideBearing
+		}
+		if glyphIndex < len(table.hMetrics)+len(table.leftSideBearing) {
+			return int16(table.leftSideBearing[glyphIndex-len(table.hMetrics)])
+		}
+	}
+	return 0
+}
+
 func (table *hmtxTable) write(wr io.Writer) {
 	fmt.Fprintln(wr, "----------")
 	fmt.Fprintln(wr, "hmtx Table")

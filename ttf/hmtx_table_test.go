@@ -11,18 +11,30 @@ func TestHmtxTable_lookup_Arial(t *testing.T) {
 	hmtx0 := f.hmtxTable.lookup(0)
 	expectUI16(t, "0 advanceWidth", 1536, hmtx0.advanceWidth)
 	expectI16(t, "0 leftSideBearing", 256, hmtx0.leftSideBearing)
+
+	expectUI16(t, "0 lookupAdvanceWidth", 1536, f.hmtxTable.lookupAdvanceWidth(0))
+	expectI16(t, "0 lookupLeftSideBearing", 256, f.hmtxTable.lookupLeftSideBearing(0))
 	// 1st glyph with advanceWidth of 0
 	hmtx1 := f.hmtxTable.lookup(1)
 	expectUI16(t, "1 advanceWidth", 0, hmtx1.advanceWidth)
 	expectI16(t, "1 leftSideBearing", 0, hmtx1.leftSideBearing)
+
+	expectUI16(t, "1 lookupAdvanceWidth", 0, f.hmtxTable.lookupAdvanceWidth(1))
+	expectI16(t, "1 lookupLeftSideBearing", 0, f.hmtxTable.lookupLeftSideBearing(1))
 	// last glyph
 	hmtx3380 := f.hmtxTable.lookup(3380)
 	expectUI16(t, "3380 advanceWidth", 455, hmtx3380.advanceWidth)
 	expectI16(t, "3380 leftSideBearing", 136, hmtx3380.leftSideBearing)
+
+	expectUI16(t, "3380 lookupAdvanceWidth", 455, f.hmtxTable.lookupAdvanceWidth(3380))
+	expectI16(t, "3380 lookupLeftSideBearing", 136, f.hmtxTable.lookupLeftSideBearing(3380))
 	// index beyond last glyph
 	hmtx3381 := f.hmtxTable.lookup(3381)
 	expectUI16(t, "3381 advanceWidth", 0, hmtx3381.advanceWidth)
 	expectI16(t, "3381 leftSideBearing", 0, hmtx3381.leftSideBearing)
+
+	expectUI16(t, "3381 lookupAdvanceWidth", 0, f.hmtxTable.lookupAdvanceWidth(3381))
+	expectI16(t, "3381 lookupLeftSideBearing", 0, f.hmtxTable.lookupLeftSideBearing(3381))
 }
 
 func TestHmtxTable_lookup_Courier(t *testing.T) {
@@ -54,4 +66,40 @@ func TestHmtxTable_lookup_Courier(t *testing.T) {
 	hmtx3151 := f.hmtxTable.lookup(3151)
 	expectUI16(t, "3151 advanceWidth", 0, hmtx3151.advanceWidth)
 	expectI16(t, "3151 leftSideBearing", 0, hmtx3151.leftSideBearing)
+}
+
+func BenchmarkLookup_LongHorMetric(b *testing.B) {
+	b.StopTimer()
+	f, err := LoadFont("/Library/Fonts/Arial.ttf")
+	if err != nil {
+		panic("Error loading font")
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f.hmtxTable.lookup(i % int(f.maxpTable.numGlyphs))
+	}
+}
+
+func BenchmarkLookupAdvanceWidth(b *testing.B) {
+	b.StopTimer()
+	f, err := LoadFont("/Library/Fonts/Arial.ttf")
+	if err != nil {
+		panic("Error loading font")
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f.hmtxTable.lookupAdvanceWidth(i % int(f.maxpTable.numGlyphs))
+	}
+}
+
+func BenchmarkLookupLeftSideBearing(b *testing.B) {
+	b.StopTimer()
+	f, err := LoadFont("/Library/Fonts/Arial.ttf")
+	if err != nil {
+		panic("Error loading font")
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f.hmtxTable.lookupLeftSideBearing(i % int(f.maxpTable.numGlyphs))
+	}
 }
