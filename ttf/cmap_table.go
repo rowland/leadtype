@@ -47,7 +47,7 @@ func (table *cmapTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	return
 }
 
-func (table *cmapTable) glyphIndex(codepoint uint16) int {
+func (table *cmapTable) glyphIndex(codepoint uint16) uint16 {
 	if table.preferredEncoding < 0 {
 		return 0
 	}
@@ -65,11 +65,11 @@ func (table *cmapTable) glyphIndex(codepoint uint16) int {
 			continue
 		}
 		if enc.idRangeOffset[i] == 0 {
-			return int((enc.idDelta[i] + codepoint) & 0xFFFF)
+			return enc.idDelta[i] + codepoint
 		}
 		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
 		gi := enc.idRangeOffset[i]/2 + (codepoint - enc.startCode[i]) + uint16(i - len(enc.idRangeOffset))
-		return int(enc.glyphIndexArray[gi])
+		return enc.glyphIndexArray[gi]
 	}
 	return 0
 }
