@@ -40,6 +40,18 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "trademark", 2048, f.AdvanceWidth(0x2122))
 	expectI(t, "reversed-e", 1366, f.AdvanceWidth(0x018E))
 	expectI(t, "t-with-comma", 1251, f.AdvanceWidth(0x021A))
+
+	expectI(t, "Ascent", 1854, f.Ascent())
+	expectI(t, "Descent", -434, f.Descent())
+	expectF(t, "ItalicAngle", 0, f.ItalicAngle())
+	expectI(t, "StemV", 87, f.StemV())
+	expectI(t, "XHeight", 1062, f.XHeight())
+	// Could not find MissingWidth in TTF.
+	expectI(t, "Leading", 1854 - -434 + 67, f.Leading())
+	// TODO: Verify this works in practice. Some examples indicate equivalence to lineGap instead.
+	expectI(t, "MaxWidth", 4096, f.MaxWidth())
+	expectI(t, "AvgWidth", 904, f.AvgWidth())
+	expectI(t, "CapHeight", 1467, f.CapHeight())
 }
 
 var arialTableNames = []string{
@@ -77,6 +89,6 @@ func BenchmarkAdvanceWidth(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		f.AdvanceWidth(int(f.os2Table.fsFirstCharIndex) + i % int(f.os2Table.fsLastCharIndex - f.os2Table.fsFirstCharIndex + 1))
+		f.AdvanceWidth(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
 	}
 }

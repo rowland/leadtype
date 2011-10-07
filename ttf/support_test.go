@@ -34,6 +34,12 @@ func expectUI16(t *testing.T, name string, expected, actual uint16) {
 
 func expectS(t *testing.T, name string, expected, actual string) {
 	if expected != actual {
-		t.Errorf("%s: expected %s, got %s", expected, actual)
+		t.Errorf("%s: expected %s, got %s", name, expected, actual)
+	}
+}
+
+func expectF(t *testing.T, name string, expected, actual float64) {
+	if expected != actual {
+		t.Errorf("%s: expected %f, got %f", name, expected, actual)
 	}
 }

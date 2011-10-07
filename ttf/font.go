@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"os"
 )
 
@@ -109,8 +110,27 @@ func (font *Font) AdvanceWidth(codepoint int) int {
 	return int(font.hmtxTable.lookupAdvanceWidth(int(font.cmapTable.glyphIndex(uint16(codepoint)))))
 }
 
+func (font *Font) Ascent() int {
+	return int(font.hheaTable.ascent)
+}
+
+func (font *Font) AvgWidth() int {
+	return int(font.os2Table.xAvgCharWidth)
+}
+
 func (font *Font) BoundingBox() BoundingBox {
 	return BoundingBox{int(font.headTable.xMin), int(font.headTable.yMin), int(font.headTable.xMax), int(font.headTable.yMax)}
+}
+
+func (font *Font) CapHeight() int {
+	if font.os2Table.version >= 2 {
+		return int(font.os2Table.sCapHeight)
+	}
+	return 0
+}
+
+func (font *Font) Descent() int {
+	return int(font.hheaTable.descent)
 }
 
 var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx", "vhea", "vmtx", "OS/2"}
@@ -148,8 +168,62 @@ func (font *Font) Dump(wr io.Writer, feature string) {
 	}
 }
 
+const (
+	flagFixedPitch  = 1 - 1
+	flagSerif       = 2 - 1
+	flagSymbolic    = 3 - 1
+	flagScript      = 4 - 1
+	flagNonsymbolic = 6 - 1
+	flagItalic      = 7 - 1
+	flagAllCap      = 17 - 1
+	flagSmallCap    = 18 - 1
+	flagForceBold   = 19 - 1
+)
+
+func (font *Font) Flags() (flags uint32) {
+	flags = font.postTable.isFixedPitch << flagFixedPitch
+	if font.ItalicAngle() != 0 {
+		flags |= 1 << flagItalic
+	}
+	if font.os2Table.usWeightClass > 500 {
+		flags |= 1 << flagForceBold
+	}
+	return
+	// TODO: Set remainder of flags
+}
+
+func (font *Font) ItalicAngle() float64 {
+	return font.postTable.italicAngle.Tof64()
+}
+
+func (font *Font) Leading() int {
+	return int(font.hheaTable.ascent - font.hheaTable.descent + font.hheaTable.lineGap)
+}
+
+func (font *Font) MaxWidth() int {
+	return int(font.hheaTable.advanceWidthMax)
+}
+
+/*
+// Optional. Not found in TTF.
+func (font *Font) MissingWidth() int {
+	return 0
+}
+*/
+
 func (font *Font) NumGlyphs() int {
 	return int(font.maxpTable.numGlyphs)
+}
+
+/*
+// Optional. Not found in TTF.
+func (font *font) StemH() int {
+	return 0
+}
+*/
+
+func (font *Font) StemV() int {
+	return 50 + int(math.Pow(float64(font.os2Table.usWeightClass)/65.0, 2))
 }
 
 func (font *Font) String() string {
@@ -168,6 +242,13 @@ func (font *Font) writeHeader(wr io.Writer) {
 	fmt.Fprintf(wr, "searchRange = %d\n", font.searchRange)
 	fmt.Fprintf(wr, "entrySelector = %d\n", font.entrySelector)
 	fmt.Fprintf(wr, "rangeShift = %d\n", font.rangeShift)
+}
+
+func (font *Font) XHeight() int {
+	if font.os2Table.version >= 2 {
+		return int(font.os2Table.sxHeight)
+	}
+	return 0
 }
 
 type BoundingBox struct {

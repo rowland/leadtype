@@ -7,6 +7,7 @@ import (
 )
 
 type os2Table struct {
+	// Version 0, per http://developer.apple.com/fonts/TTRefMan/RM06/Chap6OS2.html
 	version             uint16
 	xAvgCharWidth       int16
 	usWeightClass       uint16
@@ -29,6 +30,23 @@ type os2Table struct {
 	fsSelection         uint16
 	fsFirstCharIndex    uint16
 	fsLastCharIndex     uint16
+	// Version 0, per http://www.microsoft.com/typography/otspec/os2ver0.htm
+	sTypoAscender  int16
+	sTypoDescender int16
+	sTypoLineGap   int16
+	usWinAscent    uint16
+	usWinDescent   uint16
+	// Version 1, per http://www.microsoft.com/typography/otspec/os2ver1.htm
+	ulCodePageRange1 uint32 // Bits 0-31
+	ulCodePageRange2 uint32 // Bits 32-63
+	// Version 2, per http://www.microsoft.com/typography/otspec/os2ver2.htm
+	sxHeight      int16
+	sCapHeight    int16
+	usDefaultChar uint16
+	usBreakChar   uint16
+	usMaxContext  uint16
+	// Version 3, per http://www.microsoft.com/typography/otspec/os2ver3.htm (no new fields?)
+	// Version 4, per http://www.microsoft.com/typography/otspec/os2.htm (no new fields?)
 }
 
 func (table *os2Table) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
@@ -59,7 +77,27 @@ func (table *os2Table) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Er
 		&table.fsSelection,
 		&table.fsFirstCharIndex,
 		&table.fsLastCharIndex,
+		&table.sTypoAscender,
+		&table.sTypoDescender,
+		&table.sTypoLineGap,
+		&table.usWinAscent,
+		&table.usWinDescent,
 	)
+	if err == nil && table.version >= 1 {
+		err = readValues(file,
+			&table.ulCodePageRange1,
+			&table.ulCodePageRange2,
+		)
+	}
+	if err == nil && table.version >= 2 {
+		err = readValues(file,
+			&table.sxHeight,
+			&table.sCapHeight,
+			&table.usDefaultChar,
+			&table.usBreakChar,
+			&table.usMaxContext,
+		)
+	}
 	return
 }
 
@@ -88,4 +126,16 @@ func (table *os2Table) write(wr io.Writer) {
 	fmt.Fprintf(wr, "fsSelection         = %d\n", table.fsSelection)
 	fmt.Fprintf(wr, "fsFirstCharIndex    = %d\n", table.fsFirstCharIndex)
 	fmt.Fprintf(wr, "fsLastCharIndex     = %d\n", table.fsLastCharIndex)
+	fmt.Fprintf(wr, "sTypoAscender       = %d\n", table.sTypoAscender)
+	fmt.Fprintf(wr, "sTypoDescender      = %d\n", table.sTypoDescender)
+	fmt.Fprintf(wr, "sTypoLineGap        = %d\n", table.sTypoLineGap)
+	fmt.Fprintf(wr, "usWinAscent         = %d\n", table.usWinAscent)
+	fmt.Fprintf(wr, "usWinDescent        = %d\n", table.usWinDescent)
+	fmt.Fprintf(wr, "ulCodePageRange1    = %d\n", table.ulCodePageRange1)
+	fmt.Fprintf(wr, "ulCodePageRange2    = %d\n", table.ulCodePageRange2)
+	fmt.Fprintf(wr, "sxHeight            = %d\n", table.sxHeight)
+	fmt.Fprintf(wr, "sCapHeight          = %d\n", table.sCapHeight)
+	fmt.Fprintf(wr, "usDefaultChar       = %d\n", table.usDefaultChar)
+	fmt.Fprintf(wr, "usBreakChar         = %d\n", table.usBreakChar)
+	fmt.Fprintf(wr, "usMaxContext        = %d\n", table.usMaxContext)
 }
