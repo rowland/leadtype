@@ -47,6 +47,7 @@ func (table *cmapTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	return
 }
 
+// 68.3 ns
 func (table *cmapTable) glyphIndex(codepoint uint16) uint16 {
 	if table.preferredEncoding < 0 {
 		return 0
