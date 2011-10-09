@@ -72,7 +72,7 @@ func (d dictionary) keys() []string {
 		sa[i] = k
 		i++
 	}
-	sort.SortStrings(sa)
+	sort.Strings(sa)
 	return sa
 }
 
