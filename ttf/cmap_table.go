@@ -1,6 +1,7 @@
 package ttf
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -14,11 +15,11 @@ type cmapTable struct {
 	preferredEncoding int
 }
 
-func (table *cmapTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
+func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-
+	file, _ := bufio.NewReaderSize(rs, int(entry.length))
 	if err = readValues(file, &table.version, &table.numberSubtables); err != nil {
 		return
 	}

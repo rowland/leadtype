@@ -53,7 +53,7 @@ func (table *os2Table) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Er
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-
+	// No advantage to using a buffered reader here.
 	err = readValues(file,
 		&table.version,
 		&table.xAvgCharWidth,

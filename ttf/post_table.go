@@ -1,6 +1,7 @@
 package ttf
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -20,11 +21,11 @@ type postTable struct {
 	names              []string
 }
 
-func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
+func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-
+	file, _ := bufio.NewReaderSize(rs, int(entry.length))
 	if err = table.format.Read(file); err != nil {
 		return
 	}
@@ -56,7 +57,7 @@ func (table *postTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.E
 	return
 }
 
-func (table *postTable) readFormat2Names(file io.ReadSeeker) (err os.Error) {
+func (table *postTable) readFormat2Names(file io.Reader) (err os.Error) {
 	var numberOfGlyphs uint16
 	if err = binary.Read(file, binary.BigEndian, &numberOfGlyphs); err != nil {
 		return

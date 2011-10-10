@@ -1,6 +1,7 @@
 package ttf
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -26,11 +27,11 @@ type vheaTable struct {
 	numOfLongVerMetrics  uint16
 }
 
-func (table *vheaTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
-	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
+func (table *vheaTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-
+	file, _ := bufio.NewReaderSize(rs, int(entry.length))
 	if err = table.version.Read(file); err != nil {
 		return
 	}
