@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"utf16"
 )
 
 type Fixed struct {
@@ -33,4 +34,14 @@ func readValues(r io.Reader, values ...interface{}) (err os.Error) {
 		}
 	}
 	return
+}
+
+func utf16ToString(s []uint16) string {
+	for i, v := range s {
+		if v == 0 {
+			s = s[0:i]
+			break
+		}
+	}
+	return string(utf16.Decode(s))
 }

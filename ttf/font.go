@@ -29,7 +29,7 @@ type Font struct {
 	vmtxTable     vmtxTable
 }
 
-// 12,241,540
+// 13,314,800 ns
 func LoadFont(filename string) (font *Font, err os.Error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
