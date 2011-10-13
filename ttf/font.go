@@ -108,7 +108,7 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 }
 
 func (font *Font) AdvanceWidth(codepoint int) int {
-	return int(font.hmtxTable.lookupAdvanceWidth(int(font.cmapTable.glyphIndex(uint16(codepoint)))))
+	return int(font.hmtxTable.lookupAdvanceWidth(int(font.cmapTable.glyphIndex(codepoint))))
 }
 
 func (font *Font) Ascent() int {

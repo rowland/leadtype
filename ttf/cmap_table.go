@@ -9,10 +9,12 @@ import (
 )
 
 type cmapTable struct {
-	version           uint16
-	numberSubtables   uint16
-	encodingRecords   []cmapEncodingRecord
-	preferredEncoding int
+	version          uint16
+	numberSubtables  uint16
+	encodingRecords  []cmapEncodingRecord
+	format0Indexer   glyphIndexer
+	format4Indexer   glyphIndexer
+	preferredIndexer glyphIndexer
 }
 
 func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
@@ -34,46 +36,34 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 			return
 		}
 	}
-	table.preferredEncoding = -1
-	for i := uint16(0); i < table.numberSubtables; i++ {
+	preferredEncoding := -1
+	for i := 0; uint16(i) < table.numberSubtables; i++ {
 		enc := &table.encodingRecords[i]
+		switch enc.format {
+		case 0:
+			table.format0Indexer = enc.glyphIndexer
+		case 4:
+			table.format4Indexer = enc.glyphIndexer
+		}
 		if enc.platformID == UnicodePlatformID && enc.platformSpecificID == Unicode2PlatformSpecificID {
-			table.preferredEncoding = int(i)
+			preferredEncoding = i
 			break
 		}
 		if enc.platformID == MicrosoftPlatformID && enc.platformSpecificID == UCS2PlatformSpecificID {
-			table.preferredEncoding = int(i)
+			preferredEncoding = i
 		}
+	}
+	if preferredEncoding >= 0 {
+		table.preferredIndexer = table.encodingRecords[preferredEncoding].glyphIndexer
+	} else {
+		err = os.NewError("Unable to select preferred cmap glyph indexer.")
 	}
 	return
 }
 
-// 68.3 ns
-func (table *cmapTable) glyphIndex(codepoint uint16) uint16 {
-	if table.preferredEncoding < 0 {
-		return 0
-	}
-	enc := &table.encodingRecords[table.preferredEncoding]
-
-	low, high := 0, len(enc.endCode)-1
-	for low <= high {
-		i := (low + high) / 2
-		if codepoint > enc.endCode[i] {
-			low = i + 1
-			continue
-		}
-		if codepoint < enc.startCode[i] {
-			high = i - 1
-			continue
-		}
-		if enc.idRangeOffset[i] == 0 {
-			return enc.idDelta[i] + codepoint
-		}
-		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
-		gi := enc.idRangeOffset[i]/2 + (codepoint - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
-		return enc.glyphIndexArray[gi]
-	}
-	return 0
+// 76.7 ns
+func (table *cmapTable) glyphIndex(codepoint int) uint16 {
+	return table.preferredIndexer.glyphIndex(codepoint)
 }
 
 func (table *cmapTable) write(wr io.Writer) {
@@ -91,25 +81,11 @@ type cmapEncodingRecord struct {
 	platformSpecificID uint16
 	offset             uint32
 	format             uint16
-	length             uint16
-	language           uint16
-	segCountX2         uint16
-	searchRange        uint16
-	entrySelector      uint16
-	rangeShift         uint16
-	endCode            []uint16
-	reservedPad        uint16
-	startCode          []uint16
-	idDelta            []uint16
-	idRangeOffset      []uint16
-	glyphIndexArray    []uint16
+	glyphIndexer       glyphIndexer
 }
 
 func (rec *cmapEncodingRecord) read(file io.Reader) (err os.Error) {
-	if err = readValues(file, &rec.platformID, &rec.platformSpecificID, &rec.offset); err != nil {
-		return
-	}
-	return
+	return readValues(file, &rec.platformID, &rec.platformSpecificID, &rec.offset)
 }
 
 func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
@@ -118,16 +94,49 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
 	}
 	switch rec.format {
 	case 0:
-		err = rec.readMappingFormat0(file)
+		rec.glyphIndexer = new(format0EncodingRecord)
+		err = rec.glyphIndexer.init(file)
 	case 4:
-		err = rec.readMappingFormat4(file)
+		rec.glyphIndexer = new(format4EncodingRecord)
+		err = rec.glyphIndexer.init(file)
 	default:
 		return os.NewError(fmt.Sprintf("Unsupported mapping table format: %d", rec.format))
 	}
 	return
 }
 
-func (rec *cmapEncodingRecord) readMappingFormat0(file io.Reader) (err os.Error) {
+func (rec *cmapEncodingRecord) write(wr io.Writer) {
+	fmt.Fprintln(wr, "----------")
+	fmt.Fprintln(wr, "cmap encoding")
+	fmt.Fprintf(wr, "platformID = %d\n", rec.platformID)
+	fmt.Fprintf(wr, "platformSpecificID = %d\n", rec.platformSpecificID)
+	fmt.Fprintf(wr, "offset = %d\n", rec.offset)
+	fmt.Fprintf(wr, "format = %d\n", rec.format)
+	rec.glyphIndexer.write(wr)
+}
+
+type glyphIndexer interface {
+	init(file io.Reader) (err os.Error)
+	glyphIndex(codepoint int) uint16
+	write(wr io.Writer)
+}
+
+type format0EncodingRecord struct {
+	length          uint16
+	language        uint16
+	segCountX2      uint16
+	searchRange     uint16
+	entrySelector   uint16
+	rangeShift      uint16
+	endCode         []uint16
+	reservedPad     uint16
+	startCode       []uint16
+	idDelta         []uint16
+	idRangeOffset   []uint16
+	glyphIndexArray []uint16
+}
+
+func (rec *format0EncodingRecord) init(file io.Reader) (err os.Error) {
 	if readValues(file, &rec.length, &rec.language); err != nil {
 		return
 	}
@@ -142,7 +151,59 @@ func (rec *cmapEncodingRecord) readMappingFormat0(file io.Reader) (err os.Error)
 	return
 }
 
-func (rec *cmapEncodingRecord) readMappingFormat4(file io.Reader) (err os.Error) {
+func (enc *format0EncodingRecord) glyphIndex(codepoint int) uint16 {
+	low, high := 0, len(enc.endCode)-1
+	for low <= high {
+		i := (low + high) / 2
+		if uint16(codepoint) > enc.endCode[i] {
+			low = i + 1
+			continue
+		}
+		if uint16(codepoint) < enc.startCode[i] {
+			high = i - 1
+			continue
+		}
+		if enc.idRangeOffset[i] == 0 {
+			return enc.idDelta[i] + uint16(codepoint)
+		}
+		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
+		gi := enc.idRangeOffset[i]/2 + (uint16(codepoint) - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
+		return enc.glyphIndexArray[gi]
+	}
+	return 0
+}
+
+func (rec *format0EncodingRecord) write(wr io.Writer) {
+	fmt.Fprintf(wr, "length = %d\n", rec.length)
+	fmt.Fprintf(wr, "language = %d\n", rec.language)
+	fmt.Fprintf(wr, "segCountX2 = %d\n", rec.segCountX2)
+	fmt.Fprintf(wr, "searchRange = %d\n", rec.searchRange)
+	fmt.Fprintf(wr, "entrySelector = %d\n", rec.entrySelector)
+	fmt.Fprintf(wr, "rangeShift = %d\n", rec.rangeShift)
+	fmt.Fprint(wr, "endCode = ", rec.endCode, "\n")
+	fmt.Fprintf(wr, "reservedPad = %d\n", rec.reservedPad)
+	fmt.Fprint(wr, "startCode = ", rec.startCode, "\n")
+	fmt.Fprint(wr, "idDelta = ", rec.idDelta, "\n")
+	fmt.Fprint(wr, "idRangeOffset = ", rec.idRangeOffset, "\n")
+	fmt.Fprint(wr, "glyphIndexArray = ", rec.glyphIndexArray, "\n")
+}
+
+type format4EncodingRecord struct {
+	length          uint16
+	language        uint16
+	segCountX2      uint16
+	searchRange     uint16
+	entrySelector   uint16
+	rangeShift      uint16
+	endCode         []uint16
+	reservedPad     uint16
+	startCode       []uint16
+	idDelta         []uint16
+	idRangeOffset   []uint16
+	glyphIndexArray []uint16
+}
+
+func (rec *format4EncodingRecord) init(file io.Reader) (err os.Error) {
 	if err = readValues(file,
 		&rec.length,
 		&rec.language,
@@ -181,13 +242,30 @@ func (rec *cmapEncodingRecord) readMappingFormat4(file io.Reader) (err os.Error)
 	return
 }
 
-func (rec *cmapEncodingRecord) write(wr io.Writer) {
-	fmt.Fprintln(wr, "----------")
-	fmt.Fprintln(wr, "cmap encoding")
-	fmt.Fprintf(wr, "platformID = %d\n", rec.platformID)
-	fmt.Fprintf(wr, "platformSpecificID = %d\n", rec.platformSpecificID)
-	fmt.Fprintf(wr, "offset = %d\n", rec.offset)
-	fmt.Fprintf(wr, "format = %d\n", rec.format)
+// 72.0 ns
+func (enc *format4EncodingRecord) glyphIndex(codepoint int) uint16 {
+	low, high := 0, len(enc.endCode)-1
+	for low <= high {
+		i := (low + high) / 2
+		if uint16(codepoint) > enc.endCode[i] {
+			low = i + 1
+			continue
+		}
+		if uint16(codepoint) < enc.startCode[i] {
+			high = i - 1
+			continue
+		}
+		if enc.idRangeOffset[i] == 0 {
+			return enc.idDelta[i] + uint16(codepoint)
+		}
+		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
+		gi := enc.idRangeOffset[i]/2 + (uint16(codepoint) - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
+		return enc.glyphIndexArray[gi]
+	}
+	return 0
+}
+
+func (rec *format4EncodingRecord) write(wr io.Writer) {
 	fmt.Fprintf(wr, "length = %d\n", rec.length)
 	fmt.Fprintf(wr, "language = %d\n", rec.language)
 	fmt.Fprintf(wr, "segCountX2 = %d\n", rec.segCountX2)
