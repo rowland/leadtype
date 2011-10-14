@@ -103,14 +103,53 @@ func (table *nameTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 		if s, err = table.readField(rec, buf); err != nil {
 			return
 		}
-		if rec.platformID != MacintoshPlatformID {
-			// Only interested in US English names.
-			if rec.languageID == 0 || rec.languageID == 1033 {
-				table.setField(rec.nameID, s)
-			}
-		}
+		table.setField(rec.nameID, s, rec.platformID != MacintoshPlatformID && (rec.languageID == 0 || rec.languageID == 1033))
 	}
 	return
+}
+
+func (table *nameTable) getField(nameID uint16) string {
+	switch nameID {
+	case copyrightNoticeID:
+		return table.copyrightNotice
+	case fontFamilyID:
+		return table.fontFamily
+	case fontSubfamilyID:
+		return table.fontSubfamily
+	case uniqueSubfamilyID:
+		return table.uniqueSubfamily
+	case fullNameID:
+		return table.fullName
+	case versionID:
+		return table.version
+	case postScriptNameID:
+		return table.postScriptName
+	case trademarkNoticeID:
+		return table.trademarkNotice
+	case manufacturerNameID:
+		return table.manufacturerName
+	case designerID:
+		return table.designer
+	case descriptionID:
+		return table.description
+	case urlFontVendorID:
+		return table.urlFontVendor
+	case urlFontDesignerID:
+		return table.urlFontDesigner
+	case licenseDescriptionID:
+		return table.licenseDescription
+	case urlLicenseInformationID:
+		return table.urlLicenseInformation
+	case preferredFamilyID:
+		return table.preferredFamily
+	case preferredSubfamilyID:
+		return table.preferredSubfamily
+	case compatibleFullID:
+		return table.compatibleFull
+	case sampleTextID:
+		return table.sampleText
+	}
+	return ""
 }
 
 func (table *nameTable) readField(rec *nameRecord, file io.Reader) (s string, err os.Error) {
@@ -131,7 +170,10 @@ func (table *nameTable) readField(rec *nameRecord, file io.Reader) (s string, er
 	return
 }
 
-func (table *nameTable) setField(nameID uint16, s string) {
+func (table *nameTable) setField(nameID uint16, s string, overwrite bool) {
+	if !overwrite && table.getField(nameID) != "" {
+		return
+	}
 	switch nameID {
 	case copyrightNoticeID:
 		table.copyrightNotice = s
