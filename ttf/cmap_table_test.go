@@ -8,15 +8,15 @@ func TestCmapTable_glyphIndex_Arial(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error loading font: %s", err)
 	}
-	expectUI16(t, "registered", 138, f.cmapTable.glyphIndex(0xAE))
-	expectUI16(t, "copyright", 139, f.cmapTable.glyphIndex(0xA9))
-	expectUI16(t, "epsilon", 304, f.cmapTable.glyphIndex(0x03B5))
-	expectUI16(t, "l-cedilla", 441, f.cmapTable.glyphIndex(0x013B))
-	expectUI16(t, "afii57414", 905, f.cmapTable.glyphIndex(0x0626))
-	expectUI16(t, "trademark", 140, f.cmapTable.glyphIndex(0x2122))
+	expectI(t, "registered", 138, f.cmapTable.glyphIndex(0xAE))
+	expectI(t, "copyright", 139, f.cmapTable.glyphIndex(0xA9))
+	expectI(t, "epsilon", 304, f.cmapTable.glyphIndex(0x03B5))
+	expectI(t, "l-cedilla", 441, f.cmapTable.glyphIndex(0x013B))
+	expectI(t, "afii57414", 905, f.cmapTable.glyphIndex(0x0626))
+	expectI(t, "trademark", 140, f.cmapTable.glyphIndex(0x2122))
 
-	expectUI16(t, "reversed-e", 1688, f.cmapTable.glyphIndex(0x018E))
-	expectUI16(t, "t-with-comma", 1801, f.cmapTable.glyphIndex(0x021A))
+	expectI(t, "reversed-e", 1688, f.cmapTable.glyphIndex(0x018E))
+	expectI(t, "t-with-comma", 1801, f.cmapTable.glyphIndex(0x021A))
 	// for i := uint16(0); i < 65535; i++ {
 	// 	fmt.Printf("[%d] %d\n", i, f.cmapTable.glyphIndex(i))
 	// }
@@ -27,21 +27,21 @@ func TestCmapTable_glyphIndex_Courier(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error loading font: %s", err)
 	}
-	expectUI16(t, "registered", 138, f.cmapTable.glyphIndex(0xAE))
-	expectUI16(t, "copyright", 139, f.cmapTable.glyphIndex(0xA9))
-	expectUI16(t, "epsilon", 304, f.cmapTable.glyphIndex(0x03B5))
-	expectUI16(t, "l-cedilla", 441, f.cmapTable.glyphIndex(0x013B))
-	expectUI16(t, "afii57414", 905, f.cmapTable.glyphIndex(0x0626))
-	expectUI16(t, "trademark", 140, f.cmapTable.glyphIndex(0x2122))
+	expectI(t, "registered", 138, f.cmapTable.glyphIndex(0xAE))
+	expectI(t, "copyright", 139, f.cmapTable.glyphIndex(0xA9))
+	expectI(t, "epsilon", 304, f.cmapTable.glyphIndex(0x03B5))
+	expectI(t, "l-cedilla", 441, f.cmapTable.glyphIndex(0x013B))
+	expectI(t, "afii57414", 905, f.cmapTable.glyphIndex(0x0626))
+	expectI(t, "trademark", 140, f.cmapTable.glyphIndex(0x2122))
 
-	expectUI16(t, "reversed-e", 1693, f.cmapTable.glyphIndex(0x018E))
-	expectUI16(t, "t-with-comma", 1806, f.cmapTable.glyphIndex(0x021A))
+	expectI(t, "reversed-e", 1693, f.cmapTable.glyphIndex(0x018E))
+	expectI(t, "t-with-comma", 1806, f.cmapTable.glyphIndex(0x021A))
 	// for i := uint16(0); i < 256; i++ {
 	// 	fmt.Printf("[%d] %d\n", i, f.cmapTable.glyphIndex(i))
 	// }
 }
 
-// 76.7 ns
+// 74.3 ns
 func BenchmarkGlyphIndex(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -54,7 +54,7 @@ func BenchmarkGlyphIndex(b *testing.B) {
 	}
 }
 
-// 72.0 ns
+// 70.1 ns
 func BenchmarkGlyphIndex_format4(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -64,5 +64,18 @@ func BenchmarkGlyphIndex_format4(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		f.cmapTable.format4Indexer.glyphIndex(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
+	}
+}
+
+// 96.5 ns
+func BenchmarkGlyphIndex_format12(b *testing.B) {
+	b.StopTimer()
+	f, err := LoadFont("/Library/Fonts/华文楷体.ttf")
+	if err != nil {
+		panic("Error loading font: " + err.String())
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f.cmapTable.format12Indexer.glyphIndex(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
 	}
 }

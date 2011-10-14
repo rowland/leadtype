@@ -14,6 +14,7 @@ type cmapTable struct {
 	encodingRecords  []cmapEncodingRecord
 	format0Indexer   glyphIndexer
 	format4Indexer   glyphIndexer
+	format12Indexer  glyphIndexer
 	preferredIndexer glyphIndexer
 }
 
@@ -44,6 +45,8 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 			table.format0Indexer = enc.glyphIndexer
 		case 4:
 			table.format4Indexer = enc.glyphIndexer
+		case 12:
+			table.format12Indexer = enc.glyphIndexer
 		}
 		if enc.platformID == UnicodePlatformID && enc.platformSpecificID == Unicode2PlatformSpecificID {
 			preferredEncoding = i
@@ -61,8 +64,8 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 	return
 }
 
-// 76.7 ns
-func (table *cmapTable) glyphIndex(codepoint int) uint16 {
+// 74.3 ns
+func (table *cmapTable) glyphIndex(codepoint int) int {
 	return table.preferredIndexer.glyphIndex(codepoint)
 }
 
@@ -99,6 +102,9 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
 	case 4:
 		rec.glyphIndexer = new(format4EncodingRecord)
 		err = rec.glyphIndexer.init(file)
+	case 12:
+		rec.glyphIndexer = new(format12EncodingRecord)
+		err = rec.glyphIndexer.init(file)
 	default:
 		return os.NewError(fmt.Sprintf("Unsupported mapping table format: %d", rec.format))
 	}
@@ -117,7 +123,7 @@ func (rec *cmapEncodingRecord) write(wr io.Writer) {
 
 type glyphIndexer interface {
 	init(file io.Reader) (err os.Error)
-	glyphIndex(codepoint int) uint16
+	glyphIndex(codepoint int) int
 	write(wr io.Writer)
 }
 
@@ -151,7 +157,7 @@ func (rec *format0EncodingRecord) init(file io.Reader) (err os.Error) {
 	return
 }
 
-func (enc *format0EncodingRecord) glyphIndex(codepoint int) uint16 {
+func (enc *format0EncodingRecord) glyphIndex(codepoint int) int {
 	low, high := 0, len(enc.endCode)-1
 	for low <= high {
 		i := (low + high) / 2
@@ -164,11 +170,10 @@ func (enc *format0EncodingRecord) glyphIndex(codepoint int) uint16 {
 			continue
 		}
 		if enc.idRangeOffset[i] == 0 {
-			return enc.idDelta[i] + uint16(codepoint)
+			return int(enc.idDelta[i]) + codepoint
 		}
-		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
 		gi := enc.idRangeOffset[i]/2 + (uint16(codepoint) - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
-		return enc.glyphIndexArray[gi]
+		return int(enc.glyphIndexArray[gi])
 	}
 	return 0
 }
@@ -242,8 +247,8 @@ func (rec *format4EncodingRecord) init(file io.Reader) (err os.Error) {
 	return
 }
 
-// 72.0 ns
-func (enc *format4EncodingRecord) glyphIndex(codepoint int) uint16 {
+// 70.1 ns
+func (enc *format4EncodingRecord) glyphIndex(codepoint int) int {
 	low, high := 0, len(enc.endCode)-1
 	for low <= high {
 		i := (low + high) / 2
@@ -256,11 +261,10 @@ func (enc *format4EncodingRecord) glyphIndex(codepoint int) uint16 {
 			continue
 		}
 		if enc.idRangeOffset[i] == 0 {
-			return enc.idDelta[i] + uint16(codepoint)
+			return int(enc.idDelta[i] + uint16(codepoint))
 		}
-		// fmt.Printf("codepoint: %d, i: %d, idRangeOffset: %d, startCode: %d, diff: %d, offset: %d\n", codepoint, i, enc.idRangeOffset[i], enc.startCode[i], codepoint - enc.startCode[i], i - len(enc.idRangeOffset))
 		gi := enc.idRangeOffset[i]/2 + (uint16(codepoint) - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
-		return enc.glyphIndexArray[gi]
+		return int(enc.glyphIndexArray[gi])
 	}
 	return 0
 }
@@ -278,4 +282,68 @@ func (rec *format4EncodingRecord) write(wr io.Writer) {
 	fmt.Fprint(wr, "idDelta = ", rec.idDelta, "\n")
 	fmt.Fprint(wr, "idRangeOffset = ", rec.idRangeOffset, "\n")
 	fmt.Fprint(wr, "glyphIndexArray = ", rec.glyphIndexArray, "\n")
+}
+
+type format12EncodingRecord struct {
+	frac     uint16
+	length   uint32
+	language uint32
+	nGroups  uint32
+	groups   []format12Group
+}
+
+func (enc *format12EncodingRecord) init(file io.Reader) (err os.Error) {
+	if err = readValues(file,
+		&enc.frac,
+		&enc.length,
+		&enc.language,
+		&enc.nGroups); err != nil {
+		return
+	}
+	enc.groups = make([]format12Group, enc.nGroups)
+	for i := uint32(0); i < enc.nGroups; i++ {
+		if err = enc.groups[i].read(file); err != nil {
+			return
+		}
+	}
+	return
+}
+
+// 96.5 ns
+func (enc *format12EncodingRecord) glyphIndex(codepoint int) int {
+	low, high := uint32(0), enc.nGroups-1
+	for low <= high {
+		i := (low + high) / 2
+		group := &enc.groups[i]
+		if uint32(codepoint) > group.endCharCode {
+			low = i + 1
+			continue
+		}
+		if uint32(codepoint) < group.startCharCode {
+			high = i - 1
+			continue
+		}
+		return int(group.startGlyphCode + (uint32(codepoint) - group.startCharCode))
+	}
+	return 0
+}
+
+func (enc *format12EncodingRecord) write(wr io.Writer) {
+	fmt.Fprintf(wr, "length = %d\n", enc.length)
+	fmt.Fprintf(wr, "language = %d\n", enc.language)
+	fmt.Fprintf(wr, "nGroups = %d\n", enc.nGroups)
+	for i, group := range enc.groups {
+		fmt.Fprintf(wr, "[%d] starCharCode = %d, endCharCode = %d, startGlyphCode = %d\n",
+			i, group.startCharCode, group.endCharCode, group.startGlyphCode)
+	}
+}
+
+type format12Group struct {
+	startCharCode  uint32
+	endCharCode    uint32
+	startGlyphCode uint32
+}
+
+func (group *format12Group) read(file io.Reader) (err os.Error) {
+	return readValues(file, &group.startCharCode, &group.endCharCode, &group.startGlyphCode)
 }
