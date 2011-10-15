@@ -169,6 +169,12 @@ func (font *Font) Dump(wr io.Writer, feature string) {
 	}
 }
 
+const RestrictedLicenseEmbedding = 0x002
+
+func (font *Font) Embeddable() bool {
+	return font.os2Table.fsType & RestrictedLicenseEmbedding == 0
+}
+
 const (
 	flagFixedPitch  = 1 - 1
 	flagSerif       = 2 - 1

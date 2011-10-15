@@ -2,6 +2,12 @@ package ttf
 
 import "testing"
 
+func expect(t *testing.T, name string, condition bool) {
+	if !condition {
+		t.Errorf("%s: failed condition", name)
+	}
+}
+
 func expectI(t *testing.T, name string, expected, actual int) {
 	if expected != actual {
 		t.Errorf("%s: expected %d, got %d", name, expected, actual)

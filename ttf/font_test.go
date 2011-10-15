@@ -52,6 +52,7 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "MaxWidth", 4096, f.MaxWidth())
 	expectI(t, "AvgWidth", 904, f.AvgWidth())
 	expectI(t, "CapHeight", 1467, f.CapHeight())
+	expect(t, "Embeddable", f.Embeddable())
 }
 
 var arialTableNames = []string{
