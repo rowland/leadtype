@@ -36,6 +36,14 @@ func readValues(r io.Reader, values ...interface{}) (err os.Error) {
 	return
 }
 
+func countUniqueUint16Values(ary []uint16) int {
+	m := make(map[uint16]bool)
+	for _, v := range ary {
+		m[v] = true
+	}
+	return len(m)
+}
+
 func utf16ToString(s []uint16) string {
 	for i, v := range s {
 		if v == 0 {

@@ -13,6 +13,7 @@ type cmapTable struct {
 	numberSubtables  uint16
 	encodingRecords  []cmapEncodingRecord
 	format0Indexer   glyphIndexer
+	format2Indexer   glyphIndexer
 	format4Indexer   glyphIndexer
 	format12Indexer  glyphIndexer
 	preferredIndexer glyphIndexer
@@ -43,6 +44,8 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 		switch enc.format {
 		case 0:
 			table.format0Indexer = enc.glyphIndexer
+		case 2:
+			table.format2Indexer = enc.glyphIndexer
 		case 4:
 			table.format4Indexer = enc.glyphIndexer
 		case 12:
@@ -99,6 +102,9 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
 	case 0:
 		rec.glyphIndexer = new(format0EncodingRecord)
 		err = rec.glyphIndexer.init(file)
+	case 2:
+		rec.glyphIndexer = new(format2EncodingRecord)
+		err = rec.glyphIndexer.init(file)
 	case 4:
 		rec.glyphIndexer = new(format4EncodingRecord)
 		err = rec.glyphIndexer.init(file)
@@ -143,7 +149,7 @@ type format0EncodingRecord struct {
 }
 
 func (rec *format0EncodingRecord) init(file io.Reader) (err os.Error) {
-	if readValues(file, &rec.length, &rec.language); err != nil {
+	if err = readValues(file, &rec.length, &rec.language); err != nil {
 		return
 	}
 	glyphIndexArray := make([]uint8, 256)
@@ -191,6 +197,67 @@ func (rec *format0EncodingRecord) write(wr io.Writer) {
 	fmt.Fprint(wr, "idDelta = ", rec.idDelta, "\n")
 	fmt.Fprint(wr, "idRangeOffset = ", rec.idRangeOffset, "\n")
 	fmt.Fprint(wr, "glyphIndexArray = ", rec.glyphIndexArray, "\n")
+}
+
+type format2EncodingRecord struct {
+	length          uint16
+	language        uint16
+	subHeaderKeys   [256]uint16
+	subHeaders      []subHeader
+	glyphIndexArray []uint16
+}
+
+func (rec *format2EncodingRecord) init(file io.Reader) (err os.Error) {
+	var subHeaderKeys [256]uint16
+	if err = readValues(file, &rec.length, &rec.language, &subHeaderKeys); err != nil {
+		return
+	}
+	for i, v := range subHeaderKeys {
+		rec.subHeaderKeys[i] = v << 3 // divide by size of subHeader in bytes
+	}
+	rec.subHeaders = make([]subHeader, countUniqueUint16Values(rec.subHeaderKeys[:]))
+	for i, _ := range rec.subHeaders {
+		if err = rec.subHeaders[i].read(file); err != nil {
+			return
+		}
+	}
+	l := int(rec.length) - (2 + 2 + 2 + (256 * 2)) - len(rec.subHeaders)*(2+2+2+2)
+	rec.glyphIndexArray = make([]uint16, l)
+	if err = readValues(file, &rec.glyphIndexArray); err != nil {
+		return
+	}
+	return
+}
+
+func (rec *format2EncodingRecord) glyphIndex(codepoint int) int {
+	return 0
+}
+
+func (rec *format2EncodingRecord) write(wr io.Writer) {
+	fmt.Fprintf(wr, "length = %d\n", rec.length)
+	fmt.Fprintf(wr, "language = %d\n", rec.language)
+	fmt.Fprintf(wr, "subHeaderKeys = %v\n", rec.subHeaderKeys)
+	fmt.Fprintf(wr, "subHeaders\n")
+	fmt.Fprintf(wr, "index\tfirstCode\tentryCount\tidDelta\tidRangeOffset\n")
+	for i, _ := range rec.subHeaders {
+		fmt.Fprintf(wr, "[%d]\t%d\t%d\t%d\t%d\n", i,
+			rec.subHeaders[i].firstCode,
+			rec.subHeaders[i].entryCount,
+			rec.subHeaders[i].idDelta,
+			rec.subHeaders[i].idRangeOffset)
+	}
+	fmt.Fprintf(wr, "glyphIndexArray = %v\n", rec.glyphIndexArray)
+}
+
+type subHeader struct {
+	firstCode     uint16
+	entryCount    uint16
+	idDelta       int16
+	idRangeOffset uint16
+}
+
+func (sh *subHeader) read(file io.Reader) (err os.Error) {
+	return readValues(file, &sh.firstCode, &sh.entryCount, &sh.idDelta, &sh.idRangeOffset)
 }
 
 type format4EncodingRecord struct {
