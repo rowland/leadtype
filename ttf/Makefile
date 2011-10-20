@@ -4,6 +4,7 @@ TARG=go-pdf/ttf
 
 GOFILES=\
   font.go\
+  font_collection.go\
   cmap_table.go\
   head_table.go\
   hhea_table.go\
