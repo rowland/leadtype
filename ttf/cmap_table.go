@@ -15,6 +15,7 @@ type cmapTable struct {
 	format0Indexer   glyphIndexer
 	format2Indexer   glyphIndexer
 	format4Indexer   glyphIndexer
+	format6Indexer   glyphIndexer
 	format12Indexer  glyphIndexer
 	preferredIndexer glyphIndexer
 }
@@ -48,6 +49,8 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 			table.format2Indexer = enc.glyphIndexer
 		case 4:
 			table.format4Indexer = enc.glyphIndexer
+		case 6:
+			table.format6Indexer = enc.glyphIndexer
 		case 12:
 			table.format12Indexer = enc.glyphIndexer
 		}
@@ -56,6 +59,9 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 			break
 		}
 		if enc.platformID == MicrosoftPlatformID && enc.platformSpecificID == UCS2PlatformSpecificID {
+			preferredEncoding = i
+		}
+		if enc.platformID == MacintoshPlatformID && preferredEncoding < 0 {
 			preferredEncoding = i
 		}
 	}
@@ -107,6 +113,9 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
 		err = rec.glyphIndexer.init(file)
 	case 4:
 		rec.glyphIndexer = new(format4EncodingRecord)
+		err = rec.glyphIndexer.init(file)
+	case 6:
+		rec.glyphIndexer = new(format6EncodingRecord)
 		err = rec.glyphIndexer.init(file)
 	case 12:
 		rec.glyphIndexer = new(format12EncodingRecord)
@@ -349,6 +358,41 @@ func (rec *format4EncodingRecord) write(wr io.Writer) {
 	fmt.Fprint(wr, "idDelta = ", rec.idDelta, "\n")
 	fmt.Fprint(wr, "idRangeOffset = ", rec.idRangeOffset, "\n")
 	fmt.Fprint(wr, "glyphIndexArray = ", rec.glyphIndexArray, "\n")
+}
+
+type format6EncodingRecord struct {
+	length          uint16
+	language        uint16
+	firstCode       uint16
+	entryCount      uint16
+	glyphIndexArray []uint16
+}
+
+func (enc *format6EncodingRecord) init(file io.Reader) (err os.Error) {
+	if err = readValues(file,
+		&enc.length,
+		&enc.language,
+		&enc.firstCode,
+		&enc.entryCount); err != nil {
+		return
+	}
+	enc.glyphIndexArray = make([]uint16, enc.entryCount)
+	return readValues(file, &enc.glyphIndexArray)
+}
+
+func (enc *format6EncodingRecord) glyphIndex(codepoint int) int {
+	if codepoint < int(enc.firstCode) || codepoint >= int(enc.firstCode + enc.entryCount) {
+		return 0
+	}
+	return int(enc.glyphIndexArray[codepoint - int(enc.firstCode)])
+}
+
+func (enc *format6EncodingRecord) write(wr io.Writer) {
+	fmt.Fprintf(wr, "length = %d\n", enc.length)
+	fmt.Fprintf(wr, "language = %d\n", enc.language)
+	fmt.Fprintf(wr, "firstCode = %d\n", enc.firstCode)
+	fmt.Fprintf(wr, "firstCode = %d\n", enc.entryCount)
+	fmt.Fprintf(wr, "glyphIndexArray = %v\n", enc.glyphIndexArray)
 }
 
 type format12EncodingRecord struct {
