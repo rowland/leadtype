@@ -75,7 +75,7 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 		}
 	}
 	if entry := font.tableDir.table("post"); entry != nil {
-		if err = font.postTable.init(file, entry); err != nil {
+		if err = font.postTable.init(file, entry, font.maxpTable.numGlyphs); err != nil {
 			return
 		}
 	}

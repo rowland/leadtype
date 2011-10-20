@@ -18,8 +18,9 @@ const (
 
 // Unicode Platform Specific ID's http://developer.apple.com/fonts/TTRefMan/RM06/Chap6name.html
 const (
-	DefaultPlatformSpecificID  = 0
-	Unicode2PlatformSpecificID = 3
+	DefaultPlatformSpecificID      = 0
+	Unicode2PlatformSpecificID     = 3
+	Unicode2FullPlatformSpecificID = 4
 )
 
 // Microsoft Platform Specific ID's http://www.microsoft.com/typography/otspec/name.htm

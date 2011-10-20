@@ -54,7 +54,8 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 		case 12:
 			table.format12Indexer = enc.glyphIndexer
 		}
-		if enc.platformID == UnicodePlatformID && enc.platformSpecificID == Unicode2PlatformSpecificID {
+		if enc.platformID == UnicodePlatformID &&
+			(enc.platformSpecificID == Unicode2PlatformSpecificID || enc.platformSpecificID == Unicode2FullPlatformSpecificID) {
 			preferredEncoding = i
 			break
 		}
@@ -381,10 +382,10 @@ func (enc *format6EncodingRecord) init(file io.Reader) (err os.Error) {
 }
 
 func (enc *format6EncodingRecord) glyphIndex(codepoint int) int {
-	if codepoint < int(enc.firstCode) || codepoint >= int(enc.firstCode + enc.entryCount) {
+	if codepoint < int(enc.firstCode) || codepoint >= int(enc.firstCode+enc.entryCount) {
 		return 0
 	}
-	return int(enc.glyphIndexArray[codepoint - int(enc.firstCode)])
+	return int(enc.glyphIndexArray[codepoint-int(enc.firstCode)])
 }
 
 func (enc *format6EncodingRecord) write(wr io.Writer) {

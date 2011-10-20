@@ -19,9 +19,10 @@ type postTable struct {
 	minMemType1        uint32
 	maxMemType1        uint32
 	names              []string
+	charCodes          []uint16
 }
 
-func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16) (err os.Error) {
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -50,6 +51,9 @@ func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 		err = table.readFormat2Names(file)
 	case 3.0:
 		// no subtable for format 3
+	case 4.0:
+		table.charCodes = make([]uint16, numGlyphs)
+		err = readValues(file, &table.charCodes)
 	default:
 		return os.NewError(fmt.Sprintf("Unsupported post table format: %g", table.format.Tof64()))
 	}
