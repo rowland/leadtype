@@ -130,8 +130,16 @@ func (font *Font) CapHeight() int {
 	return 0
 }
 
+func (font *Font) Copyright() string {
+	return font.nameTable.copyrightNotice
+}
+
 func (font *Font) Descent() int {
 	return int(font.hheaTable.descent)
+}
+
+func (font *Font) Designer() string {
+	return font.nameTable.designer
 }
 
 var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx", "vhea", "vmtx", "OS/2"}
@@ -187,6 +195,10 @@ const (
 	flagForceBold   = 19 - 1
 )
 
+func (font *Font) Family() string {
+	return font.nameTable.fontFamily
+}
+
 func (font *Font) Flags() (flags uint32) {
 	flags = font.postTable.isFixedPitch << flagFixedPitch
 	if font.ItalicAngle() != 0 {
@@ -199,12 +211,24 @@ func (font *Font) Flags() (flags uint32) {
 	// TODO: Set remainder of flags
 }
 
+func (font *Font) FullName() string {
+	return font.nameTable.fullName
+}
+
 func (font *Font) ItalicAngle() float64 {
 	return font.postTable.italicAngle.Tof64()
 }
 
 func (font *Font) Leading() int {
 	return int(font.hheaTable.ascent - font.hheaTable.descent + font.hheaTable.lineGap)
+}
+
+func (font *Font) License() string {
+	return font.nameTable.licenseDescription
+}
+
+func (font *Font) Manufacturer() string {
+	return font.nameTable.manufacturerName
 }
 
 func (font *Font) MaxWidth() int {
@@ -220,6 +244,10 @@ func (font *Font) MissingWidth() int {
 
 func (font *Font) NumGlyphs() int {
 	return int(font.maxpTable.numGlyphs)
+}
+
+func (font *Font) PostScriptName() string {
+	return font.nameTable.postScriptName
 }
 
 /*
@@ -239,8 +267,24 @@ func (font *Font) String() string {
 	return buf.String()
 }
 
+func (font *Font) Style() string {
+	return font.nameTable.fontSubfamily
+}
+
+func (font *Font) Trademark() string {
+	return font.nameTable.trademarkNotice
+}
+
+func (font *Font) UniqueName() string {
+	return font.nameTable.uniqueSubfamily
+}
+
 func (font *Font) UnitsPerEm() int {
 	return int(font.headTable.unitsPerEm)
+}
+
+func (font *Font) Version() string {
+	return font.nameTable.version
 }
 
 func (font *Font) writeHeader(wr io.Writer) {

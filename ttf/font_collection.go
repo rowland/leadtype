@@ -29,3 +29,26 @@ func (fc *FontCollection) Add(pattern string) (err os.Error) {
 func (fc *FontCollection) Len() int {
 	return len(fc.fonts)
 }
+
+func (fc *FontCollection) Select(family, weight, style string, options FontOptions) (*Font, os.Error) {
+	var ws string
+	if weight != "" && style != "" {
+		ws = weight + " " + style
+	} else if weight == "" && style == "" {
+		ws = "Regular"
+	} else if style == "" {
+		ws = weight
+	} else if weight == "" {
+		ws = style
+	}
+	for _, f := range fc.fonts {
+		if f.Family() == family && f.Style() == ws {
+			return f, nil
+		}
+	}
+	return nil, os.NewError(fmt.Sprintf("Font %s %s not found", family, ws))
+}
+
+type FontOptions struct {
+	
+}
