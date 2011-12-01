@@ -107,6 +107,7 @@ func BenchmarkAdvanceWidth(b *testing.B) {
 	}
 }
 
+// 13,314,800 ns
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("/Library/Fonts/Arial.ttf")

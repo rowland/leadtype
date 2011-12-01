@@ -7,7 +7,8 @@ import (
 )
 
 type FontCollection struct {
-	fonts []*Font
+	fontInfos []*FontInfo
+	fonts     map[string]*Font
 }
 
 func (fc *FontCollection) Add(pattern string) (err os.Error) {
@@ -16,21 +17,21 @@ func (fc *FontCollection) Add(pattern string) (err os.Error) {
 		return
 	}
 	for _, pathname := range pathnames {
-		font, err2 := LoadFont(pathname)
+		fi, err2 := LoadFontInfo(pathname)
 		if err2 != nil {
 			err = os.NewError(fmt.Sprintf("Error loading %s: %s", pathname, err2))
 			continue
 		}
-		fc.fonts = append(fc.fonts, font)
+		fc.fontInfos = append(fc.fontInfos, fi)
 	}
 	return
 }
 
 func (fc *FontCollection) Len() int {
-	return len(fc.fonts)
+	return len(fc.fontInfos)
 }
 
-func (fc *FontCollection) Select(family, weight, style string, options FontOptions) (*Font, os.Error) {
+func (fc *FontCollection) Select(family, weight, style string, options FontOptions) (font *Font, err os.Error) {
 	var ws string
 	if weight != "" && style != "" {
 		ws = weight + " " + style
@@ -41,12 +42,21 @@ func (fc *FontCollection) Select(family, weight, style string, options FontOptio
 	} else if weight == "" {
 		ws = style
 	}
-	for _, f := range fc.fonts {
+	if fc.fonts == nil {
+		fc.fonts = make(map[string]*Font)
+	}
+	for _, f := range fc.fontInfos {
 		if f.Family() == family && f.Style() == ws {
-			return f, nil
+			font = fc.fonts[f.filename]
+			if font == nil {
+				font, err = LoadFont(f.filename)
+				fc.fonts[f.filename] = font
+			}
+			return
 		}
 	}
-	return nil, os.NewError(fmt.Sprintf("Font %s %s not found", family, ws))
+	err = os.NewError(fmt.Sprintf("Font %s %s not found", family, ws))
+	return
 }
 
 type FontOptions struct {

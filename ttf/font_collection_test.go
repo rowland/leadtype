@@ -33,7 +33,7 @@ func TestFontCollection(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectI(t, "Len", 102, fc.Len())
+	expectI(t, "Len", 114, fc.Len())
 	for _, fs := range testSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, FontOptions{})
 		if err == nil {
@@ -47,6 +47,7 @@ func TestFontCollection(t *testing.T) {
 	expectS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.String())
 }
 
+// 124,346,300 ns
 func BenchmarkFontCollection_Add(b *testing.B) {
 	var fc FontCollection
 

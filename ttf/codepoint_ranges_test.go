@@ -1,7 +1,6 @@
 package ttf
 
 import "testing"
-// import "fmt"
 
 func TestCodepointRanges(t *testing.T) {
 	expectI8(t, "Bit", 0, CodepointRangesFlat.RangeForRune(0x50).Bit)
@@ -9,6 +8,7 @@ func TestCodepointRanges(t *testing.T) {
 	expectI8(t, "Bit", 4, CodepointRangesFlat.RangeForRune(0x1D80).Bit)
 }
 
+// 41.7 ns
 func BenchmarkRangeForRune(b *testing.B) {
 	count := 0
 	for i := 0; i < b.N; i++ {
@@ -21,5 +21,4 @@ func BenchmarkRangeForRune(b *testing.B) {
 			}
 		}
 	}
-	// fmt.Printf("Count = %d\n", count)
 }
