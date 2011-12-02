@@ -1,0 +1,54 @@
+require 'iconv'
+
+codepages = [:cp1250, :cp1251, :cp1252, :cp1253, :cp1254, :cp1256, :cp1257, :cp1258, :cp874]
+
+codepages.each do |cp|
+  desc "Generate codepage table for #{cp.to_s.upcase}"
+
+  task cp do
+    generate_codepage_table(cp.to_s.upcase)
+  end
+end
+
+task :default => codepages
+
+def generate_codepage_table(cp)
+  puts "Generating codepage table for #{cp}"
+  codepoints = Iconv.open("UCS-2BE//IGNORE", cp) do |ic|
+    (0..255).map { |c| ic.iconv(c.chr) }.map { |s| s.unpack('n') }.map { |a| a.first }
+  end
+  ranges = ranges_from_ary(codepoints).sort { |a, b| a.first <=> b.first }
+  open(cp.downcase+".go", "w") do |f|
+    f.puts "package codepage"
+    f.puts ""
+    f.puts "var #{cp} = []Range{"
+    ranges.each do |range|
+      f.puts "\t{#{range.first}, #{range.count}, #{range.delta}},"
+    end
+    f.puts "}"
+  end
+end
+
+Range = Struct.new(:first, :count, :delta)
+
+def ranges_from_ary(codepoints)
+  ranges = []
+  range = nil
+  last_codepoint = 0
+
+  codepoints.each_with_index do |codepoint, i|
+    next if codepoint.nil?
+    if range.nil? or (codepoint != last_codepoint + 1)
+      range = Range.new(codepoint, 1, i - codepoint)
+      ranges << range
+    else
+      range.count += 1
+    end
+    last_codepoint = codepoint
+  end
+
+  ranges
+end
+
+      
+    
