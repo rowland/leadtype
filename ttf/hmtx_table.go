@@ -29,7 +29,7 @@ func (table *hmtxTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs u
 	return
 }
 
-// 12.6 ns
+// 9.4 ns
 func (table *hmtxTable) lookup(glyphIndex int) longHorMetric {
 	if glyphIndex >= 0 {
 		if glyphIndex < len(table.hMetrics) {
@@ -42,7 +42,7 @@ func (table *hmtxTable) lookup(glyphIndex int) longHorMetric {
 	return longHorMetric{}
 }
 
-// 11.1 ns
+// 7.7 ns
 func (table *hmtxTable) lookupAdvanceWidth(glyphIndex int) uint16 {
 	if glyphIndex >= 0 && glyphIndex < len(table.hMetrics) {
 		return table.hMetrics[glyphIndex].advanceWidth
@@ -50,7 +50,7 @@ func (table *hmtxTable) lookupAdvanceWidth(glyphIndex int) uint16 {
 	return 0
 }
 
-// 11.1 ns
+// 7.4 ns
 func (table *hmtxTable) lookupLeftSideBearing(glyphIndex int) int16 {
 	if glyphIndex >= 0 {
 		if glyphIndex < len(table.hMetrics) {

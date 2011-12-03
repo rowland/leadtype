@@ -17,7 +17,7 @@ type FontInfo struct {
 	os2Table      os2Table	
 }
 
-// 1,744,513 ns
+// 1,077,216 ns
 func LoadFontInfo(filename string) (fi *FontInfo, err os.Error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {

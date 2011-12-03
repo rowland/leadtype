@@ -11,6 +11,7 @@ type FontCollection struct {
 	fonts     map[string]*Font
 }
 
+// 81,980,000 ns
 func (fc *FontCollection) Add(pattern string) (err os.Error) {
 	var pathnames []string
 	if pathnames, err = filepath.Glob(pattern); err != nil {

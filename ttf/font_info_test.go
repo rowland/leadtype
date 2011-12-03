@@ -11,7 +11,7 @@ func TestLoadFontInfo(t *testing.T) {
 	expectS(t, "Style", "Regular", fi.Style())
 }
 
-// 1,744,513 ns
+// 1,077,216 ns
 func BenchmarkLoadFontInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFontInfo("/Library/Fonts/Arial.ttf")

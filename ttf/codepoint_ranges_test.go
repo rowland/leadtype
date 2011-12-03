@@ -8,7 +8,7 @@ func TestCodepointRanges(t *testing.T) {
 	expectI8(t, "Bit", 4, CodepointRangesFlat.RangeForRune(0x1D80).Bit)
 }
 
-// 41.7 ns
+// 23.2 ns
 func BenchmarkRangeForRune(b *testing.B) {
 	count := 0
 	for i := 0; i < b.N; i++ {

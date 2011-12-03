@@ -94,7 +94,7 @@ var arialTableNames = []string{
 	"prep",
 }
 
-// 83 ns
+// 50.4 ns
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -107,7 +107,7 @@ func BenchmarkAdvanceWidth(b *testing.B) {
 	}
 }
 
-// 13,314,800 ns
+// 9,151,820 ns
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("/Library/Fonts/Arial.ttf")

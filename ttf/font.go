@@ -29,7 +29,7 @@ type Font struct {
 	vmtxTable     vmtxTable
 }
 
-// 13,314,800 ns
+// 9,151,820 ns
 func LoadFont(filename string) (font *Font, err os.Error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
@@ -107,6 +107,7 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 	return
 }
 
+// 50.4 ns
 func (font *Font) AdvanceWidth(codepoint int) int {
 	return int(font.hmtxTable.lookupAdvanceWidth(int(font.cmapTable.glyphIndex(codepoint))))
 }

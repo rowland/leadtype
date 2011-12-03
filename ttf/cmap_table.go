@@ -74,7 +74,7 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 	return
 }
 
-// 74.3 ns
+// 41.9 ns
 func (table *cmapTable) glyphIndex(codepoint int) int {
 	return table.preferredIndexer.glyphIndex(codepoint)
 }
@@ -324,7 +324,7 @@ func (rec *format4EncodingRecord) init(file io.Reader) (err os.Error) {
 	return
 }
 
-// 70.1 ns
+// 35.9 ns
 func (enc *format4EncodingRecord) glyphIndex(codepoint int) int {
 	low, high := 0, len(enc.endCode)-1
 	for low <= high {
@@ -421,7 +421,7 @@ func (enc *format12EncodingRecord) init(file io.Reader) (err os.Error) {
 	return
 }
 
-// 96.5 ns
+// 51.7 ns
 func (enc *format12EncodingRecord) glyphIndex(codepoint int) int {
 	low, high := uint32(0), enc.nGroups-1
 	for low <= high {

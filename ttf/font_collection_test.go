@@ -47,7 +47,7 @@ func TestFontCollection(t *testing.T) {
 	expectS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.String())
 }
 
-// 124,346,300 ns
+// 81,980,000 ns
 func BenchmarkFontCollection_Add(b *testing.B) {
 	var fc FontCollection
 

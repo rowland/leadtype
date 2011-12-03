@@ -28,7 +28,7 @@ func (list CodepointRangeList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-// 41.7 ns
+// 23.2 ns
 func (list CodepointRangeList) RangeForRune(rune uint32) *CodepointRange {
 	low, high := 0, len(list)-1
 	for low <= high {
