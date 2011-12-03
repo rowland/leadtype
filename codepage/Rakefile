@@ -19,17 +19,16 @@ def generate_codepage_table(cp)
   end
   ranges = ranges_from_ary(codepoints).sort { |a, b| a.first <=> b.first }
   open(cp.downcase+".go", "w") do |f|
-    f.puts "package codepage"
-    f.puts ""
-    f.puts "var #{cp} = []Range{"
+    f.puts "package codepage", ""
+    f.puts "var #{cp} = Ranges{"
     ranges.each do |range|
-      f.puts "\t{#{range.first}, #{range.count}, #{range.delta}},"
+      f.puts "\t{0x%04X, 0x%04X, %d, %d}," % [range.first, range.first + range.count - 1, range.count, range.delta]
     end
     f.puts "}"
   end
 end
 
-Range = Struct.new(:first, :count, :delta)
+CPRange = Struct.new(:first, :count, :delta)
 
 def ranges_from_ary(codepoints)
   ranges = []
@@ -39,7 +38,7 @@ def ranges_from_ary(codepoints)
   codepoints.each_with_index do |codepoint, i|
     next if codepoint.nil?
     if range.nil? or (codepoint != last_codepoint + 1)
-      range = Range.new(codepoint, 1, i - codepoint)
+      range = CPRange.new(codepoint, 1, i - codepoint)
       ranges << range
     else
       range.count += 1

@@ -1,5 +1,5 @@
 package codepage
 
-var ASCII = []Range{
-	{0, 128, 0},
+var ASCII = Ranges{
+	{0x0000, 0x007F, 128, 0},
 }
