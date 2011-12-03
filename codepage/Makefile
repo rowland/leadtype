@@ -4,6 +4,7 @@ TARG=go-pdf/codepage
 
 GOFILES=\
   codepage.go\
+  ascii.go\
   cp1250.go\
   cp1251.go\
   cp1252.go\

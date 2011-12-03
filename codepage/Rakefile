@@ -1,6 +1,6 @@
 require 'iconv'
 
-codepages = [:cp1250, :cp1251, :cp1252, :cp1253, :cp1254, :cp1256, :cp1257, :cp1258, :cp874]
+codepages = [:ascii, :cp1250, :cp1251, :cp1252, :cp1253, :cp1254, :cp1256, :cp1257, :cp1258, :cp874]
 
 codepages.each do |cp|
   desc "Generate codepage table for #{cp.to_s.upcase}"
