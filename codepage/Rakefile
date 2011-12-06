@@ -1,12 +1,15 @@
 require 'iconv'
 
-codepages = [:ascii, :cp1250, :cp1251, :cp1252, :cp1253, :cp1254, :cp1256, :cp1257, :cp1258, :cp874]
+codepages = %w(ASCII
+  ISO-8859-1 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-5 ISO-8859-6 ISO-8859-7 ISO-8859-8 ISO-8859-9 
+  ISO-8859-10 ISO-8859-11 ISO-8859-13 ISO-8859-14 ISO-8859-15 ISO-8859-16 
+  CP1252 CP1250 CP1251 CP1253 CP1254 CP1256 CP1257 CP1258 CP874)
 
 codepages.each do |cp|
-  desc "Generate codepage table for #{cp.to_s.upcase}"
+  desc "Generate codepage table for #{cp}"
 
   task cp do
-    generate_codepage_table(cp.to_s.upcase)
+    generate_codepage_table(cp)
   end
 end
 
@@ -14,18 +17,22 @@ task :default => codepages
 
 def generate_codepage_table(cp)
   puts "Generating codepage table for #{cp}"
-  codepoints = Iconv.open("UCS-2BE//IGNORE", cp) do |ic|
-    (0..255).map { |c| ic.iconv(c.chr) }.map { |s| s.unpack('n') }.map { |a| a.first }
-  end
-  ranges = ranges_from_ary(codepoints).sort { |a, b| a.first <=> b.first }
+  ranges = codepage_table(cp)
   open(cp.downcase+".go", "w") do |f|
     f.puts "package codepage", ""
-    f.puts "var #{cp} = Ranges{"
+    f.puts "var #{cp.gsub('-', '_')} = Ranges{"
     ranges.each do |range|
       f.puts "\t{0x%04X, 0x%04X, %d, %d}," % [range.first, range.first + range.count - 1, range.count, range.delta]
     end
     f.puts "}"
   end
+end
+
+def codepage_table(cp)
+  codepoints = Iconv.open("UCS-2BE//IGNORE", cp) do |ic|
+    (0..255).map { |c| ic.iconv(c.chr) }.map { |s| s.unpack('n') }.map { |a| a.first }
+  end
+  ranges_from_ary(codepoints).sort { |a, b| a.first <=> b.first }
 end
 
 CPRange = Struct.new(:first, :count, :delta)
@@ -49,5 +56,6 @@ def ranges_from_ary(codepoints)
   ranges
 end
 
-      
-    
+task :cpselect do
+  tables = codepages.map { |cp| codepage_table(cp) }
+end

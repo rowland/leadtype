@@ -110,3 +110,108 @@ func BenchmarkRanges_CharForCodepoint_CP874(b *testing.B) {
 		CP874.CharForCodepoint(i % 0x2122)
 	}
 }
+
+// 8.2 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_1(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_1.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 30.2 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_2.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 26.8 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_3(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_3.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 30.3 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_4.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 17.8 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_5(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_5.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 17.9 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_6(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_6.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 18.1 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_7(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_7.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 14.3 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_8(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_8.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 18.5 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_9(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_9.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 29.9 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_10(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_10.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 10.7 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_11(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_11.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 26.0 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_13(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_13.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 21.6 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_14(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_14.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 18.1 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_15(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_15.CharForCodepoint(i % 0x2122)
+	}
+}
+
+// 25.7 ns
+func BenchmarkRanges_CharForCodepoint_ISO_8859_16(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ISO_8859_16.CharForCodepoint(i % 0x2122)
+	}
+}
