@@ -1,7 +1,7 @@
 require 'iconv'
 
 codepages = %w(ASCII
-  ISO-8859-1 ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-5 ISO-8859-6 ISO-8859-7 ISO-8859-8 ISO-8859-9 
+  ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-5 ISO-8859-6 ISO-8859-7 ISO-8859-8 ISO-8859-9 
   ISO-8859-10 ISO-8859-11 ISO-8859-13 ISO-8859-14 ISO-8859-15 ISO-8859-16 
   CP1252 CP1250 CP1251 CP1253 CP1254 CP1256 CP1257 CP1258 CP874)
 
@@ -20,7 +20,7 @@ def generate_codepage_table(cp)
   ranges = codepage_table(cp)
   open(cp.downcase+".go", "w") do |f|
     f.puts "package codepage", ""
-    f.puts "var #{cp.gsub('-', '_')} = Ranges{"
+    f.puts "var #{cp.gsub('-', '_')} = CharRanges{"
     ranges.each do |range|
       f.puts "\t{0x%04X, 0x%04X, %d, %d}," % [range.first, range.first + range.count - 1, range.count, range.delta]
     end
@@ -32,13 +32,36 @@ def codepage_table(cp)
   codepoints = Iconv.open("UCS-2BE//IGNORE", cp) do |ic|
     (0..255).map { |c| ic.iconv(c.chr) }.map { |s| s.unpack('n') }.map { |a| a.first }
   end
-  ranges_from_ary(codepoints).sort { |a, b| a.first <=> b.first }
+  ranges_from_ary(codepoints, cp).sort! { |a, b| a.first <=> b.first }
 end
 
-CPRange = Struct.new(:first, :count, :delta)
+CPRange = Struct.new(:first, :count, :delta, :codepage)
 
-def ranges_from_ary(codepoints)
-  ranges = []
+class CPRanges < Array
+  attr_accessor :name
+
+  def char_for_codepoint(cp)
+    low, high = 0, self.size - 1
+    while low <= high
+      i = (low + high) / 2
+      r = self[i]
+      if cp < r.first
+        high = i - 1
+        next
+      end
+      if cp >= r.first + r.count
+        low = i + 1
+        next
+      end
+      return cp + r.delta
+    end
+    return nil
+  end
+end
+
+def ranges_from_ary(codepoints, name)
+  ranges = CPRanges.new
+  ranges.name = name
   range = nil
   last_codepoint = 0
 
@@ -56,6 +79,45 @@ def ranges_from_ary(codepoints)
   ranges
 end
 
+class Codepages < Array
+  def codepage_for_codepoint(cp)
+    self.size.times do |i|
+      if ch = self[i].char_for_codepoint(cp)
+        # puts "#{cp}: #{ch}, #{self[i].name}"
+        return self[i].name 
+      end
+    end
+    nil
+  end
+end
+
+desc "Generate codepage selection table"
 task :cpselect do
-  tables = codepages.map { |cp| codepage_table(cp) }
+  tables = Codepages.new.replace(codepages.map { |cp| codepage_table(cp) })
+  codepoint_codepages = (0..0x2122).map { |cp| tables.codepage_for_codepoint(cp) }
+  # codepoint_codepages.each_with_index { |codepage, codepoint| puts "#{codepoint}: #{codepage.inspect}" }
+  ranges = []
+  range = nil
+  last_codepage = 0
+  codepoint_codepages.each_with_index do |codepage, codepoint|
+    next if codepage.nil?
+    if range.nil? or (codepage != last_codepage)
+      range = CPRange.new(codepoint, 1, nil, codepage)
+      ranges << range
+    else
+      range.count += 1
+    end
+    last_codepage = codepage
+  end
+  open("cpselect.go", "w") do |f|
+    f.puts "package codepage", ""
+    f.puts "var CodepointCodepages = CodepageRanges{"
+    ranges.each do |range|
+      f.puts "\t{0x%04X, 0x%04X, %d, \"%s\"}," % [range.first, range.first + range.count - 1, range.count, range.codepage.gsub('-', '_')]
+    end
+    f.puts "}", ""
+    f.puts "var CharRangesByName = map[string]CharRanges {"
+    codepages.each { |cp| f.puts "\t\"#{cp.gsub('-', '_')}\": #{cp.gsub('-', '_')}," }
+    f.puts "}"
+  end
 end

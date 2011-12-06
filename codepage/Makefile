@@ -29,5 +29,6 @@ GOFILES=\
   cp1257.go\
   cp1258.go\
   cp874.go\
+  cpselect.go\
 
 include $(GOROOT)/src/Make.pkg

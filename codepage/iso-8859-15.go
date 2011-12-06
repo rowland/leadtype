@@ -1,6 +1,6 @@
 package codepage
 
-var ISO_8859_15 = Ranges{
+var ISO_8859_15 = CharRanges{
 	{0x0000, 0x00A3, 164, 0},
 	{0x00A5, 0x00A5, 1, 0},
 	{0x00A7, 0x00A7, 1, 0},

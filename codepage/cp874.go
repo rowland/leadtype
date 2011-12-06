@@ -1,6 +1,6 @@
 package codepage
 
-var CP874 = Ranges{
+var CP874 = CharRanges{
 	{0x0000, 0x007F, 128, 0},
 	{0x00A0, 0x00A0, 1, 0},
 	{0x0E01, 0x0E3A, 58, -3424},
