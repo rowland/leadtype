@@ -111,13 +111,21 @@ task :cpselect do
   end
   open("cpselect.go", "w") do |f|
     f.puts "package codepage", ""
+
+    f.puts "const ("
+    codepages.each_with_index do |cp, i|
+      f.puts "\tidx_%s%s"% [cp.gsub('-', '_'), i == 0 ? " = iota" : ""]
+    end
+    f.puts ")"
+
     f.puts "var CodepointCodepages = CodepageRanges{"
     ranges.each do |range|
-      f.puts "\t{0x%04X, 0x%04X, %d, \"%s\"}," % [range.first, range.first + range.count - 1, range.count, range.codepage.gsub('-', '_')]
+      f.puts "\t{0x%04X, 0x%04X, %d, %s}," % [range.first, range.first + range.count - 1, range.count, "idx_" + range.codepage.gsub('-', '_')]
     end
     f.puts "}", ""
-    f.puts "var CharRangesByName = map[string]CharRanges {"
-    codepages.each { |cp| f.puts "\t\"#{cp.gsub('-', '_')}\": #{cp.gsub('-', '_')}," }
+
+    f.puts "var CharRangesByIndex = []CharRanges{"
+    codepages.each { |cp| f.puts "\t%s," % cp.gsub('-', '_') }
     f.puts "}"
   end
 end

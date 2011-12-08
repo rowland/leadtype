@@ -31,12 +31,12 @@ type CodepageRange struct {
 	firstCode  int
 	lastCode   int
 	entryCount int
-	codepage   string
+	codepage   int
 }
 
 type CodepageRanges []CodepageRange
 
-func (list CodepageRanges) CodepageForCodepoint(cp int) (codepage string, found bool) {
+func (list CodepageRanges) CodepageForCodepoint(cp int) (codepage int, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2
@@ -51,5 +51,5 @@ func (list CodepageRanges) CodepageForCodepoint(cp int) (codepage string, found 
 		}
 		return r.codepage, true
 	}
-	return "", false
+	return
 }
