@@ -215,3 +215,60 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_16(b *testing.B) {
 		ISO_8859_16.CharForCodepoint(i % 0x2122)
 	}
 }
+
+func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
+	// Full ASCII range
+	for cp := 0; cp < 128; cp++ {
+		if page, found := CodepointCodepages.CodepageForCodepoint(cp); found {
+			if page != "ASCII" {
+				t.Errorf("CodepointCodepages: expected '%s', got '%s'", "ASCII", page)
+			}
+		} else {
+			t.Errorf("CodepointCodepages: codepoint %d not found", cp)
+		}
+	}
+	// Outside of ASCII range
+	for cp := 128; cp < 256; cp++ {
+		if page, found := CodepointCodepages.CodepageForCodepoint(cp); found {
+			if page != "ISO_8859_1" {
+				t.Errorf("CodepointCodepages: expected '%s', got '%s'", "ISO_8859_1", page)
+			}
+		} else {
+			t.Errorf("CodepointCodepages: codepoint %d not found", cp)
+		}
+	}
+	// 2-codepoint range within CP1252
+	if page, found := CodepointCodepages.CodepageForCodepoint(0x2013); found {
+		if page != "CP1252" {
+			t.Errorf("CodepointCodepages: expected '%s', got '%s'", "CP1252", page)
+		}
+	} else {
+		t.Errorf("CodepointCodepages: codepoint '%d' not found", 0x2013)
+	}
+	if page, found := CodepointCodepages.CodepageForCodepoint(0x2014); found {
+		if page != "CP1252" {
+			t.Errorf("CodepointCodepages: expected '%s', got '%s'", "CP1252", page)
+		}
+	} else {
+		t.Errorf("CodepointCodepages: codepoint %d not found", 0x2013)
+	}
+	// Codepoints before and after previous range
+	// 2-codepoint range within CP1252
+	if _, found := CodepointCodepages.CodepageForCodepoint(0x2012); found {
+		t.Errorf("CodepointCodepages: codepoint %d should not be found", 0x2012)
+	}
+	if page, found := CodepointCodepages.CodepageForCodepoint(0x2015); found {
+		if page != "ISO_8859_7" {
+			t.Errorf("CodepointCodepages: expected '%s', got '%s'", "ISO_8859_7", page)
+		}
+	} else {
+		t.Errorf("CodepointCodepages: codepoint %x not found", 0x2015)
+	}
+}
+
+// 26.1 ns
+func BenchmarkCodepageRanges_CodepageForCodepoint(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		CodepointCodepages.CodepageForCodepoint(i % 0x2122)
+	}
+}
