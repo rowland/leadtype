@@ -221,7 +221,7 @@ func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
 	for cp := 0; cp < 128; cp++ {
 		if page, found := CodepointCodepages.CodepageForCodepoint(cp); found {
 			if page != idx_ASCII {
-				t.Errorf("CodepointCodepages: expected '%s', got '%s'", "ASCII", page)
+				t.Errorf("CodepointCodepages: expected %d, got %d", idx_ASCII, page)
 			}
 		} else {
 			t.Errorf("CodepointCodepages: codepoint %d not found", cp)
@@ -231,7 +231,7 @@ func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
 	for cp := 128; cp < 256; cp++ {
 		if page, found := CodepointCodepages.CodepageForCodepoint(cp); found {
 			if page != idx_ISO_8859_1 {
-				t.Errorf("CodepointCodepages: expected '%s', got '%s'", "ISO_8859_1", page)
+				t.Errorf("CodepointCodepages: expected %d, got %d", idx_ISO_8859_1, page)
 			}
 		} else {
 			t.Errorf("CodepointCodepages: codepoint %d not found", cp)
@@ -240,14 +240,14 @@ func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
 	// 2-codepoint range within CP1252
 	if page, found := CodepointCodepages.CodepageForCodepoint(0x2013); found {
 		if page != idx_CP1252 {
-			t.Errorf("CodepointCodepages: expected '%s', got '%s'", "CP1252", page)
+			t.Errorf("CodepointCodepages: expected %d, got %d", idx_CP1252, page)
 		}
 	} else {
 		t.Errorf("CodepointCodepages: codepoint '%d' not found", 0x2013)
 	}
 	if page, found := CodepointCodepages.CodepageForCodepoint(0x2014); found {
 		if page != idx_CP1252 {
-			t.Errorf("CodepointCodepages: expected '%s', got '%s'", "CP1252", page)
+			t.Errorf("CodepointCodepages: expected %d, got %d", idx_CP1252, page)
 		}
 	} else {
 		t.Errorf("CodepointCodepages: codepoint %d not found", 0x2013)
@@ -259,7 +259,7 @@ func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
 	}
 	if page, found := CodepointCodepages.CodepageForCodepoint(0x2015); found {
 		if page != idx_ISO_8859_7 {
-			t.Errorf("CodepointCodepages: expected '%s', got '%s'", "ISO_8859_7", page)
+			t.Errorf("CodepointCodepages: expected %d, got %d", idx_ISO_8859_7, page)
 		}
 	} else {
 		t.Errorf("CodepointCodepages: codepoint %x not found", 0x2015)
