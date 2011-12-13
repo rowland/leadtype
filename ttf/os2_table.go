@@ -25,7 +25,7 @@ type os2Table struct {
 	yStrikeoutPosition  int16
 	sFamilyClass        int16
 	panose              PANOSE
-	ulCharRange         [4]uint32
+	ulCharRange         CharRanges
 	achVendID           [4]int8
 	fsSelection         uint16
 	fsFirstCharIndex    uint16
@@ -138,4 +138,12 @@ func (table *os2Table) write(wr io.Writer) {
 	fmt.Fprintf(wr, "usDefaultChar       = %d\n", table.usDefaultChar)
 	fmt.Fprintf(wr, "usBreakChar         = %d\n", table.usBreakChar)
 	fmt.Fprintf(wr, "usMaxContext        = %d\n", table.usMaxContext)
+}
+
+type CharRanges [4]uint32
+
+func (cr *CharRanges) IsSet(bit int) bool {
+	i := bit >> 5
+	b := uint32(1 << uint(bit & 31))
+	return cr[i] & b != 0
 }

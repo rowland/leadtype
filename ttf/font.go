@@ -131,6 +131,10 @@ func (font *Font) CapHeight() int {
 	return 0
 }
 
+func (font *Font) CharRanges() *CharRanges {
+	return &font.os2Table.ulCharRange
+}
+
 func (font *Font) Copyright() string {
 	return font.nameTable.copyrightNotice
 }

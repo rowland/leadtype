@@ -65,6 +65,12 @@ func TestLoadFont(t *testing.T) {
 	expectS(t, "Copyright", "© 2006 The Monotype Corporation. All Rights Reserved.", f.Copyright())
 	expectS(t, "Trademark", "Arial is a trademark of The Monotype Corporation in the United States and/or other countries.", f.Trademark())
 	expectS(t, "License", "You may use this font to display and print content as permitted by the license terms for the product in which this font is included. You may only (i) embed this font in content as permitted by the embedding restrictions included in this font; and (ii) temporarily download this font to a printer or other output device to help print content.", f.License())
+
+	cr := f.CharRanges()
+	expectUI32(t, "CharRanges[0]", 3758107391, cr[0])
+	expectUI32(t, "CharRanges[1]", 3221256259, cr[1])
+	expectUI32(t, "CharRanges[2]", 9, cr[2])
+	expectUI32(t, "CharRanges[3]", 0, cr[3])
 }
 
 var arialTableNames = []string{
