@@ -52,7 +52,7 @@ func (list CodepointRangeList) RangeForRune(rune uint32) *CodepointRange {
 
 type CodepointRangeLists [][]CodepointRange
 
-var CodepointRanges = CodepointRangeLists{
+var NestedCodepointRanges = CodepointRangeLists{
 	{{0, "Basic Latin", 0x0000, 0x007F}},
 	{{1, "Latin-1 Supplement", 0x0080, 0x00FF}},
 	{{2, "Latin Extended-A", 0x0100, 0x017F}},
@@ -229,16 +229,16 @@ var CodepointRanges = CodepointRangeLists{
 	{{127, "Reserved for process-internal usage", 0, 0}},
 }
 
-var CodepointRangesFlat CodepointRangeList
+var CodepointRanges CodepointRangeList
 
 func init() {
-	for i := 0; i < len(CodepointRanges); i++ {
-		for j := 0; j < len(CodepointRanges[i]); j++ {
-			cpr := &CodepointRanges[i][j]
+	for i := 0; i < len(NestedCodepointRanges); i++ {
+		for j := 0; j < len(NestedCodepointRanges[i]); j++ {
+			cpr := &NestedCodepointRanges[i][j]
 			if cpr.High > 0 {
-				CodepointRangesFlat = append(CodepointRangesFlat, cpr)
+				CodepointRanges = append(CodepointRanges, cpr)
 			}
 		}
 	}
-	sort.Sort(CodepointRangesFlat)
+	sort.Sort(CodepointRanges)
 }
