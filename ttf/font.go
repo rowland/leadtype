@@ -6,27 +6,19 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math"
 	"os"
 )
 
 type Font struct {
-	scalar        uint32
-	nTables       uint16
-	searchRange   uint16
-	entrySelector uint16
-	rangeShift    uint16
-	tableDir      tableDir
-	cmapTable     cmapTable
-	headTable     headTable
-	hheaTable     hheaTable
-	hmtxTable     hmtxTable
-	maxpTable     maxpTable
-	nameTable     nameTable
-	os2Table      os2Table
-	postTable     postTable
-	vheaTable     vheaTable
-	vmtxTable     vmtxTable
+	FontInfo
+	cmapTable cmapTable
+	headTable headTable
+	hheaTable hheaTable
+	hmtxTable hmtxTable
+	maxpTable maxpTable
+	postTable postTable
+	vheaTable vheaTable
+	vmtxTable vmtxTable
 }
 
 // 9,151,820 ns
@@ -42,18 +34,10 @@ func LoadFont(filename string) (font *Font, err os.Error) {
 }
 
 func (font *Font) init(file io.ReadSeeker) (err os.Error) {
-	if err = readValues(file,
-		&font.scalar,
-		&font.nTables,
-		&font.searchRange,
-		&font.entrySelector,
-		&font.rangeShift); err != nil {
+	if err = font.FontInfo.init(file); err != nil {
 		return
 	}
 
-	if err = font.tableDir.read(file, font.nTables); err != nil {
-		return
-	}
 	if entry := font.tableDir.table("cmap"); entry != nil {
 		if err = font.cmapTable.init(file, entry); err != nil {
 			return
@@ -66,11 +50,6 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 	}
 	if entry := font.tableDir.table("hhea"); entry != nil {
 		if err = font.hheaTable.init(file, entry); err != nil {
-			return
-		}
-	}
-	if entry := font.tableDir.table("name"); entry != nil {
-		if err = font.nameTable.init(file, entry); err != nil {
 			return
 		}
 	}
@@ -99,11 +78,6 @@ func (font *Font) init(file io.ReadSeeker) (err os.Error) {
 			return
 		}
 	}
-	if entry := font.tableDir.table("OS/2"); entry != nil {
-		if err = font.os2Table.init(file, entry); err != nil {
-			return
-		}
-	}
 	return
 }
 
@@ -116,35 +90,12 @@ func (font *Font) Ascent() int {
 	return int(font.hheaTable.ascent)
 }
 
-func (font *Font) AvgWidth() int {
-	return int(font.os2Table.xAvgCharWidth)
-}
-
 func (font *Font) BoundingBox() BoundingBox {
 	return BoundingBox{int(font.headTable.xMin), int(font.headTable.yMin), int(font.headTable.xMax), int(font.headTable.yMax)}
 }
 
-func (font *Font) CapHeight() int {
-	if font.os2Table.version >= 2 {
-		return int(font.os2Table.sCapHeight)
-	}
-	return 0
-}
-
-func (font *Font) CharRanges() *CharRanges {
-	return &font.os2Table.ulCharRange
-}
-
-func (font *Font) Copyright() string {
-	return font.nameTable.copyrightNotice
-}
-
 func (font *Font) Descent() int {
 	return int(font.hheaTable.descent)
-}
-
-func (font *Font) Designer() string {
-	return font.nameTable.designer
 }
 
 var features = []string{"header", "dir", "name", "post", "cmap", "head", "hhea", "maxp", "hmtx", "vhea", "vmtx", "OS/2"}
@@ -184,10 +135,6 @@ func (font *Font) Dump(wr io.Writer, feature string) {
 
 const RestrictedLicenseEmbedding = 0x002
 
-func (font *Font) Embeddable() bool {
-	return font.os2Table.fsType & RestrictedLicenseEmbedding == 0
-}
-
 const (
 	flagFixedPitch  = 1 - 1
 	flagSerif       = 2 - 1
@@ -199,10 +146,6 @@ const (
 	flagSmallCap    = 18 - 1
 	flagForceBold   = 19 - 1
 )
-
-func (font *Font) Family() string {
-	return font.nameTable.fontFamily
-}
 
 func (font *Font) Flags() (flags uint32) {
 	flags = font.postTable.isFixedPitch << flagFixedPitch
@@ -216,24 +159,12 @@ func (font *Font) Flags() (flags uint32) {
 	// TODO: Set remainder of flags
 }
 
-func (font *Font) FullName() string {
-	return font.nameTable.fullName
-}
-
 func (font *Font) ItalicAngle() float64 {
 	return font.postTable.italicAngle.Tof64()
 }
 
 func (font *Font) Leading() int {
 	return int(font.hheaTable.ascent - font.hheaTable.descent + font.hheaTable.lineGap)
-}
-
-func (font *Font) License() string {
-	return font.nameTable.licenseDescription
-}
-
-func (font *Font) Manufacturer() string {
-	return font.nameTable.manufacturerName
 }
 
 func (font *Font) MaxWidth() int {
@@ -251,10 +182,6 @@ func (font *Font) NumGlyphs() int {
 	return int(font.maxpTable.numGlyphs)
 }
 
-func (font *Font) PostScriptName() string {
-	return font.nameTable.postScriptName
-}
-
 /*
 // Optional. Not found in TTF.
 func (font *font) StemH() int {
@@ -262,34 +189,14 @@ func (font *font) StemH() int {
 }
 */
 
-func (font *Font) StemV() int {
-	return 50 + int(math.Pow(float64(font.os2Table.usWeightClass)/65.0, 2))
-}
-
 func (font *Font) String() string {
 	var buf bytes.Buffer
 	font.Dump(&buf, "all")
 	return buf.String()
 }
 
-func (font *Font) Style() string {
-	return font.nameTable.fontSubfamily
-}
-
-func (font *Font) Trademark() string {
-	return font.nameTable.trademarkNotice
-}
-
-func (font *Font) UniqueName() string {
-	return font.nameTable.uniqueSubfamily
-}
-
 func (font *Font) UnitsPerEm() int {
 	return int(font.headTable.unitsPerEm)
-}
-
-func (font *Font) Version() string {
-	return font.nameTable.version
 }
 
 func (font *Font) writeHeader(wr io.Writer) {
@@ -300,80 +207,6 @@ func (font *Font) writeHeader(wr io.Writer) {
 	fmt.Fprintf(wr, "rangeShift = %d\n", font.rangeShift)
 }
 
-func (font *Font) XHeight() int {
-	if font.os2Table.version >= 2 {
-		return int(font.os2Table.sxHeight)
-	}
-	return 0
-}
-
 type BoundingBox struct {
 	XMin, YMin, XMax, YMax int
-}
-
-type tableDir struct {
-	entries    []*tableDirEntry
-	entriesMap map[string]*tableDirEntry
-}
-
-func (dir *tableDir) read(file io.Reader, nTables uint16) (err os.Error) {
-	dir.entries = make([]*tableDirEntry, nTables)
-	dir.entriesMap = make(map[string]*tableDirEntry, nTables)
-	for i := uint16(0); i < nTables; i++ {
-		var entry tableDirEntry
-		if err = entry.read(file); err != nil {
-			return
-		}
-		dir.entries[i] = &entry
-		dir.entriesMap[entry.tag] = &entry
-	}
-	return
-}
-
-func (dir *tableDir) String() string {
-	var buf bytes.Buffer
-	dir.write(&buf)
-	return buf.String()
-}
-
-func (dir *tableDir) write(wr io.Writer) {
-	for _, e := range dir.entries {
-		e.write(wr)
-	}
-}
-
-func (dir *tableDir) table(tag string) *tableDirEntry {
-	return dir.entriesMap[tag]
-}
-
-type tableDirEntry struct {
-	tag      string
-	checkSum uint32
-	offset   uint32
-	length   uint32
-}
-
-func (entry *tableDirEntry) read(file io.Reader) (err os.Error) {
-	tag := make([]byte, 4)
-	if _, err = file.Read(tag); err != nil {
-		return
-	}
-	entry.tag = string(tag)
-	err = readValues(file, &entry.checkSum, &entry.offset, &entry.length)
-	return
-}
-
-func (entry *tableDirEntry) String() string {
-	var buf bytes.Buffer
-	entry.write(&buf)
-	return buf.String()
-}
-
-func (entry *tableDirEntry) write(wr io.Writer) {
-	fmt.Fprintln(wr, "----------")
-	fmt.Fprintln(wr, "Table")
-	fmt.Fprintf(wr, "tag = %s\n", entry.tag)
-	fmt.Fprintf(wr, "checkSum = %d\n", entry.checkSum)
-	fmt.Fprintf(wr, "offset = %d\n", entry.offset)
-	fmt.Fprintf(wr, "length = %d\n", entry.length)
 }

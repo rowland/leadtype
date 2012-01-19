@@ -11,20 +11,6 @@ func TestLoadFont(t *testing.T) {
 		t.Fatal("Font not loaded")
 	}
 
-	expectUI32(t, "scalar", 0x00010000, f.scalar)
-	expectUI16(t, "nTables", 0x0018, f.nTables)
-	expectUI16(t, "searchRange", 0x0100, f.searchRange)
-	expectUI16(t, "entrySelector", 0x0004, f.entrySelector)
-	expectUI16(t, "rangeShift", 0x0080, f.rangeShift)
-
-	for i, entry := range f.tableDir.entries {
-		expectS(t, "arialTableNames", arialTableNames[i], entry.tag)
-	}
-	for _, tag := range arialTableNames {
-		if f.tableDir.table(tag) == nil {
-			t.Fatalf("Table for tag %s not found", tag)
-		}
-	}
 	expectI(t, "UnitsPerEm", 2048, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 3381, f.NumGlyphs())
 	expectI(t, "BoundingBox.XMin", -1361, f.BoundingBox().XMin)
@@ -44,73 +30,11 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "Ascent", 1854, f.Ascent())
 	expectI(t, "Descent", -434, f.Descent())
 	expectF(t, "ItalicAngle", 0, f.ItalicAngle())
-	expectI(t, "StemV", 87, f.StemV())
-	expectI(t, "XHeight", 1062, f.XHeight())
 	// Could not find MissingWidth in TTF.
 	expectI(t, "Leading", 1854 - -434 + 67, f.Leading())
 	// TODO: Verify this works in practice. Some examples indicate equivalence to lineGap instead.
 	expectI(t, "MaxWidth", 4096, f.MaxWidth())
-	expectI(t, "AvgWidth", 904, f.AvgWidth())
-	expectI(t, "CapHeight", 1467, f.CapHeight())
-	expect(t, "Embeddable", f.Embeddable())
 
-	expectS(t, "PostScriptName", "ArialMT", f.PostScriptName())
-	expectS(t, "fFllName", "Arial", f.FullName())
-	expectS(t, "Family", "Arial", f.Family())
-	expectS(t, "Style", "Regular", f.Style())
-	expectS(t, "Version", "Version 5.01.2x", f.Version())
-	expectS(t, "UniqueName", "Monotype:Arial Regular:Version 5.01 (Microsoft)", f.UniqueName())
-	expectS(t, "Manufacturer", "The Monotype Corporation", f.Manufacturer())
-	expectS(t, "Designer", "Monotype Type Drawing Office - Robin Nicholas, Patricia Saunders 1982", f.Designer())
-	expectS(t, "Copyright", "© 2006 The Monotype Corporation. All Rights Reserved.", f.Copyright())
-	expectS(t, "Trademark", "Arial is a trademark of The Monotype Corporation in the United States and/or other countries.", f.Trademark())
-	expectS(t, "License", "You may use this font to display and print content as permitted by the license terms for the product in which this font is included. You may only (i) embed this font in content as permitted by the embedding restrictions included in this font; and (ii) temporarily download this font to a printer or other output device to help print content.", f.License())
-
-	cr := f.CharRanges()
-	expectUI32(t, "CharRanges[0]", 3758107391, cr[0])
-	expectUI32(t, "CharRanges[1]", 3221256259, cr[1])
-	expectUI32(t, "CharRanges[2]", 9, cr[2])
-	expectUI32(t, "CharRanges[3]", 0, cr[3])
-}
-
-var arialTableNames = []string{
-	"DSIG",
-	"GDEF",
-	"GPOS",
-	"GSUB",
-	"JSTF",
-	"LTSH",
-	"OS/2",
-	"PCLT",
-	"VDMX",
-	"cmap",
-	"cvt ",
-	"fpgm",
-	"gasp",
-	"glyf",
-	"hdmx",
-	"head",
-	"hhea",
-	"hmtx",
-	"kern",
-	"loca",
-	"maxp",
-	"name",
-	"post",
-	"prep",
-}
-
-// 50.4 ns
-func BenchmarkAdvanceWidth(b *testing.B) {
-	b.StopTimer()
-	f, err := LoadFont("/Library/Fonts/Arial.ttf")
-	if err != nil {
-		panic("Error loading font")
-	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		f.AdvanceWidth(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
-	}
 }
 
 // 9,151,820 ns
