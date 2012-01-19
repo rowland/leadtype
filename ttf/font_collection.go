@@ -46,8 +46,14 @@ func (fc *FontCollection) Select(family, weight, style string, options FontOptio
 	if fc.fonts == nil {
 		fc.fonts = make(map[string]*Font)
 	}
+	search:
 	for _, f := range fc.fontInfos {
 		if f.Family() == family && f.Style() == ws {
+			for _, r := range options.CharRanges {
+				if !f.CharRanges().IsSet(r) {
+					continue search
+				}
+			}
 			font = fc.fonts[f.filename]
 			if font == nil {
 				font, err = LoadFont(f.filename)
@@ -61,5 +67,5 @@ func (fc *FontCollection) Select(family, weight, style string, options FontOptio
 }
 
 type FontOptions struct {
-	
+	CharRanges []int
 }

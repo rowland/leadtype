@@ -7,23 +7,27 @@ type fontSelection struct {
 	weight         string
 	style          string
 	postscriptName string
+	fontOptions    FontOptions
 }
 
 var testSelectData = []fontSelection{
-	{ "Arial", "", "", "ArialMT"},
-	{ "Arial", "", "Italic", "Arial-ItalicMT"},
-	{ "Arial", "Bold", "", "Arial-BoldMT"},
-	{ "Arial", "Bold", "Italic", "Arial-BoldItalicMT"},
+	{"Arial", "", "", "ArialMT", FontOptions{}},
+	{"Arial", "", "Italic", "Arial-ItalicMT", FontOptions{}},
+	{"Arial", "Bold", "", "Arial-BoldMT", FontOptions{}},
+	{"Arial", "Bold", "Italic", "Arial-BoldItalicMT", FontOptions{}},
 
-	{ "Courier New", "", "", "CourierNewPSMT"},
-	{ "Courier New", "", "Italic", "CourierNewPS-ItalicMT"},
-	{ "Courier New", "Bold", "", "CourierNewPS-BoldMT"},
-	{ "Courier New", "Bold", "Italic", "CourierNewPS-BoldItalicMT"},
+	{"Courier New", "", "", "CourierNewPSMT", FontOptions{}},
+	{"Courier New", "", "Italic", "CourierNewPS-ItalicMT", FontOptions{}},
+	{"Courier New", "Bold", "", "CourierNewPS-BoldMT", FontOptions{}},
+	{"Courier New", "Bold", "Italic", "CourierNewPS-BoldItalicMT", FontOptions{}},
 
-	{ "Times New Roman", "", "", "TimesNewRomanPSMT"},
-	{ "Times New Roman", "", "Italic", "TimesNewRomanPS-ItalicMT"},
-	{ "Times New Roman", "Bold", "", "TimesNewRomanPS-BoldMT"},
-	{ "Times New Roman", "Bold", "Italic", "TimesNewRomanPS-BoldItalicMT"},
+	{"Times New Roman", "", "", "TimesNewRomanPSMT", FontOptions{}},
+	{"Times New Roman", "", "Italic", "TimesNewRomanPS-ItalicMT", FontOptions{}},
+	{"Times New Roman", "Bold", "", "TimesNewRomanPS-BoldMT", FontOptions{}},
+	{"Times New Roman", "Bold", "Italic", "TimesNewRomanPS-BoldItalicMT", FontOptions{}},
+
+	{"Arial Unicode MS", "", "", "ArialUnicodeMS", FontOptions{CharRanges: []int{59}}},
+	{"Myanmar Sangam MN", "", "", "MyanmarSangamMN", FontOptions{CharRanges: []int{74}}},
 }
 
 func TestFontCollection(t *testing.T) {
@@ -35,7 +39,7 @@ func TestFontCollection(t *testing.T) {
 
 	expectI(t, "Len", 114, fc.Len())
 	for _, fs := range testSelectData {
-		f, err := fc.Select(fs.family, fs.weight, fs.style, FontOptions{})
+		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.fontOptions)
 		if err == nil {
 			expectS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
 		} else {
