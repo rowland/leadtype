@@ -1,6 +1,6 @@
 package codepage
 
-var CP1252 = CharRanges{
+var CP1252 = Codepage{
 	{0x0000, 0x007F, 128, 0},
 	{0x00A0, 0x00FF, 96, 0},
 	{0x0152, 0x0152, 1, -198},

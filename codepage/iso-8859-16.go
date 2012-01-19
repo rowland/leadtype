@@ -1,6 +1,6 @@
 package codepage
 
-var ISO_8859_16 = CharRanges{
+var ISO_8859_16 = Codepage{
 	{0x0000, 0x00A0, 161, 0},
 	{0x00A7, 0x00A7, 1, 0},
 	{0x00A9, 0x00A9, 1, 0},

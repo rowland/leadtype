@@ -27,6 +27,7 @@ const (
 	idx_CP1258
 	idx_CP874
 )
+
 var CodepointCodepages = CodepageRanges{
 	{0x0000, 0x007F, 128, idx_ASCII},
 	{0x0080, 0x00FF, 128, idx_ISO_8859_1},
@@ -93,7 +94,7 @@ var CodepointCodepages = CodepageRanges{
 	{0x2122, 0x2122, 1, idx_CP1252},
 }
 
-var CharRangesByIndex = []CharRanges{
+var Codepages = []Codepage{
 	ASCII,
 	ISO_8859_1,
 	ISO_8859_2,

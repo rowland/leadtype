@@ -7,9 +7,9 @@ type CharRange struct {
 	delta      int
 }
 
-type CharRanges []CharRange
+type Codepage []CharRange
 
-func (list CharRanges) CharForCodepoint(cp int) (ch int, found bool) {
+func (list Codepage) CharForCodepoint(cp int) (ch int, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2
