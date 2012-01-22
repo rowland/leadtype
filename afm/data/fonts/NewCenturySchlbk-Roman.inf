@@ -1,0 +1,26 @@
+FontName (NewCenturySchlbk-Roman)
+FullName (New Century Schoolbook Roman)
+AppleName (New Century Schlbk)
+AppleFONDID 34
+FamilyName (New Century Schoolbook)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle 0
+CapHeight 722
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 92
+Serif true
+Pi false
+SuperiorBaseline 282
+MSMenuName (NewCenturySchlbk)
+VPMenuName (CenturySchlbook)
+WORDMenuName (NewCenturySchlbk)
+VPTypefaceID 20
+VPStyle (N)
+PCFileNamePrefix (NCR__)
+PCLTypefaceID 20607
+PCLStrokeWeight 0
+PCLStyle 0

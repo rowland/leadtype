@@ -1,0 +1,26 @@
+FontName (AvantGarde-DemiOblique)
+FullName (ITC Avant Garde Gothic Demi Oblique)
+AppleName (BI Avant Garde DemiOblique)
+AppleFONDID 131
+FamilyName (ITC Avant Garde Gothic)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -10.5
+CapHeight 740
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 133
+Serif false
+Pi false
+SuperiorBaseline 296
+MSMenuName (AvantGarde)
+VPMenuName (ITC Avant Garde)
+WORDMenuName (AvantGarde)
+VPTypefaceID 51
+VPStyle (T)
+PCFileNamePrefix (AGDO_)
+PCLTypefaceID 20511
+PCLStrokeWeight 2
+PCLStyle 1

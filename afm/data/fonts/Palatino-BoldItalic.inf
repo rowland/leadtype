@@ -1,0 +1,26 @@
+FontName (Palatino-BoldItalic)
+FullName (Palatino Bold Italic)
+AppleName (BI Palatino BoldItalic)
+AppleFONDID 149
+FamilyName (Palatino)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -10
+CapHeight 678
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 122
+Serif true
+Pi false
+SuperiorBaseline 273
+MSMenuName (Palatino)
+VPMenuName (Palatino)
+WORDMenuName (Palatino)
+VPTypefaceID 21
+VPStyle (T)
+PCFileNamePrefix (POBI_)
+PCLTypefaceID 20495
+PCLStrokeWeight 3
+PCLStyle 1

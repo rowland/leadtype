@@ -1,0 +1,26 @@
+FontName (CooperBlack-Italic)
+FullName (Cooper Black Italic)
+AppleName (I Cooper Black Italic)
+AppleFONDID 14900
+FamilyName (Cooper Black)
+version (001.003)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -7
+CapHeight 701
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 225
+Serif true
+Pi false
+MSMenuName (Cooper Black)
+VPMenuName (Cooper Black)
+WORDMenuName (CooperBlack)
+VPTypefaceID 8
+VPStyle (I)
+PCFileNamePrefix (CBI__)
+PCLTypefaceID 20526
+PCLStrokeWeight 0
+PCLStyle 1
+

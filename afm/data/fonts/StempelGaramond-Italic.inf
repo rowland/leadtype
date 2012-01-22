@@ -1,0 +1,27 @@
+FontName (StempelGaramond-Italic)
+FullName (Stempel Garamond Italic)
+AppleName (StempelGaramond Italic)
+AppleFONDID 14695
+FamilyName (Stempel Garamond)
+version (001.002)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -12
+CapHeight 696
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 65
+Serif true
+Pi false
+SuperiorBaseline 265
+MSMenuName (StempelGaramond Roman)
+VPMenuName (StempelGaramond Roman)
+WORDMenuName (StempelGaramondRoman)
+VPTypefaceID 127
+VPStyle (I)
+PCFileNamePrefix (GSI__)
+PCLTypefaceID 20581
+PCLStrokeWeight 0
+PCLStyle 1
+

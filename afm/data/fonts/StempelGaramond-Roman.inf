@@ -1,0 +1,27 @@
+FontName (StempelGaramond-Roman)
+FullName (Stempel Garamond Roman)
+AppleName (StempelGaramond Roman)
+AppleFONDID 14696
+FamilyName (Stempel Garamond)
+version (001.002)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle 0
+CapHeight 696
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 90
+Serif true
+Pi false
+SuperiorBaseline 265
+MSMenuName (StempelGaramond Roman)
+VPMenuName (StempelGaramond Roman)
+WORDMenuName (StempelGaramondRoman)
+VPTypefaceID 127
+VPStyle (N)
+PCFileNamePrefix (GSR__)
+PCLTypefaceID 20581
+PCLStrokeWeight 0
+PCLStyle 0
+

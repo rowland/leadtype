@@ -1,0 +1,26 @@
+FontName (LetterGothic)
+FullName (Letter Gothic)
+AppleName (Letter Gothic)
+AppleFONDID 14920
+FamilyName (Letter Gothic)
+version (001.004)
+isFixedPitch true
+CharacterSet (monospace)
+Encoding (StandardEncoding)
+ItalicAngle 0
+CapHeight 720
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 47
+Serif false
+Pi false
+MSMenuName (Letter Gothic)
+VPMenuName (Letter Gothic)
+WORDMenuName (LetterGothic)
+VPTypefaceID 105
+VPStyle (N)
+PCFileNamePrefix (LG___)
+PCLTypefaceID 20486
+PCLStrokeWeight 0
+PCLStyle 0
+

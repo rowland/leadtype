@@ -1,0 +1,25 @@
+FontName (Bookman-Light)
+FullName (ITC Bookman Light)
+AppleName (Bookman)
+AppleFONDID 14
+FamilyName (ITC Bookman)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle 0
+CapHeight 681
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 96
+Serif true
+Pi false
+MSMenuName (Bookman)
+VPMenuName (ITC Bookman)
+WORDMenuName (Bookman)
+VPTypefaceID 23
+VPStyle (N)
+PCFileNamePrefix (BKL__)
+PCLTypefaceID 20527
+PCLStrokeWeight -3
+PCLStyle 0

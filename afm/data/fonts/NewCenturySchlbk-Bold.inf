@@ -1,0 +1,25 @@
+FontName (NewCenturySchlbk-Bold)
+FullName (New Century Schoolbook Bold)
+AppleName (B New Century Schlbk Bold)
+AppleFONDID 145
+FamilyName (New Century Schoolbook)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle 0
+CapHeight 722
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 154
+Serif true
+Pi false
+MSMenuName (NewCenturySchlbk)
+VPMenuName (CenturySchlbook)
+WORDMenuName (NewCenturySchlbk)
+VPTypefaceID 20
+VPStyle (B)
+PCFileNamePrefix (NCB__)
+PCLTypefaceID 20607
+PCLStrokeWeight 3
+PCLStyle 0

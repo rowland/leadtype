@@ -1,0 +1,26 @@
+FontName (Optima-BoldItalic)
+FullName (Optima Bold Italic)
+AppleName (Optima BoldItalic)
+AppleFONDID 4756
+FamilyName (Optima)
+version (001.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -12
+CapHeight 676
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 137
+Serif false
+Pi false
+MSMenuName (Optima)
+VPMenuName (Optima)
+WORDMenuName (Optima)
+VPTypefaceID 52
+VPStyle (T)
+PCFileNamePrefix (OPBI_)
+PCLTypefaceID 20497
+PCLStrokeWeight 3
+PCLStyle 1
+

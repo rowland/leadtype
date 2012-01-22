@@ -1,0 +1,26 @@
+FontName (ZapfDingbats)
+FullName (ITC Zapf Dingbats)
+AppleName (Zapf Dingbats)
+AppleFONDID 13
+FamilyName (ITC Zapf Dingbats)
+version (002.000)
+isFixedPitch false
+CharacterSet (charset)
+Encoding (encoding.ps)
+ItalicAngle 0
+CapHeight 692
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 90
+Serif false
+Pi true
+MSMenuName (ZapfDingbats)
+VPMenuName (Zapf Dingbats)
+WORDMenuName (ZapfDingbats)
+VPTypefaceID 129
+VPStyle (N)
+PCFileNamePrefix (ZD___)
+PCLTypefaceID 20525
+PCLStrokeWeight 0
+PCLStyle 0
+PCLSymbolSet 10L

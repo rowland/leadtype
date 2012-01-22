@@ -1,0 +1,25 @@
+FontName (Bookman-DemiItalic)
+FullName (ITC Bookman Demi Italic)
+AppleName (BI Bookman DemiItalic)
+AppleFONDID 134
+FamilyName (ITC Bookman)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -10
+CapHeight 681
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 172
+Serif true
+Pi false
+MSMenuName (Bookman)
+VPMenuName (ITC Bookman)
+WORDMenuName (Bookman)
+VPTypefaceID 23
+VPStyle (T)
+PCFileNamePrefix (BKDI_)
+PCLTypefaceID 20527
+PCLStrokeWeight 2
+PCLStyle 1

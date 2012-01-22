@@ -1,0 +1,27 @@
+FontName (Univers-BoldOblique)
+FullName (Univers 65 Bold Oblique)
+AppleName (Univers 65 BoldOblique)
+AppleFONDID 14881
+FamilyName (Univers)
+version (001.003)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -12
+CapHeight 720
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 155
+Serif false
+Pi false
+SuperiorBaseline 285
+MSMenuName (Univers 45 Light)
+VPMenuName (Univers 45 Light)
+WORDMenuName (Univers45Light)
+VPTypefaceID 91
+VPStyle (T)
+PCFileNamePrefix (UVBO_)
+PCLTypefaceID 20713
+PCLStrokeWeight 3
+PCLStyle 1
+

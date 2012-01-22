@@ -1,0 +1,26 @@
+FontName (Palatino-Italic)
+FullName (Palatino Italic)
+AppleName (I Palatino Italic)
+AppleFONDID 147
+FamilyName (Palatino)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -10
+CapHeight 689
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 84
+Serif true
+Pi false
+SuperiorBaseline 280
+MSMenuName (Palatino)
+VPMenuName (Palatino)
+WORDMenuName (Palatino)
+VPTypefaceID 21
+VPStyle (I)
+PCFileNamePrefix (POI__)
+PCLTypefaceID 20495
+PCLStrokeWeight 0
+PCLStyle 1

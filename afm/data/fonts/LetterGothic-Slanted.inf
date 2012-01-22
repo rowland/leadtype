@@ -1,0 +1,26 @@
+FontName (LetterGothic-Slanted)
+FullName (Letter Gothic Slanted)
+AppleName (I Letter Gothic Slanted)
+AppleFONDID 14919
+FamilyName (Letter Gothic)
+version (001.004)
+isFixedPitch true
+CharacterSet (monospace)
+Encoding (StandardEncoding)
+ItalicAngle -12
+CapHeight 720
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 47
+Serif false
+Pi false
+MSMenuName (Letter Gothic)
+VPMenuName (Letter Gothic)
+WORDMenuName (LetterGothic)
+VPTypefaceID 105
+VPStyle (I)
+PCFileNamePrefix (LGSL_)
+PCLTypefaceID 20486
+PCLStrokeWeight 0
+PCLStyle 1
+

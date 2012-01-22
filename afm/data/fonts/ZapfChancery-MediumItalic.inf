@@ -1,0 +1,26 @@
+FontName (ZapfChancery-MediumItalic)
+FullName (ITC Zapf Chancery Medium Italic)
+AppleName (Zapf Chancery)
+AppleFONDID 18
+FamilyName (ITC Zapf Chancery)
+version (002.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -14
+CapHeight 594
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 70
+Serif true
+Pi false
+SuperiorBaseline 244
+MSMenuName (ZapfChancery)
+VPMenuName (Zapf Chancery)
+WORDMenuName (ZapfChancery)
+VPTypefaceID 29
+VPStyle (N)
+PCFileNamePrefix (ZCMI_)
+PCLTypefaceID 20523
+PCLStrokeWeight 0
+PCLStyle 1

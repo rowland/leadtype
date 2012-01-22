@@ -1,0 +1,27 @@
+FontName (Univers-LightOblique)
+FullName (Univers 45 Light Oblique)
+AppleName (Univers 45 LightOblique)
+AppleFONDID 14885
+FamilyName (Univers)
+version (001.003)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -12
+CapHeight 722
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 65
+Serif false
+Pi false
+SuperiorBaseline 283
+MSMenuName (Univers 45 Light)
+VPMenuName (Univers 45 Light)
+WORDMenuName (Univers45Light)
+VPTypefaceID 91
+VPStyle (I)
+PCFileNamePrefix (UVLO_)
+PCLTypefaceID 20713
+PCLStrokeWeight -3
+PCLStyle 1
+

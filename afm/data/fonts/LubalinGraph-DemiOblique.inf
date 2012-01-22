@@ -1,0 +1,25 @@
+FontName (LubalinGraph-DemiOblique)
+FullName (ITC LubalinGraph Demi Oblique)
+AppleName (BI Lubalin Graph DemiOblique)
+AppleFONDID 14992
+FamilyName (ITC Lubalin Graph)
+version (001.003)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -10
+CapHeight 714
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 122
+Serif true
+Pi false
+MSMenuName (Lubalin Graph)
+VPMenuName (Lubalin Graph)
+WORDMenuName (LubalinGraph)
+VPTypefaceID 24
+VPStyle (T)
+PCFileNamePrefix (LUDO_)
+PCLTypefaceID 20558
+PCLStrokeWeight 2
+PCLStyle 1

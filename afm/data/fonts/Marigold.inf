@@ -1,0 +1,27 @@
+FontName (Marigold)
+FullName (Marigold)
+AppleName (Marigold)
+AppleFONDID 6593
+FamilyName (Marigold)
+version (001.000)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -6
+CapHeight 450
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 50
+Serif true
+Pi false
+SuperiorBaseline 159
+MSMenuName (Marigold)
+VPMenuName (Marigold)
+WORDMenuName (Marigold)
+VPTypefaceID 1385
+VPStyle (N)
+PCFileNamePrefix (MY___)
+PCLTypefaceID 20681
+PCLStrokeWeight 0
+PCLStyle 0
+

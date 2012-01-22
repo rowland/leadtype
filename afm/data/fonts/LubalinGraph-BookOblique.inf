@@ -1,0 +1,25 @@
+FontName (LubalinGraph-BookOblique)
+FullName (ITC LubalinGraph Book Oblique)
+AppleName (I Lubalin Graph BookOblique)
+AppleFONDID 14994
+FamilyName (ITC Lubalin Graph)
+version (001.003)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle -10
+CapHeight 714
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 66
+Serif true
+Pi false
+MSMenuName (Lubalin Graph)
+VPMenuName (Lubalin Graph)
+WORDMenuName (LubalinGraph)
+VPTypefaceID 24
+VPStyle (I)
+PCFileNamePrefix (LUWO_)
+PCLTypefaceID 20558
+PCLStrokeWeight 0
+PCLStyle 1

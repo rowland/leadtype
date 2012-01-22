@@ -1,0 +1,25 @@
+FontName (LubalinGraph-Demi)
+FullName (ITC Lubalin Graph Demi)
+AppleName (B Lubalin Graph Demi)
+AppleFONDID 14993
+FamilyName (ITC Lubalin Graph)
+version (001.003)
+isFixedPitch false
+CharacterSet (isoadobe)
+Encoding (StandardEncoding)
+ItalicAngle 0
+CapHeight 714
+UnderlinePosition -100
+UnderlineThickness 50
+StemWidth 122
+Serif true
+Pi false
+MSMenuName (Lubalin Graph)
+VPMenuName (Lubalin Graph)
+WORDMenuName (LubalinGraph)
+VPTypefaceID 24
+VPStyle (B)
+PCFileNamePrefix (LUD__)
+PCLTypefaceID 20558
+PCLStrokeWeight 2
+PCLStyle 0
