@@ -5,5 +5,6 @@ TARG=go-pdf/afm
 GOFILES=\
   font.go\
   font_info.go\
+  glyphlist.go\
 
 include $(GOROOT)/src/Make.pkg

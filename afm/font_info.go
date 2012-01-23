@@ -26,6 +26,7 @@ type FontInfo struct {
 	xHeight     int
 }
 
+// 323,331 ns
 func LoadFontInfo(filename string) (fi *FontInfo, err os.Error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {

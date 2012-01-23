@@ -36,7 +36,7 @@ func TestLoadFontInfo(t *testing.T) {
 	expectI(t, "BoundingBox.YMax", 931, fi.BoundingBox().YMax)
 }
 
-// 241,405 ns
+// 323,331 ns
 func BenchmarkLoadFontInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFontInfo("data/fonts/Helvetica.afm")
