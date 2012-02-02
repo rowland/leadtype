@@ -2,6 +2,7 @@ package afm
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -17,7 +18,7 @@ type Font struct {
 }
 
 // 3,956,700 ns/3.957 ms
-func LoadFont(filename string) (font *Font, err os.Error) {
+func LoadFont(filename string) (font *Font, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -40,7 +41,7 @@ var (
 	reCharMetrics    = regexp.MustCompile("^C[ ]+(-?[0-9]+)[ ]*;[ ]*WX[ ]+([0-9]+)[ ]*;[ ]*N[ ]+([A-Za-z0-9]+)")
 )
 
-func (font *Font) init(file *bufio.Reader) (err os.Error) {
+func (font *Font) init(file *bufio.Reader) (err error) {
 	if err = font.FontInfo.init(file); err != nil {
 		return
 	}
@@ -67,7 +68,7 @@ func (font *Font) init(file *bufio.Reader) (err os.Error) {
 				case "C":
 					cm.code, _ = strconv.Atoi(kv[1])
 				case "CH":
-					n, _ := strconv.Btoui64(kv[1][1:len(kv[1])-1], 16)
+					n, _ := strconv.ParseUint(kv[1][1:len(kv[1])-1], 16, 64)
 					cm.code = int(n)
 				case "WX", "W0X":
 					cm.width, _ = strconv.Atoi(kv[1])
@@ -84,7 +85,7 @@ func (font *Font) init(file *bufio.Reader) (err os.Error) {
 	return
 }
 
-func (font *Font) initInf(filename string) (err os.Error) {
+func (font *Font) initInf(filename string) (err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -99,7 +100,7 @@ func (font *Font) initInf(filename string) (err os.Error) {
 		}
 		line, err = reader.ReadSlice('\n')
 	}
-	if err == os.EOF {
+	if err == io.EOF {
 		return nil
 	}
 	return

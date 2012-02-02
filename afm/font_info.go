@@ -27,7 +27,7 @@ type FontInfo struct {
 }
 
 // 323,331 ns
-func LoadFontInfo(filename string) (fi *FontInfo, err os.Error) {
+func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -57,10 +57,10 @@ var (
 	reXHeight          = regexp.MustCompile("^XHeight[ ]+([0-9]+)")
 )
 
-func (fi *FontInfo) init(file *bufio.Reader) (err os.Error) {
+func (fi *FontInfo) init(file *bufio.Reader) (err error) {
 	// Symbolic fonts don't specify ascender and descender, so default to reasonable numbers.
-        fi.ascender = 750
-        fi.descender = -188
+	fi.ascender = 750
+	fi.descender = -188
 
 	var line []byte
 	line, err = file.ReadSlice('\n')
@@ -83,7 +83,7 @@ func (fi *FontInfo) init(file *bufio.Reader) (err os.Error) {
 		} else if m := reFamilyName.FindSubmatch(line); m != nil {
 			fi.familyName = strings.TrimSpace(string(m[1]))
 		} else if m := reItalicAngle.FindSubmatch(line); m != nil {
-			fi.italicAngle, _ = strconv.Atof64(string(m[1]))
+			fi.italicAngle, _ = strconv.ParseFloat(string(m[1]), 64)
 		} else if m := reWeight.FindSubmatch(line); m != nil {
 			fi.weight = strings.TrimSpace(string(m[1]))
 		} else if m := reCapHeight.FindSubmatch(line); m != nil {
@@ -137,7 +137,7 @@ func (fi *FontInfo) ItalicAngle() float64 {
 }
 
 func (fi *FontInfo) Leading() int {
-	return int(float64(fi.ascender - fi.descender) * 1.15)
+	return int(float64(fi.ascender-fi.descender) * 1.15)
 }
 
 func (fi *FontInfo) PostScriptName() string {
