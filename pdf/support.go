@@ -6,7 +6,7 @@ import (
 )
 
 func g(value float64) string {
-	s := strconv.Ftoa64(value, 'f', 4)
+	s := strconv.FormatFloat(value, 'f', 4, 64)
 	n := len(s)
 	for n > 0 && s[n-1] == '0' {
 		n--

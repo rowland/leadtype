@@ -1,8 +1,8 @@
 package pdf
 
 import (
-	"testing"
 	"math"
+	"testing"
 )
 
 func check(t *testing.T, condition bool, msg string) {
@@ -18,7 +18,7 @@ func expectF(t *testing.T, expected, actual float64) {
 }
 
 func expectFdelta(t *testing.T, expected, actual, delta float64) {
-	if math.Fabs(expected - actual) > delta {
+	if math.Abs(expected-actual) > delta {
 		t.Errorf("Expected %f, got %f", expected, actual)
 	}
 }
