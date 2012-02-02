@@ -43,3 +43,16 @@ func BenchmarkLoadFont(b *testing.B) {
 		LoadFont("/Library/Fonts/Arial.ttf")
 	}
 }
+
+// 50.4 ns
+func BenchmarkAdvanceWidth(b *testing.B) {
+	b.StopTimer()
+	f, err := LoadFont("/Library/Fonts/Arial.ttf")
+	if err != nil {
+		panic("Error loading font")
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f.AdvanceWidth(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
+	}
+}

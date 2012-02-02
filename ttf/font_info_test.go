@@ -30,13 +30,11 @@ func TestLoadFontInfo(t *testing.T) {
 	expectS(t, "Copyright", "© 2006 The Monotype Corporation. All Rights Reserved.", fi.Copyright())
 	expectS(t, "Designer", "Monotype Type Drawing Office - Robin Nicholas, Patricia Saunders 1982", fi.Designer())
 	expect(t, "Embeddable", fi.Embeddable())
-	expectS(t, "Family", "Arial", fi.Family())
 	expectS(t, "FullName", "Arial", fi.FullName())
 	expectS(t, "License", "You may use this font to display and print content as permitted by the license terms for the product in which this font is included. You may only (i) embed this font in content as permitted by the embedding restrictions included in this font; and (ii) temporarily download this font to a printer or other output device to help print content.", fi.License())
 	expectS(t, "Manufacturer", "The Monotype Corporation", fi.Manufacturer())
 	expectS(t, "PostScriptName", "ArialMT", fi.PostScriptName())
 	expectI(t, "StemV", 87, fi.StemV())
-	expectS(t, "Style", "Regular", fi.Style())
 	expectS(t, "Trademark", "Arial is a trademark of The Monotype Corporation in the United States and/or other countries.", fi.Trademark())
 	expectS(t, "UniqueName", "Monotype:Arial Regular:Version 5.01 (Microsoft)", fi.UniqueName())
 	expectS(t, "Version", "Version 5.01.2x", fi.Version())
@@ -81,18 +79,5 @@ var arialTableNames = []string{
 func BenchmarkLoadFontInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFontInfo("/Library/Fonts/Arial.ttf")
-	}
-}
-
-// 50.4 ns
-func BenchmarkAdvanceWidth(b *testing.B) {
-	b.StopTimer()
-	f, err := LoadFont("/Library/Fonts/Arial.ttf")
-	if err != nil {
-		panic("Error loading font")
-	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		f.AdvanceWidth(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
 	}
 }
