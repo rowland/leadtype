@@ -46,7 +46,7 @@ func BenchmarkGlyphIndex(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		panic("Error loading font: " + err.String())
+		panic("Error loading font: " + err.Error())
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -59,7 +59,7 @@ func BenchmarkGlyphIndex_format4(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		panic("Error loading font: " + err.String())
+		panic("Error loading font: " + err.Error())
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -72,7 +72,7 @@ func BenchmarkGlyphIndex_format12(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/华文楷体.ttf")
 	if err != nil {
-		panic("Error loading font: " + err.String())
+		panic("Error loading font: " + err.Error())
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {

@@ -26,7 +26,7 @@ type hheaTable struct {
 	numOfLongHorMetrics uint16
 }
 
-func (table *hheaTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *hheaTable) init(file io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}

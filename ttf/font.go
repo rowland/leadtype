@@ -22,7 +22,7 @@ type Font struct {
 }
 
 // 9,151,820 ns
-func LoadFont(filename string) (font *Font, err os.Error) {
+func LoadFont(filename string) (font *Font, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -33,7 +33,7 @@ func LoadFont(filename string) (font *Font, err os.Error) {
 	return
 }
 
-func (font *Font) init(file io.ReadSeeker) (err os.Error) {
+func (font *Font) init(file io.ReadSeeker) (err error) {
 	if err = font.FontInfo.init(file); err != nil {
 		return
 	}

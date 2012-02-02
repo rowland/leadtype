@@ -26,7 +26,7 @@ type headTable struct {
 	glyphDataFormat    int16
 }
 
-func (table *headTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *headTable) init(file io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}

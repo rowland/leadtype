@@ -1,8 +1,8 @@
 package ttf
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 )
 
@@ -12,7 +12,7 @@ type FontCollection struct {
 }
 
 // 81,980,000 ns
-func (fc *FontCollection) Add(pattern string) (err os.Error) {
+func (fc *FontCollection) Add(pattern string) (err error) {
 	var pathnames []string
 	if pathnames, err = filepath.Glob(pattern); err != nil {
 		return
@@ -20,7 +20,7 @@ func (fc *FontCollection) Add(pattern string) (err os.Error) {
 	for _, pathname := range pathnames {
 		fi, err2 := LoadFontInfo(pathname)
 		if err2 != nil {
-			err = os.NewError(fmt.Sprintf("Error loading %s: %s", pathname, err2))
+			err = errors.New(fmt.Sprintf("Error loading %s: %s", pathname, err2))
 			continue
 		}
 		fc.fontInfos = append(fc.fontInfos, fi)
@@ -32,7 +32,7 @@ func (fc *FontCollection) Len() int {
 	return len(fc.fontInfos)
 }
 
-func (fc *FontCollection) Select(family, weight, style string, options FontOptions) (font *Font, err os.Error) {
+func (fc *FontCollection) Select(family, weight, style string, options FontOptions) (font *Font, err error) {
 	var ws string
 	if weight != "" && style != "" {
 		ws = weight + " " + style
@@ -46,7 +46,7 @@ func (fc *FontCollection) Select(family, weight, style string, options FontOptio
 	if fc.fonts == nil {
 		fc.fonts = make(map[string]*Font)
 	}
-	search:
+search:
 	for _, f := range fc.fontInfos {
 		if f.Family() == family && f.Style() == ws {
 			for _, r := range options.CharRanges {
@@ -62,7 +62,7 @@ func (fc *FontCollection) Select(family, weight, style string, options FontOptio
 			return
 		}
 	}
-	err = os.NewError(fmt.Sprintf("Font %s %s not found", family, ws))
+	err = errors.New(fmt.Sprintf("Font %s %s not found", family, ws))
 	return
 }
 

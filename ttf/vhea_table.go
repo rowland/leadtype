@@ -27,7 +27,7 @@ type vheaTable struct {
 	numOfLongVerMetrics  uint16
 }
 
-func (table *vheaTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *vheaTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}

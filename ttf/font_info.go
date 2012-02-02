@@ -17,11 +17,11 @@ type FontInfo struct {
 	rangeShift    uint16
 	tableDir      tableDir
 	nameTable     nameTable
-	os2Table      os2Table	
+	os2Table      os2Table
 }
 
 // 1,077,216 ns
-func LoadFontInfo(filename string) (fi *FontInfo, err os.Error) {
+func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -33,7 +33,7 @@ func LoadFontInfo(filename string) (fi *FontInfo, err os.Error) {
 	return
 }
 
-func (fi *FontInfo) init(file io.ReadSeeker) (err os.Error) {
+func (fi *FontInfo) init(file io.ReadSeeker) (err error) {
 	if err = readValues(file,
 		&fi.scalar,
 		&fi.nTables,
@@ -138,7 +138,7 @@ type tableDir struct {
 	entriesMap map[string]*tableDirEntry
 }
 
-func (dir *tableDir) read(file io.Reader, nTables uint16) (err os.Error) {
+func (dir *tableDir) read(file io.Reader, nTables uint16) (err error) {
 	dir.entries = make([]*tableDirEntry, nTables)
 	dir.entriesMap = make(map[string]*tableDirEntry, nTables)
 	for i := uint16(0); i < nTables; i++ {
@@ -175,7 +175,7 @@ type tableDirEntry struct {
 	length   uint32
 }
 
-func (entry *tableDirEntry) read(file io.Reader) (err os.Error) {
+func (entry *tableDirEntry) read(file io.Reader) (err error) {
 	tag := make([]byte, 4)
 	if _, err = file.Read(tag); err != nil {
 		return

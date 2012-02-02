@@ -13,7 +13,7 @@ type hmtxTable struct {
 	leftSideBearing []FWord
 }
 
-func (table *hmtxTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16, numOfLongHorMetrics uint16) (err os.Error) {
+func (table *hmtxTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16, numOfLongHorMetrics uint16) (err error) {
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -81,6 +81,6 @@ type longHorMetric struct {
 	leftSideBearing int16
 }
 
-func (m *longHorMetric) read(file io.Reader) os.Error {
+func (m *longHorMetric) read(file io.Reader) error {
 	return readValues(file, &m.advanceWidth, &m.leftSideBearing)
 }

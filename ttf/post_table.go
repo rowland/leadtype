@@ -3,6 +3,7 @@ package ttf
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,7 +23,7 @@ type postTable struct {
 	charCodes          []uint16
 }
 
-func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16) (err os.Error) {
+func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16) (err error) {
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -55,13 +56,13 @@ func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs u
 		table.charCodes = make([]uint16, numGlyphs)
 		err = readValues(file, &table.charCodes)
 	default:
-		return os.NewError(fmt.Sprintf("Unsupported post table format: %g", table.format.Tof64()))
+		return errors.New(fmt.Sprintf("Unsupported post table format: %g", table.format.Tof64()))
 	}
 
 	return
 }
 
-func (table *postTable) readFormat2Names(file io.Reader) (err os.Error) {
+func (table *postTable) readFormat2Names(file io.Reader) (err error) {
 	var numberOfGlyphs uint16
 	if err = binary.Read(file, binary.BigEndian, &numberOfGlyphs); err != nil {
 		return

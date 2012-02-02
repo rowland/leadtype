@@ -12,7 +12,7 @@ type vmtxTable struct {
 	topSideBearing []FWord
 }
 
-func (table *vmtxTable) init(file io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16, numOfLongVerMetrics uint16) (err os.Error) {
+func (table *vmtxTable) init(file io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16, numOfLongVerMetrics uint16) (err error) {
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -45,6 +45,6 @@ type longVerMetric struct {
 	topSideBearing int16
 }
 
-func (m *longVerMetric) read(file io.Reader) os.Error {
+func (m *longVerMetric) read(file io.Reader) error {
 	return readValues(file, &m.advanceHeight, &m.topSideBearing)
 }

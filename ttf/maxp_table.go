@@ -24,7 +24,7 @@ type maxpTable struct {
 	maxComponentDepth     uint16
 }
 
-func (table *maxpTable) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *maxpTable) init(file io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}

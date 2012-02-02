@@ -3,6 +3,7 @@ package ttf
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,7 +21,7 @@ type cmapTable struct {
 	preferredIndexer glyphIndexer
 }
 
-func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -69,7 +70,7 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Err
 	if preferredEncoding >= 0 {
 		table.preferredIndexer = table.encodingRecords[preferredEncoding].glyphIndexer
 	} else {
-		err = os.NewError("Unable to select preferred cmap glyph indexer.")
+		err = errors.New("Unable to select preferred cmap glyph indexer.")
 	}
 	return
 }
@@ -97,11 +98,11 @@ type cmapEncodingRecord struct {
 	glyphIndexer       glyphIndexer
 }
 
-func (rec *cmapEncodingRecord) read(file io.Reader) (err os.Error) {
+func (rec *cmapEncodingRecord) read(file io.Reader) (err error) {
 	return readValues(file, &rec.platformID, &rec.platformSpecificID, &rec.offset)
 }
 
-func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
+func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err error) {
 	if err = binary.Read(file, binary.BigEndian, &rec.format); err != nil {
 		return
 	}
@@ -122,7 +123,7 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err os.Error) {
 		rec.glyphIndexer = new(format12EncodingRecord)
 		err = rec.glyphIndexer.init(file)
 	default:
-		return os.NewError(fmt.Sprintf("Unsupported mapping table format: %d", rec.format))
+		return errors.New(fmt.Sprintf("Unsupported mapping table format: %d", rec.format))
 	}
 	return
 }
@@ -138,7 +139,7 @@ func (rec *cmapEncodingRecord) write(wr io.Writer) {
 }
 
 type glyphIndexer interface {
-	init(file io.Reader) (err os.Error)
+	init(file io.Reader) (err error)
 	glyphIndex(codepoint int) int
 	write(wr io.Writer)
 }
@@ -158,7 +159,7 @@ type format0EncodingRecord struct {
 	glyphIndexArray []uint16
 }
 
-func (rec *format0EncodingRecord) init(file io.Reader) (err os.Error) {
+func (rec *format0EncodingRecord) init(file io.Reader) (err error) {
 	if err = readValues(file, &rec.length, &rec.language); err != nil {
 		return
 	}
@@ -217,7 +218,7 @@ type format2EncodingRecord struct {
 	glyphIndexArray []uint16
 }
 
-func (rec *format2EncodingRecord) init(file io.Reader) (err os.Error) {
+func (rec *format2EncodingRecord) init(file io.Reader) (err error) {
 	var subHeaderKeys [256]uint16
 	if err = readValues(file, &rec.length, &rec.language, &subHeaderKeys); err != nil {
 		return
@@ -266,7 +267,7 @@ type subHeader struct {
 	idRangeOffset uint16
 }
 
-func (sh *subHeader) read(file io.Reader) (err os.Error) {
+func (sh *subHeader) read(file io.Reader) (err error) {
 	return readValues(file, &sh.firstCode, &sh.entryCount, &sh.idDelta, &sh.idRangeOffset)
 }
 
@@ -285,7 +286,7 @@ type format4EncodingRecord struct {
 	glyphIndexArray []uint16
 }
 
-func (rec *format4EncodingRecord) init(file io.Reader) (err os.Error) {
+func (rec *format4EncodingRecord) init(file io.Reader) (err error) {
 	if err = readValues(file,
 		&rec.length,
 		&rec.language,
@@ -369,7 +370,7 @@ type format6EncodingRecord struct {
 	glyphIndexArray []uint16
 }
 
-func (enc *format6EncodingRecord) init(file io.Reader) (err os.Error) {
+func (enc *format6EncodingRecord) init(file io.Reader) (err error) {
 	if err = readValues(file,
 		&enc.length,
 		&enc.language,
@@ -404,7 +405,7 @@ type format12EncodingRecord struct {
 	groups   []format12Group
 }
 
-func (enc *format12EncodingRecord) init(file io.Reader) (err os.Error) {
+func (enc *format12EncodingRecord) init(file io.Reader) (err error) {
 	if err = readValues(file,
 		&enc.frac,
 		&enc.length,
@@ -456,6 +457,6 @@ type format12Group struct {
 	startGlyphCode uint32
 }
 
-func (group *format12Group) read(file io.Reader) (err os.Error) {
+func (group *format12Group) read(file io.Reader) (err error) {
 	return readValues(file, &group.startCharCode, &group.endCharCode, &group.startGlyphCode)
 }

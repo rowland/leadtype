@@ -1,9 +1,9 @@
 package ttf
 
 import (
-	"encoding/binary"
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -76,7 +76,7 @@ type nameTable struct {
 	sampleText            string
 }
 
-func (table *nameTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *nameTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -153,7 +153,7 @@ func (table *nameTable) getField(nameID uint16) string {
 	return ""
 }
 
-func (table *nameTable) readField(rec *nameRecord, file io.Reader) (s string, err os.Error) {
+func (table *nameTable) readField(rec *nameRecord, file io.Reader) (s string, err error) {
 	switch rec.platformID {
 	case UnicodePlatformID, MicrosoftPlatformID:
 		u := make([]uint16, rec.length/2)
@@ -257,7 +257,7 @@ type nameRecord struct {
 	offset             uint16
 }
 
-func (rec *nameRecord) read(file io.Reader) os.Error {
+func (rec *nameRecord) read(file io.Reader) error {
 	return readValues(file,
 		&rec.platformID,
 		&rec.platformSpecificID,

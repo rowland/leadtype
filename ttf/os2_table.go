@@ -49,7 +49,7 @@ type os2Table struct {
 	// Version 4, per http://www.microsoft.com/typography/otspec/os2.htm (no new fields?)
 }
 
-func (table *os2Table) init(file io.ReadSeeker, entry *tableDirEntry) (err os.Error) {
+func (table *os2Table) init(file io.ReadSeeker, entry *tableDirEntry) (err error) {
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
@@ -144,6 +144,6 @@ type CharRanges [4]uint32
 
 func (cr *CharRanges) IsSet(bit int) bool {
 	i := bit >> 5
-	b := uint32(1 << uint(bit & 31))
-	return cr[i] & b != 0
+	b := uint32(1 << uint(bit&31))
+	return cr[i]&b != 0
 }

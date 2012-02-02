@@ -3,8 +3,7 @@ package ttf
 import (
 	"encoding/binary"
 	"io"
-	"os"
-	"utf16"
+	"unicode/utf16"
 )
 
 type Fixed struct {
@@ -12,7 +11,7 @@ type Fixed struct {
 	frac uint16
 }
 
-func (f *Fixed) Read(file io.Reader) os.Error {
+func (f *Fixed) Read(file io.Reader) error {
 	return readValues(file, &f.base, &f.frac)
 }
 
@@ -27,7 +26,7 @@ type longDateTime int64
 
 type PANOSE [10]byte
 
-func readValues(r io.Reader, values ...interface{}) (err os.Error) {
+func readValues(r io.Reader, values ...interface{}) (err error) {
 	for _, v := range values {
 		if err = binary.Read(r, binary.BigEndian, v); err != nil {
 			return

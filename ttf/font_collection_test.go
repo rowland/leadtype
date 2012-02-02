@@ -48,7 +48,7 @@ func TestFontCollection(t *testing.T) {
 	}
 	bogusFont, err2 := fc.Select("Bogus", "Regular", "", FontOptions{})
 	expect(t, "Bogus Select Font", bogusFont == nil)
-	expectS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.String())
+	expectS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.Error())
 }
 
 // 81,980,000 ns
