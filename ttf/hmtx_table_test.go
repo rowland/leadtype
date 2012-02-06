@@ -82,6 +82,7 @@ func BenchmarkLookup_LongHorMetric(b *testing.B) {
 }
 
 // 7.7 ns
+// 5.5 ns
 func BenchmarkLookupAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -95,6 +96,7 @@ func BenchmarkLookupAdvanceWidth(b *testing.B) {
 }
 
 // 7.4 ns
+// 8.8 ns
 func BenchmarkLookupLeftSideBearing(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")

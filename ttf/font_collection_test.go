@@ -52,6 +52,7 @@ func TestFontCollection(t *testing.T) {
 }
 
 // 81,980,000 ns
+// 45,763,220 ns
 func BenchmarkFontCollection_Add(b *testing.B) {
 	var fc FontCollection
 
