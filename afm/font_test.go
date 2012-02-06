@@ -1,7 +1,6 @@
 package afm
 
 import "testing"
-import "math"
 
 func TestLoadFont(t *testing.T) {
 	f, err := LoadFont("data/fonts/Helvetica.afm")
@@ -31,6 +30,7 @@ func TestLoadFont(t *testing.T) {
 
 // 3,956,700 ns
 // 2,446,984 ns
+// 2,284,165 ns/2.284 ms
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("data/fonts/Helvetica.afm")
@@ -39,21 +39,14 @@ func BenchmarkLoadFont(b *testing.B) {
 
 // 58.4 ns
 // 71.3 ns
+// 41.5 ns
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("data/fonts/Helvetica.afm")
 	if err != nil {
 		panic("Error loading font")
 	}
-	min, max := rune(math.MaxInt32), rune(0)
-	for i, _ := range f.charsByCodepoint {
-		if i > max {
-			max = i
-		}
-		if i < min {
-			min = i
-		}
-	}
+	min, max := f.charMetrics[0].code, f.charMetrics[len(f.charMetrics) -1].code
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		f.AdvanceWidth(min + rune(i) % (max - min+1))

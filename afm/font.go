@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -12,13 +13,14 @@ import (
 type Font struct {
 	FontInfo
 	serif            bool
-	charMetrics      []CharMetric
-	charsByGlyphName map[string]*CharMetric
-	charsByCodepoint map[rune]*CharMetric
+	charMetrics      CharMetrics
+	// charsByGlyphName map[string]*CharMetric
+	// charsByCodepoint map[rune]*CharMetric
 }
 
 // 3,956,700 ns/3.957 ms
 // 2,446,984 ns/2.447 ms
+// 2,284,165 ns/2.284 ms
 func LoadFont(filename string) (font *Font, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
@@ -46,9 +48,9 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 	if err = font.FontInfo.init(file); err != nil {
 		return
 	}
-	font.charMetrics = make([]CharMetric, font.numGlyphs)
-	font.charsByGlyphName = make(map[string]*CharMetric, font.numGlyphs)
-	font.charsByCodepoint = make(map[rune]*CharMetric, font.numGlyphs)
+	font.charMetrics = NewCharMetrics(font.numGlyphs)
+	// font.charsByGlyphName = make(map[string]*CharMetric, font.numGlyphs)
+	// font.charsByCodepoint = make(map[rune]*CharMetric, font.numGlyphs)
 	var line []byte
 	line, err = file.ReadSlice('\n')
 	for i := 0; err == nil; i += 1 {
@@ -57,8 +59,8 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 		}
 		cm := &font.charMetrics[i]
 		if m := reCharMetrics.FindSubmatch(line); m != nil {
-			r, _ := strconv.Atoi(string(m[1]))
-			cm.code = rune(r)
+			// r, _ := strconv.Atoi(string(m[1]))
+			// cm.code = rune(r)
 			w, _ := strconv.Atoi(string(m[2]))
 			cm.width = int32(w)
 			cm.name = string(m[3])
@@ -68,12 +70,12 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 				f = strings.TrimSpace(f)
 				kv := strings.Split(f, " ")
 				switch kv[0] {
-				case "C":
-					r, _ := strconv.Atoi(kv[1])
-					cm.code = rune(r)
-				case "CH":
-					n, _ := strconv.ParseUint(kv[1][1:len(kv[1])-1], 16, 64)
-					cm.code = rune(n)
+				// case "C":
+				// 	r, _ := strconv.Atoi(kv[1])
+				// 	cm.code = rune(r)
+				// case "CH":
+				// 	n, _ := strconv.ParseUint(kv[1][1:len(kv[1])-1], 16, 64)
+				// 	cm.code = rune(n)
 				case "WX", "W0X":
 					w, _ := strconv.Atoi(kv[1])
 					cm.width = int32(w)
@@ -82,11 +84,13 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 				}
 			}
 		}
-		cp := GlyphCodepoints[cm.name]
-		font.charsByGlyphName[cm.name] = cm
-		font.charsByCodepoint[cp] = cm
+		cm.code = GlyphCodepoints[cm.name]
+		// cp := GlyphCodepoints[cm.name]
+		// font.charsByGlyphName[cm.name] = cm
+		// font.charsByCodepoint[cp] = cm
 		line, err = file.ReadSlice('\n')
 	}
+	sort.Sort(font.charMetrics)
 	return
 }
 
@@ -113,8 +117,9 @@ func (font *Font) initInf(filename string) (err error) {
 
 // 58.4 ns
 // 71.3 ns
+// 41.5 ns
 func (font *Font) AdvanceWidth(codepoint rune) int {
-	if cm := font.charsByCodepoint[codepoint]; cm != nil {
+	if cm := font.charMetrics.ForRune(codepoint); cm != nil {
 		return int(cm.width)
 	}
 	return 0
@@ -130,10 +135,4 @@ func (font *Font) Serif() bool {
 
 func (font *Font) UnitsPerEm() int {
 	return 1000
-}
-
-type CharMetric struct {
-	code  rune
-	width int32
-	name  string
 }

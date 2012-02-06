@@ -26,6 +26,12 @@ func expectI16(t *testing.T, name string, expected, actual int16) {
 	}
 }
 
+func expectI32(t *testing.T, name string, expected, actual int32) {
+	if expected != actual {
+		t.Errorf("%s: expected %d, got %d", name, expected, actual)
+	}
+}
+
 func expectUI32(t *testing.T, name string, expected, actual uint32) {
 	if expected != actual {
 		t.Errorf("%s: expected %d, got %d", name, expected, actual)
