@@ -30,6 +30,7 @@ func TestLoadFont(t *testing.T) {
 }
 
 // 3,956,700 ns
+// 2,446,984 ns
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("data/fonts/Helvetica.afm")
@@ -37,13 +38,14 @@ func BenchmarkLoadFont(b *testing.B) {
 }
 
 // 58.4 ns
+// 71.3 ns
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("data/fonts/Helvetica.afm")
 	if err != nil {
 		panic("Error loading font")
 	}
-	min, max := math.MaxInt32, 0
+	min, max := rune(math.MaxInt32), rune(0)
 	for i, _ := range f.charsByCodepoint {
 		if i > max {
 			max = i
@@ -54,6 +56,6 @@ func BenchmarkAdvanceWidth(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		f.AdvanceWidth(min + i%int(max - min+1))
+		f.AdvanceWidth(min + rune(i) % (max - min+1))
 	}
 }

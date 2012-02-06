@@ -40,7 +40,7 @@ package afm
 // # Format: Semicolon-delimited fields:
 // #            (1) glyph name
 // #            (2) Unicode scalar value
-var GlyphCodepoints = map[string]int{
+var GlyphCodepoints = map[string]rune{
 	"A":                                   0x0041,
 	"AE":                                  0x00C6,
 	"AEacute":                             0x01FC,

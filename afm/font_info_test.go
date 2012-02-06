@@ -37,6 +37,7 @@ func TestLoadFontInfo(t *testing.T) {
 }
 
 // 323,331 ns
+// 169,941 ns
 func BenchmarkLoadFontInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFontInfo("data/fonts/Helvetica.afm")

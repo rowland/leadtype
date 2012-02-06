@@ -14,10 +14,11 @@ type Font struct {
 	serif            bool
 	charMetrics      []CharMetric
 	charsByGlyphName map[string]*CharMetric
-	charsByCodepoint map[int]*CharMetric
+	charsByCodepoint map[rune]*CharMetric
 }
 
 // 3,956,700 ns/3.957 ms
+// 2,446,984 ns/2.447 ms
 func LoadFont(filename string) (font *Font, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
@@ -47,7 +48,7 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 	}
 	font.charMetrics = make([]CharMetric, font.numGlyphs)
 	font.charsByGlyphName = make(map[string]*CharMetric, font.numGlyphs)
-	font.charsByCodepoint = make(map[int]*CharMetric, font.numGlyphs)
+	font.charsByCodepoint = make(map[rune]*CharMetric, font.numGlyphs)
 	var line []byte
 	line, err = file.ReadSlice('\n')
 	for i := 0; err == nil; i += 1 {
@@ -56,8 +57,10 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 		}
 		cm := &font.charMetrics[i]
 		if m := reCharMetrics.FindSubmatch(line); m != nil {
-			cm.code, _ = strconv.Atoi(string(m[1]))
-			cm.width, _ = strconv.Atoi(string(m[2]))
+			r, _ := strconv.Atoi(string(m[1]))
+			cm.code = rune(r)
+			w, _ := strconv.Atoi(string(m[2]))
+			cm.width = int32(w)
 			cm.name = string(m[3])
 		} else {
 			fields := strings.Split(string(line), ";")
@@ -66,12 +69,14 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 				kv := strings.Split(f, " ")
 				switch kv[0] {
 				case "C":
-					cm.code, _ = strconv.Atoi(kv[1])
+					r, _ := strconv.Atoi(kv[1])
+					cm.code = rune(r)
 				case "CH":
 					n, _ := strconv.ParseUint(kv[1][1:len(kv[1])-1], 16, 64)
-					cm.code = int(n)
+					cm.code = rune(n)
 				case "WX", "W0X":
-					cm.width, _ = strconv.Atoi(kv[1])
+					w, _ := strconv.Atoi(kv[1])
+					cm.width = int32(w)
 				case "N":
 					cm.name = kv[1]
 				}
@@ -106,9 +111,11 @@ func (font *Font) initInf(filename string) (err error) {
 	return
 }
 
-func (font *Font) AdvanceWidth(codepoint int) int {
+// 58.4 ns
+// 71.3 ns
+func (font *Font) AdvanceWidth(codepoint rune) int {
 	if cm := font.charsByCodepoint[codepoint]; cm != nil {
-		return cm.width
+		return int(cm.width)
 	}
 	return 0
 }
@@ -126,7 +133,7 @@ func (font *Font) UnitsPerEm() int {
 }
 
 type CharMetric struct {
-	code  int
-	width int
+	code  rune
+	width int32
 	name  string
 }
