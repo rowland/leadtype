@@ -192,7 +192,7 @@ func (enc *format0EncodingRecord) glyphIndex(codepoint int) int {
 		gi := enc.idRangeOffset[i]/2 + (uint16(codepoint) - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
 		return int(enc.glyphIndexArray[gi])
 	}
-	return 0
+	return -1
 }
 
 func (rec *format0EncodingRecord) write(wr io.Writer) {
@@ -241,7 +241,7 @@ func (rec *format2EncodingRecord) init(file io.Reader) (err error) {
 }
 
 func (rec *format2EncodingRecord) glyphIndex(codepoint int) int {
-	return 0
+	return -1 // FIXME: Find sample font, write test and implement.
 }
 
 func (rec *format2EncodingRecord) write(wr io.Writer) {
@@ -344,7 +344,7 @@ func (enc *format4EncodingRecord) glyphIndex(codepoint int) int {
 		gi := enc.idRangeOffset[i]/2 + (uint16(codepoint) - enc.startCode[i]) + uint16(i-len(enc.idRangeOffset))
 		return int(enc.glyphIndexArray[gi])
 	}
-	return 0
+	return -1
 }
 
 func (rec *format4EncodingRecord) write(wr io.Writer) {
@@ -384,7 +384,7 @@ func (enc *format6EncodingRecord) init(file io.Reader) (err error) {
 
 func (enc *format6EncodingRecord) glyphIndex(codepoint int) int {
 	if codepoint < int(enc.firstCode) || codepoint >= int(enc.firstCode+enc.entryCount) {
-		return 0
+		return -1
 	}
 	return int(enc.glyphIndexArray[codepoint-int(enc.firstCode)])
 }
@@ -438,7 +438,7 @@ func (enc *format12EncodingRecord) glyphIndex(codepoint int) int {
 		}
 		return int(group.startGlyphCode + (uint32(codepoint) - group.startCharCode))
 	}
-	return 0
+	return -1
 }
 
 func (enc *format12EncodingRecord) write(wr io.Writer) {

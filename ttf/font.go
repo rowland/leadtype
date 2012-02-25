@@ -81,9 +81,14 @@ func (font *Font) init(file io.ReadSeeker) (err error) {
 	return
 }
 
-// 50.4 ns
-func (font *Font) AdvanceWidth(codepoint int) int {
-	return int(font.hmtxTable.lookupAdvanceWidth(int(font.cmapTable.glyphIndex(codepoint))))
+// 74.6 ns
+func (font *Font) AdvanceWidth(codepoint int) (width int, err error) {
+	if index := font.cmapTable.glyphIndex(codepoint); index < 0 {
+		err = missingCodepoint(codepoint)
+	} else {
+		width = int(font.hmtxTable.lookupAdvanceWidth(index))
+	}
+	return
 }
 
 func (font *Font) Ascent() int {
@@ -209,4 +214,10 @@ func (font *Font) writeHeader(wr io.Writer) {
 
 type BoundingBox struct {
 	XMin, YMin, XMax, YMax int
+}
+
+type missingCodepoint int
+
+func (cp missingCodepoint) Error() string {
+	return fmt.Sprintf("Font missing codepoint %d.", cp)
 }

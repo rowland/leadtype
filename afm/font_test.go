@@ -2,6 +2,10 @@ package afm
 
 import "testing"
 
+func aw(width int, err error) int {
+	return width
+}
+
 func TestLoadFont(t *testing.T) {
 	f, err := LoadFont("data/fonts/Helvetica.afm")
 	if err != nil {
@@ -14,12 +18,12 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "UnitsPerEm", 1000, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 315, f.NumGlyphs())
 	expect(t, "Serif", !f.Serif())
-	expectI(t, "registered", 737, f.AdvanceWidth(0xAE))
-	expectI(t, "copyright", 737, f.AdvanceWidth(0xA9))
+	expectI(t, "registered", 737, aw(f.AdvanceWidth(0xAE)))
+	expectI(t, "copyright", 737, aw(f.AdvanceWidth(0xA9)))
 	// expectI(t, "epsilon", 913, f.AdvanceWidth(0x03B5))
 	// expectI(t, "l-cedilla", 1139, f.AdvanceWidth(0x013B))
 	// expectI(t, "afii57414", 1307, f.AdvanceWidth(0x0626))
-	expectI(t, "trademark", 1000, f.AdvanceWidth(0x2122))
+	expectI(t, "trademark", 1000, aw(f.AdvanceWidth(0x2122)))
 	// expectI(t, "reversed-e", 1366, f.AdvanceWidth(0x018E))
 	// expectI(t, "t-with-comma", 1251, f.AdvanceWidth(0x021A))
 	// 
