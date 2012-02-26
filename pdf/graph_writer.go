@@ -1,8 +1,8 @@
 package pdf
 
 import (
-	"io"
 	"fmt"
+	"io"
 )
 
 type graphWriter struct {

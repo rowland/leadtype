@@ -54,7 +54,7 @@ func TestNewPageStyle(t *testing.T) {
 	expectF(t, 0, ps4.cropSize.y1)
 	expectF(t, 842, ps4.cropSize.x2)
 	expectF(t, 595, ps4.cropSize.y2)
-	
+
 	// TODO: Handle crop_size differently to allow non-zero x1 and y1.
 
 	opt5 := Options{"rotate": "portrait"}

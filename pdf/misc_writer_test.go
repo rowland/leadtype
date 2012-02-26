@@ -1,8 +1,8 @@
 package pdf
 
 import (
-	"testing"
 	"bytes"
+	"testing"
 )
 
 func TestMiscWriter_setCmykColorFill(t *testing.T) {

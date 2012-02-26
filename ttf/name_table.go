@@ -80,7 +80,7 @@ func (table *nameTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	file, _ := bufio.NewReaderSize(rs, int(entry.length))
+	file := bufio.NewReaderSize(rs, int(entry.length))
 	if err = readValues(file,
 		&table.format,
 		&table.count,

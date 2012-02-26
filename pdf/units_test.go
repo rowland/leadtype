@@ -40,7 +40,7 @@ func TestUnitsToPts(t *testing.T) {
 	expectF(t, 100, unitsToPts("pt", 100))
 	expectF(t, 7200, unitsToPts("in", 100))
 	expectF(t, 2835, unitsToPts("cm", 100))
-	expectFdelta(t, 7.2, unitsToPts("dp", 100), 0.0001)	
+	expectFdelta(t, 7.2, unitsToPts("dp", 100), 0.0001)
 
 	defer func() {
 		if p := recover(); p == nil {

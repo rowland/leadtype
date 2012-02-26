@@ -47,7 +47,6 @@ func TestLoadFontInfo(t *testing.T) {
 	expectUI32(t, "CharRanges[3]", 0, cr[3])
 }
 
-
 var arialTableNames = []string{
 	"DSIG",
 	"GDEF",

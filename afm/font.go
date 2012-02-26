@@ -13,8 +13,8 @@ import (
 
 type Font struct {
 	FontInfo
-	serif            bool
-	charMetrics      CharMetrics
+	serif       bool
+	charMetrics CharMetrics
 	// charsByGlyphName map[string]*CharMetric
 	// charsByCodepoint map[rune]*CharMetric
 }

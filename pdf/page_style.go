@@ -38,7 +38,7 @@ func makeSizeRectangle(size, orientation string) (r rectangle) {
 }
 
 const (
-	PORTRAIT = 0
+	PORTRAIT  = 0
 	LANDSCAPE = 270
 )
 

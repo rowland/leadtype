@@ -1,6 +1,7 @@
 package ttf
 
 import "testing"
+
 // import "fmt"
 
 func TestCmapTable_glyphIndex_Arial(t *testing.T) {

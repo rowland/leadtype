@@ -1,8 +1,8 @@
 package pdf
 
 import (
-	"testing"
 	"bytes"
+	"testing"
 )
 
 func expect(t *testing.T, expected, actual string) {
@@ -173,7 +173,7 @@ func TestNumber(t *testing.T) {
 
 func TestOutlines(t *testing.T) {
 	o := newOutlines(1, 0)
-	
+
 	if o.dict["Type"] != name("Outlines") {
 		t.Error("outlines not initialized properly")
 	}

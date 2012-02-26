@@ -40,5 +40,5 @@ func unitsToPts(units string, measurement float64) float64 {
 	if u == nil {
 		panic(fmt.Sprintf("Invalid units %s", units))
 	}
-	return u.toPts(measurement)	
+	return u.toPts(measurement)
 }

@@ -27,7 +27,7 @@ func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs u
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	file, _ := bufio.NewReaderSize(rs, int(entry.length))
+	file := bufio.NewReaderSize(rs, int(entry.length))
 	if err = table.format.Read(file); err != nil {
 		return
 	}

@@ -1,11 +1,11 @@
 package pdf
 
 import (
-	"io"
-	"fmt"
-	"strings"
-	"sort"
 	"bytes"
+	"fmt"
+	"io"
+	"sort"
+	"strings"
 )
 
 type array []writer

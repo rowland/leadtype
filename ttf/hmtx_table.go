@@ -17,7 +17,7 @@ func (table *hmtxTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs u
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	file, _ := bufio.NewReaderSize(rs, int(entry.length))
+	file := bufio.NewReaderSize(rs, int(entry.length))
 	table.hMetrics = make([]longHorMetric, numOfLongHorMetrics)
 	for i, _ := range table.hMetrics {
 		if err = table.hMetrics[i].read(file); err != nil {

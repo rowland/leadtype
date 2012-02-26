@@ -31,7 +31,7 @@ func (table *vheaTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	file, _ := bufio.NewReaderSize(rs, int(entry.length))
+	file := bufio.NewReaderSize(rs, int(entry.length))
 	if err = table.version.Read(file); err != nil {
 		return
 	}

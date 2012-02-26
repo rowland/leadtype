@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"go-pdf/ttf"
 	"os"
-	"../ttf/_obj/go-pdf/ttf"
 )
 
 func main() {

@@ -1,8 +1,8 @@
 package pdf
 
 import (
-	"testing"
 	"bytes"
+	"testing"
 )
 
 func TestNewDocWriter(t *testing.T) {
@@ -38,7 +38,7 @@ func TestClose(t *testing.T) {
 func TestClosePage(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	dw.ClosePage() // ignored when not in a page
+	dw.ClosePage()         // ignored when not in a page
 	dw.OpenPage(Options{}) // TODO: save PageWriter reference and test for being closed
 	dw.ClosePage()
 	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
