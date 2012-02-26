@@ -15,8 +15,6 @@ type Font struct {
 	FontInfo
 	serif       bool
 	charMetrics CharMetrics
-	// charsByGlyphName map[string]*CharMetric
-	// charsByCodepoint map[rune]*CharMetric
 }
 
 // 3,956,700 ns/3.957 ms
@@ -50,8 +48,6 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 		return
 	}
 	font.charMetrics = NewCharMetrics(font.numGlyphs)
-	// font.charsByGlyphName = make(map[string]*CharMetric, font.numGlyphs)
-	// font.charsByCodepoint = make(map[rune]*CharMetric, font.numGlyphs)
 	var line []byte
 	line, err = file.ReadSlice('\n')
 	for i := 0; err == nil; i += 1 {
@@ -60,8 +56,6 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 		}
 		cm := &font.charMetrics[i]
 		if m := reCharMetrics.FindSubmatch(line); m != nil {
-			// r, _ := strconv.Atoi(string(m[1]))
-			// cm.code = rune(r)
 			w, _ := strconv.Atoi(string(m[2]))
 			cm.width = int32(w)
 			cm.name = string(m[3])
@@ -86,9 +80,6 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 			}
 		}
 		cm.code = GlyphCodepoints[cm.name]
-		// cp := GlyphCodepoints[cm.name]
-		// font.charsByGlyphName[cm.name] = cm
-		// font.charsByCodepoint[cp] = cm
 		line, err = file.ReadSlice('\n')
 	}
 	sort.Sort(font.charMetrics)
