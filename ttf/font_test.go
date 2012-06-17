@@ -2,7 +2,7 @@ package ttf
 
 import "testing"
 
-func aw(width int, err error) int {
+func aw(width int, err bool) int {
 	return width
 }
 
@@ -51,6 +51,7 @@ func BenchmarkLoadFont(b *testing.B) {
 
 // 50.4 ns
 // 74.6 ns after adding error result
+// 47.8 ns go1 (returning bool err)
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
