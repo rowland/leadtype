@@ -2,7 +2,7 @@ package afm
 
 import "testing"
 
-func aw(width int, err error) int {
+func aw(width int, err bool) int {
 	return width
 }
 
@@ -35,6 +35,7 @@ func TestLoadFont(t *testing.T) {
 // 3,956,700 ns
 // 2,446,984 ns
 // 2,284,165 ns/2.284 ms
+// 2,294,880 ns/2.294 ms
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("data/fonts/Helvetica.afm")
@@ -44,6 +45,8 @@ func BenchmarkLoadFont(b *testing.B) {
 // 58.4 ns
 // 71.3 ns
 // 41.5 ns
+// 67.6 ns weekly.2012-02-22
+// 42.5 ns go1 (returning bool err)
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("data/fonts/Helvetica.afm")

@@ -2,7 +2,6 @@ package afm
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"regexp"
@@ -20,6 +19,7 @@ type Font struct {
 // 3,956,700 ns/3.957 ms
 // 2,446,984 ns/2.447 ms
 // 2,284,165 ns/2.284 ms
+// 2,294,880 ns/2.294 ms go1
 func LoadFont(filename string) (font *Font, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
@@ -107,14 +107,12 @@ func (font *Font) initInf(filename string) (err error) {
 	return
 }
 
-// 58.4 ns
-// 71.3 ns
-// 41.5 ns
-func (font *Font) AdvanceWidth(codepoint rune) (width int, err error) {
+// 42.5 ns go1 (returning bool err)
+func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
 	if cm := font.charMetrics.ForRune(codepoint); cm != nil {
-		return int(cm.width), nil
+		return int(cm.width), false
 	}
-	return 0, missingCodepoint(codepoint)
+	return 0, true
 }
 
 func (font *Font) NumGlyphs() int {
@@ -127,10 +125,4 @@ func (font *Font) Serif() bool {
 
 func (font *Font) UnitsPerEm() int {
 	return 1000
-}
-
-type missingCodepoint int
-
-func (cp missingCodepoint) Error() string {
-	return fmt.Sprintf("Font missing codepoint %d.", cp)
 }
