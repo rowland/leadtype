@@ -5,7 +5,7 @@ package main
 
 import (
 	"fmt"
-	"go-pdf/ttf"
+	"leadtype/ttf"
 	"os"
 )
 

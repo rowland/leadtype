@@ -4,9 +4,9 @@
 package main
 
 import (
-	"../../pdf/_obj/go-pdf/pdf"
+	"leadtype/pdf"
 	"os"
-	"exec"
+	"os/exec"
 )
 
 const name = "test_001_empty_doc.pdf"
