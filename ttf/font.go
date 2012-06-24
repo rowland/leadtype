@@ -1,5 +1,7 @@
-// Read some of the tables specified in http://developer.apple.com/fonts/ttrefman/
+// Copyright 2011-2012 Brent Rowland.
+// Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
+// Read some of the tables specified in http://developer.apple.com/fonts/ttrefman/
 package ttf
 
 import (
