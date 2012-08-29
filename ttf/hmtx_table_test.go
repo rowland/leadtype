@@ -36,7 +36,7 @@ func TestHmtxTable_lookup_Arial(t *testing.T) {
 	expectUI16(t, "3381 advanceWidth", 0, hmtx3381.advanceWidth)
 	expectI16(t, "3381 leftSideBearing", 0, hmtx3381.leftSideBearing)
 
-	expectUI16(t, "3381 lookupAdvanceWidth", 0, f.hmtxTable.lookupAdvanceWidth(3381))
+	expectUI16(t, "3381 lookupAdvanceWidth", 455, f.hmtxTable.lookupAdvanceWidth(3381)) // value from last entry
 	expectI16(t, "3381 lookupLeftSideBearing", 0, f.hmtxTable.lookupLeftSideBearing(3381))
 }
 

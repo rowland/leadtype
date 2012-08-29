@@ -50,7 +50,7 @@ func (table *hmtxTable) lookupAdvanceWidth(glyphIndex int) uint16 {
 	if glyphIndex >= 0 && glyphIndex < len(table.hMetrics) {
 		return table.hMetrics[glyphIndex].advanceWidth
 	}
-	return 0
+	return table.hMetrics[len(table.hMetrics)-1].advanceWidth
 }
 
 // 7.4 ns
