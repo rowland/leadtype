@@ -63,6 +63,6 @@ func BenchmarkAdvanceWidth(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		f.AdvanceWidth(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
+		f.AdvanceWidth(rune(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1)))
 	}
 }
