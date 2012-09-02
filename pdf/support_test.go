@@ -34,7 +34,7 @@ func expectI(t *testing.T, expected, actual int) {
 
 func expectS(t *testing.T, expected, actual string) {
 	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
+		t.Errorf("Expected |%s|, got |%s|", expected, actual)
 	}
 }
 
