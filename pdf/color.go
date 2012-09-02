@@ -3,6 +3,11 @@
 
 package pdf
 
+import (
+	"errors"
+	"strconv"
+)
+
 type Color int32
 
 func (this Color) RGB() (r, g, b uint8) {
@@ -316,4 +321,16 @@ var NamedColors = map[string]Color{
 	"WhiteSmoke":           WhiteSmoke,
 	"Yellow":               Yellow,
 	"YellowGreen":          YellowGreen,
+}
+
+func NamedColor(name string) (Color, error) {
+	if color, ok := NamedColors[name]; ok {
+		return color, nil
+	}
+	if name != "" {
+		if value, err := strconv.ParseInt(name, 16, 32); err == nil {
+			return Color(value), nil
+		}
+	}
+	return Black, errors.New("Expected name of color or numeric value in hex format.")
 }
