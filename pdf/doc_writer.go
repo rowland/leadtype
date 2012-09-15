@@ -43,9 +43,9 @@ func nextSeqFunc() func() int {
 	}
 }
 
-func (dw *DocWriter) AddFont(name string, size float64, options Options) []*Font {
+func (dw *DocWriter) AddFont(family string, size float64, options Options) []*Font {
 	f := &Font{
-		name: name,
+		family: family,
 		size: size,
 		weight: options.StringDefault("weight", ""),
 		style: options.StringDefault("style", ""),

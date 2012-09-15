@@ -73,7 +73,7 @@ func TestDocWriter_SetFont(t *testing.T) {
 	fonts := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Oblique", "color": "AliceBlue", "sub_type": "Type1"})
 
 	expectI(t, 1, len(fonts))
-	expectS(t, "Courier", fonts[0].name)
+	expectS(t, "Courier", fonts[0].family)
 	expectF(t, 10, fonts[0].size)
 	expectS(t, "Bold", fonts[0].weight)
 	expectS(t, "Oblique", fonts[0].style)

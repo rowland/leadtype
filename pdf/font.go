@@ -4,7 +4,7 @@
 package pdf
 
 type Font struct {
-	name    string
+	family  string
 	size    float64
 	weight  string
 	style   string

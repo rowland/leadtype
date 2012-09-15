@@ -203,7 +203,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 	fonts := pw.SetFont("Helvetica", 12, Options{})
 
 	expectI(t, 1, len(fonts))
-	expectS(t, "Helvetica", fonts[0].name)
+	expectS(t, "Helvetica", fonts[0].family)
 	expectF(t, 12, fonts[0].size)
 	check(t, fonts[0] == pw.Fonts()[0], "SetFont should return new font list")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont changes to font list should be global")
