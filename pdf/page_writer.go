@@ -60,6 +60,10 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	return pw
 }
 
+func (pw *PageWriter) AddFont(name string, size float64, options Options) []*Font {
+	return pw.dw.AddFont(name, size, options)
+}
+
 func (pw *PageWriter) checkSetLineColor() {
 	if pw.lineColor == pw.lastLineColor {
 		return
@@ -144,6 +148,10 @@ func (pw *PageWriter) endText() {
 
 }
 
+func (pw *PageWriter) Fonts() []*Font {
+	return pw.dw.fonts
+}
+
 func (pw *PageWriter) LineCapStyle() LineCapStyle {
 	return pw.lineCapStyle
 }
@@ -188,6 +196,14 @@ func (pw *PageWriter) MoveTo(x, y float64) {
 
 func (pw *PageWriter) PageHeight() float64 {
 	return pw.units.fromPts(pw.pageHeight)
+}
+
+func (pw *PageWriter) ResetFonts() {
+	pw.dw.ResetFonts()
+}
+
+func (pw *PageWriter) SetFont(name string, size float64, options Options) []*Font {
+	return pw.dw.SetFont(name, size, options)
 }
 
 func (pw *PageWriter) SetLineCapStyle(lineCapStyle LineCapStyle) (prev LineCapStyle) {

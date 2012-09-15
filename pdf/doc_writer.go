@@ -18,6 +18,7 @@ type DocWriter struct {
 	pagesDown   int
 	curPage     *PageWriter
 	options     Options
+	fonts       []*Font
 }
 
 func NewDocWriter(wr io.Writer) *DocWriter {
@@ -42,6 +43,28 @@ func nextSeqFunc() func() int {
 	}
 }
 
+func (dw *DocWriter) AddFont(name string, size float64, options Options) []*Font {
+	f := &Font{
+		name: name,
+		size: size,
+		weight: options.StringDefault("weight", ""),
+		style: options.StringDefault("style", ""),
+		color: options.ColorDefault("color", Black),
+		subType: options.StringDefault("sub_type", "TrueType"),
+	}
+	// type Font struct {
+	// 	name    string
+	// 	size    float64
+	// 	weight  string
+	// 	style   string
+	// 	color   Color
+	// 	subType string
+	// 	metrics FontMetrics
+	// }
+	dw.fonts = append(dw.fonts, f)
+	return dw.fonts
+}
+
 func (dw *DocWriter) Close() {
 	if len(dw.pages) == 0 {
 		dw.OpenPage(Options{})
@@ -57,6 +80,10 @@ func (dw *DocWriter) ClosePage() {
 		dw.curPage.Close()
 		dw.curPage = nil
 	}
+}
+
+func (dw *DocWriter) Fonts() []*Font {
+	return dw.fonts
 }
 
 func (dw *DocWriter) inPage() bool {
@@ -100,6 +127,15 @@ func (dw *DocWriter) PagesDown() int {
 
 func (dw *DocWriter) PagesUp() int {
 	return dw.PagesAcross() * dw.PagesDown()
+}
+
+func (dw *DocWriter) ResetFonts() {
+	dw.fonts = nil
+}
+
+func (dw *DocWriter) SetFont(name string, size float64, options Options) []*Font {
+	dw.ResetFonts()
+	return dw.AddFont(name, size, options)
 }
 
 func (dw *DocWriter) SetLineColor(color Color) (prev Color) {

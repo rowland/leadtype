@@ -64,6 +64,24 @@ func TestOpenPage(t *testing.T) {
 	check(t, len(dw.pages) == 1, "DocWriter should have 1 page now")
 }
 
+func TestDocWriter_SetFont(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+
+	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
+
+	fonts := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Oblique", "color": "AliceBlue", "sub_type": "Type1"})
+
+	expectI(t, 1, len(fonts))
+	expectS(t, "Courier", fonts[0].name)
+	expectF(t, 10, fonts[0].size)
+	expectS(t, "Bold", fonts[0].weight)
+	expectS(t, "Oblique", fonts[0].style)
+	check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
+	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
+	check(t, fonts[0].subType == "Type1", "Font subType should be Type1.")
+}
+
 // TODO: TestPagesAcross
 // TODO: TestPagesDown
 // TODO: TestPagesUp

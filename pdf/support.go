@@ -22,6 +22,23 @@ func g(value float64) string {
 
 type Options map[string]interface{}
 
+func (this Options) ColorDefault(key string, def Color) (color Color) {
+	color = def
+	if value, ok := this[key]; ok {
+		switch value := value.(type) {
+		case string:
+			if c, err := NamedColor(value); err == nil {
+				color = c
+			}
+		case int:
+			color = Color(value)
+		case int32:
+			color = Color(value)
+		}
+	}
+	return
+}
+
 func (this Options) StringDefault(key, def string) string {
 	if value, ok := this[key]; ok {
 		return value.(string)
