@@ -233,6 +233,7 @@ var NestedCodepointRanges = CodepointRangeLists{
 }
 
 var CodepointRanges CodepointRangeList
+var CodepointRangesByName map[string]*CodepointRange
 
 func init() {
 	for i := 0; i < len(NestedCodepointRanges); i++ {
@@ -244,4 +245,8 @@ func init() {
 		}
 	}
 	sort.Sort(CodepointRanges)
+	CodepointRangesByName = make(map[string]*CodepointRange, len(CodepointRanges))
+	for i := 0; i < len(CodepointRanges); i++ {
+		CodepointRangesByName[CodepointRanges[i].Name] = CodepointRanges[i]
+	}
 }
