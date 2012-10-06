@@ -35,7 +35,7 @@ func (fc *FontCollection) Len() int {
 	return len(fc.fontInfos)
 }
 
-func (fc *FontCollection) Select(family, weight, style string, options FontOptions) (font *Font, err error) {
+func (fc *FontCollection) Select(family, weight, style string, ranges []string) (font *Font, err error) {
 	var ws string
 	if weight != "" && style != "" {
 		ws = weight + " " + style
@@ -52,8 +52,9 @@ func (fc *FontCollection) Select(family, weight, style string, options FontOptio
 search:
 	for _, f := range fc.fontInfos {
 		if f.Family() == family && f.Style() == ws {
-			for _, r := range options.CharRanges {
-				if !f.CharRanges().IsSet(r) {
+			for _, r := range ranges {
+				cpr, ok := CodepointRangesByName[r]
+				if !ok || !f.CharRanges().IsSet(int(cpr.Bit)) {
 					continue search
 				}
 			}

@@ -9,28 +9,28 @@ type fontSelection struct {
 	family         string
 	weight         string
 	style          string
+	ranges         []string
 	postscriptName string
-	fontOptions    FontOptions
 }
 
 var testSelectData = []fontSelection{
-	{"Arial", "", "", "ArialMT", FontOptions{}},
-	{"Arial", "", "Italic", "Arial-ItalicMT", FontOptions{}},
-	{"Arial", "Bold", "", "Arial-BoldMT", FontOptions{}},
-	{"Arial", "Bold", "Italic", "Arial-BoldItalicMT", FontOptions{}},
+	{"Arial", "", "", nil, "ArialMT"},
+	{"Arial", "", "Italic", nil, "Arial-ItalicMT"},
+	{"Arial", "Bold", "", nil, "Arial-BoldMT"},
+	{"Arial", "Bold", "Italic", nil, "Arial-BoldItalicMT"},
 
-	{"Courier New", "", "", "CourierNewPSMT", FontOptions{}},
-	{"Courier New", "", "Italic", "CourierNewPS-ItalicMT", FontOptions{}},
-	{"Courier New", "Bold", "", "CourierNewPS-BoldMT", FontOptions{}},
-	{"Courier New", "Bold", "Italic", "CourierNewPS-BoldItalicMT", FontOptions{}},
+	{"Courier New", "", "", nil, "CourierNewPSMT"},
+	{"Courier New", "", "Italic", nil, "CourierNewPS-ItalicMT"},
+	{"Courier New", "Bold", "", nil, "CourierNewPS-BoldMT"},
+	{"Courier New", "Bold", "Italic", nil, "CourierNewPS-BoldItalicMT"},
 
-	{"Times New Roman", "", "", "TimesNewRomanPSMT", FontOptions{}},
-	{"Times New Roman", "", "Italic", "TimesNewRomanPS-ItalicMT", FontOptions{}},
-	{"Times New Roman", "Bold", "", "TimesNewRomanPS-BoldMT", FontOptions{}},
-	{"Times New Roman", "Bold", "Italic", "TimesNewRomanPS-BoldItalicMT", FontOptions{}},
+	{"Times New Roman", "", "", nil, "TimesNewRomanPSMT"},
+	{"Times New Roman", "", "Italic", nil, "TimesNewRomanPS-ItalicMT"},
+	{"Times New Roman", "Bold", "", nil, "TimesNewRomanPS-BoldMT"},
+	{"Times New Roman", "Bold", "Italic", nil, "TimesNewRomanPS-BoldItalicMT"},
 
-	{"Arial Unicode MS", "", "", "ArialUnicodeMS", FontOptions{CharRanges: []int{59}}},
-	{"Myanmar Sangam MN", "", "", "MyanmarSangamMN", FontOptions{CharRanges: []int{74}}},
+	{"Arial Unicode MS", "", "", []string{"CJK Unified Ideographs"}, "ArialUnicodeMS"},
+	{"Myanmar Sangam MN", "", "", []string{"Myanmar"}, "MyanmarSangamMN"},
 }
 
 func TestFontCollection(t *testing.T) {
@@ -42,14 +42,14 @@ func TestFontCollection(t *testing.T) {
 
 	expectI(t, "Len", 114, fc.Len())
 	for _, fs := range testSelectData {
-		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.fontOptions)
+		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
 			expectS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
 		} else {
 			t.Error(err)
 		}
 	}
-	bogusFont, err2 := fc.Select("Bogus", "Regular", "", FontOptions{})
+	bogusFont, err2 := fc.Select("Bogus", "Regular", "", nil)
 	expect(t, "Bogus Select Font", bogusFont == nil)
 	expectS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.Error())
 }
