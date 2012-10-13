@@ -4,15 +4,15 @@
 package codepage
 
 type CharRange struct {
-	firstCode  int
-	lastCode   int
+	firstCode  rune
+	lastCode   rune
 	entryCount int
 	delta      int
 }
 
 type Codepage []CharRange
 
-func (list Codepage) CharForCodepoint(cp int) (ch int, found bool) {
+func (list Codepage) CharForCodepoint(cp rune) (ch rune, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2
@@ -25,21 +25,21 @@ func (list Codepage) CharForCodepoint(cp int) (ch int, found bool) {
 			low = i + 1
 			continue
 		}
-		return cp + r.delta, true
+		return cp + rune(r.delta), true
 	}
 	return 0, false
 }
 
 type CodepageRange struct {
-	firstCode  int
-	lastCode   int
+	firstCode  rune
+	lastCode   rune
 	entryCount int
 	codepage   int
 }
 
 type CodepageRanges []CodepageRange
 
-func (list CodepageRanges) CodepageForCodepoint(cp int) (codepage int, found bool) {
+func (list CodepageRanges) CodepageForCodepoint(cp rune) (codepage int, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2
