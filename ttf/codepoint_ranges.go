@@ -10,8 +10,8 @@ import (
 type CodepointRange struct {
 	Bit  int8
 	Name string
-	Low  uint32
-	High uint32
+	Low  rune
+	High rune
 }
 
 type CodepointRangeList []*CodepointRange
@@ -32,7 +32,7 @@ func (list CodepointRangeList) Swap(i, j int) {
 }
 
 // 23.2 ns
-func (list CodepointRangeList) RangeForRune(rune uint32) *CodepointRange {
+func (list CodepointRangeList) RangeForRune(rune rune) *CodepointRange {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2

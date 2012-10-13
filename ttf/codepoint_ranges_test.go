@@ -20,7 +20,7 @@ func TestCodepointRanges_RangeByName(t *testing.T) {
 func BenchmarkRangeForRune(b *testing.B) {
 	count := 0
 	for i := 0; i < b.N; i++ {
-		rune := uint32(i & 0xFFFF)
+		rune := rune(i & 0xFFFF)
 		cpr := CodepointRanges.RangeForRune(rune)
 		if cpr != nil {
 			count++
