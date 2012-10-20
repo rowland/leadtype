@@ -16,28 +16,20 @@ const (
 )
 
 type PageWriter struct {
-	autoPath            bool
-	dw                  *DocWriter
-	gw                  *graphWriter
-	inGraph             bool
-	inMisc              bool
-	inPath              bool
-	inText              bool
-	lastLineCapStyle    LineCapStyle
-	lastLineColor       Color
-	lastLineDashPattern string
-	lastLineWidth       float64
-	lastLoc             location
-	lineCapStyle        LineCapStyle
-	lineColor           Color
-	lineDashPattern     string
-	lineWidth           float64
-	loc                 location
-	mw                  *miscWriter
-	page                *page
-	pageHeight          float64
-	stream              bytes.Buffer
-	units               *units
+	drawState
+	autoPath   bool
+	dw         *DocWriter
+	gw         *graphWriter
+	inGraph    bool
+	inMisc     bool
+	inPath     bool
+	inText     bool
+	last       drawState
+	mw         *miscWriter
+	page       *page
+	pageHeight float64
+	stream     bytes.Buffer
+	units      *units
 }
 
 func newPageWriter(dw *DocWriter, options Options) *PageWriter {
@@ -65,7 +57,7 @@ func (pw *PageWriter) AddFont(name string, size float64, options Options) []*Fon
 }
 
 func (pw *PageWriter) checkSetLineColor() {
-	if pw.lineColor == pw.lastLineColor {
+	if pw.lineColor == pw.last.lineColor {
 		return
 	}
 	if pw.inPath && pw.autoPath {
@@ -73,11 +65,11 @@ func (pw *PageWriter) checkSetLineColor() {
 		pw.inPath = false
 	}
 	pw.mw.setRgbColorStroke(pw.lineColor.RGB64())
-	pw.lastLineColor = pw.lineColor
+	pw.last.lineColor = pw.lineColor
 }
 
 func (pw *PageWriter) checkSetLineDashPattern() {
-	if pw.lineDashPattern == pw.lastLineDashPattern && pw.lineCapStyle == pw.lastLineCapStyle {
+	if pw.lineDashPattern == pw.last.lineDashPattern && pw.lineCapStyle == pw.last.lineCapStyle {
 		return
 	}
 	pw.startGraph()
@@ -91,13 +83,13 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 	} else {
 		pw.gw.setLineDashPattern(pat.String())
 	}
-	pw.lastLineDashPattern = pw.lineDashPattern
+	pw.last.lineDashPattern = pw.lineDashPattern
 	pw.gw.setLineCapStyle(int(pw.lineCapStyle))
-	pw.lastLineCapStyle = pw.lineCapStyle
+	pw.last.lineCapStyle = pw.lineCapStyle
 }
 
 func (pw *PageWriter) checkSetLineWidth() {
-	if pw.lineWidth == pw.lastLineWidth {
+	if pw.lineWidth == pw.last.lineWidth {
 		return
 	}
 	pw.startGraph()
@@ -106,7 +98,7 @@ func (pw *PageWriter) checkSetLineWidth() {
 		pw.inPath = false
 	}
 	pw.gw.setLineWidth(pw.lineWidth)
-	pw.lastLineWidth = pw.lineWidth
+	pw.last.lineWidth = pw.lineWidth
 }
 
 func (pw *PageWriter) Close() {
@@ -166,7 +158,7 @@ func (pw *PageWriter) LineDashPattern() string {
 
 func (pw *PageWriter) LineTo(x, y float64) {
 	pw.startGraph()
-	if !pw.lastLoc.equal(pw.loc) {
+	if !pw.last.loc.equal(pw.loc) {
 		if pw.inPath && pw.autoPath {
 			pw.gw.stroke()
 		}
@@ -182,7 +174,7 @@ func (pw *PageWriter) LineTo(x, y float64) {
 	pw.MoveTo(x, y)
 	pw.gw.lineTo(pw.loc.x, pw.loc.y)
 	pw.inPath = true
-	pw.lastLoc = pw.loc
+	pw.last.loc = pw.loc
 }
 
 func (pw *PageWriter) LineWidth(units string) float64 {
@@ -241,7 +233,7 @@ func (pw *PageWriter) startGraph() {
 	if pw.inText {
 		pw.endText()
 	}
-	pw.lastLoc = location{0, 0}
+	pw.last.loc = location{0, 0}
 	pw.gw = newGraphWriter(&pw.stream)
 	pw.inGraph = true
 }

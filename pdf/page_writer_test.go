@@ -20,12 +20,12 @@ func TestPageWriter_checkSetLineColor(t *testing.T) {
 	pw := newPageWriter(dw, Options{})
 
 	check(t, pw.lineColor == black, "lineColor should default to black")
-	check(t, pw.lastLineColor == black, "lastLineColor should default to black")
+	check(t, pw.last.lineColor == black, "last.lineColor should default to black")
 	pw.SetLineColor(red)
 	check(t, pw.lineColor == red, "lineColor should now be red")
-	check(t, pw.lastLineColor == black, "lastLineColor should still be black")
+	check(t, pw.last.lineColor == black, "last.lineColor should still be black")
 	pw.checkSetLineColor()
-	check(t, pw.lastLineColor == red, "lastLineColor should now be red")
+	check(t, pw.last.lineColor == red, "last.lineColor should now be red")
 
 	expectS(t, "1 0 0 RG\n", pw.stream.String())
 	// TODO: test for autoPath behavior
@@ -37,22 +37,22 @@ func TestPageWriter_checkSetLineDashPattern(t *testing.T) {
 	pw := newPageWriter(dw, Options{})
 
 	check(t, pw.lineDashPattern == "", "lineDashPattern should default to unset")
-	check(t, pw.lastLineDashPattern == "", "lastLineDashPattern should default to unset")
+	check(t, pw.last.lineDashPattern == "", "last.lineDashPattern should default to unset")
 
 	pw.SetLineDashPattern("solid")
 	check(t, pw.lineDashPattern == "solid", "lineDashPattern should now be solid")
-	check(t, pw.lastLineDashPattern == "", "lastLineDashPattern should still be unset")
+	check(t, pw.last.lineDashPattern == "", "last.lineDashPattern should still be unset")
 
 	check(t, pw.lineCapStyle == ButtCap, "lineCapStyle should default to ButtCap")
-	check(t, pw.lastLineCapStyle == ButtCap, "lastLineCapStyle should default to ButtCap")
+	check(t, pw.last.lineCapStyle == ButtCap, "last.lineCapStyle should default to ButtCap")
 
 	pw.SetLineCapStyle(RoundCap)
 	check(t, pw.lineCapStyle == RoundCap, "lineCapStyle should now be RoundCap")
-	check(t, pw.lastLineCapStyle == ButtCap, "lastLineCapStyle should still be ButtCap")
+	check(t, pw.last.lineCapStyle == ButtCap, "last.lineCapStyle should still be ButtCap")
 
 	pw.checkSetLineDashPattern()
-	check(t, pw.lastLineDashPattern == "solid", "lastLineDashPattern should now be solid")
-	check(t, pw.lastLineCapStyle == RoundCap, "lastLineCapStyle should now be RoundCap")
+	check(t, pw.last.lineDashPattern == "solid", "last.lineDashPattern should now be solid")
+	check(t, pw.last.lineCapStyle == RoundCap, "last.lineCapStyle should now be RoundCap")
 
 	expectS(t, "[] 0 d\n1 J\n", pw.stream.String())
 }
@@ -63,14 +63,14 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 	pw := newPageWriter(dw, Options{})
 
 	check(t, pw.lineWidth == 0, "lineWidth should default to 0")
-	check(t, pw.lastLineWidth == 0, "lastLineWidth should default to 0")
+	check(t, pw.last.lineWidth == 0, "last.lineWidth should default to 0")
 
 	pw.SetLineWidth(72, "pt")
 	check(t, pw.lineWidth == 72, "lineWidth should now be red")
-	check(t, pw.lastLineWidth == 0, "lastLineWidth should still be 0")
+	check(t, pw.last.lineWidth == 0, "last.lineWidth should still be 0")
 
 	pw.checkSetLineWidth()
-	check(t, pw.lastLineWidth == 72, "lastLineWidth should now be 72")
+	check(t, pw.last.lineWidth == 72, "last.lineWidth should now be 72")
 
 	pw.SetLineWidth(2, "in")
 	check(t, pw.lineWidth == 144, "lineWidth should be stored in points")
@@ -234,12 +234,12 @@ func TestPageWriter_startGraph(t *testing.T) {
 
 	check(t, pw.gw == nil, "GraphWriter should be nil by default.")
 	check(t, !pw.inGraph, "Should not be in graph mode by default.")
-	pw.lastLoc = location{7, 7} // prove lastLoc gets reset
+	pw.last.loc = location{7, 7} // prove last.loc gets reset
 
 	pw.startGraph()
 
 	check(t, pw.inGraph, "Should be in graph mode now.")
-	check(t, pw.lastLoc.equal(location{0, 0}), "startGraph should reset location")
+	check(t, pw.last.loc.equal(location{0, 0}), "startGraph should reset location")
 	check(t, pw.gw != nil, "GraphWriter should no longer be nil.")
 }
 
