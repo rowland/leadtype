@@ -24,6 +24,7 @@ type PageWriter struct {
 	inMisc     bool
 	inPath     bool
 	inText     bool
+	isClosed   bool
 	last       drawState
 	mw         *miscWriter
 	page       *page
@@ -102,6 +103,9 @@ func (pw *PageWriter) checkSetLineWidth() {
 }
 
 func (pw *PageWriter) Close() {
+	if pw.isClosed {
+		return
+	}
 	// end margins
 	// end sub page
 	pw.endText()
@@ -114,6 +118,7 @@ func (pw *PageWriter) Close() {
 	pw.page.add(pdf_stream)
 	pw.dw.catalog.pages.add(pw.page) // unless reusing page
 	pw.stream.Reset()
+	pw.isClosed = true
 }
 
 func (pw *PageWriter) endGraph() {

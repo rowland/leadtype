@@ -69,9 +69,10 @@ func (dw *DocWriter) Close() {
 	if len(dw.pages) == 0 {
 		dw.OpenPage(Options{})
 	}
-	if dw.inPage() {
-		dw.ClosePage()
+	for _, pw := range dw.pages {
+		pw.Close()
 	}
+	dw.curPage = nil
 	dw.file.write(dw.wr)
 }
 
@@ -103,9 +104,6 @@ func (dw *DocWriter) Open(options Options) {
 }
 
 func (dw *DocWriter) OpenPage(options Options) *PageWriter {
-	if dw.inPage() {
-		dw.ClosePage()
-	}
 	dw.curPage = newPageWriter(dw, dw.options.Merge(options))
 	dw.pages = append(dw.pages, dw.curPage)
 	return dw.curPage
