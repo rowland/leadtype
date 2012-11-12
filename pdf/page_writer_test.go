@@ -79,6 +79,23 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 	// TODO: test for autoPath behavior
 }
 
+func TestclonePageWriter(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	pw.SetLineCapStyle(ProjectingSquareCap)
+	pw.SetLineColor(AliceBlue)
+	pw.SetLineDashPattern("dotted")
+	pw.SetLineWidth(42, "pt")
+
+	pwc := clonePageWriter(pw)
+	check(t, pwc.LineCapStyle() == ProjectingSquareCap, "LineCapStyle should be ProjectingSquareCap")
+	check(t, pwc.LineColor() == AliceBlue, "LineColor should be AliceBlue")
+	check(t, pwc.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
+	check(t, pwc.LineWidth("pt") == 42, "LineWidth should be 42")
+}
+
 func TestPageWriter_LineCapStyle(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)

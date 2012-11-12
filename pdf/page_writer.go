@@ -27,6 +27,7 @@ type PageWriter struct {
 	isClosed   bool
 	last       drawState
 	mw         *miscWriter
+	options    Options
 	page       *page
 	pageHeight float64
 	stream     bytes.Buffer
@@ -37,8 +38,16 @@ func newPageWriter(dw *DocWriter, options Options) *PageWriter {
 	return new(PageWriter).init(dw, options)
 }
 
+func clonePageWriter(opw *PageWriter) *PageWriter {
+	pw := new(PageWriter).init(opw.dw, opw.options)
+	pw.drawState = opw.drawState
+	pw.units = opw.units
+	return pw
+}
+
 func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	pw.dw = dw
+	pw.options = options
 	pw.units = UnitConversions[options.StringDefault("units", "pt")]
 	ps := newPageStyle(options)
 	pw.pageHeight = ps.pageSize.y2

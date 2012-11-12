@@ -45,11 +45,11 @@ func nextSeqFunc() func() int {
 
 func (dw *DocWriter) AddFont(family string, size float64, options Options) []*Font {
 	f := &Font{
-		family: family,
-		size: size,
-		weight: options.StringDefault("weight", ""),
-		style: options.StringDefault("style", ""),
-		color: options.ColorDefault("color", Black),
+		family:  family,
+		size:    size,
+		weight:  options.StringDefault("weight", ""),
+		style:   options.StringDefault("style", ""),
+		color:   options.ColorDefault("color", Black),
 		subType: options.StringDefault("sub_type", "TrueType"),
 	}
 	// type Font struct {
@@ -67,7 +67,7 @@ func (dw *DocWriter) AddFont(family string, size float64, options Options) []*Fo
 
 func (dw *DocWriter) Close() {
 	if len(dw.pages) == 0 {
-		dw.OpenPage(Options{})
+		dw.OpenPageWithOptions(Options{})
 	}
 	for _, pw := range dw.pages {
 		pw.Close()
@@ -87,8 +87,25 @@ func (dw *DocWriter) Fonts() []*Font {
 	return dw.fonts
 }
 
+func (dw *DocWriter) indexOfPage(pw *PageWriter) int {
+	for i, v := range dw.pages {
+		if v == pw {
+			return i
+		}
+	}
+	return -1
+}
+
 func (dw *DocWriter) inPage() bool {
 	return dw.curPage != nil
+}
+
+func (dw *DocWriter) insertPage(pw *PageWriter, index int) {
+	pages := make([]*PageWriter, 0, len(dw.pages) + 1)
+	pages = append(pages, dw.pages[:index+1]...)
+	pages = append(pages, pw)
+	pages = append(pages, dw.pages[index+1:]...)
+	dw.pages = pages
 }
 
 func (dw *DocWriter) LineTo(x, y float64) {
@@ -103,7 +120,29 @@ func (dw *DocWriter) Open(options Options) {
 	dw.options = options
 }
 
-func (dw *DocWriter) OpenPage(options Options) *PageWriter {
+func (dw *DocWriter) OpenPage() *PageWriter {
+	if dw.curPage == nil {
+		return dw.OpenPageWithOptions(Options{})
+	}
+	return dw.OpenPageAfter(dw.curPage)
+}
+
+func (dw *DocWriter) OpenPageAfter(pw *PageWriter) *PageWriter {
+	var i int
+	if pw == nil {
+		i = len(dw.pages)
+	} else {
+		i = dw.indexOfPage(pw)
+	}
+	if i >= 0 {
+		dw.curPage = clonePageWriter(pw)
+		dw.insertPage(dw.curPage, i)
+		return dw.curPage
+	}
+	return nil
+}
+
+func (dw *DocWriter) OpenPageWithOptions(options Options) *PageWriter {
 	dw.curPage = newPageWriter(dw, dw.options.Merge(options))
 	dw.pages = append(dw.pages, dw.curPage)
 	return dw.curPage

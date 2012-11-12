@@ -14,6 +14,12 @@ func check(t *testing.T, condition bool, msg string) {
 	}
 }
 
+func checkFatal(t *testing.T, condition bool, msg string) {
+	if !condition {
+		t.Fatal(msg)
+	}
+}
+
 func expectF(t *testing.T, expected, actual float64) {
 	if expected != actual {
 		t.Errorf("Expected %f, got %f", expected, actual)

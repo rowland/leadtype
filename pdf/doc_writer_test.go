@@ -26,10 +26,10 @@ func TestNewDocWriter(t *testing.T) {
 	check(t, !dw.inPage(), "DocWriter should not be in page yet")
 }
 
-func TestClose(t *testing.T) {
+func TestDocWriter_Close(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	dw.OpenPage(Options{})
+	dw.OpenPage()
 	dw.Close()
 	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
 
@@ -38,30 +38,95 @@ func TestClose(t *testing.T) {
 	check(t, len(dw.pages) == 1, "DocWriter pages should have minimum of 1 page after Close")
 }
 
-func TestClosePage(t *testing.T) {
+func TestDocWriter_ClosePage(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	dw.ClosePage()         // ignored when not in a page
-	dw.OpenPage(Options{}) // TODO: save PageWriter reference and test for being closed
+	dw.ClosePage() // ignored when not in a page
+	p := dw.OpenPage()
 	dw.ClosePage()
+	check(t, p.isClosed, "Page should be closed")
 	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
 	check(t, dw.curPage == nil, "DocWriter curPage should be nil again")
 }
 
-func TestOpen(t *testing.T) {
+func TestDocWriter_indexOfPage(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	dw.Open(Options{})
+
+	p1 := dw.OpenPage()
+	p2 := dw.OpenPage()
+	p3 := dw.OpenPage()
+
+	i1 := dw.indexOfPage(p1)
+	check(t, i1 == 0, "1st PageWriter should have index 0")
+	i2 := dw.indexOfPage(p2)
+	check(t, i2 == 1, "2nd PageWriter should have index 1")
+	i3 := dw.indexOfPage(p3)
+	check(t, i3 == 2, "3rd PageWriter should have index 2")
+}
+
+func TestDocWriter_Open(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
 	dw.Open(Options{})
 	// TODO: test options
 }
 
-func TestOpenPage(t *testing.T) {
+func TestDocWriter_OpenPage(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	dw.OpenPage(Options{})
+	dw.OpenPage()
 	check(t, dw.curPage != nil, "DocWriter curPage should not be nil")
 	check(t, dw.inPage(), "DocWriter should be in page now")
 	check(t, len(dw.pages) == 1, "DocWriter should have 1 page now")
+}
+
+func TestDocWriter_OpenPageAfter(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	p1 := dw.OpenPage()
+
+	checkFatal(t, p1 != nil, "OpenPageAfter should return a valid reference p1")
+	checkFatal(t, len(dw.pages) == 1, "pages should have len 1")
+	check(t, p1 == dw.pages[0], "p1 should be in 1st slot")
+
+	check(t, p1.LineCapStyle() != ProjectingSquareCap, "LineCapStyle shouldn't default to ProjectingSquareCap")
+	check(t, p1.LineColor() != AliceBlue, "LineColor shouldn't default to AliceBlue")
+	check(t, p1.LineDashPattern() != "dotted", "LineDashPattern shouldn't default to 'dotted'")
+	check(t, p1.LineWidth("pt") != 42, "LineWidth shouldn't default to 42")
+
+	p1.SetLineCapStyle(ProjectingSquareCap)
+	p1.SetLineColor(AliceBlue)
+	p1.SetLineDashPattern("dotted")
+	p1.SetLineWidth(42, "pt")
+
+	p3 := dw.OpenPageAfter(p1)
+
+	checkFatal(t, p3 != nil, "OpenPageAfter should return a valid reference p3")
+	checkFatal(t, len(dw.pages) == 2, "pages should have len 2")
+	check(t, p3 == dw.pages[1], "p3 should be in 2nd slot for now")
+
+	check(t, p3.LineCapStyle() == ProjectingSquareCap, "LineCapStyle should still be ProjectingSquareCap")
+	check(t, p3.LineColor() == AliceBlue, "LineColor should still be AliceBlue")
+	check(t, p3.LineDashPattern() == "dotted", "LineDashPattern should still be 'dotted'")
+	check(t, p3.LineWidth("pt") == 42, "LineWidth should still be 42")
+
+	p3.SetLineCapStyle(RoundCap)
+	p3.SetLineColor(AntiqueWhite)
+	p3.SetLineDashPattern("dashed")
+	p3.SetLineWidth(36, "pt")
+
+	p2 := dw.OpenPageAfter(p1)
+	checkFatal(t, p2 != nil, "OpenPageAfter should return a valid reference p2")
+	checkFatal(t, len(dw.pages) == 3, "pages should have len 3")
+	check(t, p2 == dw.pages[1], "p2 should now be in 2nd slot")
+	check(t, p3 == dw.pages[2], "p3 should be in 3rd slot now")
+
+	check(t, p2.LineCapStyle() == ProjectingSquareCap, "LineCapStyle should be ProjectingSquareCap")
+	check(t, p2.LineColor() == AliceBlue, "LineColor should be AliceBlue")
+	check(t, p2.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
+	check(t, p2.LineWidth("pt") == 42, "LineWidth should be 42")
 }
 
 func TestDocWriter_SetFont(t *testing.T) {
