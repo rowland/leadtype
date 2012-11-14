@@ -132,6 +132,7 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 func TestDocWriter_SetFont(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
+	dw.OpenPage()
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 

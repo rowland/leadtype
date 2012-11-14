@@ -19,6 +19,7 @@ type PageWriter struct {
 	drawState
 	autoPath   bool
 	dw         *DocWriter
+	fonts      []*Font
 	gw         *graphWriter
 	inGraph    bool
 	inMisc     bool
@@ -62,8 +63,26 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) AddFont(name string, size float64, options Options) []*Font {
-	return pw.dw.AddFont(name, size, options)
+func (pw *PageWriter) AddFont(family string, size float64, options Options) []*Font {
+	f := &Font{
+		family:  family,
+		size:    size,
+		weight:  options.StringDefault("weight", ""),
+		style:   options.StringDefault("style", ""),
+		color:   options.ColorDefault("color", Black),
+		subType: options.StringDefault("sub_type", "TrueType"),
+	}
+	// type Font struct {
+	// 	name    string
+	// 	size    float64
+	// 	weight  string
+	// 	style   string
+	// 	color   Color
+	// 	subType string
+	// 	metrics FontMetrics
+	// }
+	pw.fonts = append(pw.fonts, f)
+	return pw.fonts
 }
 
 func (pw *PageWriter) checkSetLineColor() {
@@ -155,7 +174,7 @@ func (pw *PageWriter) endText() {
 }
 
 func (pw *PageWriter) Fonts() []*Font {
-	return pw.dw.fonts
+	return pw.fonts
 }
 
 func (pw *PageWriter) LineCapStyle() LineCapStyle {
@@ -205,11 +224,12 @@ func (pw *PageWriter) PageHeight() float64 {
 }
 
 func (pw *PageWriter) ResetFonts() {
-	pw.dw.ResetFonts()
+	pw.fonts = nil
 }
 
 func (pw *PageWriter) SetFont(name string, size float64, options Options) []*Font {
-	return pw.dw.SetFont(name, size, options)
+	pw.ResetFonts()
+	return pw.AddFont(name, size, options)
 }
 
 func (pw *PageWriter) SetLineCapStyle(lineCapStyle LineCapStyle) (prev LineCapStyle) {

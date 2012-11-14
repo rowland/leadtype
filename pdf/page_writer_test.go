@@ -213,7 +213,7 @@ func TestPageWriter_PageHeight(t *testing.T) {
 func TestPageWriter_SetFont(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	pw := newPageWriter(dw, Options{})
+	pw := dw.OpenPage()
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 
