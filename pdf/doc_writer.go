@@ -97,7 +97,11 @@ func (dw *DocWriter) MoveTo(x, y float64) {
 	dw.curPage.MoveTo(x, y)
 }
 
-func (dw *DocWriter) Open(options Options) {
+func (dw *DocWriter) Open() {
+	dw.OpenWithOptions(Options{})
+}
+
+func (dw *DocWriter) OpenWithOptions(options Options) {
 	dw.options = options
 }
 

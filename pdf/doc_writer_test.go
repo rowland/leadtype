@@ -52,7 +52,7 @@ func TestDocWriter_ClosePage(t *testing.T) {
 func TestDocWriter_indexOfPage(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	dw.Open(Options{})
+	dw.Open()
 
 	p1 := dw.OpenPage()
 	p2 := dw.OpenPage()
@@ -69,7 +69,7 @@ func TestDocWriter_indexOfPage(t *testing.T) {
 func TestDocWriter_Open(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
-	dw.Open(Options{})
+	dw.Open()
 	// TODO: test options
 }
 

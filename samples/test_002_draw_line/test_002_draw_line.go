@@ -17,8 +17,8 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter(f)
-	doc.Open(pdf.Options{})
-	doc.OpenPage(pdf.Options{})
+	doc.Open()
+	doc.OpenPage()
 
 	doc.SetLineColor(pdf.Blue)
 	doc.SetLineWidth(3, "pt")
