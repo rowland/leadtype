@@ -26,6 +26,15 @@ func TestNewDocWriter(t *testing.T) {
 	check(t, !dw.inPage(), "DocWriter should not be in page yet")
 }
 
+func TestDocWriter_AddFontSource(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	check(t, dw.fontSources["TrueType"] == nil, "No font source should exist for subtype TrueType.")
+	var fc TtfFontCollection
+	dw.AddFontSource(&fc, "TrueType")
+	check(t, dw.fontSources["TrueType"] == &fc, "Font source should exist for subtype TrueType.")
+}
+
 func TestDocWriter_Close(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
@@ -132,20 +141,26 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 func TestDocWriter_SetFont(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
+
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc, "TrueType")
+
 	dw.OpenPage()
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Oblique", "color": "AliceBlue", "sub_type": "Type1"})
-
-	expectI(t, 1, len(fonts))
-	expectS(t, "Courier", fonts[0].family)
+	fonts, _ := dw.SetFont("Courier New", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue", "sub_type": "TrueType"})
+	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
+	expectNS(t, "family", "Courier New", fonts[0].family)
 	expectF(t, 10, fonts[0].size)
-	expectS(t, "Bold", fonts[0].weight)
-	expectS(t, "Oblique", fonts[0].style)
+	expectNS(t, "weight", "Bold", fonts[0].weight)
+	expectNS(t, "style", "Italic", fonts[0].style)
 	check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
-	check(t, fonts[0].subType == "Type1", "Font subType should be Type1.")
+	check(t, fonts[0].subType == "TrueType", "Font subType should be Type1.")
 }
 
 // TODO: TestPagesAcross

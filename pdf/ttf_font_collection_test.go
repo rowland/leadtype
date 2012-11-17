@@ -1,7 +1,7 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package ttf
+package pdf
 
 import "testing"
 
@@ -34,30 +34,30 @@ var testSelectData = []fontSelection{
 }
 
 func TestFontCollection(t *testing.T) {
-	var fc FontCollection
+	var fc TtfFontCollection
 
 	if err := fc.Add("/Library/Fonts/*.ttf"); err != nil {
 		t.Error(err)
 	}
 
-	expectI(t, "Len", 114, fc.Len())
+	expectNI(t, "Len", 114, fc.Len())
 	for _, fs := range testSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
-			expectS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
+			expectNS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
 		} else {
 			t.Error(err)
 		}
 	}
 	bogusFont, err2 := fc.Select("Bogus", "Regular", "", nil)
 	expect(t, "Bogus Select Font", bogusFont == nil)
-	expectS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.Error())
+	expectNS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.Error())
 }
 
 // 81,980,000 ns
 // 45,763,220 ns
-func BenchmarkFontCollection_Add(b *testing.B) {
-	var fc FontCollection
+func BenchmarkTtfFontCollection_Add(b *testing.B) {
+	var fc TtfFontCollection
 
 	for i := 0; i < b.N; i++ {
 		fc.Add("/Library/Fonts/*.ttf")

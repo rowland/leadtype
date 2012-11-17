@@ -18,6 +18,7 @@ type DocWriter struct {
 	pagesDown   int
 	curPage     *PageWriter
 	options     Options
+	fontSources map[string]FontSource
 }
 
 func NewDocWriter(wr io.Writer) *DocWriter {
@@ -31,7 +32,8 @@ func NewDocWriter(wr io.Writer) *DocWriter {
 	resources := newResources(nextSeq(), 0)
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
-	return &DocWriter{wr: wr, nextSeq: nextSeq, file: file, catalog: catalog, resources: resources}
+	fontSources := make(map[string]FontSource, 2)
+	return &DocWriter{wr: wr, nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, fontSources: fontSources}
 }
 
 func nextSeqFunc() func() int {
@@ -42,8 +44,12 @@ func nextSeqFunc() func() int {
 	}
 }
 
-func (dw *DocWriter) AddFont(family string, size float64, options Options) []*Font {
+func (dw *DocWriter) AddFont(family string, size float64, options Options) ([]*Font, error) {
 	return dw.curPage.AddFont(family, size, options)
+}
+
+func (dw *DocWriter) AddFontSource(fontSource FontSource, subType string) {
+	dw.fontSources[subType] = fontSource
 }
 
 func (dw *DocWriter) Close() {
@@ -155,7 +161,7 @@ func (dw *DocWriter) ResetFonts() {
 	dw.curPage.ResetFonts()
 }
 
-func (dw *DocWriter) SetFont(name string, size float64, options Options) []*Font {
+func (dw *DocWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
 	return dw.curPage.SetFont(name, size, options)
 }
 

@@ -1,27 +1,36 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package ttf
+package pdf
 
 import (
 	"errors"
 	"fmt"
+	"leadtype/ttf"
 	"path/filepath"
 )
 
-type FontCollection struct {
-	fontInfos []*FontInfo
-	fonts     map[string]*Font
+type TtfFontCollection struct {
+	fontInfos []*ttf.FontInfo
+	fonts     map[string]*ttf.Font
+}
+
+func NewTtfFontCollection(pattern string) (*TtfFontCollection, error) {
+	var fc TtfFontCollection
+	if err := fc.Add(pattern); err != nil {
+		return nil, err
+	}
+	return &fc, nil
 }
 
 // 81,980,000 ns
-func (fc *FontCollection) Add(pattern string) (err error) {
+func (fc *TtfFontCollection) Add(pattern string) (err error) {
 	var pathnames []string
 	if pathnames, err = filepath.Glob(pattern); err != nil {
 		return
 	}
 	for _, pathname := range pathnames {
-		fi, err2 := LoadFontInfo(pathname)
+		fi, err2 := ttf.LoadFontInfo(pathname)
 		if err2 != nil {
 			err = errors.New(fmt.Sprintf("Error loading %s: %s", pathname, err2))
 			continue
@@ -31,11 +40,11 @@ func (fc *FontCollection) Add(pattern string) (err error) {
 	return
 }
 
-func (fc *FontCollection) Len() int {
+func (fc *TtfFontCollection) Len() int {
 	return len(fc.fontInfos)
 }
 
-func (fc *FontCollection) Select(family, weight, style string, ranges []string) (font *Font, err error) {
+func (fc *TtfFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics FontMetrics, err error) {
 	var ws string
 	if weight != "" && style != "" {
 		ws = weight + " " + style
@@ -47,29 +56,26 @@ func (fc *FontCollection) Select(family, weight, style string, ranges []string) 
 		ws = style
 	}
 	if fc.fonts == nil {
-		fc.fonts = make(map[string]*Font)
+		fc.fonts = make(map[string]*ttf.Font)
 	}
 search:
 	for _, f := range fc.fontInfos {
 		if f.Family() == family && f.Style() == ws {
 			for _, r := range ranges {
-				cpr, ok := CodepointRangesByName[r]
+				cpr, ok := ttf.CodepointRangesByName[r]
 				if !ok || !f.CharRanges().IsSet(int(cpr.Bit)) {
 					continue search
 				}
 			}
-			font = fc.fonts[f.filename]
+			font := fc.fonts[f.Filename]
 			if font == nil {
-				font, err = LoadFont(f.filename)
-				fc.fonts[f.filename] = font
+				font, err = ttf.LoadFont(f.Filename)
+				fc.fonts[f.Filename] = font
 			}
+			fontMetrics = font
 			return
 		}
 	}
 	err = errors.New(fmt.Sprintf("Font %s %s not found", family, ws))
 	return
-}
-
-type FontOptions struct {
-	CharRanges []int
 }

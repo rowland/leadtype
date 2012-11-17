@@ -14,6 +14,12 @@ func check(t *testing.T, condition bool, msg string) {
 	}
 }
 
+func expect(t *testing.T, name string, condition bool) {
+	if !condition {
+		t.Errorf("%s: failed condition", name)
+	}
+}
+
 func checkFatal(t *testing.T, condition bool, msg string) {
 	if !condition {
 		t.Fatal(msg)
@@ -38,9 +44,21 @@ func expectI(t *testing.T, expected, actual int) {
 	}
 }
 
+func expectNI(t *testing.T, name string, expected, actual int) {
+	if expected != actual {
+		t.Errorf("%s: expected %d, got %d", name, expected, actual)
+	}
+}
+
 func expectS(t *testing.T, expected, actual string) {
 	if expected != actual {
 		t.Errorf("Expected |%s|, got |%s|", expected, actual)
+	}
+}
+
+func expectNS(t *testing.T, name string, expected, actual string) {
+	if expected != actual {
+		t.Errorf("%s: expected %s, got %s", name, expected, actual)
 	}
 }
 
@@ -55,10 +73,10 @@ func TestMerge(t *testing.T) {
 	b := Options{"c": 3.5, "d": "d2"}
 	c := a.Merge(b)
 	// a and b should be unchanged
-	expectI(t, 2, len(a))
-	expectI(t, 2, len(b))
+	expectNI(t, "length of a", 2, len(a))
+	expectNI(t, "length of b", 2, len(b))
 	// result should include all keys and values
-	expectI(t, 4, len(c))
+	expectNI(t, "length of c", 4, len(c))
 	expectV(t, "a", c["a"])
 	expectV(t, 1, c["b"])
 	expectV(t, 3.5, c["c"])

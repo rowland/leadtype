@@ -12,7 +12,7 @@ import (
 )
 
 type FontInfo struct {
-	filename      string
+	Filename      string
 	scalar        uint32
 	nTables       uint16
 	searchRange   uint16
@@ -31,7 +31,7 @@ func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	}
 	defer file.Close()
 	fi = new(FontInfo)
-	fi.filename = filename
+	fi.Filename = filename
 	err = fi.init(file)
 	return
 }

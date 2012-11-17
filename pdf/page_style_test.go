@@ -62,9 +62,9 @@ func TestNewPageStyle(t *testing.T) {
 
 	opt5 := Options{"rotate": "portrait"}
 	ps5 := newPageStyle(opt5)
-	expectI(t, 0, ps5.rotate)
+	expectNI(t, "rotate", 0, ps5.rotate)
 
 	opt6 := Options{"rotate": "landscape"}
 	ps6 := newPageStyle(opt6)
-	expectI(t, 270, ps6.rotate)
+	expectNI(t, "rotate", 270, ps6.rotate)
 }

@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"fmt"
 )
 
 type LineCapStyle int
@@ -63,7 +64,7 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) AddFont(family string, size float64, options Options) []*Font {
+func (pw *PageWriter) AddFont(family string, size float64, options Options) ([]*Font, error) {
 	f := &Font{
 		family:  family,
 		size:    size,
@@ -72,17 +73,25 @@ func (pw *PageWriter) AddFont(family string, size float64, options Options) []*F
 		color:   options.ColorDefault("color", Black),
 		subType: options.StringDefault("sub_type", "TrueType"),
 	}
-	// type Font struct {
-	// 	name    string
-	// 	size    float64
-	// 	weight  string
-	// 	style   string
-	// 	color   Color
-	// 	subType string
-	// 	metrics FontMetrics
-	// }
+	var fontSource FontSource
+	var ok bool
+	if fontSource, ok = pw.dw.fontSources[f.subType]; !ok {
+		return nil, fmt.Errorf("Font subtype %s not found", f.subType)
+	}
+	if ranges, ok := options["ranges"]; ok {
+		switch ranges := ranges.(type) {
+		case []string:
+			f.ranges = ranges
+		case RuneSet:
+			f.runeSet = ranges
+		}
+	}
+	var err error
+	if f.metrics, err = fontSource.Select(f.family, f.weight, f.style, f.ranges); err != nil {
+		return nil, err
+	}
 	pw.fonts = append(pw.fonts, f)
-	return pw.fonts
+	return pw.fonts, nil
 }
 
 func (pw *PageWriter) checkSetLineColor() {
@@ -227,7 +236,7 @@ func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
 }
 
-func (pw *PageWriter) SetFont(name string, size float64, options Options) []*Font {
+func (pw *PageWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
 	pw.ResetFonts()
 	return pw.AddFont(name, size, options)
 }

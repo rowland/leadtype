@@ -213,14 +213,21 @@ func TestPageWriter_PageHeight(t *testing.T) {
 func TestPageWriter_SetFont(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
+
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc, "TrueType")
+
 	pw := dw.OpenPage()
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 
-	fonts := pw.SetFont("Helvetica", 12, Options{})
+	fonts, _ := pw.SetFont("Arial", 12, Options{})
 
-	expectI(t, 1, len(fonts))
-	expectS(t, "Helvetica", fonts[0].family)
+	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
+	expectS(t, "Arial", fonts[0].family)
 	expectF(t, 12, fonts[0].size)
 	check(t, fonts[0] == pw.Fonts()[0], "SetFont should return new font list")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont changes to font list should be global")

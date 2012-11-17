@@ -10,9 +10,9 @@ import (
 func TestColor_RGB(t *testing.T) {
 	c := Color(0x030507)
 	r, g, b := c.RGB()
-	expectI(t, 3, int(r))
-	expectI(t, 5, int(g))
-	expectI(t, 7, int(b))
+	expectNI(t, "red", 3, int(r))
+	expectNI(t, "green", 5, int(g))
+	expectNI(t, "blue", 7, int(b))
 }
 
 func TestColor_RGB64(t *testing.T) {
