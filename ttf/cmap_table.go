@@ -126,7 +126,7 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err error) {
 		rec.glyphIndexer = new(format12EncodingRecord)
 		err = rec.glyphIndexer.init(file)
 	default:
-		return errors.New(fmt.Sprintf("Unsupported mapping table format: %d", rec.format))
+		return fmt.Errorf("Unsupported mapping table format: %d", rec.format)
 	}
 	return
 }

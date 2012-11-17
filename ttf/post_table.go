@@ -6,7 +6,6 @@ package ttf
 import (
 	"bufio"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -59,7 +58,7 @@ func (table *postTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs u
 		table.charCodes = make([]uint16, numGlyphs)
 		err = readValues(file, &table.charCodes)
 	default:
-		return errors.New(fmt.Sprintf("Unsupported post table format: %g", table.format.Tof64()))
+		return fmt.Errorf("Unsupported post table format: %g", table.format.Tof64())
 	}
 
 	return
