@@ -4,8 +4,8 @@
 package pdf
 
 import (
-	"testing"
 	"leadtype/ttf"
+	"testing"
 )
 
 func TestFont_HasRune(t *testing.T) {
@@ -13,7 +13,7 @@ func TestFont_HasRune(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &Font{ metrics: arial }
+	f := &Font{metrics: arial}
 	check(t, f.HasRune('A'), "Arial should have 'A'.")
 	check(t, !f.HasRune(0x9999), "Arial should not have 0x9999.")
 }
@@ -25,7 +25,7 @@ func BenchmarkFont_HasRune(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	f := &Font{ metrics: arial }
+	f := &Font{metrics: arial}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		f.HasRune('A')

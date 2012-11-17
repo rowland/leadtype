@@ -88,7 +88,7 @@ func (dw *DocWriter) inPage() bool {
 }
 
 func (dw *DocWriter) insertPage(pw *PageWriter, index int) {
-	pages := make([]*PageWriter, 0, len(dw.pages) + 1)
+	pages := make([]*PageWriter, 0, len(dw.pages)+1)
 	pages = append(pages, dw.pages[:index+1]...)
 	pages = append(pages, pw)
 	pages = append(pages, dw.pages[index+1:]...)
