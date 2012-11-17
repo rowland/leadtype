@@ -4,7 +4,6 @@
 package pdf
 
 import (
-	"errors"
 	"fmt"
 	"leadtype/ttf"
 	"path/filepath"
@@ -32,7 +31,7 @@ func (fc *TtfFontCollection) Add(pattern string) (err error) {
 	for _, pathname := range pathnames {
 		fi, err2 := ttf.LoadFontInfo(pathname)
 		if err2 != nil {
-			err = errors.New(fmt.Sprintf("Error loading %s: %s", pathname, err2))
+			err = fmt.Errorf("Error loading %s: %s", pathname, err2)
 			continue
 		}
 		fc.fontInfos = append(fc.fontInfos, fi)
@@ -76,6 +75,6 @@ search:
 			return
 		}
 	}
-	err = errors.New(fmt.Sprintf("Font %s %s not found", family, ws))
+	err = fmt.Errorf("Font %s %s not found", family, ws)
 	return
 }
