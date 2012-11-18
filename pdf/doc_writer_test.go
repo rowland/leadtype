@@ -138,7 +138,7 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 	check(t, p2.LineWidth("pt") == 42, "LineWidth should be 42")
 }
 
-func TestDocWriter_SetFont(t *testing.T) {
+func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
 
@@ -160,7 +160,32 @@ func TestDocWriter_SetFont(t *testing.T) {
 	expectNS(t, "style", "Italic", fonts[0].style)
 	check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
-	check(t, fonts[0].subType == "TrueType", "Font subType should be Type1.")
+	check(t, fonts[0].subType == "TrueType", "Font subType should be TrueType.")
+}
+
+func TestDocWriter_SetFont_Type1(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+
+	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc, "Type1")
+
+	dw.OpenPage()
+
+	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
+
+	fonts, _ := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue", "sub_type": "Type1"})
+	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
+	expectNS(t, "family", "Courier", fonts[0].family)
+	expectF(t, 10, fonts[0].size)
+	expectNS(t, "weight", "Bold", fonts[0].weight)
+	expectNS(t, "style", "Italic", fonts[0].style)
+	check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
+	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
+	check(t, fonts[0].subType == "Type1", "Font subType should be Type1.")
 }
 
 // TODO: TestPagesAcross

@@ -5,7 +5,7 @@ package pdf
 
 import "testing"
 
-type fontSelection struct {
+type ttfFontSelection struct {
 	family         string
 	weight         string
 	style          string
@@ -13,7 +13,7 @@ type fontSelection struct {
 	postscriptName string
 }
 
-var testSelectData = []fontSelection{
+var testTtfSelectData = []ttfFontSelection{
 	{"Arial", "", "", nil, "ArialMT"},
 	{"Arial", "", "Italic", nil, "Arial-ItalicMT"},
 	{"Arial", "Bold", "", nil, "Arial-BoldMT"},
@@ -33,7 +33,7 @@ var testSelectData = []fontSelection{
 	{"Myanmar Sangam MN", "", "", []string{"Myanmar"}, "MyanmarSangamMN"},
 }
 
-func TestFontCollection(t *testing.T) {
+func TestTtfFontCollection(t *testing.T) {
 	var fc TtfFontCollection
 
 	if err := fc.Add("/Library/Fonts/*.ttf"); err != nil {
@@ -41,7 +41,7 @@ func TestFontCollection(t *testing.T) {
 	}
 
 	expectNI(t, "Len", 114, fc.Len())
-	for _, fs := range testSelectData {
+	for _, fs := range testTtfSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
 			expectNS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
