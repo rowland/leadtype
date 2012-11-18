@@ -18,16 +18,19 @@ var testTtfSelectData = []ttfFontSelection{
 	{"Arial", "", "Italic", nil, "Arial-ItalicMT"},
 	{"Arial", "Bold", "", nil, "Arial-BoldMT"},
 	{"Arial", "Bold", "Italic", nil, "Arial-BoldItalicMT"},
+	{"arial", "bold", "italic", nil, "Arial-BoldItalicMT"},
 
 	{"Courier New", "", "", nil, "CourierNewPSMT"},
 	{"Courier New", "", "Italic", nil, "CourierNewPS-ItalicMT"},
 	{"Courier New", "Bold", "", nil, "CourierNewPS-BoldMT"},
 	{"Courier New", "Bold", "Italic", nil, "CourierNewPS-BoldItalicMT"},
+	{"courier new", "bold", "italic", nil, "CourierNewPS-BoldItalicMT"},
 
 	{"Times New Roman", "", "", nil, "TimesNewRomanPSMT"},
 	{"Times New Roman", "", "Italic", nil, "TimesNewRomanPS-ItalicMT"},
 	{"Times New Roman", "Bold", "", nil, "TimesNewRomanPS-BoldMT"},
 	{"Times New Roman", "Bold", "Italic", nil, "TimesNewRomanPS-BoldItalicMT"},
+	{"times new roman", "bold", "italic", nil, "TimesNewRomanPS-BoldItalicMT"},
 
 	{"Arial Unicode MS", "", "", []string{"CJK Unified Ideographs"}, "ArialUnicodeMS"},
 	{"Myanmar Sangam MN", "", "", []string{"Myanmar"}, "MyanmarSangamMN"},
@@ -61,5 +64,19 @@ func BenchmarkTtfFontCollection_Add(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		fc.Add("/Library/Fonts/*.ttf")
+	}
+}
+
+// 3,132 ns
+func BenchmarkTtfFontCollection_Select(b *testing.B) {
+	b.StopTimer()
+	var fc TtfFontCollection
+	if err := fc.Add("/Library/Fonts/*.ttf"); err != nil {
+		b.Fatal(err)
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		fc.Select("Times New Roman", "Bold", "Italic", nil)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"leadtype/ttf"
 	"path/filepath"
+	"strings"
 )
 
 type TtfFontCollection struct {
@@ -59,7 +60,7 @@ func (fc *TtfFontCollection) Select(family, weight, style string, ranges []strin
 	}
 search:
 	for _, f := range fc.fontInfos {
-		if f.Family() == family && f.Style() == ws {
+		if strings.EqualFold(f.Family(), family) && strings.EqualFold(f.Style(), ws) {
 			for _, r := range ranges {
 				cpr, ok := ttf.CodepointRangesByName[r]
 				if !ok || !f.CharRanges().IsSet(int(cpr.Bit)) {
