@@ -41,7 +41,31 @@ func (this Options) ColorDefault(key string, def Color) (color Color) {
 
 func (this Options) StringDefault(key, def string) string {
 	if value, ok := this[key]; ok {
-		return value.(string)
+		switch value := value.(type) {
+		case string:
+			return value
+		case int:
+			return strconv.Itoa(value)
+		case float64:
+			return strconv.FormatFloat(value, 'f', -1, 64)
+		}
+	}
+	return def
+}
+
+func (this Options) FloatDefault(key string, def float64) float64 {
+	if value, ok := this[key]; ok {
+		switch value := value.(type) {
+		case string:
+			if f, err := strconv.ParseFloat(value, 64); err == nil {
+				return f
+			}
+			return def
+		case int:
+			return float64(value)
+		case float64:
+			return value
+		}
 	}
 	return def
 }

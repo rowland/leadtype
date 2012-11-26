@@ -94,3 +94,20 @@ func TestFloat64Slice(t *testing.T) {
 	expectS(t, "1 2.5 3.1416", float64Slice(values).join(" "))
 	expectS(t, "1, 2.5, 3.1416", float64Slice(values).join(", "))
 }
+
+func TestOptions_FloatDefault(t *testing.T) {
+	o := Options{"1st": "6.54", "2nd": 3.21, "3rd": 7, "4th": `33%`}
+	expectF(t, 98.7, o.FloatDefault("missing", 98.7))
+	expectF(t, 6.54, o.FloatDefault("1st", 0))
+	expectF(t, 3.21, o.FloatDefault("2nd", -1))
+	expectF(t, 7, o.FloatDefault("3rd", 100.0))
+	expectF(t, 100.0, o.FloatDefault("4th", 100))
+}
+
+func TestOptions_StringDefault(t *testing.T) {
+	o := Options{"i": 3, "s": "something", "f": 3.14}
+	expectS(t, "3", o.StringDefault("i", ""))
+	expectS(t, "something", o.StringDefault("s", ""))
+	expectS(t, "3.14", o.StringDefault("f", ""))
+	expectS(t, "missing", o.StringDefault("bogus", "missing"))
+}
