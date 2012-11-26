@@ -4,15 +4,14 @@
 package pdf
 
 type Font struct {
-	family  string
-	size    float64
-	weight  string
-	style   string
-	color   Color
-	subType string
-	ranges  []string
-	runeSet RuneSet
-	metrics FontMetrics
+	family       string
+	weight       string
+	style        string
+	subType      string
+	ranges       []string
+	runeSet      RuneSet
+	relativeSize float64
+	metrics      FontMetrics
 }
 
 func (font *Font) HasRune(rune rune) bool {

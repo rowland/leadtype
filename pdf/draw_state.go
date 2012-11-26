@@ -4,6 +4,8 @@
 package pdf
 
 type drawState struct {
+	fontColor       Color
+	fontSize        float64
 	lineCapStyle    LineCapStyle
 	lineColor       Color
 	lineDashPattern string

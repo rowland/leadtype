@@ -14,6 +14,25 @@ const (
 	green = 0x00FF00
 )
 
+func TestPageWriter_checkSetFontColor(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.fontColor == black, "fontColor should default to black")
+	check(t, pw.last.fontColor == black, "last.fontColor should default to black")
+
+	prev := pw.SetFontColor(red)
+	check(t, prev == black, "Previous color was black")
+	check(t, pw.fontColor == red, "fontColor should now be red")
+	check(t, pw.last.fontColor == black, "last.fontColor should still be black")
+	pw.checkSetFontColor()
+	check(t, pw.last.fontColor == red, "last.fontColor should now be red")
+
+	expectS(t, "1 0 0 rg\n", pw.stream.String())
+	// TODO: test for autoPath behavior
+}
+
 func TestPageWriter_checkSetLineColor(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
@@ -21,7 +40,8 @@ func TestPageWriter_checkSetLineColor(t *testing.T) {
 
 	check(t, pw.lineColor == black, "lineColor should default to black")
 	check(t, pw.last.lineColor == black, "last.lineColor should default to black")
-	pw.SetLineColor(red)
+	prev := pw.SetLineColor(red)
+	check(t, prev == black, "Previous color was black")
 	check(t, pw.lineColor == red, "lineColor should now be red")
 	check(t, pw.last.lineColor == black, "last.lineColor should still be black")
 	pw.checkSetLineColor()
@@ -39,14 +59,16 @@ func TestPageWriter_checkSetLineDashPattern(t *testing.T) {
 	check(t, pw.lineDashPattern == "", "lineDashPattern should default to unset")
 	check(t, pw.last.lineDashPattern == "", "last.lineDashPattern should default to unset")
 
-	pw.SetLineDashPattern("solid")
+	prevLDP := pw.SetLineDashPattern("solid")
+	check(t, prevLDP == "", "Previous pattern was unset")
 	check(t, pw.lineDashPattern == "solid", "lineDashPattern should now be solid")
 	check(t, pw.last.lineDashPattern == "", "last.lineDashPattern should still be unset")
 
 	check(t, pw.lineCapStyle == ButtCap, "lineCapStyle should default to ButtCap")
 	check(t, pw.last.lineCapStyle == ButtCap, "last.lineCapStyle should default to ButtCap")
 
-	pw.SetLineCapStyle(RoundCap)
+	prevLCS := pw.SetLineCapStyle(RoundCap)
+	check(t, prevLCS == ButtCap, "Previous style was ButtCap")
 	check(t, pw.lineCapStyle == RoundCap, "lineCapStyle should now be RoundCap")
 	check(t, pw.last.lineCapStyle == ButtCap, "last.lineCapStyle should still be ButtCap")
 
@@ -65,14 +87,16 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 	check(t, pw.lineWidth == 0, "lineWidth should default to 0")
 	check(t, pw.last.lineWidth == 0, "last.lineWidth should default to 0")
 
-	pw.SetLineWidth(72, "pt")
+	prev := pw.SetLineWidth(72, "pt")
+	check(t, prev == 0, "Previous width was 0")
 	check(t, pw.lineWidth == 72, "lineWidth should now be red")
 	check(t, pw.last.lineWidth == 0, "last.lineWidth should still be 0")
 
 	pw.checkSetLineWidth()
 	check(t, pw.last.lineWidth == 72, "last.lineWidth should now be 72")
 
-	pw.SetLineWidth(2, "in")
+	prev = pw.SetLineWidth(2, "in")
+	check(t, prev == 1, "Previous width was 1 inch")
 	check(t, pw.lineWidth == 144, "lineWidth should be stored in points")
 
 	expectS(t, "72 w\n", pw.stream.String())
@@ -94,6 +118,17 @@ func TestclonePageWriter(t *testing.T) {
 	check(t, pwc.LineColor() == AliceBlue, "LineColor should be AliceBlue")
 	check(t, pwc.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
 	check(t, pwc.LineWidth("pt") == 42, "LineWidth should be 42")
+}
+
+func TestPageWriter_FontSize(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.FontSize() == 0, "Should default to zero")
+	prev := pw.SetFontSize(12.5)
+	check(t, prev == 0, "Should return previous value")
+	check(t, pw.FontSize() == 12.5, "Should now be 12.5")
 }
 
 func TestPageWriter_LineCapStyle(t *testing.T) {
@@ -224,11 +259,13 @@ func TestPageWriter_SetFont(t *testing.T) {
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 
-	fonts, _ := pw.SetFont("Arial", 12, Options{})
+	fonts, _ := pw.SetFont("Arial", 12, Options{"color": green})
 
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectS(t, "Arial", fonts[0].family)
-	expectF(t, 12, fonts[0].size)
+	check(t, pw.FontColor() == green, "FontColor should now be green")
+	expectF(t, 12, pw.FontSize())
+	expectF(t, 1.0, fonts[0].relativeSize)
 	check(t, fonts[0] == pw.Fonts()[0], "SetFont should return new font list")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont changes to font list should be global")
 }

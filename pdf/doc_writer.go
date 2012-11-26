@@ -44,8 +44,8 @@ func nextSeqFunc() func() int {
 	}
 }
 
-func (dw *DocWriter) AddFont(family string, size float64, options Options) ([]*Font, error) {
-	return dw.curPage.AddFont(family, size, options)
+func (dw *DocWriter) AddFont(family string, options Options) ([]*Font, error) {
+	return dw.curPage.AddFont(family, options)
 }
 
 func (dw *DocWriter) AddFontSource(fontSource FontSource, subType string) {
@@ -70,8 +70,16 @@ func (dw *DocWriter) ClosePage() {
 	}
 }
 
+func (dw *DocWriter) FontColor() Color {
+	return dw.curPage.FontColor()
+}
+
 func (dw *DocWriter) Fonts() []*Font {
 	return dw.curPage.Fonts()
+}
+
+func (dw *DocWriter) FontSize() float64 {
+	return dw.curPage.FontSize()
 }
 
 func (dw *DocWriter) indexOfPage(pw *PageWriter) int {
@@ -95,8 +103,24 @@ func (dw *DocWriter) insertPage(pw *PageWriter, index int) {
 	dw.pages = pages
 }
 
+func (dw *DocWriter) LineCapStyle() LineCapStyle {
+	return dw.curPage.LineCapStyle()
+}
+
+func (dw *DocWriter) LineColor() Color {
+	return dw.curPage.LineColor()
+}
+
+func (dw *DocWriter) LineDashPattern() string {
+	return dw.curPage.LineDashPattern()
+}
+
 func (dw *DocWriter) LineTo(x, y float64) {
 	dw.curPage.LineTo(x, y)
+}
+
+func (dw *DocWriter) LineWidth(units string) float64 {
+	return dw.curPage.LineWidth(units)
 }
 
 func (dw *DocWriter) MoveTo(x, y float64) {
@@ -163,6 +187,14 @@ func (dw *DocWriter) ResetFonts() {
 
 func (dw *DocWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
 	return dw.curPage.SetFont(name, size, options)
+}
+
+func (dw *DocWriter) SetFontColor(color interface{}) (lastColor Color) {
+	return dw.curPage.SetFontColor(color)
+}
+
+func (dw *DocWriter) SetFontSize(size float64) (prev float64) {
+	return dw.curPage.SetFontSize(size)
 }
 
 func (dw *DocWriter) SetLineColor(color Color) (prev Color) {

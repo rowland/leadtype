@@ -64,14 +64,13 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) AddFont(family string, size float64, options Options) ([]*Font, error) {
+func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
 	f := &Font{
-		family:  family,
-		size:    size,
-		weight:  options.StringDefault("weight", ""),
-		style:   options.StringDefault("style", ""),
-		color:   options.ColorDefault("color", Black),
-		subType: options.StringDefault("sub_type", "TrueType"),
+		family:       family,
+		weight:       options.StringDefault("weight", ""),
+		style:        options.StringDefault("style", ""),
+		subType:      options.StringDefault("sub_type", "TrueType"),
+		relativeSize: options.FloatDefault("relative_size", 100) / 100.0,
 	}
 	var fontSource FontSource
 	var ok bool
@@ -92,6 +91,18 @@ func (pw *PageWriter) AddFont(family string, size float64, options Options) ([]*
 	}
 	pw.fonts = append(pw.fonts, f)
 	return pw.fonts, nil
+}
+
+func (pw *PageWriter) checkSetFontColor() {
+	if pw.fontColor == pw.last.fontColor {
+		return
+	}
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	pw.mw.setRgbColorFill(pw.fontColor.RGB64())
+	pw.last.fontColor = pw.fontColor
 }
 
 func (pw *PageWriter) checkSetLineColor() {
@@ -182,8 +193,16 @@ func (pw *PageWriter) endText() {
 
 }
 
+func (pw *PageWriter) FontColor() Color {
+	return pw.fontColor
+}
+
 func (pw *PageWriter) Fonts() []*Font {
 	return pw.fonts
+}
+
+func (pw *PageWriter) FontSize() float64 {
+	return pw.fontSize
 }
 
 func (pw *PageWriter) LineCapStyle() LineCapStyle {
@@ -238,7 +257,32 @@ func (pw *PageWriter) ResetFonts() {
 
 func (pw *PageWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
 	pw.ResetFonts()
-	return pw.AddFont(name, size, options)
+	pw.SetFontSize(size)
+	pw.SetFontColor(options["color"])
+	return pw.AddFont(name, options)
+}
+
+func (pw *PageWriter) SetFontColor(color interface{}) (prev Color) {
+	prev = pw.fontColor
+
+	switch color := color.(type) {
+	case string:
+		if c, err := NamedColor(color); err == nil {
+			pw.fontColor = c
+		}
+	case int:
+		pw.fontColor = Color(color)
+	case int32:
+		pw.fontColor = Color(color)
+	}
+
+	return
+}
+
+func (pw *PageWriter) SetFontSize(size float64) (prev float64) {
+	prev = pw.fontSize
+	pw.fontSize = size
+	return
 }
 
 func (pw *PageWriter) SetLineCapStyle(lineCapStyle LineCapStyle) (prev LineCapStyle) {
