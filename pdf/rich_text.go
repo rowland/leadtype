@@ -7,10 +7,24 @@ import "fmt"
 
 type RichText []*TextPiece
 
-func NewRichText(s string, fonts []*Font) (richText RichText, err error) {
-	piece := &TextPiece{Text: s}
-	richText, err = RichTextFromTextPiece(piece, fonts)
-	return
+func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (RichText, error) {
+	var richText RichText
+	return richText.Add(s, fonts, fontSize, options)
+}
+
+func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options Options) (RichText, error) {
+	piece := &TextPiece{
+		Text:        s,
+		FontSize:    fontSize,
+		Color:       options.ColorDefault("color", Black),
+		Underline:   options.BoolDefault("underline", false),
+		LineThrough: options.BoolDefault("line_through", false),
+	}
+	addedText, err := RichTextFromTextPiece(piece, fonts)
+	if err != nil {
+		return richText, err
+	}
+	return append(richText, addedText...), nil
 }
 
 func RichTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, err error) {
@@ -27,7 +41,7 @@ func RichTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 				newPiece := *piece
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
-					newPiece.Font = font;
+					newPiece.Font = font
 					richText = append(richText, &newPiece)
 				} else {
 					var newPieces RichText
@@ -43,7 +57,7 @@ func RichTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 		newPiece := *piece
 		newPiece.Text = piece.Text[start:]
 		if inFont {
-			newPiece.Font = font;
+			newPiece.Font = font
 			richText = append(richText, &newPiece)
 		} else {
 			var newPieces RichText

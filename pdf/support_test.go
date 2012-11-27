@@ -26,6 +26,12 @@ func checkFatal(t *testing.T, condition bool, msg string) {
 	}
 }
 
+func expectB(t *testing.T, expected, actual bool) {
+	if expected != actual {
+		t.Errorf("Expected %t, got %t", expected, actual)
+	}
+}
+
 func expectF(t *testing.T, expected, actual float64) {
 	if expected != actual {
 		t.Errorf("Expected %f, got %f", expected, actual)
@@ -93,6 +99,31 @@ func TestFloat64Slice(t *testing.T) {
 	values := []float64{1, 2.5, 3.1415926}
 	expectS(t, "1 2.5 3.1416", float64Slice(values).join(" "))
 	expectS(t, "1, 2.5, 3.1416", float64Slice(values).join(", "))
+}
+
+func TestOptions_BoolDefault(t *testing.T) {
+	o := Options{
+		"true_value": true, "1": "1", "t": "t", "T": "T", "TRUE": "TRUE", "true": "true", "True": "True",
+		"false_value": false, "0": "0", "f": "f", "F": "F", "FALSE": "FALSE", "false": "false", "False": "False",
+	}
+	expectB(t, false, o.BoolDefault("missing", false))
+	expectB(t, true, o.BoolDefault("missing", true))
+
+	expectB(t, true, o.BoolDefault("true_value", false))
+	expectB(t, true, o.BoolDefault("1", false))
+	expectB(t, true, o.BoolDefault("t", false))
+	expectB(t, true, o.BoolDefault("T", false))
+	expectB(t, true, o.BoolDefault("TRUE", false))
+	expectB(t, true, o.BoolDefault("true", false))
+	expectB(t, true, o.BoolDefault("True", false))
+
+	expectB(t, false, o.BoolDefault("false_value", true))
+	expectB(t, false, o.BoolDefault("0", true))
+	expectB(t, false, o.BoolDefault("f", true))
+	expectB(t, false, o.BoolDefault("F", true))
+	expectB(t, false, o.BoolDefault("FALSE", true))
+	expectB(t, false, o.BoolDefault("false", true))
+	expectB(t, false, o.BoolDefault("False", true))
 }
 
 func TestOptions_FloatDefault(t *testing.T) {

@@ -6,6 +6,7 @@ package pdf
 type TextPiece struct {
 	Text        string
 	Font        *Font
+	FontSize    float64
 	Color       Color
 	Underline   bool
 	LineThrough bool

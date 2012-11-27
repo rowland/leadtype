@@ -22,10 +22,31 @@ func g(value float64) string {
 
 type Options map[string]interface{}
 
+func (this Options) BoolDefault(key string, def bool) bool {
+	if value, ok := this[key]; ok {
+		switch value := value.(type) {
+		case bool:
+			return value
+		case string:
+			if b, err := strconv.ParseBool(value); err == nil {
+				return b
+			}
+			return def
+		case int:
+			return value != 0
+		case float64:
+			return value != 0
+		}
+	}
+	return def
+}
+
 func (this Options) ColorDefault(key string, def Color) (color Color) {
 	color = def
 	if value, ok := this[key]; ok {
 		switch value := value.(type) {
+		case Color:
+			color = value
 		case string:
 			if c, err := NamedColor(value); err == nil {
 				color = c
