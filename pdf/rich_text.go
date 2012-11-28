@@ -20,14 +20,14 @@ func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options 
 		Underline:   options.BoolDefault("underline", false),
 		LineThrough: options.BoolDefault("line_through", false),
 	}
-	addedText, err := RichTextFromTextPiece(piece, fonts)
+	addedText, err := richTextFromTextPiece(piece, fonts)
 	if err != nil {
 		return richText, err
 	}
 	return append(richText, addedText...), nil
 }
 
-func RichTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, err error) {
+func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)
 	}
@@ -45,7 +45,7 @@ func RichTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 					richText = append(richText, &newPiece)
 				} else {
 					var newPieces RichText
-					newPieces, err = RichTextFromTextPiece(&newPiece, fonts[1:])
+					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
 					richText = append(richText, newPieces...)
 				}
 			}
@@ -61,7 +61,7 @@ func RichTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 			richText = append(richText, &newPiece)
 		} else {
 			var newPieces RichText
-			newPieces, err = RichTextFromTextPiece(&newPiece, fonts[1:])
+			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
 			richText = append(richText, newPieces...)
 		}
 	}
