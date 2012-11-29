@@ -3,7 +3,10 @@
 
 package pdf
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
 
 type RichText []*TextPiece
 
@@ -42,7 +45,8 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
 					newPiece.Font = font
-					richText = append(richText, &newPiece)
+					tokens := wordbreakTextPiece(&newPiece)
+					richText = append(richText, tokens...)
 				} else {
 					var newPieces RichText
 					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
@@ -58,12 +62,28 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 		newPiece.Text = piece.Text[start:]
 		if inFont {
 			newPiece.Font = font
-			richText = append(richText, &newPiece)
+			tokens := wordbreakTextPiece(&newPiece)
+			richText = append(richText, tokens...)
 		} else {
 			var newPieces RichText
 			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
 			richText = append(richText, newPieces...)
 		}
+	}
+	return
+}
+
+var TokenRegexp = regexp.MustCompile(`\n|\t|\s|\S+-+|\S+`)
+
+func wordbreakTextPiece(piece *TextPiece) (richText RichText) {
+	tokens := TokenRegexp.FindAllString(piece.Text, -1)
+	if len(tokens) <= 1 {
+		return RichText{piece}
+	}
+	for _, token := range tokens {
+		newPiece := *piece
+		newPiece.Text = token
+		richText = append(richText, &newPiece)
 	}
 	return
 }
