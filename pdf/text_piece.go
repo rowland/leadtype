@@ -3,6 +3,8 @@
 
 package pdf
 
+import "unicode"
+
 type TextPiece struct {
 	Text        string
 	Font        *Font
@@ -10,7 +12,23 @@ type TextPiece struct {
 	Color       Color
 	Underline   bool
 	LineThrough bool
-	Width       int
+	Width       float64
 	Chars       int
 	Tokens      int
+}
+
+func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
+	piece.Width = 0
+	fsize := piece.FontSize * 0.001
+	metrics := piece.Font.metrics
+	for _, rune := range piece.Text {
+		runeWidth, _ := metrics.AdvanceWidth(rune)
+		piece.Width += (fsize * float64(runeWidth)) + charSpacing
+		if unicode.IsSpace(rune) {
+			piece.Width += wordSpacing
+		}
+	}
+	piece.Chars = len(piece.Text)
+	piece.Tokens = 1
+	return piece
 }

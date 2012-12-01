@@ -23,14 +23,16 @@ func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options 
 		Underline:   options.BoolDefault("underline", false),
 		LineThrough: options.BoolDefault("line_through", false),
 	}
-	addedText, err := richTextFromTextPiece(piece, fonts)
+	charSpacing := options.FloatDefault("char_spacing", 0)
+	wordSpacing := options.FloatDefault("word_spacing", 0)
+	addedText, err := richTextFromTextPiece(piece, fonts, charSpacing, wordSpacing)
 	if err != nil {
 		return richText, err
 	}
 	return append(richText, addedText...), nil
 }
 
-func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, err error) {
+func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpacing float64) (richText RichText, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)
 	}
@@ -45,11 +47,11 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
 					newPiece.Font = font
-					tokens := wordbreakTextPiece(&newPiece)
+					tokens := wordbreakTextPiece(&newPiece, charSpacing, wordSpacing)
 					richText = append(richText, tokens...)
 				} else {
 					var newPieces RichText
-					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
+					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:], charSpacing, wordSpacing)
 					richText = append(richText, newPieces...)
 				}
 			}
@@ -62,11 +64,11 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 		newPiece.Text = piece.Text[start:]
 		if inFont {
 			newPiece.Font = font
-			tokens := wordbreakTextPiece(&newPiece)
+			tokens := wordbreakTextPiece(&newPiece, charSpacing, wordSpacing)
 			richText = append(richText, tokens...)
 		} else {
 			var newPieces RichText
-			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
+			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:], charSpacing, wordSpacing)
 			richText = append(richText, newPieces...)
 		}
 	}
@@ -75,14 +77,16 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, 
 
 var TokenRegexp = regexp.MustCompile(`\n|\t|\s|\S+-+|\S+`)
 
-func wordbreakTextPiece(piece *TextPiece) (richText RichText) {
+func wordbreakTextPiece(piece *TextPiece, charSpacing, wordSpacing float64) (richText RichText) {
 	tokens := TokenRegexp.FindAllString(piece.Text, -1)
 	if len(tokens) <= 1 {
+		piece.measure(charSpacing, wordSpacing)
 		return RichText{piece}
 	}
 	for _, token := range tokens {
 		newPiece := *piece
 		newPiece.Text = token
+		piece.measure(charSpacing, wordSpacing)
 		richText = append(richText, &newPiece)
 	}
 	return

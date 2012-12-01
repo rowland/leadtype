@@ -38,6 +38,12 @@ func expectF(t *testing.T, expected, actual float64) {
 	}
 }
 
+func expectNF(t *testing.T, name string, expected, actual float64) {
+	if expected != actual {
+		t.Errorf("%s: expected %f, got %f", name, expected, actual)
+	}
+}
+
 func expectFdelta(t *testing.T, expected, actual, delta float64) {
 	if math.Abs(expected-actual) > delta {
 		t.Errorf("Expected %f, got %f", expected, actual)

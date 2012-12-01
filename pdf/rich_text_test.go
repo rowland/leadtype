@@ -120,6 +120,7 @@ func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 // 10,145 ns
 // 10,987 ns after adding additional text attributes
 // 55,649 ns after word breaking
+// 76,497 ns after measuring
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := testAfmFonts("Helvetica")
