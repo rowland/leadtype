@@ -53,6 +53,22 @@ var testAfmSelectData = []afmFontSelection{
 	{"zapf chancery", "medium", "italic", nil, "ZapfChancery-MediumItalic"},
 }
 
+func testAfmFonts(families ...string) (fonts []*Font) {
+	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
+	if err != nil {
+		panic(err)
+	}
+	for _, family := range families {
+		metrics, err := fc.Select(family, "", "", nil)
+		if err != nil {
+			panic(err)
+		}
+		font := &Font{family: family, metrics: metrics}
+		fonts = append(fonts, font)
+	}
+	return
+}
+
 func TestAfmFontCollection(t *testing.T) {
 	var fc AfmFontCollection
 

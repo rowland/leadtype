@@ -6,38 +6,6 @@ package pdf
 import "testing"
 // import "fmt"
 
-func testTtfFonts(families ...string) (fonts []*Font) {
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
-	if err != nil {
-		panic(err)
-	}
-	for _, family := range families {
-		metrics, err := fc.Select(family, "", "", nil)
-		if err != nil {
-			panic(err)
-		}
-		font := &Font{family: family, metrics: metrics}
-		fonts = append(fonts, font)
-	}
-	return
-}
-
-func testAfmFonts(families ...string) (fonts []*Font) {
-	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
-	if err != nil {
-		panic(err)
-	}
-	for _, family := range families {
-		metrics, err := fc.Select(family, "", "", nil)
-		if err != nil {
-			panic(err)
-		}
-		font := &Font{family: family, metrics: metrics}
-		fonts = append(fonts, font)
-	}
-	return
-}
-
 func TestNewRichText_English(t *testing.T) {
 	fonts := testTtfFonts("Arial")
 	rt, err := NewRichText("abc", fonts, 10, Options{"color": Green, "underline": true, "line_through": true})

@@ -36,6 +36,22 @@ var testTtfSelectData = []ttfFontSelection{
 	{"Myanmar Sangam MN", "", "", []string{"Myanmar"}, "MyanmarSangamMN"},
 }
 
+func testTtfFonts(families ...string) (fonts []*Font) {
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		panic(err)
+	}
+	for _, family := range families {
+		metrics, err := fc.Select(family, "", "", nil)
+		if err != nil {
+			panic(err)
+		}
+		font := &Font{family: family, metrics: metrics}
+		fonts = append(fonts, font)
+	}
+	return
+}
+
 func TestTtfFontCollection(t *testing.T) {
 	var fc TtfFontCollection
 
