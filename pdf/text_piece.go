@@ -17,18 +17,30 @@ type TextPiece struct {
 	Tokens      int
 }
 
+func (piece *TextPiece) Ascent() float64 {
+	return 0.001 * float64(piece.Font.Ascent()) * piece.FontSize
+}
+
+func (piece *TextPiece) Descent() float64 {
+	return 0.001 * float64(piece.Font.Descent()) * piece.FontSize
+}
+
+func (piece *TextPiece) Height() float64 {
+	return 0.001 * float64(piece.Font.Height()) * piece.FontSize
+}
+
 func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
-	piece.Width = 0
+	piece.Chars, piece.Width = 0, 0
 	fsize := piece.FontSize * 0.001
 	metrics := piece.Font.metrics
 	for _, rune := range piece.Text {
+		piece.Chars += 1
 		runeWidth, _ := metrics.AdvanceWidth(rune)
 		piece.Width += (fsize * float64(runeWidth)) + charSpacing
 		if unicode.IsSpace(rune) {
 			piece.Width += wordSpacing
 		}
 	}
-	piece.Chars = len(piece.Text)
 	piece.Tokens = 1
 	return piece
 }

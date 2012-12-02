@@ -14,6 +14,14 @@ type Font struct {
 	metrics      FontMetrics
 }
 
+func (font *Font) Ascent() int {
+	return font.metrics.Ascent()
+}
+
+func (font *Font) Descent() int {
+	return font.metrics.Descent()
+}
+
 func (font *Font) HasRune(rune rune) bool {
 	if font.runeSet == nil {
 		_, err := font.metrics.AdvanceWidth(rune)
@@ -24,4 +32,8 @@ func (font *Font) HasRune(rune rune) bool {
 		return !err
 	}
 	return false
+}
+
+func (font *Font) Height() int {
+	return font.metrics.Ascent() + -font.metrics.Descent()
 }
