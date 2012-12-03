@@ -15,34 +15,17 @@ func textPieceTestText() *TextPiece {
 }
 
 func TestTextPiece_measure(t *testing.T) {
-	font := testTtfFonts("Arial")[0]
-	piece := &TextPiece{
-		Text:     "Lorem",
-		Font:     font,
-		FontSize: 10,
-	}
+	piece := textPieceTestText()
 	piece.measure(0, 0)
-	expectNF(t, "Width", 58.05, piece.Width)
+	expectNFdelta(t, "Ascent", 9.052734, piece.Ascent, 0.001)
+	expectNFdelta(t, "Descent", -2.119141, piece.Descent, 0.001)
+	expectNFdelta(t, "Height", 11.171875, piece.Height, 0.001)
+	expectNFdelta(t, "Width", 28.344727, piece.Width, 0.001)
 	expectNI(t, "Chars", 5, piece.Chars)
 	expectNI(t, "Tokens", 1, piece.Tokens)
 }
 
-func TestTextPiece_Ascent(t *testing.T) {
-	piece := textPieceTestText()
-	expectF(t, 18.54, piece.Ascent())
-}
-
-func TestTextPieceDescent(t *testing.T) {
-	piece := textPieceTestText()
-	expectF(t, -4.34, piece.Descent())
-}
-
-func TestTextPiece_Height(t *testing.T) {
-	piece := textPieceTestText()
-	expectFdelta(t, 22.88, piece.Height(), 0.001)
-}
-
-// 313 ns
+// 374 ns
 func BenchmarkTextPiece_measure(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]

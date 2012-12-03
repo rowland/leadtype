@@ -16,9 +16,8 @@ type TextLine struct {
 func (line *TextLine) Ascent() float64 {
 	if line.ascent == 0.0 {
 		for _, p := range line.RichText {
-			a := p.Ascent()
-			if a > line.ascent {
-				line.ascent = a
+			if p.Ascent > line.ascent {
+				line.ascent = p.Ascent
 			}
 		}
 	}
@@ -37,9 +36,8 @@ func (line *TextLine) Chars() int {
 func (line *TextLine) Descent() float64 {
 	if line.descent == 0.0 {
 		for _, p := range line.RichText {
-			d := p.Descent()
-			if d < line.descent {
-				line.descent = d
+			if p.Descent < line.descent {
+				line.descent = p.Descent
 			}
 		}
 	}
@@ -49,9 +47,8 @@ func (line *TextLine) Descent() float64 {
 func (line *TextLine) Height() float64 {
 	if line.height == 0.0 {
 		for _, p := range line.RichText {
-			h := p.Height()
-			if h > line.height {
-				line.height = h
+			if p.Height > line.height {
+				line.height = p.Height
 			}
 		}
 	}

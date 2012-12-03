@@ -18,7 +18,7 @@ func TestTextLine_Ascent(t *testing.T) {
 	var line TextLine
 	expectF(t, 0, line.Ascent())
 	line = TextLine{RichText: textLineTestText()}
-	expectF(t, 18.54, line.Ascent())
+	expectFdelta(t, 9.052734, line.Ascent(), 0.001)
 }
 
 func TestTextLine_Chars(t *testing.T) {
@@ -32,14 +32,14 @@ func TestTextLine_Descent(t *testing.T) {
 	var line TextLine
 	expectF(t, 0, line.Descent())
 	line = TextLine{RichText: textLineTestText()}
-	expectF(t, -4.34, line.Descent())
+	expectFdelta(t, -2.119141, line.Descent(), 0.001)
 }
 
 func TestTextLine_Height(t *testing.T) {
 	var line TextLine
 	expectF(t, 0, line.Height())
 	line = TextLine{RichText: textLineTestText()}
-	expectFdelta(t, 22.88, line.Height(), 0.01)
+	expectFdelta(t, 11.171875, line.Height(), 0.001)
 }
 
 func TestTextLine_Tokens(t *testing.T) {
@@ -53,7 +53,7 @@ func TestTextLine_Width(t *testing.T) {
 	var line TextLine
 	expectF(t, 0, line.Width())
 	line = TextLine{RichText: textLineTestText()}
-	expectFdelta(t, 91.49, line.Width(), 0.01)
+	expectFdelta(t, 60.024414, line.Width(), 0.001)
 }
 
 func textLineBenchmarkText() RichText {
@@ -66,7 +66,7 @@ func textLineBenchmarkText() RichText {
 	return rt
 }
 
-// 597 ns
+// 201 ns
 func BenchmarkTextLine_Ascent(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -90,7 +90,7 @@ func BenchmarkTextLine_Chars(b *testing.B) {
 	}
 }
 
-// 600 ns
+// 200 ns
 func BenchmarkTextLine_Descent(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -102,7 +102,7 @@ func BenchmarkTextLine_Descent(b *testing.B) {
 	}
 }
 
-// 771 ns
+// 198 ns
 func BenchmarkTextLine_Height(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
