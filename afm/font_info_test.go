@@ -29,6 +29,8 @@ func TestLoadFontInfo(t *testing.T) {
 	expectS(t, "PostScriptName", "Helvetica", fi.PostScriptName())
 	expectI(t, "StemV", 88, fi.StemV())
 	// expectS(t, "Trademark", "Arial is a trademark of The Monotype Corporation in the United States and/or other countries.", fi.Trademark())
+	expectI(t, "UnderlinePosition", -100, fi.UnderlinePosition())
+	expectI(t, "UnderlineThickness", 50, fi.UnderlineThickness())
 	// expectS(t, "UniqueName", "Monotype:Arial Regular:Version 5.01 (Microsoft)", fi.UniqueName())
 	expectS(t, "Version", "002.000", fi.Version())
 	expectI(t, "XHeight", 523, fi.XHeight())

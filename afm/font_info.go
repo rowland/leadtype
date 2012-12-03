@@ -12,21 +12,23 @@ import (
 )
 
 type FontInfo struct {
-	Filename    string
-	ascender    int
-	capHeight   int
-	copyright   string
-	descender   int
-	familyName  string
-	fontBBox    BoundingBox
-	fontName    string
-	fullName    string
-	italicAngle float64
-	numGlyphs   int
-	stdVW       int
-	version     string
-	weight      string
-	xHeight     int
+	Filename           string
+	ascender           int
+	capHeight          int
+	copyright          string
+	descender          int
+	familyName         string
+	fontBBox           BoundingBox
+	fontName           string
+	fullName           string
+	italicAngle        float64
+	numGlyphs          int
+	stdVW              int
+	underlinePosition  int
+	underlineThickness int
+	version            string
+	weight             string
+	xHeight            int
 }
 
 // 165,638 ns go1
@@ -44,20 +46,22 @@ func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 }
 
 var (
-	reAscender         = regexp.MustCompile("^Ascender[ ]+([0-9]+)")
-	reCapHeight        = regexp.MustCompile("^CapHeight[ ]+([0-9]+)")
-	reCopyright        = regexp.MustCompile("^Notice Copyright[ ]+(.*)")
-	reDescender        = regexp.MustCompile("^Descender[ ]+(-?[0-9]+)")
-	reFamilyName       = regexp.MustCompile("^FamilyName[ ]+(.*)")
-	reFontBBox         = regexp.MustCompile("^FontBBox(([ ]+-?[0-9]+)([ ]+-?[0-9]+)([ ]+-?[0-9]+)([ ]+-?[0-9]+))")
-	reFontName         = regexp.MustCompile("^FontName[ ]+(.*)")
-	reFullName         = regexp.MustCompile("^FullName[ ]+(.*)")
-	reItalicAngle      = regexp.MustCompile("^ItalicAngle[ ]+(-?[0-9]+(\\.[0-9]+)?)")
-	reStartCharMetrics = regexp.MustCompile("^StartCharMetrics[ ]+([0-9]+)")
-	reStdVW            = regexp.MustCompile("^StdVW[ ]+([0-9]+)")
-	reVersion          = regexp.MustCompile("^Version[ ]+(.*)")
-	reWeight           = regexp.MustCompile("^Weight[ ]+([A-Za-z0-9]+)")
-	reXHeight          = regexp.MustCompile("^XHeight[ ]+([0-9]+)")
+	reAscender           = regexp.MustCompile("^Ascender[ ]+([0-9]+)")
+	reCapHeight          = regexp.MustCompile("^CapHeight[ ]+([0-9]+)")
+	reCopyright          = regexp.MustCompile("^Notice Copyright[ ]+(.*)")
+	reDescender          = regexp.MustCompile("^Descender[ ]+(-?[0-9]+)")
+	reFamilyName         = regexp.MustCompile("^FamilyName[ ]+(.*)")
+	reFontBBox           = regexp.MustCompile("^FontBBox(([ ]+-?[0-9]+)([ ]+-?[0-9]+)([ ]+-?[0-9]+)([ ]+-?[0-9]+))")
+	reFontName           = regexp.MustCompile("^FontName[ ]+(.*)")
+	reFullName           = regexp.MustCompile("^FullName[ ]+(.*)")
+	reItalicAngle        = regexp.MustCompile("^ItalicAngle[ ]+(-?[0-9]+(\\.[0-9]+)?)")
+	reStartCharMetrics   = regexp.MustCompile("^StartCharMetrics[ ]+([0-9]+)")
+	reStdVW              = regexp.MustCompile("^StdVW[ ]+([0-9]+)")
+	reVersion            = regexp.MustCompile("^Version[ ]+(.*)")
+	reWeight             = regexp.MustCompile("^Weight[ ]+([A-Za-z0-9]+)")
+	reXHeight            = regexp.MustCompile("^XHeight[ ]+([0-9]+)")
+	reUnderlinePosition  = regexp.MustCompile(`^UnderlinePosition\s+(-?\d+)`)
+	reUnderlineThickness = regexp.MustCompile(`^UnderlineThickness\s+(\d+)`)
 )
 
 func (fi *FontInfo) init(file *bufio.Reader) (err error) {
@@ -97,6 +101,10 @@ func (fi *FontInfo) init(file *bufio.Reader) (err error) {
 			fi.fullName = strings.TrimSpace(string(m[1]))
 		} else if m := reStdVW.FindSubmatch(line); m != nil {
 			fi.stdVW, _ = strconv.Atoi(string(m[1]))
+		} else if m := reUnderlinePosition.FindSubmatch(line); m != nil {
+			fi.underlinePosition, _ = strconv.Atoi(string(m[1]))
+		} else if m := reUnderlineThickness.FindSubmatch(line); m != nil {
+			fi.underlineThickness, _ = strconv.Atoi(string(m[1]))
 		} else if m := reVersion.FindSubmatch(line); m != nil {
 			fi.version = strings.TrimSpace(string(m[1]))
 		} else if m := reXHeight.FindSubmatch(line); m != nil {
@@ -153,6 +161,14 @@ func (fi *FontInfo) StemV() int {
 
 func (fi *FontInfo) Style() string {
 	return fi.weight
+}
+
+func (fi *FontInfo) UnderlinePosition() int {
+	return fi.underlinePosition
+}
+
+func (fi *FontInfo) UnderlineThickness() int {
+	return fi.underlineThickness
 }
 
 func (fi *FontInfo) Version() string {
