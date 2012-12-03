@@ -27,6 +27,8 @@ type FontMetrics interface {
 	StemV() int
 	Style() string
 	// Trademark() string
+	UnderlinePosition() int
+	UnderlineThickness() int
 	// UniqueName() string
 	UnitsPerEm() int
 	Version() string
