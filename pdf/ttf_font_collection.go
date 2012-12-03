@@ -23,7 +23,6 @@ func NewTtfFontCollection(pattern string) (*TtfFontCollection, error) {
 	return &fc, nil
 }
 
-// 81,980,000 ns
 func (fc *TtfFontCollection) Add(pattern string) (err error) {
 	var pathnames []string
 	if pathnames, err = filepath.Glob(pattern); err != nil {
