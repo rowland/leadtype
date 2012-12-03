@@ -202,6 +202,14 @@ func (font *Font) String() string {
 	return buf.String()
 }
 
+func (font *Font) UnderlinePosition() int {
+	return int(font.postTable.underlinePosition)
+}
+
+func (font *Font) UnderlineThickness() int {
+	return int(font.postTable.underlineThickness)
+}
+
 func (font *Font) UnitsPerEm() int {
 	return int(font.headTable.unitsPerEm)
 }

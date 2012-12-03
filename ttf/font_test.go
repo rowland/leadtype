@@ -41,7 +41,8 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "Leading", 1854 - -434 + 67, f.Leading())
 	// TODO: Verify this works in practice. Some examples indicate equivalence to lineGap instead.
 	expectI(t, "MaxWidth", 4096, f.MaxWidth())
-
+	expectI(t, "UnderlinePosition", -217, f.UnderlinePosition())
+	expectI(t, "UnderlineThickness", 150, f.UnderlineThickness())
 }
 
 // 9,151,820 ns
