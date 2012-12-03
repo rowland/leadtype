@@ -92,11 +92,16 @@ func TestAfmFontCollection(t *testing.T) {
 
 // 81,980,000 ns
 // 45,763,220 ns
+// 13,754,000 ns
 func BenchmarkAfmFontCollection_Add(b *testing.B) {
-	var fc AfmFontCollection
-
 	for i := 0; i < b.N; i++ {
-		fc.Add("data/fonts/*.afm")
+		var fc AfmFontCollection
+		if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
+			b.Fatal(err)
+		}
+		if fc.Len() != 77 {
+			b.Fatalf("Unexpected number of fonts found: %d.", fc.Len())
+		}
 	}
 }
 
