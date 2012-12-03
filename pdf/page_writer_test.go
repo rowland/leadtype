@@ -131,6 +131,48 @@ func TestPageWriter_FontSize(t *testing.T) {
 	check(t, pw.FontSize() == 12.5, "Should now be 12.5")
 }
 
+func TestPageWriter_FontStyle(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+
+	ttfc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(ttfc, "TrueType")
+
+	afmfc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afmfc, "Type1")
+
+	pw := dw.OpenPage()
+
+	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
+	check(t, pw.FontStyle() == "", "Should default to empty string")
+
+	prev, err := pw.SetFontStyle("Bold")
+	expectS(t, "No current font to apply style Bold to.", err.Error())
+	check(t, prev == "", "Should return empty string when no font is set")
+
+	_, err = pw.AddFont("Arial", Options{"style": "Italic"})
+	check(t, err == nil, "Failed to add Arial")
+	_, err = pw.AddFont("Helvetica", Options{"sub_type": "Type1"})
+	check(t, err == nil, "Failed to add Helvetica")
+
+	fonts := pw.Fonts()
+	checkFatal(t, len(fonts) == 2, "length of fonts should be 2")
+	expectS(t, "Italic", fonts[0].style)
+	expectS(t, "", fonts[1].style)
+
+	prev, err = pw.SetFontStyle("Bold")
+	check(t, pw.FontStyle() == "Bold", "FontStyle should now be Bold")
+	fonts = pw.Fonts()
+	expectS(t, "Bold", fonts[0].style)
+	expectS(t, "Bold", fonts[1].style)
+}
+
 func TestPageWriter_LineCapStyle(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)

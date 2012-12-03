@@ -72,11 +72,6 @@ func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
 		subType:      options.StringDefault("sub_type", "TrueType"),
 		relativeSize: options.FloatDefault("relative_size", 100) / 100.0,
 	}
-	var fontSource FontSource
-	var ok bool
-	if fontSource, ok = pw.dw.fontSources[f.subType]; !ok {
-		return nil, fmt.Errorf("Font subtype %s not found", f.subType)
-	}
 	if ranges, ok := options["ranges"]; ok {
 		switch ranges := ranges.(type) {
 		case []string:
@@ -85,11 +80,20 @@ func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
 			f.runeSet = ranges
 		}
 	}
+	return pw.addFont(f)
+}
+
+func (pw *PageWriter) addFont(font *Font) ([]*Font, error) {
+	var fontSource FontSource
+	var ok bool
+	if fontSource, ok = pw.dw.fontSources[font.subType]; !ok {
+		return nil, fmt.Errorf("Font subtype %s not found", font.subType)
+	}
 	var err error
-	if f.metrics, err = fontSource.Select(f.family, f.weight, f.style, f.ranges); err != nil {
+	if font.metrics, err = fontSource.Select(font.family, font.weight, font.style, font.ranges); err != nil {
 		return nil, err
 	}
-	pw.fonts = append(pw.fonts, f)
+	pw.fonts = append(pw.fonts, font)
 	return pw.fonts, nil
 }
 
@@ -205,6 +209,13 @@ func (pw *PageWriter) FontSize() float64 {
 	return pw.fontSize
 }
 
+func (pw *PageWriter) FontStyle() string {
+	if len(pw.fonts) > 0 {
+		return pw.fonts[0].style
+	}
+	return ""
+}
+
 func (pw *PageWriter) LineCapStyle() LineCapStyle {
 	return pw.lineCapStyle
 }
@@ -282,6 +293,20 @@ func (pw *PageWriter) SetFontColor(color interface{}) (prev Color) {
 func (pw *PageWriter) SetFontSize(size float64) (prev float64) {
 	prev = pw.fontSize
 	pw.fontSize = size
+	return
+}
+
+func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
+	prevFonts := pw.Fonts()
+	if len(prevFonts) < 1 {
+		return "", fmt.Errorf("No current font to apply style %s to.", style)
+	}
+	prev = prevFonts[0].style
+	pw.ResetFonts()
+	for _, font := range prevFonts {
+		font.style = style
+		_, err = pw.addFont(font)
+	}
 	return
 }
 

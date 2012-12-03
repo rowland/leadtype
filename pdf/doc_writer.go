@@ -82,6 +82,10 @@ func (dw *DocWriter) FontSize() float64 {
 	return dw.curPage.FontSize()
 }
 
+func (dw *DocWriter) FontStyle() string {
+	return dw.curPage.FontStyle()
+}
+
 func (dw *DocWriter) indexOfPage(pw *PageWriter) int {
 	for i, v := range dw.pages {
 		if v == pw {
@@ -195,6 +199,10 @@ func (dw *DocWriter) SetFontColor(color interface{}) (lastColor Color) {
 
 func (dw *DocWriter) SetFontSize(size float64) (prev float64) {
 	return dw.curPage.SetFontSize(size)
+}
+
+func (dw *DocWriter) SetFontStyle(style string) (prev string, err error) {
+	return dw.curPage.SetFontStyle(style)
 }
 
 func (dw *DocWriter) SetLineColor(color Color) (prev Color) {
