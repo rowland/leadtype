@@ -79,7 +79,7 @@ func TestDocWriter_Open(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
 	dw.Open()
-	// TODO: test options
+	check(t, len(dw.options) == 0, "Default page options should be empty")
 }
 
 func TestDocWriter_OpenPage(t *testing.T) {
@@ -136,6 +136,14 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 	check(t, p2.LineColor() == AliceBlue, "LineColor should be AliceBlue")
 	check(t, p2.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
 	check(t, p2.LineWidth("pt") == 42, "LineWidth should be 42")
+}
+
+func TestDocWriter_OpenWithOptions(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	dw.OpenWithOptions(Options{"units": "in"})
+	check(t, len(dw.options) == 1, "Default page options should have 1 option")
+	check(t, dw.options["units"] == "in", "Default units should be in")
 }
 
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
