@@ -27,7 +27,7 @@ func TestTextPiece_measure(t *testing.T) {
 	expectNI(t, "Tokens", 1, piece.Tokens)
 }
 
-// 374 ns
+// 345 ns
 func BenchmarkTextPiece_measure(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]

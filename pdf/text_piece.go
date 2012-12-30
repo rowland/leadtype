@@ -24,13 +24,13 @@ type TextPiece struct {
 
 func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
 	piece.Chars, piece.Width = 0, 0
-	fsize := piece.FontSize / float64(piece.Font.metrics.UnitsPerEm())
 	metrics := piece.Font.metrics
-	piece.Ascent = float64(metrics.Ascent()) * piece.FontSize / float64(metrics.UnitsPerEm())
-	piece.Descent = float64(metrics.Descent()) * piece.FontSize / float64(metrics.UnitsPerEm())
-	piece.Height = float64(piece.Font.Height()) * piece.FontSize / float64(metrics.UnitsPerEm())
-	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * piece.FontSize / float64(metrics.UnitsPerEm())
-	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * piece.FontSize / float64(metrics.UnitsPerEm())
+	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
+	piece.Ascent = float64(metrics.Ascent()) * fsize
+	piece.Descent = float64(metrics.Descent()) * fsize
+	piece.Height = float64(piece.Font.Height()) * fsize
+	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
+	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
 	for _, rune := range piece.Text {
 		piece.Chars += 1
 		runeWidth, _ := metrics.AdvanceWidth(rune)
