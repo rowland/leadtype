@@ -6,18 +6,20 @@ package pdf
 import "unicode"
 
 type TextPiece struct {
-	Text        string
-	Font        *Font
-	FontSize    float64
-	Color       Color
-	Underline   bool
-	LineThrough bool
-	Ascent      float64
-	Descent     float64
-	Height      float64
-	Width       float64
-	Chars       int
-	Tokens      int
+	Text               string
+	Font               *Font
+	FontSize           float64
+	Color              Color
+	Underline          bool
+	LineThrough        bool
+	Ascent             float64
+	Descent            float64
+	Height             float64
+	UnderlinePosition  float64
+	UnderlineThickness float64
+	Width              float64
+	Chars              int
+	Tokens             int
 }
 
 func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
@@ -27,6 +29,8 @@ func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
 	piece.Ascent = float64(metrics.Ascent()) * piece.FontSize / float64(metrics.UnitsPerEm())
 	piece.Descent = float64(metrics.Descent()) * piece.FontSize / float64(metrics.UnitsPerEm())
 	piece.Height = float64(piece.Font.Height()) * piece.FontSize / float64(metrics.UnitsPerEm())
+	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * piece.FontSize / float64(metrics.UnitsPerEm())
+	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * piece.FontSize / float64(metrics.UnitsPerEm())
 	for _, rune := range piece.Text {
 		piece.Chars += 1
 		runeWidth, _ := metrics.AdvanceWidth(rune)
