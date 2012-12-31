@@ -14,6 +14,45 @@ func textPieceTestText() *TextPiece {
 	}
 }
 
+func TestTextPiece_IsWhiteSpace(t *testing.T) {
+	font := testTtfFonts("Arial")[0]
+
+	empty := TextPiece{
+		Text:     "",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, !empty.IsWhiteSpace(), "Empty string should not be considered whitespace.")
+
+	singleWhite := TextPiece{
+		Text:     " ",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, singleWhite.IsWhiteSpace(), "A single space should be considered whitespace.")
+
+	multiWhite := TextPiece{
+		Text:     "  \t\n\v\f\r",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, multiWhite.IsWhiteSpace(), "Multiple spaces should be considered whitespace.")
+
+	startWhite := TextPiece{
+		Text:     "  Lorem",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, !startWhite.IsWhiteSpace(), "A piece that only starts with spaces should not be considered whitespace.")
+
+	nonWhite := TextPiece{
+		Text:     "Lorem",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, !nonWhite.IsWhiteSpace(), "Piece contains no whitespace.")
+}
+
 func TestTextPiece_measure(t *testing.T) {
 	piece := textPieceTestText()
 	piece.measure(0, 0)

@@ -22,6 +22,15 @@ type TextPiece struct {
 	Tokens             int
 }
 
+func (piece *TextPiece) IsWhiteSpace() bool {
+	for _, rune := range piece.Text {
+		if !unicode.IsSpace(rune) {
+			return false
+		}
+	}
+	return len(piece.Text) > 0
+}
+
 func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
 	piece.Chars, piece.Width = 0, 0
 	metrics := piece.Font.metrics
