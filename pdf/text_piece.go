@@ -22,6 +22,10 @@ type TextPiece struct {
 	Tokens             int
 }
 
+func (piece *TextPiece) IsNewLine() bool {
+	return piece.Text == "\n"
+}
+
 func (piece *TextPiece) IsWhiteSpace() bool {
 	for _, rune := range piece.Text {
 		if !unicode.IsSpace(rune) {

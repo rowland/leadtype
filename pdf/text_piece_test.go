@@ -14,6 +14,31 @@ func textPieceTestText() *TextPiece {
 	}
 }
 
+func TestTextPiece_IsNewLine(t *testing.T) {
+	font := testTtfFonts("Arial")[0]
+
+	empty := TextPiece{
+		Text:     "",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, !empty.IsNewLine(), "An empty string is not a newline.")
+
+	newline := TextPiece{
+		Text:     "\n",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, newline.IsNewLine(), "It really is a newline.")
+
+	nonNewline := TextPiece{
+		Text:     "Lorem",
+		Font:     font,
+		FontSize: 10,
+	}
+	check(t, !nonNewline.IsNewLine(), "This isn't a newline.")
+}
+
 func TestTextPiece_IsWhiteSpace(t *testing.T) {
 	font := testTtfFonts("Arial")[0]
 
