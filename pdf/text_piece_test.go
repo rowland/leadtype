@@ -91,6 +91,22 @@ func TestTextPiece_measure(t *testing.T) {
 	expectNI(t, "Tokens", 1, piece.Tokens)
 }
 
+// 75.5 ns
+func BenchmarkTextPiece_IsWhiteSpace(b *testing.B) {
+	b.StopTimer()
+	font := testTtfFonts("Arial")[0]
+	piece := &TextPiece{
+		Text:     "  \t\n\v\f\r",
+		Font:     font,
+		FontSize: 10,
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		piece.IsWhiteSpace()
+	}
+}
+
 // 345 ns
 func BenchmarkTextPiece_measure(b *testing.B) {
 	b.StopTimer()
