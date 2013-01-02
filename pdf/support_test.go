@@ -154,3 +154,13 @@ func TestOptions_StringDefault(t *testing.T) {
 	expectS(t, "3.14", o.StringDefault("f", ""))
 	expectS(t, "missing", o.StringDefault("bogus", "missing"))
 }
+
+func TestStringSlicesEqual(t *testing.T) {
+	a := []string{"abc", "def"}
+	b := []string{"abc", "def"}
+	c := []string{"abc", "def", "ghi"}
+	d := []string{"abc", "ghi"}
+	check(t, stringSlicesEqual(a,b), "Slices a and b should be equal.")
+	check(t, !stringSlicesEqual(a,c), "Slices a and c should not be equal.")
+	check(t, !stringSlicesEqual(a,d), "Slices a and d should not be equal.")
+}

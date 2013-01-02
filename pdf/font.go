@@ -37,3 +37,13 @@ func (font *Font) HasRune(rune rune) bool {
 func (font *Font) Height() int {
 	return font.metrics.Ascent() + -font.metrics.Descent()
 }
+
+func (font *Font) Matches(other *Font) bool {
+	return font.family == other.family &&
+		font.weight == other.weight &&
+		font.style == other.style &&
+		font.subType == other.subType &&
+		font.runeSet == other.runeSet &&
+		font.relativeSize == other.relativeSize &&
+		stringSlicesEqual(font.ranges, other.ranges)
+}

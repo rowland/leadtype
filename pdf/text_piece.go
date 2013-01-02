@@ -22,6 +22,14 @@ type TextPiece struct {
 	Tokens             int
 }
 
+func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
+	return (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
+		piece.FontSize == other.FontSize &&
+		piece.Color == other.Color &&
+		piece.Underline == other.Underline &&
+		piece.LineThrough == other.LineThrough
+}
+
 func (piece *TextPiece) IsNewLine() bool {
 	return piece.Text == "\n"
 }

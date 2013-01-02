@@ -141,3 +141,15 @@ func (s float64Slice) join(separator string) string {
 	}
 	return buf.String()
 }
+
+func stringSlicesEqual(sl1, sl2 []string) bool {
+	if len(sl1) != len(sl2) {
+		return false
+	}
+	for i, s := range sl1 {
+		if s != sl2[i] {
+			return false
+		}
+	}
+	return true
+}
