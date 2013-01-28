@@ -160,3 +160,42 @@ func TestTokenRegexp_Mixed(t *testing.T) {
 	expectS(t, "Неприкосновенность,", m[8])
 	expectS(t, "表明你已明确同意你的回答接受评估.", m[16])
 }
+
+func TestRichText_Merge(t *testing.T) {
+	afmFonts := testAfmFonts("Helvetica")
+	ttfFonts := testTtfFonts("Arial", "STSong")
+	fonts := append(afmFonts, ttfFonts...)
+	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
+	original, err := NewRichText(text, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	piece0 := *original[0]
+	merged := original.Merge()
+	// for i, p := range merged {
+	// 	fmt.Println(i, p.Text)
+	// }
+	checkFatal(t, len(merged) == 5, "length of merged should be 5")
+
+	expectS(t, "Here is some Russian, ", merged[0].Text)
+	expectF(t, 10, merged[0].FontSize)
+	check(t, merged[0].Font == fonts[0], "Should be tagged with Helvetica font.")
+
+	expectS(t, "Неприкосновенность", merged[1].Text)
+	expectF(t, 10, merged[1].FontSize)
+	check(t, merged[1].Font == fonts[1], "Should be tagged with Arial font.")
+
+	expectS(t, ", and some Chinese, ", merged[2].Text)
+	expectF(t, 10, merged[2].FontSize)
+	check(t, merged[2].Font == fonts[0], "Should be tagged with Helvetica font.")
+
+	expectS(t, "表明你已明确同意你的回答接受评估", merged[3].Text)
+	expectF(t, 10, merged[3].FontSize)
+	check(t, merged[3].Font == fonts[2], "Should be tagged with STSong font.")
+
+	expectS(t, ".", merged[4].Text)
+	expectF(t, 10, merged[4].FontSize)
+	check(t, merged[4].Font == fonts[0], "Should be tagged with Helvetica font.")
+
+	check(t, *original[0] == piece0, "Original should be unchanged.")
+}

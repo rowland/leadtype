@@ -32,6 +32,21 @@ func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options 
 	return append(richText, addedText...), nil
 }
 
+func (richText RichText) Merge() RichText {
+	mergedText := make(RichText, 0, len(richText))
+	var last *TextPiece
+	for _, piece := range richText {
+		if last != nil && piece.MatchesAttributes(last) {
+			last.Text += piece.Text
+		} else {
+			newPiece := *piece
+			mergedText = append(mergedText, &newPiece)
+			last = &newPiece
+		}
+	}
+	return mergedText
+}
+
 func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpacing float64) (richText RichText, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)
