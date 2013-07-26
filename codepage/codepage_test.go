@@ -45,6 +45,7 @@ func TestRanges_CharForCodepoint(t *testing.T) {
 }
 
 // 7.8 ns
+// 7.3 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ASCII(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ASCII.CharForCodepoint(rune(i) % 0x2122)
@@ -52,6 +53,7 @@ func BenchmarkRanges_CharForCodepoint_ASCII(b *testing.B) {
 }
 
 // 29.9 ns
+// 27.6 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1250(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1250.CharForCodepoint(rune(i) % 0x2122)
@@ -59,6 +61,7 @@ func BenchmarkRanges_CharForCodepoint_CP1250(b *testing.B) {
 }
 
 // 25.9 ns
+// 24.2 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1251(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1251.CharForCodepoint(rune(i) % 0x2122)
@@ -66,6 +69,7 @@ func BenchmarkRanges_CharForCodepoint_CP1251(b *testing.B) {
 }
 
 // 22.0 ns
+// 20.5 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1252(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1252.CharForCodepoint(rune(i) % 0x2122)
@@ -73,6 +77,7 @@ func BenchmarkRanges_CharForCodepoint_CP1252(b *testing.B) {
 }
 
 // 17.6 ns
+// 16.3 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1253(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1253.CharForCodepoint(rune(i) % 0x2122)
@@ -80,6 +85,7 @@ func BenchmarkRanges_CharForCodepoint_CP1253(b *testing.B) {
 }
 
 // 21.7 ns
+// 20.2 ns
 func BenchmarkRanges_CharForCodepoint_CP1254(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1254.CharForCodepoint(rune(i) % 0x2122)
@@ -87,6 +93,7 @@ func BenchmarkRanges_CharForCodepoint_CP1254(b *testing.B) {
 }
 
 // 26.4 ns
+// 24.2 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1256(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1256.CharForCodepoint(rune(i) % 0x2122)
@@ -94,6 +101,7 @@ func BenchmarkRanges_CharForCodepoint_CP1256(b *testing.B) {
 }
 
 // 29.9 ns
+// 27.4 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1257(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1257.CharForCodepoint(rune(i) % 0x2122)
@@ -101,6 +109,7 @@ func BenchmarkRanges_CharForCodepoint_CP1257(b *testing.B) {
 }
 
 // 25.4 ns
+// 23.5 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP1258(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP1258.CharForCodepoint(rune(i) % 0x2122)
@@ -108,6 +117,7 @@ func BenchmarkRanges_CharForCodepoint_CP1258(b *testing.B) {
 }
 
 // 16.3 ns
+// 15.1 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_CP874(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CP874.CharForCodepoint(rune(i) % 0x2122)
@@ -115,6 +125,7 @@ func BenchmarkRanges_CharForCodepoint_CP874(b *testing.B) {
 }
 
 // 8.2 ns
+// 7.3 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_1.CharForCodepoint(rune(i) % 0x2122)
@@ -122,6 +133,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_1(b *testing.B) {
 }
 
 // 30.2 ns
+// 28.2 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_2.CharForCodepoint(rune(i) % 0x2122)
@@ -129,6 +141,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_2(b *testing.B) {
 }
 
 // 26.8 ns
+// 24.7 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_3(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_3.CharForCodepoint(rune(i) % 0x2122)
@@ -136,6 +149,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_3(b *testing.B) {
 }
 
 // 30.3 ns
+// 28.8 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_4.CharForCodepoint(rune(i) % 0x2122)
@@ -143,6 +157,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_4(b *testing.B) {
 }
 
 // 17.8 ns
+// 16.4 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_5(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_5.CharForCodepoint(rune(i) % 0x2122)
@@ -150,6 +165,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_5(b *testing.B) {
 }
 
 // 17.9 ns
+// 18.3 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_6(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_6.CharForCodepoint(rune(i) % 0x2122)
@@ -157,6 +173,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_6(b *testing.B) {
 }
 
 // 18.1 ns
+// 24.8 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_7(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_7.CharForCodepoint(rune(i) % 0x2122)
@@ -164,6 +181,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_7(b *testing.B) {
 }
 
 // 14.3 ns
+// 14.4 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_8(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_8.CharForCodepoint(rune(i) % 0x2122)
@@ -171,6 +189,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_8(b *testing.B) {
 }
 
 // 18.5 ns
+// 18.4 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_9(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_9.CharForCodepoint(rune(i) % 0x2122)
@@ -178,6 +197,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_9(b *testing.B) {
 }
 
 // 29.9 ns
+// 29.0 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_10(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_10.CharForCodepoint(rune(i) % 0x2122)
@@ -185,6 +205,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_10(b *testing.B) {
 }
 
 // 10.7 ns
+// 11.5 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_11(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_11.CharForCodepoint(rune(i) % 0x2122)
@@ -192,6 +213,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_11(b *testing.B) {
 }
 
 // 26.0 ns
+// 26.3 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_13(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_13.CharForCodepoint(rune(i) % 0x2122)
@@ -199,6 +221,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_13(b *testing.B) {
 }
 
 // 21.6 ns
+// 21.8 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_14(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_14.CharForCodepoint(rune(i) % 0x2122)
@@ -206,6 +229,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_14(b *testing.B) {
 }
 
 // 18.1 ns
+// 17.7 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_15(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_15.CharForCodepoint(rune(i) % 0x2122)
@@ -213,6 +237,7 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_15(b *testing.B) {
 }
 
 // 25.7 ns
+// 25.6 ns go1.1.1
 func BenchmarkRanges_CharForCodepoint_ISO_8859_16(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ISO_8859_16.CharForCodepoint(rune(i) % 0x2122)
@@ -270,6 +295,7 @@ func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
 }
 
 // 26.1 ns
+// 25.2 ns go1.1.1
 func BenchmarkCodepageRanges_CodepageForCodepoint(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CodepointCodepages.CodepageForCodepoint(rune(i) % 0x2122)
