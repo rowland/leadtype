@@ -35,6 +35,7 @@ func TestFont_Matches(t *testing.T) {
 }
 
 // 55.2 ns
+// 46.1 ns go1.1.1
 func BenchmarkFont_HasRune(b *testing.B) {
 	b.StopTimer()
 	arial, err := ttf.LoadFont("/Library/Fonts/Arial.ttf")

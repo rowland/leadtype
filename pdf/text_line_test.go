@@ -67,6 +67,7 @@ func textLineBenchmarkText() RichText {
 }
 
 // 201 ns
+// 58.2 ns go1.1.1
 func BenchmarkTextLine_Ascent(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -79,6 +80,7 @@ func BenchmarkTextLine_Ascent(b *testing.B) {
 }
 
 // 221 ns
+// 93.4 ns go1.1.1
 func BenchmarkTextLine_Chars(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -91,6 +93,7 @@ func BenchmarkTextLine_Chars(b *testing.B) {
 }
 
 // 200 ns
+// 51.9 ns go1.1.1
 func BenchmarkTextLine_Descent(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -103,6 +106,7 @@ func BenchmarkTextLine_Descent(b *testing.B) {
 }
 
 // 198 ns
+// 57.8 ns go1.1.1
 func BenchmarkTextLine_Height(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -115,6 +119,7 @@ func BenchmarkTextLine_Height(b *testing.B) {
 }
 
 // 221 ns
+// 82.4 ns go1.1.1
 func BenchmarkTextLine_Tokens(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()
@@ -127,6 +132,7 @@ func BenchmarkTextLine_Tokens(b *testing.B) {
 }
 
 // 247 ns
+// 102 ns go1.1.1
 func BenchmarkTextLine_Width(b *testing.B) {
 	b.StopTimer()
 	text := textLineBenchmarkText()

@@ -121,6 +121,7 @@ func TestTextPiece_measure(t *testing.T) {
 }
 
 // 75.5 ns
+// 76.9 ns go1.1.1
 func BenchmarkTextPiece_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
@@ -137,6 +138,7 @@ func BenchmarkTextPiece_IsWhiteSpace(b *testing.B) {
 }
 
 // 345 ns
+// 301 ns go1.1.1
 func BenchmarkTextPiece_measure(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
