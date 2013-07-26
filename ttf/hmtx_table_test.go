@@ -72,6 +72,7 @@ func TestHmtxTable_lookup_Courier(t *testing.T) {
 }
 
 // 9.4 ns
+// 16.7 ns go1.1.1
 func BenchmarkLookup_LongHorMetric(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -86,6 +87,7 @@ func BenchmarkLookup_LongHorMetric(b *testing.B) {
 
 // 7.7 ns
 // 5.5 ns
+// 11.6 ns go1.1.1
 func BenchmarkLookupAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -100,6 +102,7 @@ func BenchmarkLookupAdvanceWidth(b *testing.B) {
 
 // 7.4 ns
 // 8.8 ns
+// 16.6 ns go1.1.1
 func BenchmarkLookupLeftSideBearing(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")

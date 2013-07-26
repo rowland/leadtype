@@ -17,6 +17,7 @@ func TestCodepointRanges_RangeByName(t *testing.T) {
 }
 
 // 23.2 ns
+// 21.2 ns go1.1.1
 func BenchmarkRangeForRune(b *testing.B) {
 	count := 0
 	for i := 0; i < b.N; i++ {
@@ -32,6 +33,7 @@ func BenchmarkRangeForRune(b *testing.B) {
 }
 
 // 98 ns
+// 43.8 ns go1.1.1
 func BenchmarkRangeByName(b *testing.B) {
 	count := 0
 	for i := 0; i < b.N; i++ {
