@@ -20,6 +20,8 @@ type TextPiece struct {
 	Width              float64
 	Chars              int
 	Tokens             int
+	CharSpacing        float64
+	WordSpacing        float64
 }
 
 func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {

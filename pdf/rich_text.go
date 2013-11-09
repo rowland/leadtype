@@ -22,6 +22,8 @@ func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options 
 		Color:       options.ColorDefault("color", Black),
 		Underline:   options.BoolDefault("underline", false),
 		LineThrough: options.BoolDefault("line_through", false),
+		CharSpacing: options.FloatDefault("char_spacing", 0),
+		WordSpacing: options.FloatDefault("word_spacing", 0),
 	}
 	charSpacing := options.FloatDefault("char_spacing", 0)
 	wordSpacing := options.FloatDefault("word_spacing", 0)
