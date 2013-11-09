@@ -45,7 +45,7 @@ func (piece *TextPiece) IsWhiteSpace() bool {
 	return len(piece.Text) > 0
 }
 
-func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
+func (piece *TextPiece) measure() *TextPiece {
 	piece.Chars, piece.Width = 0, 0
 	metrics := piece.Font.metrics
 	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
@@ -57,9 +57,9 @@ func (piece *TextPiece) measure(charSpacing, wordSpacing float64) *TextPiece {
 	for _, rune := range piece.Text {
 		piece.Chars += 1
 		runeWidth, _ := metrics.AdvanceWidth(rune)
-		piece.Width += (fsize * float64(runeWidth)) + charSpacing
+		piece.Width += (fsize * float64(runeWidth)) + piece.CharSpacing
 		if unicode.IsSpace(rune) {
-			piece.Width += wordSpacing
+			piece.Width += piece.WordSpacing
 		}
 	}
 	piece.Tokens = 1

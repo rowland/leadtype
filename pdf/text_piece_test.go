@@ -109,7 +109,7 @@ func TestTextPiece_IsWhiteSpace(t *testing.T) {
 
 func TestTextPiece_measure(t *testing.T) {
 	piece := textPieceTestText()
-	piece.measure(0, 0)
+	piece.measure()
 	expectNFdelta(t, "Ascent", 9.052734, piece.Ascent, 0.001)
 	expectNFdelta(t, "Descent", -2.119141, piece.Descent, 0.001)
 	expectNFdelta(t, "Height", 11.171875, piece.Height, 0.001)
@@ -150,6 +150,6 @@ func BenchmarkTextPiece_measure(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		piece.measure(0, 0)
+		piece.measure()
 	}
 }

@@ -5,7 +5,6 @@ package pdf
 
 import (
 	"fmt"
-	"regexp"
 )
 
 type RichText []*TextPiece
@@ -64,8 +63,8 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpa
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
 					newPiece.Font = font
-					tokens := wordbreakTextPiece(&newPiece, charSpacing, wordSpacing)
-					richText = append(richText, tokens...)
+					newPiece.measure()
+					richText = append(richText, &newPiece)
 				} else {
 					var newPieces RichText
 					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:], charSpacing, wordSpacing)
@@ -81,30 +80,13 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpa
 		newPiece.Text = piece.Text[start:]
 		if inFont {
 			newPiece.Font = font
-			tokens := wordbreakTextPiece(&newPiece, charSpacing, wordSpacing)
-			richText = append(richText, tokens...)
+			newPiece.measure()
+			richText = append(richText, &newPiece)
 		} else {
 			var newPieces RichText
 			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:], charSpacing, wordSpacing)
 			richText = append(richText, newPieces...)
 		}
-	}
-	return
-}
-
-var TokenRegexp = regexp.MustCompile(`\n|\t|\s|\S+-+|\S+`)
-
-func wordbreakTextPiece(piece *TextPiece, charSpacing, wordSpacing float64) (richText RichText) {
-	tokens := TokenRegexp.FindAllString(piece.Text, -1)
-	if len(tokens) <= 1 {
-		piece.measure(charSpacing, wordSpacing)
-		return RichText{piece}
-	}
-	for _, token := range tokens {
-		newPiece := *piece
-		newPiece.Text = token
-		piece.measure(charSpacing, wordSpacing)
-		richText = append(richText, &newPiece)
 	}
 	return
 }
