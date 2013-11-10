@@ -140,6 +140,16 @@ func BenchmarkNewRichText(b *testing.B) {
 	}
 }
 
+func TestRichText_Len(t *testing.T) {
+	st := SuperTest{t}
+	rt := RichText{
+		{Text: "Hello"},
+		{Text: " "},
+		{Text: "World"},
+	}
+	st.Equal(11, rt.Len())
+}
+
 func TestRichText_Merge(t *testing.T) {
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")

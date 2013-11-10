@@ -33,6 +33,14 @@ func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options 
 	return append(richText, addedText...), nil
 }
 
+func (richText RichText) Len() int {
+	result := 0
+	for i := 0; i < len(richText); i++ {
+		result += len(richText[i].Text)
+	}
+	return result
+}
+
 func (richText RichText) Merge() RichText {
 	mergedText := make(RichText, 0, len(richText))
 	var last *TextPiece
