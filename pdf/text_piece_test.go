@@ -15,6 +15,8 @@ func textPieceTestText() *TextPiece {
 }
 
 func TestTextPiece_MatchesAttributes(t *testing.T) {
+	st := SuperTest{t}
+
 	font := testTtfFonts("Arial")[0]
 	p1 := TextPiece{
 		Text:     "Lorem",
@@ -22,25 +24,33 @@ func TestTextPiece_MatchesAttributes(t *testing.T) {
 		FontSize: 10,
 	}
 	p2 := p1
-	check(t, p1.MatchesAttributes(&p2), "Attributes should match.")
+	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
 
 	p2.Font = testTtfFonts("Arial")[0]
-	check(t, p1.MatchesAttributes(&p2), "Attributes should match.")
+	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
 
 	p2.FontSize = 12
-	check(t, !p1.MatchesAttributes(&p2), "Attributes should not match.")
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1
 	p2.Color = Azure
-	check(t, !p1.MatchesAttributes(&p2), "Attributes should not match.")
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1
 	p2.Underline = true
-	check(t, !p1.MatchesAttributes(&p2), "Attributes should not match.")
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1
 	p2.LineThrough = true
-	check(t, !p1.MatchesAttributes(&p2), "Attributes should not match.")
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.CharSpacing = 1
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.WordSpacing = 1
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 }
 
 func TestTextPiece_IsNewLine(t *testing.T) {

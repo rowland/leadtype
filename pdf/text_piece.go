@@ -29,7 +29,9 @@ func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
 		piece.FontSize == other.FontSize &&
 		piece.Color == other.Color &&
 		piece.Underline == other.Underline &&
-		piece.LineThrough == other.LineThrough
+		piece.LineThrough == other.LineThrough &&
+		piece.CharSpacing == other.CharSpacing &&
+		piece.WordSpacing == other.WordSpacing
 }
 
 func (piece *TextPiece) IsNewLine() bool {
