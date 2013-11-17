@@ -3,7 +3,10 @@
 
 package pdf
 
-import "unicode"
+import (
+	"fmt"
+	"unicode"
+)
 
 type TextPiece struct {
 	Text               string
@@ -22,16 +25,40 @@ type TextPiece struct {
 	Tokens             int
 	CharSpacing        float64
 	WordSpacing        float64
+	Pieces             []*TextPiece
 }
 
-func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
-	return (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
-		piece.FontSize == other.FontSize &&
-		piece.Color == other.Color &&
-		piece.Underline == other.Underline &&
-		piece.LineThrough == other.LineThrough &&
-		piece.CharSpacing == other.CharSpacing &&
-		piece.WordSpacing == other.WordSpacing
+func NewTextPiece(s string, fonts []*Font, fontSize float64, options Options) (*TextPiece, error) {
+	piece := &TextPiece{
+		Text:        s,
+		FontSize:    fontSize,
+		Color:       options.ColorDefault("color", Black),
+		Underline:   options.BoolDefault("underline", false),
+		LineThrough: options.BoolDefault("line_through", false),
+		CharSpacing: options.FloatDefault("char_spacing", 0),
+		WordSpacing: options.FloatDefault("word_spacing", 0),
+	}
+	pieces, err := piece.splitByFont(fonts)
+	if err != nil {
+		return nil, err
+	}
+	if len(pieces) == 1 {
+		return pieces[0], nil
+	}
+	return &TextPiece{Pieces: pieces}, nil
+}
+
+func (richText *TextPiece) Add(s string, fonts []*Font, fontSize float64, options Options) (*TextPiece, error) {
+	piece, err := NewTextPiece(s, fonts, fontSize, options)
+	if err != nil {
+		return richText, err
+	}
+	if len(richText.Pieces) > 0 {
+		richText.Pieces = append(richText.Pieces, piece)
+	} else {
+		richText = &TextPiece{Pieces: []*TextPiece{richText, piece}}
+	}
+	return richText, nil
 }
 
 func (piece *TextPiece) IsNewLine() bool {
@@ -45,6 +72,16 @@ func (piece *TextPiece) IsWhiteSpace() bool {
 		}
 	}
 	return len(piece.Text) > 0
+}
+
+func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
+	return (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
+		piece.FontSize == other.FontSize &&
+		piece.Color == other.Color &&
+		piece.Underline == other.Underline &&
+		piece.LineThrough == other.LineThrough &&
+		piece.CharSpacing == other.CharSpacing &&
+		piece.WordSpacing == other.WordSpacing
 }
 
 func (piece *TextPiece) measure() *TextPiece {
@@ -66,4 +103,47 @@ func (piece *TextPiece) measure() *TextPiece {
 	}
 	piece.Tokens = 1
 	return piece
+}
+
+func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err error) {
+	if len(fonts) == 0 {
+		return nil, fmt.Errorf("No font found for %s.", piece.Text)
+	}
+	font := fonts[0]
+	start := 0
+	inFont := false
+	for index, rune := range piece.Text {
+		runeInFont := font.HasRune(rune)
+		if runeInFont != inFont {
+			if index > start {
+				newPiece := *piece
+				newPiece.Text = piece.Text[start:index]
+				if inFont {
+					newPiece.Font = font
+					newPiece.measure()
+					pieces = append(pieces, &newPiece)
+				} else {
+					var newPieces RichText
+					newPieces, err = newPiece.splitByFont(fonts[1:])
+					pieces = append(pieces, newPieces...)
+				}
+			}
+			inFont = runeInFont
+			start = index
+		}
+	}
+	if len(piece.Text) > start {
+		newPiece := *piece
+		newPiece.Text = piece.Text[start:]
+		if inFont {
+			newPiece.Font = font
+			newPiece.measure()
+			pieces = append(pieces, &newPiece)
+		} else {
+			var newPieces RichText
+			newPieces, err = newPiece.splitByFont(fonts[1:])
+			pieces = append(pieces, newPieces...)
+		}
+	}
+	return
 }

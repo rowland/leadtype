@@ -186,5 +186,5 @@ func TestRichText_Merge(t *testing.T) {
 	expectF(t, 10, merged[4].FontSize)
 	check(t, merged[4].Font == fonts[0], "Should be tagged with Helvetica font.")
 
-	check(t, *original[0] == piece0, "Original should be unchanged.")
+	check(t, original[0].Text == piece0.Text, "Original should be unchanged.")
 }

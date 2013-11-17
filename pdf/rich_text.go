@@ -24,9 +24,7 @@ func (richText RichText) Add(s string, fonts []*Font, fontSize float64, options 
 		CharSpacing: options.FloatDefault("char_spacing", 0),
 		WordSpacing: options.FloatDefault("word_spacing", 0),
 	}
-	charSpacing := options.FloatDefault("char_spacing", 0)
-	wordSpacing := options.FloatDefault("word_spacing", 0)
-	addedText, err := richTextFromTextPiece(piece, fonts, charSpacing, wordSpacing)
+	addedText, err := richTextFromTextPiece(piece, fonts)
 	if err != nil {
 		return richText, err
 	}
@@ -56,7 +54,7 @@ func (richText RichText) Merge() RichText {
 	return mergedText
 }
 
-func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpacing float64) (richText RichText, err error) {
+func richTextFromTextPiece(piece *TextPiece, fonts []*Font) (richText RichText, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)
 	}
@@ -75,7 +73,7 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpa
 					richText = append(richText, &newPiece)
 				} else {
 					var newPieces RichText
-					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:], charSpacing, wordSpacing)
+					newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
 					richText = append(richText, newPieces...)
 				}
 			}
@@ -92,7 +90,7 @@ func richTextFromTextPiece(piece *TextPiece, fonts []*Font, charSpacing, wordSpa
 			richText = append(richText, &newPiece)
 		} else {
 			var newPieces RichText
-			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:], charSpacing, wordSpacing)
+			newPieces, err = richTextFromTextPiece(&newPiece, fonts[1:])
 			richText = append(richText, newPieces...)
 		}
 	}
