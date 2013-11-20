@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"bytes"
 	"fmt"
 	"unicode"
 )
@@ -25,6 +26,7 @@ type TextPiece struct {
 	Tokens             int
 	CharSpacing        float64
 	WordSpacing        float64
+	NoBreak            bool
 	Pieces             []*TextPiece
 }
 
@@ -48,17 +50,29 @@ func NewTextPiece(s string, fonts []*Font, fontSize float64, options Options) (*
 	return &TextPiece{Pieces: pieces}, nil
 }
 
-func (richText *TextPiece) Add(s string, fonts []*Font, fontSize float64, options Options) (*TextPiece, error) {
-	piece, err := NewTextPiece(s, fonts, fontSize, options)
+func (piece *TextPiece) Add(s string, fonts []*Font, fontSize float64, options Options) (*TextPiece, error) {
+	p, err := NewTextPiece(s, fonts, fontSize, options)
 	if err != nil {
-		return richText, err
+		return piece, err
 	}
-	if len(richText.Pieces) > 0 {
-		richText.Pieces = append(richText.Pieces, piece)
+	if len(piece.Pieces) > 0 {
+		piece.Pieces = append(piece.Pieces, p)
 	} else {
-		richText = &TextPiece{Pieces: []*TextPiece{richText, piece}}
+		piece = &TextPiece{Pieces: []*TextPiece{piece, p}}
 	}
-	return richText, nil
+	return piece, nil
+}
+
+func (piece *TextPiece) Count() int {
+	result := 1
+	for _, p := range piece.Pieces {
+		result += p.Count()
+	}
+	return result
+}
+
+func (piece *TextPiece) IsLeaf() bool {
+	return len(piece.Pieces) == 0
 }
 
 func (piece *TextPiece) IsNewLine() bool {
@@ -74,8 +88,16 @@ func (piece *TextPiece) IsWhiteSpace() bool {
 	return len(piece.Text) > 0
 }
 
+func (piece *TextPiece) Len() int {
+	result := 0
+	for i := 0; i < len(piece.Pieces); i++ {
+		result += len(piece.Pieces[i].Text)
+	}
+	return result
+}
+
 func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
-	return (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
+	return (piece.Font != nil && other.Font != nil) && (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
 		piece.FontSize == other.FontSize &&
 		piece.Color == other.Color &&
 		piece.Underline == other.Underline &&
@@ -105,6 +127,39 @@ func (piece *TextPiece) measure() *TextPiece {
 	return piece
 }
 
+func (piece *TextPiece) Merge() *TextPiece {
+	if len(piece.Pieces) == 0 {
+		return piece
+	}
+
+	flattened := make([]*TextPiece, 0, len(piece.Pieces))
+	for _, p := range piece.Pieces {
+		pm := p.Merge()
+		if pm.IsLeaf() || pm.NoBreak {
+			flattened = append(flattened, pm)
+		} else {
+			flattened = append(flattened, pm.Pieces...)
+		}
+	}
+
+	mergedText := *piece
+	mergedText.Pieces = make([]*TextPiece, 0, len(piece.Pieces))
+	var last *TextPiece
+	for _, p := range flattened {
+		if last != nil && p.MatchesAttributes(last) {
+			last.Text += p.Text
+		} else {
+			newPiece := *p
+			mergedText.Pieces = append(mergedText.Pieces, &newPiece)
+			last = &newPiece
+		}
+	}
+	if len(mergedText.Pieces) == 1 {
+		return mergedText.Pieces[0]
+	}
+	return &mergedText
+}
+
 func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)
@@ -123,7 +178,7 @@ func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err err
 					newPiece.measure()
 					pieces = append(pieces, &newPiece)
 				} else {
-					var newPieces RichText
+					var newPieces []*TextPiece
 					newPieces, err = newPiece.splitByFont(fonts[1:])
 					pieces = append(pieces, newPieces...)
 				}
@@ -140,10 +195,25 @@ func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err err
 			newPiece.measure()
 			pieces = append(pieces, &newPiece)
 		} else {
-			var newPieces RichText
+			var newPieces []*TextPiece
 			newPieces, err = newPiece.splitByFont(fonts[1:])
 			pieces = append(pieces, newPieces...)
 		}
 	}
 	return
+}
+
+func (piece *TextPiece) String() string {
+	var buf bytes.Buffer
+	piece.VisitAll(func(p *TextPiece) {
+		buf.WriteString(p.Text)
+	})
+	return buf.String()
+}
+
+func (piece *TextPiece) VisitAll(fn func(*TextPiece)) {
+	fn(piece)
+	for _, p := range piece.Pieces {
+		p.VisitAll(fn)
+	}
 }
