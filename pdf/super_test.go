@@ -1,6 +1,7 @@
 package pdf
 
 import (
+	"math"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -9,6 +10,12 @@ import (
 
 type SuperTest struct {
 	*testing.T
+}
+
+func (st *SuperTest) AlmostEqual(expected, actual, delta float64, msg ...string) {
+	if math.Abs(expected-actual) > delta {
+		st.fail(expected, actual, false, msg...)
+	}
 }
 
 func (st *SuperTest) Equal(expected interface{}, actual interface{}, msg ...string) {

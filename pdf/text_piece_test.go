@@ -130,6 +130,47 @@ func TestNewTextPiece_ChineseAndEnglish_Reversed(t *testing.T) {
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
 }
 
+func textPieceMixedText() *TextPiece {
+	fonts := testTtfFonts("Arial", "STSong")
+	rt, err := NewTextPiece("abc所有测def", fonts, 10, Options{})
+	if err != nil {
+		panic(err)
+	}
+	return rt
+}
+
+func TestTextPiece_Ascent(t *testing.T) {
+	st := SuperTest{t}
+	p := new(TextPiece)
+	st.Equal(0.0, p.Ascent())
+	p = textPieceMixedText()
+	st.AlmostEqual(9.052734, p.Ascent(), 0.001)
+}
+
+func TestTextPiece_Chars(t *testing.T) {
+	st := SuperTest{t}
+	p := new(TextPiece)
+	st.Equal(0, p.Chars())
+	p = textPieceMixedText()
+	st.Equal(9, p.Chars())
+}
+
+func TestTextPiece_Descent(t *testing.T) {
+	st := SuperTest{t}
+	p := new(TextPiece)
+	st.Equal(0.0, p.Descent())
+	p = textPieceMixedText()
+	st.AlmostEqual(-2.119141, p.Descent(), 0.001)
+}
+
+func TestTextPiece_Height(t *testing.T) {
+	st := SuperTest{t}
+	p := new(TextPiece)
+	st.Equal(0.0, p.Height())
+	p = textPieceMixedText()
+	st.AlmostEqual(11.171875, p.Height(), 0.001)
+}
+
 func TestTextPiece_MatchesAttributes(t *testing.T) {
 	st := SuperTest{t}
 
@@ -354,6 +395,14 @@ func TestTextPiece_String(t *testing.T) {
 	st.Equal(text, rt.String())
 }
 
+func TestTextPiece_Width(t *testing.T) {
+	st := SuperTest{t}
+	p := new(TextPiece)
+	st.Equal(0.0, p.Width())
+	p = textPieceMixedText()
+	st.AlmostEqual(60.024414, p.Width(), 0.001)
+}
+
 // 14,930 ns go1.1.2
 func BenchmarkNewTextPiece(b *testing.B) {
 	b.StopTimer()
@@ -402,5 +451,99 @@ func BenchmarkTextPiece_measure(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		piece.measure()
+	}
+}
+
+func textPieceBenchmarkText() *TextPiece {
+	const text = "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
+
+	afmFonts := testAfmFonts("Helvetica")
+	ttfFonts := testTtfFonts("Arial", "STSong")
+	fonts := append(afmFonts, ttfFonts...)
+
+	rt, err := NewTextPiece(text, fonts, 10, Options{})
+	if err != nil {
+		panic(err)
+	}
+	return rt
+}
+
+func BenchmarkTextPiece_Ascent(b *testing.B) {
+	b.StopTimer()
+	text := textPieceBenchmarkText()
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		text.ascent = 0
+		text.pieces[0].ascent = 0
+		text.pieces[1].ascent = 0
+		text.pieces[2].ascent = 0
+		text.pieces[3].ascent = 0
+		text.pieces[4].ascent = 0
+		text.Ascent()
+	}
+}
+
+func BenchmarkTextPiece_Chars(b *testing.B) {
+	b.StopTimer()
+	text := textPieceBenchmarkText()
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		text.chars = 0
+		text.pieces[0].chars = 0
+		text.pieces[1].chars = 0
+		text.pieces[2].chars = 0
+		text.pieces[3].chars = 0
+		text.pieces[4].chars = 0
+		text.Chars()
+	}
+}
+
+func BenchmarkTextPiece_Descent(b *testing.B) {
+	b.StopTimer()
+	text := textPieceBenchmarkText()
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		text.descent = 0
+		text.pieces[0].descent = 0
+		text.pieces[1].descent = 0
+		text.pieces[2].descent = 0
+		text.pieces[3].descent = 0
+		text.pieces[4].descent = 0
+		text.Descent()
+	}
+}
+
+func BenchmarkTextPiece_Height(b *testing.B) {
+	b.StopTimer()
+	text := textPieceBenchmarkText()
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		text.height = 0
+		text.pieces[0].height = 0
+		text.pieces[1].height = 0
+		text.pieces[2].height = 0
+		text.pieces[3].height = 0
+		text.pieces[4].height = 0
+		text.Height()
+	}
+}
+
+func BenchmarkTextPiece_Width(b *testing.B) {
+	b.StopTimer()
+	text := textPieceBenchmarkText()
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		text.width = 0
+		text.pieces[0].width = 0
+		text.pieces[1].width = 0
+		text.pieces[2].width = 0
+		text.pieces[3].width = 0
+		text.pieces[4].width = 0
+		text.Width()
 	}
 }

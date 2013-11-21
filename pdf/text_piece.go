@@ -63,12 +63,69 @@ func (piece *TextPiece) Add(s string, fonts []*Font, fontSize float64, options O
 	return piece, nil
 }
 
+func (piece *TextPiece) Ascent() float64 {
+	if piece.ascent == 0.0 {
+		if piece.IsLeaf() {
+			return piece.measure().ascent
+		}
+		for _, p := range piece.pieces {
+			ascent := p.Ascent()
+			if ascent > piece.ascent {
+				piece.ascent = ascent
+			}
+		}
+	}
+	return piece.ascent
+}
+
+func (piece *TextPiece) Chars() int {
+	if piece.chars == 0 {
+		if piece.IsLeaf() {
+			return piece.measure().chars
+		}
+		for _, p := range piece.pieces {
+			piece.chars += p.Chars()
+		}
+	}
+	return piece.chars
+}
+
 func (piece *TextPiece) Count() int {
 	result := 1
 	for _, p := range piece.pieces {
 		result += p.Count()
 	}
 	return result
+}
+
+func (piece *TextPiece) Descent() float64 {
+	if piece.descent == 0.0 {
+		if piece.IsLeaf() {
+			return piece.measure().descent
+		}
+		for _, p := range piece.pieces {
+			descent := p.Descent()
+			if descent < piece.descent {
+				piece.descent = descent
+			}
+		}
+	}
+	return piece.descent
+}
+
+func (piece *TextPiece) Height() float64 {
+	if piece.height == 0.0 {
+		if piece.IsLeaf() {
+			return piece.measure().descent
+		}
+		for _, p := range piece.pieces {
+			height := p.Height()
+			if height > piece.height {
+				piece.height = height
+			}
+		}
+	}
+	return piece.height
 }
 
 func (piece *TextPiece) IsLeaf() bool {
@@ -107,6 +164,9 @@ func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
 }
 
 func (piece *TextPiece) measure() *TextPiece {
+	if piece.Font == nil {
+		return piece
+	}
 	piece.chars, piece.width = 0, 0
 	metrics := piece.Font.metrics
 	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
@@ -215,4 +275,16 @@ func (piece *TextPiece) VisitAll(fn func(*TextPiece)) {
 	for _, p := range piece.pieces {
 		p.VisitAll(fn)
 	}
+}
+
+func (piece *TextPiece) Width() float64 {
+	if piece.width == 0.0 {
+		if piece.IsLeaf() {
+			return piece.measure().width
+		}
+		for _, p := range piece.pieces {
+			piece.width += p.Width()
+		}
+	}
+	return piece.width
 }
