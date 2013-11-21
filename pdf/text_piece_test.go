@@ -46,29 +46,29 @@ func TestNewTextPiece_EnglishAndChinese_Pass(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.Equal(3, len(rt.Pieces))
+	st.Equal(3, len(rt.pieces))
 
-	st.Equal("abc", rt.Pieces[0].Text)
-	st.Equal(10.0, rt.Pieces[0].FontSize)
-	st.Equal(Black, rt.Pieces[0].Color, "Color should be (default) black.")
-	st.False(rt.Pieces[0].Underline, "Underline should be (default) false.")
-	st.False(rt.Pieces[0].LineThrough, "LineThrough should be (default) false.")
+	st.Equal("abc", rt.pieces[0].Text)
+	st.Equal(10.0, rt.pieces[0].FontSize)
+	st.Equal(Black, rt.pieces[0].Color, "Color should be (default) black.")
+	st.False(rt.pieces[0].Underline, "Underline should be (default) false.")
+	st.False(rt.pieces[0].LineThrough, "LineThrough should be (default) false.")
 
-	st.Equal("所有测", rt.Pieces[1].Text)
-	st.Equal(10.0, rt.Pieces[1].FontSize)
-	st.Equal(Black, rt.Pieces[1].Color, "Color should be (default) black.")
-	st.False(rt.Pieces[1].Underline, "Underline should be (default) false.")
-	st.False(rt.Pieces[1].LineThrough, "LineThrough should be (default) false.")
+	st.Equal("所有测", rt.pieces[1].Text)
+	st.Equal(10.0, rt.pieces[1].FontSize)
+	st.Equal(Black, rt.pieces[1].Color, "Color should be (default) black.")
+	st.False(rt.pieces[1].Underline, "Underline should be (default) false.")
+	st.False(rt.pieces[1].LineThrough, "LineThrough should be (default) false.")
 
-	st.Equal("def", rt.Pieces[2].Text)
-	st.Equal(10.0, rt.Pieces[2].FontSize)
-	st.Equal(Black, rt.Pieces[2].Color, "Color should be (default) black.")
-	st.False(rt.Pieces[2].Underline, "Underline should be (default) false.")
-	st.False(rt.Pieces[2].LineThrough, "LineThrough should be (default) false.")
+	st.Equal("def", rt.pieces[2].Text)
+	st.Equal(10.0, rt.pieces[2].FontSize)
+	st.Equal(Black, rt.pieces[2].Color, "Color should be (default) black.")
+	st.False(rt.pieces[2].Underline, "Underline should be (default) false.")
+	st.False(rt.pieces[2].LineThrough, "LineThrough should be (default) false.")
 
-	st.Equal(fonts[0], rt.Pieces[0].Font, "abc should be tagged with Arial font.")
-	st.Equal(fonts[1], rt.Pieces[1].Font, "Chinese should be tagged with STSong font.")
-	st.Equal(fonts[0], rt.Pieces[2].Font, "def should be tagged with Arial font.")
+	st.Equal(fonts[0], rt.pieces[0].Font, "abc should be tagged with Arial font.")
+	st.Equal(fonts[1], rt.pieces[1].Font, "Chinese should be tagged with STSong font.")
+	st.Equal(fonts[0], rt.pieces[2].Font, "def should be tagged with Arial font.")
 }
 
 func TestNewTextPiece_ChineseAndEnglish(t *testing.T) {
@@ -78,13 +78,13 @@ func TestNewTextPiece_ChineseAndEnglish(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.MustEqual(2, len(rt.Pieces))
-	st.Equal("所有测", rt.Pieces[0].Text)
-	st.Equal(10.0, rt.Pieces[0].FontSize)
-	st.Equal("abc", rt.Pieces[1].Text)
-	st.Equal(10.0, rt.Pieces[1].FontSize)
-	st.Equal(fonts[1], rt.Pieces[0].Font, "Should be tagged with Arial font.")
-	st.Equal(fonts[0], rt.Pieces[1].Font, "Should be tagged with STSong font.")
+	st.MustEqual(2, len(rt.pieces))
+	st.Equal("所有测", rt.pieces[0].Text)
+	st.Equal(10.0, rt.pieces[0].FontSize)
+	st.Equal("abc", rt.pieces[1].Text)
+	st.Equal(10.0, rt.pieces[1].FontSize)
+	st.Equal(fonts[1], rt.pieces[0].Font, "Should be tagged with Arial font.")
+	st.Equal(fonts[0], rt.pieces[1].Font, "Should be tagged with STSong font.")
 }
 
 func TestNewTextPiece_EnglishRussianAndChineseLanguages(t *testing.T) {
@@ -97,22 +97,22 @@ func TestNewTextPiece_EnglishRussianAndChineseLanguages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.MustEqual(5, len(rt.Pieces))
-	st.Equal("Here is some Russian, ", rt.Pieces[0].Text)
-	st.Equal(10.0, rt.Pieces[0].FontSize)
-	st.Equal("Неприкосновенность", rt.Pieces[1].Text)
-	st.Equal(10.0, rt.Pieces[1].FontSize)
-	st.Equal(", and some Chinese, ", rt.Pieces[2].Text)
-	st.Equal(10.0, rt.Pieces[2].FontSize)
-	st.Equal("表明你已明确同意你的回答接受评估", rt.Pieces[3].Text)
-	st.Equal(10.0, rt.Pieces[3].FontSize)
-	st.Equal(".", rt.Pieces[4].Text)
-	st.Equal(10.0, rt.Pieces[4].FontSize)
-	st.Equal(fonts[0], rt.Pieces[0].Font, "Should be tagged with Helvetica font.")
-	st.Equal(fonts[1], rt.Pieces[1].Font, "Should be tagged with Arial font.")
-	st.Equal(fonts[0], rt.Pieces[2].Font, "Should be tagged with Helvetica font.")
-	st.Equal(fonts[2], rt.Pieces[3].Font, "Should be tagged with STSong font.")
-	st.Equal(fonts[0], rt.Pieces[4].Font, "Should be tagged with Helvetica font.")
+	st.MustEqual(5, len(rt.pieces))
+	st.Equal("Here is some Russian, ", rt.pieces[0].Text)
+	st.Equal(10.0, rt.pieces[0].FontSize)
+	st.Equal("Неприкосновенность", rt.pieces[1].Text)
+	st.Equal(10.0, rt.pieces[1].FontSize)
+	st.Equal(", and some Chinese, ", rt.pieces[2].Text)
+	st.Equal(10.0, rt.pieces[2].FontSize)
+	st.Equal("表明你已明确同意你的回答接受评估", rt.pieces[3].Text)
+	st.Equal(10.0, rt.pieces[3].FontSize)
+	st.Equal(".", rt.pieces[4].Text)
+	st.Equal(10.0, rt.pieces[4].FontSize)
+	st.Equal(fonts[0], rt.pieces[0].Font, "Should be tagged with Helvetica font.")
+	st.Equal(fonts[1], rt.pieces[1].Font, "Should be tagged with Arial font.")
+	st.Equal(fonts[0], rt.pieces[2].Font, "Should be tagged with Helvetica font.")
+	st.Equal(fonts[2], rt.pieces[3].Font, "Should be tagged with STSong font.")
+	st.Equal(fonts[0], rt.pieces[4].Font, "Should be tagged with Helvetica font.")
 }
 
 // With Chinese font first in list, Arial is not called upon for English.
@@ -123,7 +123,7 @@ func TestNewTextPiece_ChineseAndEnglish_Reversed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.MustEqual(0, len(rt.Pieces))
+	st.MustEqual(0, len(rt.pieces))
 	st.Equal("所有测abc", rt.Text)
 	st.Equal(10.0, rt.FontSize)
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
@@ -237,7 +237,7 @@ func TestTextPiece_IsWhiteSpace(t *testing.T) {
 func TestTextPiece_Len(t *testing.T) {
 	st := SuperTest{t}
 	rt := &TextPiece{
-		Pieces: []*TextPiece{
+		pieces: []*TextPiece{
 			{Text: "Hello"},
 			{Text: " "},
 			{Text: "World"},
@@ -249,13 +249,13 @@ func TestTextPiece_Len(t *testing.T) {
 func TestTextPiece_measure(t *testing.T) {
 	piece := textPieceTestText()
 	piece.measure()
-	expectNFdelta(t, "Ascent", 9.052734, piece.Ascent, 0.001)
-	expectNFdelta(t, "Descent", -2.119141, piece.Descent, 0.001)
-	expectNFdelta(t, "Height", 11.171875, piece.Height, 0.001)
+	expectNFdelta(t, "ascent", 9.052734, piece.ascent, 0.001)
+	expectNFdelta(t, "descent", -2.119141, piece.descent, 0.001)
+	expectNFdelta(t, "height", 11.171875, piece.height, 0.001)
 	expectNFdelta(t, "UnderlinePosition", -1.059570, piece.UnderlinePosition, 0.001)
 	expectNFdelta(t, "UnderlineThickness", 0.732422, piece.UnderlineThickness, 0.001)
-	expectNFdelta(t, "Width", 28.344727, piece.Width, 0.001)
-	expectNI(t, "Chars", 5, piece.Chars)
+	expectNFdelta(t, "width", 28.344727, piece.width, 0.001)
+	expectNI(t, "chars", 5, piece.chars)
 	expectNI(t, "Tokens", 1, piece.Tokens)
 }
 
@@ -298,14 +298,14 @@ func TestTextPiece_Merge(t *testing.T) {
 	//         Leaf: 表明你已明确同意你的回答接受评估
 	//         Leaf: .
 
-	piece0 := *original.Pieces[0]
+	piece0 := *original.pieces[0]
 	merged := original.Merge()
 
 	// fmt.Println("Merged pieces: ", merged.Count())
 	// i = 0
 	// merged.VisitAll(func(p *TextPiece) {
 	// 	i++
-	// 	fmt.Println(i, p.Text, len(p.Pieces))
+	// 	fmt.Println(i, p.Text, len(p.pieces))
 	// })
 
 	// Node
@@ -316,29 +316,29 @@ func TestTextPiece_Merge(t *testing.T) {
 	// Leaf: .
 
 	st.Equal(text+text1+text2, merged.String())
-	st.MustEqual(5, len(merged.Pieces))
+	st.MustEqual(5, len(merged.pieces))
 
-	st.Equal("Here is some Russian, ", merged.Pieces[0].Text)
-	st.Equal(10.0, merged.Pieces[0].FontSize)
-	st.Equal(fonts[0], merged.Pieces[0].Font, "Should be tagged with Helvetica font.")
+	st.Equal("Here is some Russian, ", merged.pieces[0].Text)
+	st.Equal(10.0, merged.pieces[0].FontSize)
+	st.Equal(fonts[0], merged.pieces[0].Font, "Should be tagged with Helvetica font.")
 
-	st.Equal("Неприкосновенность", merged.Pieces[1].Text)
-	st.Equal(10.0, merged.Pieces[1].FontSize)
-	st.Equal(fonts[1], merged.Pieces[1].Font, "Should be tagged with Arial font.")
+	st.Equal("Неприкосновенность", merged.pieces[1].Text)
+	st.Equal(10.0, merged.pieces[1].FontSize)
+	st.Equal(fonts[1], merged.pieces[1].Font, "Should be tagged with Arial font.")
 
-	st.Equal(", and some Chinese, ", merged.Pieces[2].Text)
-	st.Equal(10.0, merged.Pieces[2].FontSize)
-	st.Equal(fonts[0], merged.Pieces[2].Font, "Should be tagged with Helvetica font.")
+	st.Equal(", and some Chinese, ", merged.pieces[2].Text)
+	st.Equal(10.0, merged.pieces[2].FontSize)
+	st.Equal(fonts[0], merged.pieces[2].Font, "Should be tagged with Helvetica font.")
 
-	st.Equal("表明你已明确同意你的回答接受评估", merged.Pieces[3].Text)
-	st.Equal(10.0, merged.Pieces[3].FontSize)
-	st.Equal(fonts[2], merged.Pieces[3].Font, "Should be tagged with STSong font.")
+	st.Equal("表明你已明确同意你的回答接受评估", merged.pieces[3].Text)
+	st.Equal(10.0, merged.pieces[3].FontSize)
+	st.Equal(fonts[2], merged.pieces[3].Font, "Should be tagged with STSong font.")
 
-	st.Equal(".", merged.Pieces[4].Text)
-	st.Equal(10.0, merged.Pieces[4].FontSize)
-	st.Equal(fonts[0], merged.Pieces[4].Font, "Should be tagged with Helvetica font.")
+	st.Equal(".", merged.pieces[4].Text)
+	st.Equal(10.0, merged.pieces[4].FontSize)
+	st.Equal(fonts[0], merged.pieces[4].Font, "Should be tagged with Helvetica font.")
 
-	st.Equal(piece0.Text, original.Pieces[0].Text, "Original should be unchanged.")
+	st.Equal(piece0.Text, original.pieces[0].Text, "Original should be unchanged.")
 }
 
 func TestTextPiece_String(t *testing.T) {
