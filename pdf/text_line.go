@@ -55,15 +55,6 @@ func (line *TextLine) Height() float64 {
 	return line.height
 }
 
-func (line *TextLine) Tokens() int {
-	if line.tokens == 0 {
-		for _, p := range line.RichText {
-			line.tokens += p.Tokens
-		}
-	}
-	return line.tokens
-}
-
 func (line *TextLine) Width() float64 {
 	if line.width == 0.0 {
 		for _, p := range line.RichText {

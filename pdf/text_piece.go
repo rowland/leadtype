@@ -23,7 +23,6 @@ type TextPiece struct {
 	UnderlineThickness float64
 	width              float64
 	chars              int
-	Tokens             int
 	CharSpacing        float64
 	WordSpacing        float64
 	NoBreak            bool
@@ -123,7 +122,6 @@ func (piece *TextPiece) measure() *TextPiece {
 			piece.width += piece.WordSpacing
 		}
 	}
-	piece.Tokens = 1
 	return piece
 }
 

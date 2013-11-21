@@ -256,7 +256,6 @@ func TestTextPiece_measure(t *testing.T) {
 	expectNFdelta(t, "UnderlineThickness", 0.732422, piece.UnderlineThickness, 0.001)
 	expectNFdelta(t, "width", 28.344727, piece.width, 0.001)
 	expectNI(t, "chars", 5, piece.chars)
-	expectNI(t, "Tokens", 1, piece.Tokens)
 }
 
 func TestTextPiece_Merge(t *testing.T) {

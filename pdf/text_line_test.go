@@ -42,13 +42,6 @@ func TestTextLine_Height(t *testing.T) {
 	expectFdelta(t, 11.171875, line.Height(), 0.001)
 }
 
-func TestTextLine_Tokens(t *testing.T) {
-	var line TextLine
-	expectI(t, 0, line.Tokens())
-	line = TextLine{RichText: textLineTestText()}
-	expectI(t, 3, line.Tokens())
-}
-
 func TestTextLine_Width(t *testing.T) {
 	var line TextLine
 	expectF(t, 0, line.Width())
@@ -115,19 +108,6 @@ func BenchmarkTextLine_Height(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		line := TextLine{RichText: text}
 		line.Height()
-	}
-}
-
-// 221 ns
-// 82.4 ns go1.1.1
-func BenchmarkTextLine_Tokens(b *testing.B) {
-	b.StopTimer()
-	text := textLineBenchmarkText()
-	b.StartTimer()
-
-	for i := 0; i < b.N; i++ {
-		line := TextLine{RichText: text}
-		line.Tokens()
 	}
 }
 
