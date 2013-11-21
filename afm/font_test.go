@@ -29,7 +29,7 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "trademark", 1000, aw(f.AdvanceWidth(0x2122)))
 	// expectI(t, "reversed-e", 1366, f.AdvanceWidth(0x018E))
 	// expectI(t, "t-with-comma", 1251, f.AdvanceWidth(0x021A))
-	// 
+	//
 	// // Could not find MissingWidth in TTF.
 	// expectI(t, "MaxWidth", 4096, f.MaxWidth())
 

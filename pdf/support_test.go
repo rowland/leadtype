@@ -160,7 +160,7 @@ func TestStringSlicesEqual(t *testing.T) {
 	b := []string{"abc", "def"}
 	c := []string{"abc", "def", "ghi"}
 	d := []string{"abc", "ghi"}
-	check(t, stringSlicesEqual(a,b), "Slices a and b should be equal.")
-	check(t, !stringSlicesEqual(a,c), "Slices a and c should not be equal.")
-	check(t, !stringSlicesEqual(a,d), "Slices a and d should not be equal.")
+	check(t, stringSlicesEqual(a, b), "Slices a and b should be equal.")
+	check(t, !stringSlicesEqual(a, c), "Slices a and c should not be equal.")
+	check(t, !stringSlicesEqual(a, d), "Slices a and d should not be equal.")
 }
