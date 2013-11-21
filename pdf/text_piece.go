@@ -38,6 +38,7 @@ func NewTextPiece(s string, fonts []*Font, fontSize float64, options Options) (*
 		LineThrough: options.BoolDefault("line_through", false),
 		CharSpacing: options.FloatDefault("char_spacing", 0),
 		WordSpacing: options.FloatDefault("word_spacing", 0),
+		NoBreak:     options.BoolDefault("nobreak", false),
 	}
 	pieces, err := piece.splitByFont(fonts)
 	if err != nil {

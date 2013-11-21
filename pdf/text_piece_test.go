@@ -19,7 +19,7 @@ func textPieceTestText() *TextPiece {
 func TestNewTextPiece_English(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial")
-	rt, err := NewTextPiece("abc", fonts, 10, Options{"color": Green, "underline": true, "line_through": true})
+	rt, err := NewTextPiece("abc", fonts, 10, Options{"color": Green, "underline": true, "line_through": true, "nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,6 +28,7 @@ func TestNewTextPiece_English(t *testing.T) {
 	st.Equal(Green, rt.Color)
 	st.True(rt.Underline)
 	st.True(rt.LineThrough)
+	st.True(rt.NoBreak)
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
 }
 
