@@ -94,6 +94,7 @@ func TestAfmFontCollection(t *testing.T) {
 // 45,763,220 ns
 // 13,754,000 ns
 // 12,035,539 ns go1.1.1
+// 11,984,518 ns go1.1.2
 func BenchmarkAfmFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var fc AfmFontCollection
@@ -108,6 +109,7 @@ func BenchmarkAfmFontCollection_Add(b *testing.B) {
 
 // 44,797 ns
 // 40,640 ns go1.1.1
+// 41,299 ns go1.1.2
 func BenchmarkAfmFontCollection_Select(b *testing.B) {
 	b.StopTimer()
 	var fc AfmFontCollection

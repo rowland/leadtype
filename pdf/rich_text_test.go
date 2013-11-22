@@ -422,6 +422,7 @@ func BenchmarkNewRichText(b *testing.B) {
 
 // 75.5 ns
 // 76.9 ns go1.1.1
+// 70.8 ns go1.1.2
 func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
@@ -439,6 +440,7 @@ func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 
 // 345 ns
 // 301 ns go1.1.1
+// 296 ns go1.1.2
 func BenchmarkRichText_measure(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
@@ -468,6 +470,7 @@ func multiLangText() *RichText {
 	return rt
 }
 
+// 4488 ns go1.1.2
 func BenchmarkRichText_Ascent(b *testing.B) {
 	b.StopTimer()
 	text := multiLangText()
@@ -484,6 +487,7 @@ func BenchmarkRichText_Ascent(b *testing.B) {
 	}
 }
 
+// 4547 ns go1.1.2
 func BenchmarkRichText_Chars(b *testing.B) {
 	b.StopTimer()
 	text := multiLangText()
@@ -500,6 +504,7 @@ func BenchmarkRichText_Chars(b *testing.B) {
 	}
 }
 
+// 4492 ns go1.1.2
 func BenchmarkRichText_Descent(b *testing.B) {
 	b.StopTimer()
 	text := multiLangText()
@@ -516,6 +521,7 @@ func BenchmarkRichText_Descent(b *testing.B) {
 	}
 }
 
+// 4559 ns go1.1.2
 func BenchmarkRichText_Height(b *testing.B) {
 	b.StopTimer()
 	text := multiLangText()
@@ -532,6 +538,7 @@ func BenchmarkRichText_Height(b *testing.B) {
 	}
 }
 
+// 4539 ns go1.1.2
 func BenchmarkRichText_Width(b *testing.B) {
 	b.StopTimer()
 	text := multiLangText()
