@@ -1,4 +1,4 @@
-// Copyright 2012 Brent Rowland.
+// Copyright 2012, 2013 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
@@ -7,19 +7,10 @@ import "testing"
 
 // import "fmt"
 
-func textPieceTestText() *TextPiece {
-	font := testTtfFonts("Arial")[0]
-	return &TextPiece{
-		Text:     "Lorem",
-		Font:     font,
-		FontSize: 10,
-	}
-}
-
-func TestNewTextPiece_English(t *testing.T) {
+func TestNewRichText_English(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial")
-	rt, err := NewTextPiece("abc", fonts, 10, Options{"color": Green, "underline": true, "line_through": true, "nobreak": true})
+	rt, err := NewRichText("abc", fonts, 10, Options{"color": Green, "underline": true, "line_through": true, "nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,18 +23,18 @@ func TestNewTextPiece_English(t *testing.T) {
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
 }
 
-func TestNewTextPiece_EnglishAndChinese_Fail(t *testing.T) {
+func TestNewRichText_EnglishAndChinese_Fail(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial")
-	_, err := NewTextPiece("abc所有测", fonts, 10, Options{})
+	_, err := NewRichText("abc所有测", fonts, 10, Options{})
 	st.False(err == nil, "NewRichText should fail with Chinese text and only Arial.")
 	st.Equal("No font found for 所有测.", err.Error())
 }
 
-func TestNewTextPiece_EnglishAndChinese_Pass(t *testing.T) {
+func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial", "STSong")
-	rt, err := NewTextPiece("abc所有测def", fonts, 10, Options{})
+	rt, err := NewRichText("abc所有测def", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,10 +63,10 @@ func TestNewTextPiece_EnglishAndChinese_Pass(t *testing.T) {
 	st.Equal(fonts[0], rt.pieces[2].Font, "def should be tagged with Arial font.")
 }
 
-func TestNewTextPiece_ChineseAndEnglish(t *testing.T) {
+func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial", "STSong")
-	rt, err := NewTextPiece("所有测abc", fonts, 10, Options{})
+	rt, err := NewRichText("所有测abc", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,13 +79,13 @@ func TestNewTextPiece_ChineseAndEnglish(t *testing.T) {
 	st.Equal(fonts[0], rt.pieces[1].Font, "Should be tagged with STSong font.")
 }
 
-func TestNewTextPiece_EnglishRussianAndChineseLanguages(t *testing.T) {
+func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-	rt, err := NewTextPiece(text, fonts, 10, Options{})
+	rt, err := NewRichText(text, fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,10 +108,10 @@ func TestNewTextPiece_EnglishRussianAndChineseLanguages(t *testing.T) {
 }
 
 // With Chinese font first in list, Arial is not called upon for English.
-func TestNewTextPiece_ChineseAndEnglish_Reversed(t *testing.T) {
+func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("STSong", "Arial")
-	rt, err := NewTextPiece("所有测abc", fonts, 10, Options{})
+	rt, err := NewRichText("所有测abc", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,52 +121,52 @@ func TestNewTextPiece_ChineseAndEnglish_Reversed(t *testing.T) {
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
 }
 
-func textPieceMixedText() *TextPiece {
+func richTextMixedText() *RichText {
 	fonts := testTtfFonts("Arial", "STSong")
-	rt, err := NewTextPiece("abc所有测def", fonts, 10, Options{})
+	rt, err := NewRichText("abc所有测def", fonts, 10, Options{})
 	if err != nil {
 		panic(err)
 	}
 	return rt
 }
 
-func TestTextPiece_Ascent(t *testing.T) {
+func TestRichText_Ascent(t *testing.T) {
 	st := SuperTest{t}
-	p := new(TextPiece)
+	p := new(RichText)
 	st.Equal(0.0, p.Ascent())
-	p = textPieceMixedText()
+	p = richTextMixedText()
 	st.AlmostEqual(9.052734, p.Ascent(), 0.001)
 }
 
-func TestTextPiece_Chars(t *testing.T) {
+func TestRichText_Chars(t *testing.T) {
 	st := SuperTest{t}
-	p := new(TextPiece)
+	p := new(RichText)
 	st.Equal(0, p.Chars())
-	p = textPieceMixedText()
+	p = richTextMixedText()
 	st.Equal(9, p.Chars())
 }
 
-func TestTextPiece_Descent(t *testing.T) {
+func TestRichText_Descent(t *testing.T) {
 	st := SuperTest{t}
-	p := new(TextPiece)
+	p := new(RichText)
 	st.Equal(0.0, p.Descent())
-	p = textPieceMixedText()
+	p = richTextMixedText()
 	st.AlmostEqual(-2.119141, p.Descent(), 0.001)
 }
 
-func TestTextPiece_Height(t *testing.T) {
+func TestRichText_Height(t *testing.T) {
 	st := SuperTest{t}
-	p := new(TextPiece)
+	p := new(RichText)
 	st.Equal(0.0, p.Height())
-	p = textPieceMixedText()
+	p = richTextMixedText()
 	st.AlmostEqual(11.171875, p.Height(), 0.001)
 }
 
-func TestTextPiece_MatchesAttributes(t *testing.T) {
+func TestRichText_MatchesAttributes(t *testing.T) {
 	st := SuperTest{t}
 
 	font := testTtfFonts("Arial")[0]
-	p1 := TextPiece{
+	p1 := RichText{
 		Text:     "Lorem",
 		Font:     font,
 		FontSize: 10,
@@ -210,25 +201,25 @@ func TestTextPiece_MatchesAttributes(t *testing.T) {
 	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 }
 
-func TestTextPiece_IsNewLine(t *testing.T) {
+func TestRichText_IsNewLine(t *testing.T) {
 	st := SuperTest{t}
 	font := testTtfFonts("Arial")[0]
 
-	empty := TextPiece{
+	empty := RichText{
 		Text:     "",
 		Font:     font,
 		FontSize: 10,
 	}
 	st.False(empty.IsNewLine(), "An empty string is not a newline.")
 
-	newline := TextPiece{
+	newline := RichText{
 		Text:     "\n",
 		Font:     font,
 		FontSize: 10,
 	}
 	st.True(newline.IsNewLine(), "It really is a newline.")
 
-	nonNewline := TextPiece{
+	nonNewline := RichText{
 		Text:     "Lorem",
 		Font:     font,
 		FontSize: 10,
@@ -236,39 +227,39 @@ func TestTextPiece_IsNewLine(t *testing.T) {
 	st.False(nonNewline.IsNewLine(), "This isn't a newline.")
 }
 
-func TestTextPiece_IsWhiteSpace(t *testing.T) {
+func TestRichText_IsWhiteSpace(t *testing.T) {
 	st := SuperTest{t}
 	font := testTtfFonts("Arial")[0]
 
-	empty := TextPiece{
+	empty := RichText{
 		Text:     "",
 		Font:     font,
 		FontSize: 10,
 	}
 	st.False(empty.IsWhiteSpace(), "Empty string should not be considered whitespace.")
 
-	singleWhite := TextPiece{
+	singleWhite := RichText{
 		Text:     " ",
 		Font:     font,
 		FontSize: 10,
 	}
 	st.True(singleWhite.IsWhiteSpace(), "A single space should be considered whitespace.")
 
-	multiWhite := TextPiece{
+	multiWhite := RichText{
 		Text:     "  \t\n\v\f\r",
 		Font:     font,
 		FontSize: 10,
 	}
 	st.True(multiWhite.IsWhiteSpace(), "Multiple spaces should be considered whitespace.")
 
-	startWhite := TextPiece{
+	startWhite := RichText{
 		Text:     "  Lorem",
 		Font:     font,
 		FontSize: 10,
 	}
 	st.False(startWhite.IsWhiteSpace(), "A piece that only starts with spaces should not be considered whitespace.")
 
-	nonWhite := TextPiece{
+	nonWhite := RichText{
 		Text:     "Lorem",
 		Font:     font,
 		FontSize: 10,
@@ -276,10 +267,10 @@ func TestTextPiece_IsWhiteSpace(t *testing.T) {
 	st.False(nonWhite.IsWhiteSpace(), "Piece contains no whitespace.")
 }
 
-func TestTextPiece_Len(t *testing.T) {
+func TestRichText_Len(t *testing.T) {
 	st := SuperTest{t}
-	rt := &TextPiece{
-		pieces: []*TextPiece{
+	rt := &RichText{
+		pieces: []*RichText{
 			{Text: "Hello"},
 			{Text: " "},
 			{Text: "World"},
@@ -288,8 +279,17 @@ func TestTextPiece_Len(t *testing.T) {
 	st.Equal(11, rt.Len())
 }
 
-func TestTextPiece_measure(t *testing.T) {
-	piece := textPieceTestText()
+func loremText() *RichText {
+	font := testTtfFonts("Arial")[0]
+	return &RichText{
+		Text:     "Lorem",
+		Font:     font,
+		FontSize: 10,
+	}
+}
+
+func TestRichText_measure(t *testing.T) {
+	piece := loremText()
 	piece.measure()
 	expectNFdelta(t, "ascent", 9.052734, piece.ascent, 0.001)
 	expectNFdelta(t, "descent", -2.119141, piece.descent, 0.001)
@@ -300,7 +300,7 @@ func TestTextPiece_measure(t *testing.T) {
 	expectNI(t, "chars", 5, piece.chars)
 }
 
-func TestTextPiece_Merge(t *testing.T) {
+func TestRichText_Merge(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
@@ -308,7 +308,7 @@ func TestTextPiece_Merge(t *testing.T) {
 	text := "Here is some "
 	text1 := "Russian, Неприкосновенность, "
 	text2 := "and some Chinese, 表明你已明确同意你的回答接受评估."
-	original, err := NewTextPiece(text, fonts, 10, Options{})
+	original, err := NewRichText(text, fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +323,7 @@ func TestTextPiece_Merge(t *testing.T) {
 
 	// fmt.Println("Original pieces: ", original.Count())
 	// i := 0
-	// original.VisitAll(func(p *TextPiece) {
+	// original.VisitAll(func(p *RichText) {
 	// 	i++
 	// 	fmt.Println(i, p.Text, len(p.Pieces))
 	// })
@@ -344,7 +344,7 @@ func TestTextPiece_Merge(t *testing.T) {
 
 	// fmt.Println("Merged pieces: ", merged.Count())
 	// i = 0
-	// merged.VisitAll(func(p *TextPiece) {
+	// merged.VisitAll(func(p *RichText) {
 	// 	i++
 	// 	fmt.Println(i, p.Text, len(p.pieces))
 	// })
@@ -382,29 +382,29 @@ func TestTextPiece_Merge(t *testing.T) {
 	st.Equal(piece0.Text, original.pieces[0].Text, "Original should be unchanged.")
 }
 
-func TestTextPiece_String(t *testing.T) {
+func TestRichText_String(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-	rt, err := NewTextPiece(text, fonts, 10, Options{})
+	rt, err := NewRichText(text, fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	st.Equal(text, rt.String())
 }
 
-func TestTextPiece_Width(t *testing.T) {
+func TestRichText_Width(t *testing.T) {
 	st := SuperTest{t}
-	p := new(TextPiece)
+	p := new(RichText)
 	st.Equal(0.0, p.Width())
-	p = textPieceMixedText()
+	p = richTextMixedText()
 	st.AlmostEqual(60.024414, p.Width(), 0.001)
 }
 
 // 14,930 ns go1.1.2
-func BenchmarkNewTextPiece(b *testing.B) {
+func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
@@ -413,7 +413,7 @@ func BenchmarkNewTextPiece(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := NewTextPiece(text, fonts, 10, Options{})
+		_, err := NewRichText(text, fonts, 10, Options{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -422,10 +422,10 @@ func BenchmarkNewTextPiece(b *testing.B) {
 
 // 75.5 ns
 // 76.9 ns go1.1.1
-func BenchmarkTextPiece_IsWhiteSpace(b *testing.B) {
+func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
-	piece := &TextPiece{
+	piece := &RichText{
 		Text:     "  \t\n\v\f\r",
 		Font:     font,
 		FontSize: 10,
@@ -439,10 +439,10 @@ func BenchmarkTextPiece_IsWhiteSpace(b *testing.B) {
 
 // 345 ns
 // 301 ns go1.1.1
-func BenchmarkTextPiece_measure(b *testing.B) {
+func BenchmarkRichText_measure(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
-	piece := &TextPiece{
+	piece := &RichText{
 		Text:     "Lorem",
 		Font:     font,
 		FontSize: 10,
@@ -454,23 +454,23 @@ func BenchmarkTextPiece_measure(b *testing.B) {
 	}
 }
 
-func textPieceBenchmarkText() *TextPiece {
+func multiLangText() *RichText {
 	const text = "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
 
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
 	fonts := append(afmFonts, ttfFonts...)
 
-	rt, err := NewTextPiece(text, fonts, 10, Options{})
+	rt, err := NewRichText(text, fonts, 10, Options{})
 	if err != nil {
 		panic(err)
 	}
 	return rt
 }
 
-func BenchmarkTextPiece_Ascent(b *testing.B) {
+func BenchmarkRichText_Ascent(b *testing.B) {
 	b.StopTimer()
-	text := textPieceBenchmarkText()
+	text := multiLangText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -484,9 +484,9 @@ func BenchmarkTextPiece_Ascent(b *testing.B) {
 	}
 }
 
-func BenchmarkTextPiece_Chars(b *testing.B) {
+func BenchmarkRichText_Chars(b *testing.B) {
 	b.StopTimer()
-	text := textPieceBenchmarkText()
+	text := multiLangText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -500,9 +500,9 @@ func BenchmarkTextPiece_Chars(b *testing.B) {
 	}
 }
 
-func BenchmarkTextPiece_Descent(b *testing.B) {
+func BenchmarkRichText_Descent(b *testing.B) {
 	b.StopTimer()
-	text := textPieceBenchmarkText()
+	text := multiLangText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -516,9 +516,9 @@ func BenchmarkTextPiece_Descent(b *testing.B) {
 	}
 }
 
-func BenchmarkTextPiece_Height(b *testing.B) {
+func BenchmarkRichText_Height(b *testing.B) {
 	b.StopTimer()
-	text := textPieceBenchmarkText()
+	text := multiLangText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -532,9 +532,9 @@ func BenchmarkTextPiece_Height(b *testing.B) {
 	}
 }
 
-func BenchmarkTextPiece_Width(b *testing.B) {
+func BenchmarkRichText_Width(b *testing.B) {
 	b.StopTimer()
-	text := textPieceBenchmarkText()
+	text := multiLangText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {

@@ -1,4 +1,4 @@
-// Copyright 2012 Brent Rowland.
+// Copyright 2012, 2013 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
@@ -9,7 +9,7 @@ import (
 	"unicode"
 )
 
-type TextPiece struct {
+type RichText struct {
 	Text               string
 	Font               *Font
 	FontSize           float64
@@ -26,11 +26,11 @@ type TextPiece struct {
 	CharSpacing        float64
 	WordSpacing        float64
 	NoBreak            bool
-	pieces             []*TextPiece
+	pieces             []*RichText
 }
 
-func NewTextPiece(s string, fonts []*Font, fontSize float64, options Options) (*TextPiece, error) {
-	piece := &TextPiece{
+func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
+	piece := &RichText{
 		Text:        s,
 		FontSize:    fontSize,
 		Color:       options.ColorDefault("color", Black),
@@ -47,23 +47,23 @@ func NewTextPiece(s string, fonts []*Font, fontSize float64, options Options) (*
 	if len(pieces) == 1 {
 		return pieces[0], nil
 	}
-	return &TextPiece{pieces: pieces}, nil
+	return &RichText{pieces: pieces}, nil
 }
 
-func (piece *TextPiece) Add(s string, fonts []*Font, fontSize float64, options Options) (*TextPiece, error) {
-	p, err := NewTextPiece(s, fonts, fontSize, options)
+func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
+	p, err := NewRichText(s, fonts, fontSize, options)
 	if err != nil {
 		return piece, err
 	}
 	if len(piece.pieces) > 0 {
 		piece.pieces = append(piece.pieces, p)
 	} else {
-		piece = &TextPiece{pieces: []*TextPiece{piece, p}}
+		piece = &RichText{pieces: []*RichText{piece, p}}
 	}
 	return piece, nil
 }
 
-func (piece *TextPiece) Ascent() float64 {
+func (piece *RichText) Ascent() float64 {
 	if piece.ascent == 0.0 {
 		if piece.IsLeaf() {
 			return piece.measure().ascent
@@ -78,7 +78,7 @@ func (piece *TextPiece) Ascent() float64 {
 	return piece.ascent
 }
 
-func (piece *TextPiece) Chars() int {
+func (piece *RichText) Chars() int {
 	if piece.chars == 0 {
 		if piece.IsLeaf() {
 			return piece.measure().chars
@@ -90,7 +90,7 @@ func (piece *TextPiece) Chars() int {
 	return piece.chars
 }
 
-func (piece *TextPiece) Count() int {
+func (piece *RichText) Count() int {
 	result := 1
 	for _, p := range piece.pieces {
 		result += p.Count()
@@ -98,7 +98,7 @@ func (piece *TextPiece) Count() int {
 	return result
 }
 
-func (piece *TextPiece) Descent() float64 {
+func (piece *RichText) Descent() float64 {
 	if piece.descent == 0.0 {
 		if piece.IsLeaf() {
 			return piece.measure().descent
@@ -113,7 +113,7 @@ func (piece *TextPiece) Descent() float64 {
 	return piece.descent
 }
 
-func (piece *TextPiece) Height() float64 {
+func (piece *RichText) Height() float64 {
 	if piece.height == 0.0 {
 		if piece.IsLeaf() {
 			return piece.measure().descent
@@ -128,15 +128,15 @@ func (piece *TextPiece) Height() float64 {
 	return piece.height
 }
 
-func (piece *TextPiece) IsLeaf() bool {
+func (piece *RichText) IsLeaf() bool {
 	return len(piece.pieces) == 0
 }
 
-func (piece *TextPiece) IsNewLine() bool {
+func (piece *RichText) IsNewLine() bool {
 	return piece.Text == "\n"
 }
 
-func (piece *TextPiece) IsWhiteSpace() bool {
+func (piece *RichText) IsWhiteSpace() bool {
 	for _, rune := range piece.Text {
 		if !unicode.IsSpace(rune) {
 			return false
@@ -145,7 +145,7 @@ func (piece *TextPiece) IsWhiteSpace() bool {
 	return len(piece.Text) > 0
 }
 
-func (piece *TextPiece) Len() int {
+func (piece *RichText) Len() int {
 	result := 0
 	for i := 0; i < len(piece.pieces); i++ {
 		result += len(piece.pieces[i].Text)
@@ -153,7 +153,7 @@ func (piece *TextPiece) Len() int {
 	return result
 }
 
-func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
+func (piece *RichText) MatchesAttributes(other *RichText) bool {
 	return (piece.Font != nil && other.Font != nil) && (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
 		piece.FontSize == other.FontSize &&
 		piece.Color == other.Color &&
@@ -163,7 +163,7 @@ func (piece *TextPiece) MatchesAttributes(other *TextPiece) bool {
 		piece.WordSpacing == other.WordSpacing
 }
 
-func (piece *TextPiece) measure() *TextPiece {
+func (piece *RichText) measure() *RichText {
 	if piece.Font == nil {
 		return piece
 	}
@@ -186,12 +186,12 @@ func (piece *TextPiece) measure() *TextPiece {
 	return piece
 }
 
-func (piece *TextPiece) Merge() *TextPiece {
+func (piece *RichText) Merge() *RichText {
 	if len(piece.pieces) == 0 {
 		return piece
 	}
 
-	flattened := make([]*TextPiece, 0, len(piece.pieces))
+	flattened := make([]*RichText, 0, len(piece.pieces))
 	for _, p := range piece.pieces {
 		pm := p.Merge()
 		if pm.IsLeaf() || pm.NoBreak {
@@ -202,8 +202,8 @@ func (piece *TextPiece) Merge() *TextPiece {
 	}
 
 	mergedText := *piece
-	mergedText.pieces = make([]*TextPiece, 0, len(piece.pieces))
-	var last *TextPiece
+	mergedText.pieces = make([]*RichText, 0, len(piece.pieces))
+	var last *RichText
 	for _, p := range flattened {
 		if last != nil && p.MatchesAttributes(last) {
 			last.Text += p.Text
@@ -219,7 +219,7 @@ func (piece *TextPiece) Merge() *TextPiece {
 	return &mergedText
 }
 
-func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err error) {
+func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)
 	}
@@ -237,7 +237,7 @@ func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err err
 					newPiece.measure()
 					pieces = append(pieces, &newPiece)
 				} else {
-					var newPieces []*TextPiece
+					var newPieces []*RichText
 					newPieces, err = newPiece.splitByFont(fonts[1:])
 					pieces = append(pieces, newPieces...)
 				}
@@ -254,7 +254,7 @@ func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err err
 			newPiece.measure()
 			pieces = append(pieces, &newPiece)
 		} else {
-			var newPieces []*TextPiece
+			var newPieces []*RichText
 			newPieces, err = newPiece.splitByFont(fonts[1:])
 			pieces = append(pieces, newPieces...)
 		}
@@ -262,22 +262,22 @@ func (piece *TextPiece) splitByFont(fonts []*Font) (pieces []*TextPiece, err err
 	return
 }
 
-func (piece *TextPiece) String() string {
+func (piece *RichText) String() string {
 	var buf bytes.Buffer
-	piece.VisitAll(func(p *TextPiece) {
+	piece.VisitAll(func(p *RichText) {
 		buf.WriteString(p.Text)
 	})
 	return buf.String()
 }
 
-func (piece *TextPiece) VisitAll(fn func(*TextPiece)) {
+func (piece *RichText) VisitAll(fn func(*RichText)) {
 	fn(piece)
 	for _, p := range piece.pieces {
 		p.VisitAll(fn)
 	}
 }
 
-func (piece *TextPiece) Width() float64 {
+func (piece *RichText) Width() float64 {
 	if piece.width == 0.0 {
 		if piece.IsLeaf() {
 			return piece.measure().width
