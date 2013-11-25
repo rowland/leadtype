@@ -219,6 +219,58 @@ func (piece *RichText) Merge() *RichText {
 	return &mergedText
 }
 
+func (piece *RichText) Split(offset int) (left, right *RichText) {
+	if offset < 0 {
+		offset = 0
+	}
+	var current int = 0
+	left, right = new(RichText), new(RichText)
+	piece.split(offset, left, right, &current)
+	if len(left.pieces) == 1 {
+		left = left.pieces[0]
+	}
+	if len(right.pieces) == 1 {
+		right = right.pieces[0]
+	}
+	return
+}
+
+func (piece *RichText) split(offset int, left, right *RichText, current *int) {
+	if piece.IsLeaf() {
+		if *current < offset {
+			if (offset - *current) >= len(piece.Text) {
+				left.pieces = append(left.pieces, piece)
+			} else {
+				newLeft := *piece
+				newLeft.Text = piece.Text[:offset-*current]
+				newLeft.width, newLeft.chars = 0, 0
+				left.pieces = append(left.pieces, &newLeft)
+
+				newRight := *piece
+				newRight.Text = piece.Text[offset-*current:]
+				newRight.width, newRight.chars = 0, 0
+				right.pieces = append(right.pieces, &newRight)
+			}
+		} else {
+			right.pieces = append(right.pieces, piece)
+		}
+		*current += len(piece.Text)
+		return
+	}
+
+	newPiece := *piece
+	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
+	if *current < offset {
+		left.pieces = append(left.pieces, &newPiece)
+	} else {
+		right.pieces = append(right.pieces, &newPiece)
+	}
+
+	for _, p := range piece.pieces {
+		p.split(offset, left, right, current)
+	}
+}
+
 func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error) {
 	if len(fonts) == 0 {
 		return nil, fmt.Errorf("No font found for %s.", piece.Text)

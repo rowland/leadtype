@@ -63,8 +63,8 @@ func (st *SuperTest) fail(expected, actual interface{}, must bool, msg ...string
 		line = 1
 	}
 	if must {
-		st.Fatalf("\t%s:%d: %s: Expected %v, got %v. %v\n", file, line, name, expected, actual, msg)
+		st.Fatalf("\t%s:%d: %s: Expected <%v>, got <%v>. %v\n", file, line, name, expected, actual, msg)
 	} else {
-		st.Errorf("\t%s:%d: %s: Expected %v, got %v. %v\n", file, line, name, expected, actual, msg)
+		st.Errorf("\t%s:%d: %s: Expected <%v>, got <%v>. %v\n", file, line, name, expected, actual, msg)
 	}
 }

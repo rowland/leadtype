@@ -382,6 +382,43 @@ func TestRichText_Merge(t *testing.T) {
 	st.Equal(piece0.Text, original.pieces[0].Text, "Original should be unchanged.")
 }
 
+func TestRichText_Split(t *testing.T) {
+	st := SuperTest{t}
+	afmFonts := testAfmFonts("Helvetica")
+	ttfFonts := testTtfFonts("Arial", "STSong")
+	fonts := append(afmFonts, ttfFonts...)
+	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
+	rt, err := NewRichText(text, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	byteOffsets := []int{0, 5, 8, 13, 22, 60, 64, 69, 78}
+	words := []string{"Here ", "is ", "some ", "Russian, ", "Неприкосновенность, ", "and ", "some ", "Chinese, ", "表明你已明确同意你的回答接受评估."}
+	for i := len(byteOffsets) - 1; i >= 0; i-- {
+		var word *RichText
+		rt, word = rt.Split(byteOffsets[i])
+		st.Equal(words[i], word.String())
+	}
+}
+
+func TestRichText_Split_simple(t *testing.T) {
+	st := SuperTest{t}
+	rt := &RichText{Text: "Hello, World!"}
+	left, right := rt.Split(7)
+	st.Equal("Hello, ", left.String())
+	st.Equal("World!", right.String())
+}
+
+func TestRichText_Split_simple2(t *testing.T) {
+	st := SuperTest{t}
+	rt1 := &RichText{Text: "Hello, "}
+	rt2 := &RichText{Text: "World!"}
+	rt := &RichText{pieces: []*RichText{rt1, rt2}}
+	left, right := rt.Split(7)
+	st.Equal("Hello, ", left.String())
+	st.Equal("World!", right.String())
+}
+
 func TestRichText_String(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
