@@ -310,8 +310,10 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
 	if *current < offset {
 		left.pieces = append(left.pieces, &newPiece)
+		left = &newPiece
 	} else {
 		right.pieces = append(right.pieces, &newPiece)
+		right = &newPiece
 	}
 
 	for _, p := range piece.pieces {
