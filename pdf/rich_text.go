@@ -6,6 +6,7 @@ package pdf
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"unicode"
 )
 
@@ -126,6 +127,53 @@ func (piece *RichText) Height() float64 {
 		}
 	}
 	return piece.height
+}
+
+func (piece *RichText) InsertStringAtOffsets(s string, offsets []int) *RichText {
+	sort.Ints(offsets)
+	current := 0
+	i := 0
+	res := new(RichText)
+	piece.insertStringAtOffsets(s, offsets, &i, &current, res)
+	return res
+}
+
+func (piece *RichText) insertStringAtOffsets(s string, offsets []int, i *int, current *int, res *RichText) {
+	if piece.IsLeaf() {
+		n := len(piece.Text)
+		if *i < len(offsets) && *current < offsets[*i] {
+			if offsets[*i]-*current >= n {
+				res.pieces = append(res.pieces, piece)
+			} else {
+				j := *i
+				for j < len(offsets) && offsets[j] < *current+n {
+					j++
+				}
+				buf := make([]byte, n+len(s)*(j-*i))
+				src, dst := 0, 0
+				for ; *i < j; *i++ {
+					d := copy(buf[dst:], piece.Text[src:offsets[*i]-*current])
+					copy(buf[dst+d:], s)
+					src += d
+					dst += d + len(s)
+				}
+				copy(buf[dst:], piece.Text[src:])
+				newPiece := *piece
+				newPiece.Text = string(buf)
+				res.pieces = append(res.pieces, &newPiece)
+			}
+		}
+		*current += n
+		return
+	}
+
+	newPiece := *piece
+	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
+	res.pieces = append(res.pieces, &newPiece)
+
+	for _, p := range piece.pieces {
+		p.insertStringAtOffsets(s, offsets, i, current, &newPiece)
+	}
 }
 
 func (piece *RichText) IsLeaf() bool {

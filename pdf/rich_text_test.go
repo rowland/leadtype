@@ -162,6 +162,50 @@ func TestRichText_Height(t *testing.T) {
 	st.AlmostEqual(11.171875, p.Height(), 0.001)
 }
 
+func TestRichText_InsertStringAtOffsets(t *testing.T) {
+	st := SuperTest{t}
+	afmFonts := testAfmFonts("Helvetica")
+	ttfFonts := testTtfFonts("Arial", "STSong")
+	fonts := append(afmFonts, ttfFonts...)
+	text := "Automatic "
+	text1 := "hyphenation "
+	text2 := "aids word wrapping."
+	rt, err := NewRichText(text, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err = rt.Add(text1, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err = rt.Add(text2, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	offsets := []int{4, 16, 36}
+	rt0 := rt.InsertStringAtOffsets("-", offsets)
+	st.Equal("Auto-matic hyphen-ation aids word wrap-ping.", rt0.String())
+}
+
+func TestRichText_InsertStringAtOffsets_simple(t *testing.T) {
+	st := SuperTest{t}
+	p := &RichText{Text: "Automatic hyphenation aids word wrapping."}
+	offsets := []int{4, 16, 36}
+	p0 := p.InsertStringAtOffsets("-", offsets)
+	st.Equal("Auto-matic hyphen-ation aids word wrap-ping.", p0.String())
+}
+
+func TestRichText_InsertStringAtOffsets_simple2(t *testing.T) {
+	st := SuperTest{t}
+	rt1 := &RichText{Text: "Automatic hyphenation "}
+	rt2 := &RichText{Text: "aids word wrapping."}
+	rt := &RichText{pieces: []*RichText{rt1, rt2}}
+	offsets := []int{4, 16, 36}
+	rt0 := rt.InsertStringAtOffsets("-", offsets)
+	st.Equal("Auto-matic hyphen-ation aids word wrap-ping.", rt0.String())
+}
+
 func TestRichText_MatchesAttributes(t *testing.T) {
 	st := SuperTest{t}
 
