@@ -194,9 +194,9 @@ func (piece *RichText) IsWhiteSpace() bool {
 }
 
 func (piece *RichText) Len() int {
-	result := 0
-	for i := 0; i < len(piece.pieces); i++ {
-		result += len(piece.pieces[i].Text)
+	result := len(piece.Text)
+	for _, p := range piece.pieces {
+		result += p.Len()
 	}
 	return result
 }

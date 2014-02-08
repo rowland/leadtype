@@ -206,45 +206,6 @@ func TestRichText_InsertStringAtOffsets_simple2(t *testing.T) {
 	st.Equal("Auto-matic hyphen-ation aids word wrap-ping.", rt0.String())
 }
 
-func TestRichText_MatchesAttributes(t *testing.T) {
-	st := SuperTest{t}
-
-	font := testTtfFonts("Arial")[0]
-	p1 := RichText{
-		Text:     "Lorem",
-		Font:     font,
-		FontSize: 10,
-	}
-	p2 := p1
-	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
-
-	p2.Font = testTtfFonts("Arial")[0]
-	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
-
-	p2.FontSize = 12
-	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
-
-	p2 = p1
-	p2.Color = Azure
-	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
-
-	p2 = p1
-	p2.Underline = true
-	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
-
-	p2 = p1
-	p2.LineThrough = true
-	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
-
-	p2 = p1
-	p2.CharSpacing = 1
-	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
-
-	p2 = p1
-	p2.WordSpacing = 1
-	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
-}
-
 func TestRichText_IsNewLine(t *testing.T) {
 	st := SuperTest{t}
 	font := testTtfFonts("Arial")[0]
@@ -323,6 +284,27 @@ func TestRichText_Len(t *testing.T) {
 	st.Equal(11, rt.Len())
 }
 
+func TestRichText_Len_complex(t *testing.T) {
+	st := SuperTest{t}
+	rt := &RichText{
+		pieces: []*RichText{
+			{Text: "Goodbye"},
+			{pieces: []*RichText{
+				{Text: ","},
+				{Text: " "},
+			}},
+			{Text: "World"},
+		},
+	}
+	st.Equal(14, rt.Len())
+}
+
+func TestRichText_Len_simple(t *testing.T) {
+	st := SuperTest{t}
+	rt := &RichText{Text: "Lorem"}
+	st.Equal(5, rt.Len())
+}
+
 func loremText() *RichText {
 	font := testTtfFonts("Arial")[0]
 	return &RichText{
@@ -330,6 +312,45 @@ func loremText() *RichText {
 		Font:     font,
 		FontSize: 10,
 	}
+}
+
+func TestRichText_MatchesAttributes(t *testing.T) {
+	st := SuperTest{t}
+
+	font := testTtfFonts("Arial")[0]
+	p1 := RichText{
+		Text:     "Lorem",
+		Font:     font,
+		FontSize: 10,
+	}
+	p2 := p1
+	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
+
+	p2.Font = testTtfFonts("Arial")[0]
+	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
+
+	p2.FontSize = 12
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.Color = Azure
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.Underline = true
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.LineThrough = true
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.CharSpacing = 1
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
+
+	p2 = p1
+	p2.WordSpacing = 1
+	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 }
 
 func TestRichText_measure(t *testing.T) {
@@ -616,6 +637,17 @@ func BenchmarkRichText_Height(b *testing.B) {
 		text.pieces[3].height = 0
 		text.pieces[4].height = 0
 		text.Height()
+	}
+}
+
+// 30.2 ns go1.1.2
+func BenchmarkRichText_Len(b *testing.B) {
+	b.StopTimer()
+	text := multiLangText()
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		text.Len()
 	}
 }
 
