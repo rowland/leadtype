@@ -3,12 +3,12 @@
 
 package wordbreaking
 
-const (
-	SoftBreak  = 1 << iota // Potential linebreak point
-	WhiteSpace = 1 << iota // A unicode whitespace character, except NBSP, ZWNBSP
-	CharStop   = 1 << iota
-	WordStop   = 1 << iota
-	Invalid    = 1 << iota // Invalid character sequence
-)
-
 type Flags byte
+
+const (
+	SoftBreak  = Flags(1 << iota) // potential linebreak point
+	WhiteSpace = Flags(1 << iota) // a unicode whitespace character, except NBSP
+	CharStop   = Flags(1 << iota) // valid cursor position
+	WordStop   = Flags(1 << iota) // start of a word
+	Invalid    = Flags(1 << iota) // invalid character sequence
+)
