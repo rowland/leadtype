@@ -18,15 +18,23 @@ func (st *SuperTest) AlmostEqual(expected, actual, delta float64, msg ...string)
 	}
 }
 
-func (st *SuperTest) Equal(expected interface{}, actual interface{}, msg ...string) {
+func (st *SuperTest) Equal(expected, actual interface{}, msg ...string) {
 	if expected != actual {
 		st.fail(expected, actual, false, msg...)
 	}
 }
 
-func (st *SuperTest) MustEqual(expected interface{}, actual interface{}, msg ...string) {
-	if expected != actual {
-		st.fail(expected, actual, true, msg...)
+func (st *SuperTest) Must(condition bool, msg ...string) {
+	if !condition {
+		file, line, name := st.where(2)
+		st.Fatalf("\t%s:%d: %s: %v\n", file, line, name, msg)
+	}
+}
+
+func (st *SuperTest) MustNot(condition bool, msg ...string) {
+	if condition {
+		file, line, name := st.where(2)
+		st.Fatalf("\t%s:%d: %s: %v\n", file, line, name, msg)
 	}
 }
 
@@ -42,15 +50,8 @@ func (st *SuperTest) True(actual bool, msg ...string) {
 	}
 }
 
-func (st *SuperTest) Nil(actual interface{}, msg ...string) {
-	if actual != nil {
-		st.fail(nil, actual, false, msg...)
-	}
-}
-
-func (st *SuperTest) fail(expected, actual interface{}, must bool, msg ...string) {
-	pc, file, line, ok := runtime.Caller(2)
-	var name string
+func (st *SuperTest) where(skip int) (file string, line int, name string) {
+	pc, file, line, ok := runtime.Caller(skip)
 	if ok {
 		name = runtime.FuncForPC(pc).Name()
 		if i := strings.LastIndex(name, "."); i >= 0 {
@@ -62,6 +63,11 @@ func (st *SuperTest) fail(expected, actual interface{}, must bool, msg ...string
 		file = "unknown file"
 		line = 1
 	}
+	return
+}
+
+func (st *SuperTest) fail(expected, actual interface{}, must bool, msg ...string) {
+	file, line, name := st.where(3)
 	if must {
 		st.Fatalf("\t%s:%d: %s: Expected <%v>, got <%v>. %v\n", file, line, name, expected, actual, msg)
 	} else {
