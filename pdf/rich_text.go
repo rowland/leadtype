@@ -1,11 +1,12 @@
-// Copyright 2012, 2013 Brent Rowland.
-// Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
+// Copyright 2012, 2013, 2014 Brent Rowland.
+// Use of this source code is governed by the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
 
 import (
 	"bytes"
 	"fmt"
+	"leadtype/wordbreaking"
 	"sort"
 	"unicode"
 )
@@ -267,6 +268,37 @@ func (piece *RichText) Merge() *RichText {
 	return &mergedText
 }
 
+func (piece *RichText) seekToWidth(width float64, current *int, currentWidth *float64, wordFlags []wordbreaking.Flags, hardBreak bool) (done bool) {
+	if piece.IsLeaf() {
+		if *currentWidth+piece.Width() > width {
+			offset := *current
+			n := nextFlag(wordbreaking.SoftBreak, wordFlags, *current+1)
+			for n > *current {
+				nextWord := piece.Text[*current-offset : n-offset]
+				wn := piece.stringWidth(nextWord)
+				if *currentWidth+wn < width {
+					*current = n
+					*currentWidth += wn
+				} else {
+					return true
+				}
+				n = nextFlag(wordbreaking.SoftBreak, wordFlags, *current+1)
+			}
+			// Should never reach here.
+			return true
+		}
+		*current += piece.Len()
+		*currentWidth += piece.Width()
+		return false
+	}
+	for _, p := range piece.pieces {
+		if p.seekToWidth(width, current, currentWidth, wordFlags, hardBreak) {
+			return true
+		}
+	}
+	return false
+}
+
 func (piece *RichText) Split(offset int) (left, right *RichText) {
 	if offset < 0 {
 		offset = 0
@@ -372,6 +404,19 @@ func (piece *RichText) String() string {
 	return buf.String()
 }
 
+func (piece *RichText) stringWidth(s string) (width float64) {
+	metrics := piece.Font.metrics
+	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
+	for _, rune := range s {
+		runeWidth, _ := metrics.AdvanceWidth(rune)
+		width += (fsize * float64(runeWidth)) + piece.CharSpacing
+		if unicode.IsSpace(rune) {
+			width += piece.WordSpacing
+		}
+	}
+	return
+}
+
 func (piece *RichText) VisitAll(fn func(*RichText)) {
 	fn(piece)
 	for _, p := range piece.pieces {
@@ -389,4 +434,31 @@ func (piece *RichText) Width() float64 {
 		}
 	}
 	return piece.width
+}
+
+func (piece *RichText) WordsToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
+	line, remainder *RichText, lineFlags, remainderFlags []wordbreaking.Flags, err error) {
+	if width < 0 {
+		width = 0
+	}
+	if piece.Width() <= width {
+		return piece, nil, wordFlags, nil, nil
+	}
+	current := 0
+	currentWidth := 0.0
+	piece.seekToWidth(width, &current, &currentWidth, wordFlags, hardBreak)
+	line, remainder = piece.Split(current)
+	lineFlags, remainderFlags = wordFlags[:current], wordFlags[current:]
+	return
+}
+
+// Return next index of flag in wordFlags, starting at offset. -1 if not found.
+func nextFlag(flag wordbreaking.Flags, wordFlags []wordbreaking.Flags, offset int) int {
+	for offset < len(wordFlags) && wordFlags[offset]&flag != flag {
+		offset++
+	}
+	if offset < len(wordFlags) {
+		return offset
+	}
+	return -1
 }

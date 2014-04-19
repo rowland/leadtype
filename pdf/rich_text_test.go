@@ -3,7 +3,11 @@
 
 package pdf
 
-import "testing"
+import (
+	"leadtype/wordbreaking"
+	"reflect"
+	"testing"
+)
 
 // import "fmt"
 
@@ -70,7 +74,7 @@ func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.MustEqual(2, len(rt.pieces))
+	st.Must(len(rt.pieces) == 2)
 	st.Equal("所有测", rt.pieces[0].Text)
 	st.Equal(10.0, rt.pieces[0].FontSize)
 	st.Equal("abc", rt.pieces[1].Text)
@@ -89,7 +93,7 @@ func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.MustEqual(5, len(rt.pieces))
+	st.Must(len(rt.pieces) == 5)
 	st.Equal("Here is some Russian, ", rt.pieces[0].Text)
 	st.Equal(10.0, rt.pieces[0].FontSize)
 	st.Equal("Неприкосновенность", rt.pieces[1].Text)
@@ -115,7 +119,7 @@ func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.MustEqual(0, len(rt.pieces))
+	st.Must(len(rt.pieces) == 0)
 	st.Equal("所有测abc", rt.Text)
 	st.Equal(10.0, rt.FontSize)
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
@@ -422,7 +426,7 @@ func TestRichText_Merge(t *testing.T) {
 	// Leaf: .
 
 	st.Equal(text+text1+text2, merged.String())
-	st.MustEqual(5, len(merged.pieces))
+	st.Must(len(merged.pieces) == 5)
 
 	st.Equal("Here is some Russian, ", merged.pieces[0].Text)
 	st.Equal(10.0, merged.pieces[0].FontSize)
@@ -445,6 +449,18 @@ func TestRichText_Merge(t *testing.T) {
 	st.Equal(fonts[0], merged.pieces[4].Font, "Should be tagged with Helvetica font.")
 
 	st.Equal(piece0.Text, original.pieces[0].Text, "Original should be unchanged.")
+}
+
+func mixedText() *RichText {
+	afmFonts := testAfmFonts("Helvetica")
+	ttfFonts := testTtfFonts("Arial", "STSong")
+	fonts := append(afmFonts, ttfFonts...)
+	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
+	rt, err := NewRichText(text, fonts, 10, Options{})
+	if err != nil {
+		panic(err)
+	}
+	return rt
 }
 
 func TestRichText_Split(t *testing.T) {
@@ -503,6 +519,58 @@ func TestRichText_Width(t *testing.T) {
 	st.Equal(0.0, p.Width())
 	p = richTextMixedText()
 	st.AlmostEqual(60.024414, p.Width(), 0.001)
+}
+
+func TestRichText_WordsToWidth_empty(t *testing.T) {
+	st := SuperTest{t}
+	p := new(RichText)
+	flags := make([]wordbreaking.Flags, p.Len())
+	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(10, flags, false)
+	st.Equal(p, line, "Should return original piece.")
+	if remainder != nil {
+		t.Error("There should be nothing left over.")
+	}
+	st.True(reflect.DeepEqual(flags, lineFlags), "Should return original flags.")
+	if remainderFlags != nil {
+		t.Error("There should be no flags remaining.")
+	}
+	st.True(err == nil, "No error is expected.")
+}
+
+func TestRichText_WordsToWidth_short(t *testing.T) {
+	st := SuperTest{t}
+	p := loremText()
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(30, flags, false)
+	st.Equal(p, line, "Should return original piece.")
+	if remainder != nil {
+		t.Error("There should be nothing left over.")
+	}
+	st.True(reflect.DeepEqual(flags, lineFlags), "Should return original flags.")
+	if remainderFlags != nil {
+		t.Error("There should be no flags remaining.")
+	}
+	st.True(err == nil, "No error is expected.")
+}
+
+func TestRichText_WordsToWidth_mixed(t *testing.T) {
+	st := SuperTest{t}
+	p := mixedText()
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(60, flags, false)
+	st.MustNot(line == nil, "Line must not be nil.")
+	// st.Equal("Here is some Russian", line.String())
+	if remainder == nil {
+		t.Error("There should be text left over.")
+	}
+	st.Equal(8, len(lineFlags))
+	st.Equal(119, len(remainderFlags))
+	if remainderFlags == nil {
+		t.Error("There should be flags remaining.")
+	}
+	st.Equal(nil, err, "No error is expected.")
 }
 
 // 14,930 ns go1.1.2
