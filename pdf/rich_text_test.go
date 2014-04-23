@@ -7,6 +7,7 @@ import (
 	"leadtype/wordbreaking"
 	"reflect"
 	"testing"
+	"unicode"
 )
 
 // import "fmt"
@@ -511,6 +512,47 @@ func TestRichText_String(t *testing.T) {
 		t.Fatal(err)
 	}
 	st.Equal(text, rt.String())
+}
+
+const (
+	leadingWhiteSpaceText         = "\n\t  Here is some text with leading whitespace."
+	leadingWhiteSpaceText_trimmed = "Here is some text with leading whitespace."
+	whiteSpaceText_simple         = "Here is some text with trailing whitespace \t\n"
+	whiteSpaceText_simple_trimmed = "Here is some text with trailing whitespace"
+	whiteSpaceText_complex1       = "Here is some text "
+	whiteSpaceText_complex2       = "with trailing whitespace \t\n"
+)
+
+func TestRichText_TrimLeftSpace_simple(t *testing.T) {
+	st := SuperTest{t}
+	t1 := &RichText{Text: leadingWhiteSpaceText}
+	st.Equal(leadingWhiteSpaceText, t1.String())
+	t2 := t1.TrimLeftSpace()
+	st.Equal(leadingWhiteSpaceText_trimmed, t2.String())
+}
+
+func TestRichText_TrimRightSpace_simple(t *testing.T) {
+	st := SuperTest{t}
+	t1 := &RichText{Text: whiteSpaceText_simple}
+	st.Equal(whiteSpaceText_simple, t1.String())
+	t2 := t1.TrimRightSpace()
+	st.Equal(whiteSpaceText_simple_trimmed, t2.String())
+}
+
+func TestRichText_TrimRightFunc_complex(t *testing.T) {
+	st := SuperTest{t}
+	fonts := testTtfFonts("Arial")
+	t1, err := NewRichText(whiteSpaceText_complex1, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t2, err2 := t1.Add(whiteSpaceText_complex2, fonts, 10, Options{})
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	st.Equal(whiteSpaceText_simple, t2.String())
+	t3 := t2.TrimRightFunc(unicode.IsSpace)
+	st.Equal(whiteSpaceText_simple_trimmed, t3.String())
 }
 
 func TestRichText_Width(t *testing.T) {

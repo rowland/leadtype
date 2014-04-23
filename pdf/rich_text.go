@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"leadtype/wordbreaking"
 	"sort"
+	"strings"
 	"unicode"
 )
 
@@ -361,7 +362,7 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 	start := 0
 	inFont := false
 	for index, rune := range piece.Text {
-		runeInFont := font.HasRune(rune)
+		runeInFont := (rune == '\t') || (rune == '\n') || font.HasRune(rune)
 		if runeInFont != inFont {
 			if index > start {
 				newPiece := *piece
@@ -415,6 +416,34 @@ func (piece *RichText) stringWidth(s string) (width float64) {
 		}
 	}
 	return
+}
+
+func (piece *RichText) TrimLeftFunc(f func(rune) bool) *RichText {
+	s := piece.String()
+	trimmed := strings.TrimLeftFunc(s, f)
+	if len(trimmed) == len(s) {
+		return piece
+	}
+	_, right := piece.Split(len(s) - len(trimmed))
+	return right
+}
+
+func (piece *RichText) TrimLeftSpace() *RichText {
+	return piece.TrimLeftFunc(unicode.IsSpace)
+}
+
+func (piece *RichText) TrimRightFunc(f func(rune) bool) *RichText {
+	s := piece.String()
+	trimmed := strings.TrimRightFunc(s, f)
+	if len(trimmed) == len(s) {
+		return piece
+	}
+	left, _ := piece.Split(len(trimmed))
+	return left
+}
+
+func (piece *RichText) TrimRightSpace() *RichText {
+	return piece.TrimRightFunc(unicode.IsSpace)
 }
 
 func (piece *RichText) VisitAll(fn func(*RichText)) {
