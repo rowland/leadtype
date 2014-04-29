@@ -50,13 +50,12 @@ func MarkRuneAttributes(text string, flags []Flags) {
 	}
 	var rc, last runeClass
 	for i, r := range text {
-		// fmt.Printf("%d = %c (%X)\n", i, r, r)
 		flags[i] |= CharStop
 		rc = classifyRune(r)
 		if i == 0 {
 			flags[i] |= SoftBreak | WordStop
 		} else if rc == rcWhiteSpace {
-			flags[i] |= WhiteSpace
+			flags[i] |= SoftBreak | WhiteSpace
 		} else if last == rcWhiteSpace && (rc == rcHyphen || rc == rcOther) {
 			flags[i] |= SoftBreak | WordStop
 		} else if last == rcHyphen && rc == rcOther {

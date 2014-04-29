@@ -8,15 +8,15 @@ import "testing"
 func TestMarkRuneAttributes(t *testing.T) {
 	const quick = "The quick red fox jumps over the lazy brown dog."
 	var quickFlags = []Flags{
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace, // The
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // quick
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace, // red
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace, // fox
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // jumps
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // over
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace, // the
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // lazy
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // brown
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // The
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // quick
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // red
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // fox
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // jumps
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // over
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // the
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // lazy
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // brown
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, // dog.
 	}
 	var flags [len(quick)]Flags
@@ -33,11 +33,11 @@ func TestMarkRuneAttributes_with_hyphens(t *testing.T) {
 	const hyphenTest = "Word-breaking test with regular and soft\u00ADhyphens."
 	var hyphenFlags = []Flags{
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, // Word-
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // breaking
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // test
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // with
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace, // regular
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace, // and
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // breaking
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // test
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // with
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // regular
+		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // and
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, 0, // soft-
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, // hyphens.
 	}
