@@ -515,12 +515,14 @@ func TestRichText_String(t *testing.T) {
 }
 
 const (
-	leadingWhiteSpaceText         = "\n\t  Here is some text with leading whitespace."
-	leadingWhiteSpaceText_trimmed = "Here is some text with leading whitespace."
-	whiteSpaceText_simple         = "Here is some text with trailing whitespace \t\n"
-	whiteSpaceText_simple_trimmed = "Here is some text with trailing whitespace"
-	whiteSpaceText_complex1       = "Here is some text "
-	whiteSpaceText_complex2       = "with trailing whitespace \t\n"
+	leadingWhiteSpaceText                   = "\n\t  Here is some text with leading whitespace."
+	leadingWhiteSpaceText_trimmed           = "Here is some text with leading whitespace."
+	trailingwhiteSpaceText_simple           = "Here is some text with trailing whitespace \t\n"
+	trailingwhiteSpaceText_simple_trimmed   = "Here is some text with trailing whitespace"
+	whiteSpaceText_complex1                 = "Here is some text "
+	whiteSpaceText_complex2                 = "with trailing whitespace \t\n"
+	leadingAndTrailingWhitespaceText        = leadingWhiteSpaceText + " " + trailingwhiteSpaceText_simple
+	leadingAndTrailingWhitespaceTextTrimmed = leadingWhiteSpaceText_trimmed + " " + trailingwhiteSpaceText_simple_trimmed
 )
 
 func TestRichText_TrimLeftSpace_simple(t *testing.T) {
@@ -533,10 +535,18 @@ func TestRichText_TrimLeftSpace_simple(t *testing.T) {
 
 func TestRichText_TrimRightSpace_simple(t *testing.T) {
 	st := SuperTest{t}
-	t1 := &RichText{Text: whiteSpaceText_simple}
-	st.Equal(whiteSpaceText_simple, t1.String())
+	t1 := &RichText{Text: trailingwhiteSpaceText_simple}
+	st.Equal(trailingwhiteSpaceText_simple, t1.String())
 	t2 := t1.TrimRightSpace()
-	st.Equal(whiteSpaceText_simple_trimmed, t2.String())
+	st.Equal(trailingwhiteSpaceText_simple_trimmed, t2.String())
+}
+
+func TestRichText_TrimSpace(t *testing.T) {
+	st := SuperTest{t}
+	t1 := &RichText{Text: leadingAndTrailingWhitespaceText}
+	st.Equal(leadingAndTrailingWhitespaceText, t1.String())
+	t2 := t1.TrimSpace()
+	st.Equal(leadingAndTrailingWhitespaceTextTrimmed, t2.String())
 }
 
 func TestRichText_TrimRightFunc_complex(t *testing.T) {
@@ -550,9 +560,9 @@ func TestRichText_TrimRightFunc_complex(t *testing.T) {
 	if err2 != nil {
 		t.Fatal(err2)
 	}
-	st.Equal(whiteSpaceText_simple, t2.String())
+	st.Equal(trailingwhiteSpaceText_simple, t2.String())
 	t3 := t2.TrimRightFunc(unicode.IsSpace)
-	st.Equal(whiteSpaceText_simple_trimmed, t3.String())
+	st.Equal(trailingwhiteSpaceText_simple_trimmed, t3.String())
 }
 
 func TestRichText_Width(t *testing.T) {
@@ -603,16 +613,52 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
 	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(60, flags, false)
 	st.MustNot(line == nil, "Line must not be nil.")
-	// st.Equal("Here is some Russian", line.String())
-	if remainder == nil {
-		t.Error("There should be text left over.")
-	}
-	st.Equal(8, len(lineFlags))
-	st.Equal(119, len(remainderFlags))
+	st.Equal("Here is some", line.String())
+	st.MustNot(remainder == nil, "There should be text left over.")
+	st.Equal(" Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估.", remainder.String())
+	st.Equal(12, len(lineFlags))
+	st.Equal(115, len(remainderFlags))
 	if remainderFlags == nil {
 		t.Error("There should be flags remaining.")
 	}
 	st.Equal(nil, err, "No error is expected.")
+}
+
+func TestRichText_WrapToWidth_short(t *testing.T) {
+	st := SuperTest{t}
+	p := loremText()
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	lines, err := p.WrapToWidth(30, flags, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Must(len(lines) == 1, "Should return one piece.")
+	st.Equal(p.Text, lines[0].Text, "Text should match.")
+	st.True(p.MatchesAttributes(lines[0]))
+}
+
+func TestRichText_WrapToWidth_mixed(t *testing.T) {
+	st := SuperTest{t}
+	p := mixedText()
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	lines, err := p.WrapToWidth(60, flags, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Must(len(lines) > 1, "Should return at least one piece.")
+	expected := []string{
+		"Here is some",
+		"Russian,",
+		"Неприкосновенность,",
+		"and some",
+		"Chinese,",
+		"表明你已明确同意你的回答接受评估.",
+	}
+	for i := 0; i < len(expected); i++ {
+		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
+	}
 }
 
 // 14,930 ns go1.1.2

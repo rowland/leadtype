@@ -116,6 +116,26 @@ func (piece *RichText) Descent() float64 {
 	return piece.descent
 }
 
+func (piece *RichText) EachRune(fn func(r rune, p *RichText, offset int) bool) bool {
+	offset := 0
+	return piece.eachRune(fn, &offset)
+}
+
+func (piece *RichText) eachRune(fn func(rune rune, p *RichText, offset int) bool, offset *int) bool {
+	for o, rune := range piece.Text {
+		if fn(rune, piece, *offset+o) {
+			return true
+		}
+	}
+	*offset += len(piece.Text)
+	for _, p := range piece.pieces {
+		if p.eachRune(fn, offset) {
+			return true
+		}
+	}
+	return false
+}
+
 func (piece *RichText) Height() float64 {
 	if piece.height == 0.0 {
 		if piece.IsLeaf() {
@@ -269,37 +289,6 @@ func (piece *RichText) Merge() *RichText {
 	return &mergedText
 }
 
-func (piece *RichText) seekToWidth(width float64, current *int, currentWidth *float64, wordFlags []wordbreaking.Flags, hardBreak bool) (done bool) {
-	if piece.IsLeaf() {
-		if *currentWidth+piece.Width() > width {
-			offset := *current
-			n := nextFlag(wordbreaking.SoftBreak, wordFlags, *current+1)
-			for n > *current {
-				nextWord := piece.Text[*current-offset : n-offset]
-				wn := piece.stringWidth(nextWord)
-				if *currentWidth+wn < width {
-					*current = n
-					*currentWidth += wn
-				} else {
-					return true
-				}
-				n = nextFlag(wordbreaking.SoftBreak, wordFlags, *current+1)
-			}
-			// Should never reach here.
-			return true
-		}
-		*current += piece.Len()
-		*currentWidth += piece.Width()
-		return false
-	}
-	for _, p := range piece.pieces {
-		if p.seekToWidth(width, current, currentWidth, wordFlags, hardBreak) {
-			return true
-		}
-	}
-	return false
-}
-
 func (piece *RichText) Split(offset int) (left, right *RichText) {
 	if offset < 0 {
 		offset = 0
@@ -307,10 +296,10 @@ func (piece *RichText) Split(offset int) (left, right *RichText) {
 	var current int = 0
 	left, right = new(RichText), new(RichText)
 	piece.split(offset, left, right, &current)
-	if len(left.pieces) == 1 {
+	for len(left.pieces) == 1 {
 		left = left.pieces[0]
 	}
-	if len(right.pieces) == 1 {
+	for len(right.pieces) == 1 {
 		right = right.pieces[0]
 	}
 	return
@@ -418,6 +407,10 @@ func (piece *RichText) stringWidth(s string) (width float64) {
 	return
 }
 
+func (piece *RichText) TrimFunc(f func(rune) bool) *RichText {
+	return piece.TrimLeftFunc(f).TrimRightFunc(f)
+}
+
 func (piece *RichText) TrimLeftFunc(f func(rune) bool) *RichText {
 	s := piece.String()
 	trimmed := strings.TrimLeftFunc(s, f)
@@ -446,6 +439,10 @@ func (piece *RichText) TrimRightSpace() *RichText {
 	return piece.TrimRightFunc(unicode.IsSpace)
 }
 
+func (piece *RichText) TrimSpace() *RichText {
+	return piece.TrimFunc(unicode.IsSpace)
+}
+
 func (piece *RichText) VisitAll(fn func(*RichText)) {
 	fn(piece)
 	for _, p := range piece.pieces {
@@ -465,29 +462,61 @@ func (piece *RichText) Width() float64 {
 	return piece.width
 }
 
-func (piece *RichText) WordsToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
+func (piece *RichText) WordsToWidth(
+	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
 	line, remainder *RichText, lineFlags, remainderFlags []wordbreaking.Flags, err error) {
 	if width < 0 {
 		width = 0
 	}
-	if piece.Width() <= width {
-		return piece, nil, wordFlags, nil, nil
-	}
 	current := 0
 	currentWidth := 0.0
-	piece.seekToWidth(width, &current, &currentWidth, wordFlags, hardBreak)
+	words := 0
+	wordWidth := 0.0
+
+	var lastPiece *RichText
+	var metrics FontMetrics
+	var fsize float64
+
+	fn := func(rune rune, p *RichText, offset int) bool {
+		if words > 0 && currentWidth+wordWidth > width {
+			return true
+		}
+		if offset > 0 && wordFlags[offset]&wordbreaking.SoftBreak == wordbreaking.SoftBreak {
+			current = offset
+			currentWidth += wordWidth
+			wordWidth = 0.0
+			words++
+		}
+		if p != lastPiece {
+			metrics = p.Font.metrics
+			fsize = p.FontSize / float64(metrics.UnitsPerEm())
+			lastPiece = p
+		}
+		runeWidth, _ := metrics.AdvanceWidth(rune)
+		wordWidth += (fsize * float64(runeWidth)) + p.CharSpacing
+		if unicode.IsSpace(rune) {
+			wordWidth += p.WordSpacing
+		}
+		return false
+	}
+
+	piece.EachRune(fn)
+	if current == 0 {
+		return piece, nil, wordFlags, nil, nil
+	}
 	line, remainder = piece.Split(current)
 	lineFlags, remainderFlags = wordFlags[:current], wordFlags[current:]
 	return
 }
 
-// Return next index of flag in wordFlags, starting at offset. -1 if not found.
-func nextFlag(flag wordbreaking.Flags, wordFlags []wordbreaking.Flags, offset int) int {
-	for offset < len(wordFlags) && wordFlags[offset]&flag != flag {
-		offset++
+func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
+	lines []*RichText, err error) {
+	line, remainder, _, remainderFlags, err2 := piece.WordsToWidth(width, wordFlags, hardBreak)
+	for err2 == nil && remainder != nil {
+		lines = append(lines, line.TrimSpace())
+		line, remainder, _, remainderFlags, err2 = remainder.WordsToWidth(width, remainderFlags, hardBreak)
 	}
-	if offset < len(wordFlags) {
-		return offset
-	}
-	return -1
+	lines = append(lines, line.TrimSpace())
+	err = err2
+	return
 }
