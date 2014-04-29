@@ -84,13 +84,14 @@ func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	st.Equal(fonts[0], rt.pieces[1].Font, "Should be tagged with STSong font.")
 }
 
+const englishRussianChinese = "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
+
 func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
 	fonts := append(afmFonts, ttfFonts...)
-	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-	rt, err := NewRichText(text, fonts, 10, Options{})
+	rt, err := NewRichText(englishRussianChinese, fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -456,8 +457,7 @@ func mixedText() *RichText {
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
 	fonts := append(afmFonts, ttfFonts...)
-	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-	rt, err := NewRichText(text, fonts, 10, Options{})
+	rt, err := NewRichText(englishRussianChinese, fonts, 10, Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -466,14 +466,7 @@ func mixedText() *RichText {
 
 func TestRichText_Split(t *testing.T) {
 	st := SuperTest{t}
-	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
-	fonts := append(afmFonts, ttfFonts...)
-	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-	rt, err := NewRichText(text, fonts, 10, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	rt := mixedText()
 	byteOffsets := []int{0, 5, 8, 13, 22, 60, 64, 69, 78}
 	words := []string{"Here ", "is ", "some ", "Russian, ", "Неприкосновенность, ", "and ", "some ", "Chinese, ", "表明你已明确同意你的回答接受评估."}
 	for i := len(byteOffsets) - 1; i >= 0; i-- {
@@ -503,15 +496,8 @@ func TestRichText_Split_simple2(t *testing.T) {
 
 func TestRichText_String(t *testing.T) {
 	st := SuperTest{t}
-	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
-	fonts := append(afmFonts, ttfFonts...)
-	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-	rt, err := NewRichText(text, fonts, 10, Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	st.Equal(text, rt.String())
+	rt := mixedText()
+	st.Equal(englishRussianChinese, rt.String())
 }
 
 const (
@@ -667,11 +653,10 @@ func BenchmarkNewRichText(b *testing.B) {
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
 	fonts := append(afmFonts, ttfFonts...)
-	text := "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := NewRichText(text, fonts, 10, Options{})
+		_, err := NewRichText(englishRussianChinese, fonts, 10, Options{})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -714,24 +699,10 @@ func BenchmarkRichText_measure(b *testing.B) {
 	}
 }
 
-func multiLangText() *RichText {
-	const text = "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
-
-	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
-	fonts := append(afmFonts, ttfFonts...)
-
-	rt, err := NewRichText(text, fonts, 10, Options{})
-	if err != nil {
-		panic(err)
-	}
-	return rt
-}
-
 // 4488 ns go1.1.2
 func BenchmarkRichText_Ascent(b *testing.B) {
 	b.StopTimer()
-	text := multiLangText()
+	text := mixedText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -748,7 +719,7 @@ func BenchmarkRichText_Ascent(b *testing.B) {
 // 4547 ns go1.1.2
 func BenchmarkRichText_Chars(b *testing.B) {
 	b.StopTimer()
-	text := multiLangText()
+	text := mixedText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -765,7 +736,7 @@ func BenchmarkRichText_Chars(b *testing.B) {
 // 4492 ns go1.1.2
 func BenchmarkRichText_Descent(b *testing.B) {
 	b.StopTimer()
-	text := multiLangText()
+	text := mixedText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -782,7 +753,7 @@ func BenchmarkRichText_Descent(b *testing.B) {
 // 4559 ns go1.1.2
 func BenchmarkRichText_Height(b *testing.B) {
 	b.StopTimer()
-	text := multiLangText()
+	text := mixedText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -799,7 +770,7 @@ func BenchmarkRichText_Height(b *testing.B) {
 // 30.2 ns go1.1.2
 func BenchmarkRichText_Len(b *testing.B) {
 	b.StopTimer()
-	text := multiLangText()
+	text := mixedText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -810,7 +781,7 @@ func BenchmarkRichText_Len(b *testing.B) {
 // 4539 ns go1.1.2
 func BenchmarkRichText_Width(b *testing.B) {
 	b.StopTimer()
-	text := multiLangText()
+	text := mixedText()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
