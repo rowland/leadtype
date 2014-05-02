@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"fmt"
 	"leadtype/wordbreaking"
 	"reflect"
 	"testing"
@@ -612,10 +613,14 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 
 func TestRichText_WrapToWidth_short(t *testing.T) {
 	st := SuperTest{t}
-	p := loremText()
+	fonts := testTtfFonts("Arial")
+	p, err := NewRichText("Lorem ipsum.", fonts, 10, Options{"nobreak": true})
+	if err != nil {
+		t.Fatal(err)
+	}
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	lines, err := p.WrapToWidth(30, flags, false)
+	lines, err := p.WrapToWidth(100, flags, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -645,6 +650,57 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 	for i := 0; i < len(expected); i++ {
 		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
 	}
+}
+
+func TestRichText_WrapToWidth_nobreak_simple(t *testing.T) {
+	st := SuperTest{t}
+	fonts := testTtfFonts("Arial")
+	rt, err := NewRichText("Here is a long sentence with mostly small words.", fonts, 10, Options{"nobreak": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	rt.MarkNoBreak(flags)
+	lines, err2 := rt.WrapToWidth(60, flags, false)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	st.Equal(1, len(lines), "Should return a single line.")
+}
+
+func dump(rt *RichText) {
+	fmt.Println("---")
+	rt.VisitAll(func(p *RichText) {
+		fmt.Printf("Text: %s, FontSize: %v, NoBreak: %v\n", p.Text, p.FontSize, p.NoBreak)
+	})
+}
+
+func TestRichText_WrapToWidth_nobreak_complex(t *testing.T) {
+	st := SuperTest{t}
+	fonts := testTtfFonts("Arial")
+	var rt *RichText
+	var err error
+	rt, err = NewRichText("Here is a ", fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err = rt.Add("long sentence with mostly", fonts, 10, Options{"nobreak": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err = rt.Add(" small words.", fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	rt.MarkNoBreak(flags)
+	lines, err := rt.WrapToWidth(60, flags, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Equal(3, len(lines), "Should return 3 lines.")
 }
 
 // 14,930 ns go1.1.2

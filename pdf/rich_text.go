@@ -223,6 +223,19 @@ func (piece *RichText) Len() int {
 	return result
 }
 
+func (piece *RichText) MarkNoBreak(wordFlags []wordbreaking.Flags) {
+	offset := 0
+	piece.VisitAll(func(p *RichText) {
+		if p.NoBreak {
+			l := p.Len()
+			for i := offset + 1; i < offset+l; i++ {
+				wordFlags[i] |= wordbreaking.NoBreak
+			}
+		}
+		offset += len(p.Text)
+	})
+}
+
 func (piece *RichText) MatchesAttributes(other *RichText) bool {
 	return (piece.Font != nil && other.Font != nil) && (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
 		piece.FontSize == other.FontSize &&
@@ -481,7 +494,9 @@ func (piece *RichText) WordsToWidth(
 		if words > 0 && currentWidth+wordWidth > width {
 			return true
 		}
-		if offset > 0 && wordFlags[offset]&wordbreaking.SoftBreak == wordbreaking.SoftBreak {
+		if offset > 0 &&
+			wordFlags[offset]&wordbreaking.SoftBreak == wordbreaking.SoftBreak &&
+			wordFlags[offset]&wordbreaking.NoBreak != wordbreaking.NoBreak {
 			current = offset
 			currentWidth += wordWidth
 			wordWidth = 0.0
@@ -500,8 +515,8 @@ func (piece *RichText) WordsToWidth(
 		return false
 	}
 
-	piece.EachRune(fn)
-	if current == 0 {
+	finished := !piece.EachRune(fn)
+	if current == 0 || finished {
 		return piece, nil, wordFlags, nil, nil
 	}
 	line, remainder = piece.Split(current)

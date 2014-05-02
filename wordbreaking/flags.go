@@ -11,4 +11,5 @@ const (
 	CharStop   = Flags(1 << iota) // valid cursor position
 	WordStop   = Flags(1 << iota) // start of a word
 	Invalid    = Flags(1 << iota) // invalid character sequence
+	NoBreak    = Flags(1 << iota) // do not break here
 )
