@@ -611,6 +611,28 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	st.Equal(nil, err, "No error is expected.")
 }
 
+func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
+	const hyphenatedText = "Super-cali-fragil-istic-expi-ali-do-cious"
+	expected := []string{
+		"Super-cali-",
+		"fragil-istic-",
+		"expi-ali-do-",
+		"cious",
+	}
+	rt := sampleText(hyphenatedText)
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	lines, err := rt.WrapToWidth(60, flags, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := SuperTest{t}
+	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
+	for i := range lines {
+		st.Equal(expected[i], lines[i].String())
+	}
+}
+
 func TestRichText_WrapToWidth_short(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial")
