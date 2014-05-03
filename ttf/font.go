@@ -85,12 +85,11 @@ func (font *Font) init(file io.ReadSeeker) (err error) {
 
 // 47.8 ns go1 (returning bool err)
 func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
-	if index := font.cmapTable.glyphIndex(int(codepoint)); index < 0 {
-		err = true
-	} else {
-		width = int(font.hmtxTable.lookupAdvanceWidth(index))
+	index := font.cmapTable.glyphIndex(int(codepoint))
+	if index < 0 {
+		return 0, true
 	}
-	return
+	return int(font.hmtxTable.lookupAdvanceWidth(index)), false
 }
 
 func (font *Font) Ascent() int {
