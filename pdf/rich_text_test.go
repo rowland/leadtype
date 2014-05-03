@@ -312,13 +312,13 @@ func TestRichText_Len_simple(t *testing.T) {
 	st.Equal(5, rt.Len())
 }
 
-func loremText() *RichText {
-	font := testTtfFonts("Arial")[0]
-	return &RichText{
-		Text:     "Lorem",
-		Font:     font,
-		FontSize: 10,
+func sampleText(s string) *RichText {
+	fonts := testTtfFonts("Arial")
+	rt, err := NewRichText(s, fonts, 10, Options{})
+	if err != nil {
+		panic(err)
 	}
+	return rt
 }
 
 func TestRichText_MatchesAttributes(t *testing.T) {
@@ -361,7 +361,7 @@ func TestRichText_MatchesAttributes(t *testing.T) {
 }
 
 func TestRichText_measure(t *testing.T) {
-	piece := loremText()
+	piece := sampleText("Lorem")
 	piece.measure()
 	expectNFdelta(t, "ascent", 9.052734, piece.ascent, 0.001)
 	expectNFdelta(t, "descent", -2.119141, piece.descent, 0.001)
@@ -578,7 +578,7 @@ func TestRichText_WordsToWidth_empty(t *testing.T) {
 
 func TestRichText_WordsToWidth_short(t *testing.T) {
 	st := SuperTest{t}
-	p := loremText()
+	p := sampleText("Lorem")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
 	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(30, flags, false)
@@ -704,6 +704,7 @@ func TestRichText_WrapToWidth_nobreak_complex(t *testing.T) {
 }
 
 // 14,930 ns go1.1.2
+// 14,685 ns go1.2.1
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := testAfmFonts("Helvetica")
@@ -722,6 +723,7 @@ func BenchmarkNewRichText(b *testing.B) {
 // 75.5 ns
 // 76.9 ns go1.1.1
 // 70.8 ns go1.1.2
+// 74.1 ns go1.2.1
 func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
@@ -740,14 +742,10 @@ func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 // 345 ns
 // 301 ns go1.1.1
 // 296 ns go1.1.2
+// 299 ns go1.2.1
 func BenchmarkRichText_measure(b *testing.B) {
 	b.StopTimer()
-	font := testTtfFonts("Arial")[0]
-	piece := &RichText{
-		Text:     "Lorem",
-		Font:     font,
-		FontSize: 10,
-	}
+	piece := sampleText("Lorem")
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -756,6 +754,7 @@ func BenchmarkRichText_measure(b *testing.B) {
 }
 
 // 4488 ns go1.1.2
+// 4591 ns go1.2.1
 func BenchmarkRichText_Ascent(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -773,6 +772,7 @@ func BenchmarkRichText_Ascent(b *testing.B) {
 }
 
 // 4547 ns go1.1.2
+// 4591 ns go1.2.1
 func BenchmarkRichText_Chars(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -790,6 +790,7 @@ func BenchmarkRichText_Chars(b *testing.B) {
 }
 
 // 4492 ns go1.1.2
+// 4568 ns go1.2.1
 func BenchmarkRichText_Descent(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -807,6 +808,7 @@ func BenchmarkRichText_Descent(b *testing.B) {
 }
 
 // 4559 ns go1.1.2
+// 4593 ns go1.2.1
 func BenchmarkRichText_Height(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -824,6 +826,7 @@ func BenchmarkRichText_Height(b *testing.B) {
 }
 
 // 30.2 ns go1.1.2
+// 30.4 ns go1.2.1
 func BenchmarkRichText_Len(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -835,6 +838,7 @@ func BenchmarkRichText_Len(b *testing.B) {
 }
 
 // 4539 ns go1.1.2
+// 4636 ns go1.2.1
 func BenchmarkRichText_Width(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
