@@ -58,8 +58,14 @@ func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options Op
 	if err != nil {
 		return piece, err
 	}
+	return piece.AddPiece(p)
+}
+
+func (piece *RichText) AddPiece(p *RichText) (*RichText, error) {
 	if len(piece.pieces) > 0 {
 		piece.pieces = append(piece.pieces, p)
+		piece.chars = 0
+		piece.width = 0.0
 	} else {
 		piece = &RichText{pieces: []*RichText{piece, p}}
 	}
@@ -91,6 +97,13 @@ func (piece *RichText) Chars() int {
 		}
 	}
 	return piece.chars
+}
+
+func (piece *RichText) clone() *RichText {
+	p := *piece
+	p.chars = 0
+	p.width = 0.0
+	return &p
 }
 
 func (piece *RichText) Count() int {
@@ -215,6 +228,13 @@ func (piece *RichText) IsWhiteSpace() bool {
 	return len(piece.Text) > 0
 }
 
+func (piece *RichText) lastPiece() *RichText {
+	for !piece.IsLeaf() {
+		piece = piece.pieces[len(piece.pieces)-1]
+	}
+	return piece
+}
+
 func (piece *RichText) Len() int {
 	result := len(piece.Text)
 	for _, p := range piece.pieces {
@@ -259,6 +279,9 @@ func (piece *RichText) measure() *RichText {
 	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
 	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
 	for _, rune := range piece.Text {
+		if rune == wordbreaking.SoftHyphen {
+			continue
+		}
 		piece.chars += 1
 		runeWidth, _ := metrics.AdvanceWidth(rune)
 		piece.width += (fsize * float64(runeWidth)) + piece.CharSpacing
@@ -364,7 +387,7 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 	start := 0
 	inFont := false
 	for index, rune := range piece.Text {
-		runeInFont := (rune == '\t') || (rune == '\n') || font.HasRune(rune)
+		runeInFont := (rune == '\t') || (rune == '\n') || (rune == wordbreaking.SoftHyphen) || font.HasRune(rune)
 		if runeInFont != inFont {
 			if index > start {
 				newPiece := *piece
@@ -405,19 +428,6 @@ func (piece *RichText) String() string {
 		buf.WriteString(p.Text)
 	})
 	return buf.String()
-}
-
-func (piece *RichText) stringWidth(s string) (width float64) {
-	metrics := piece.Font.metrics
-	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
-	for _, rune := range s {
-		runeWidth, _ := metrics.AdvanceWidth(rune)
-		width += (fsize * float64(runeWidth)) + piece.CharSpacing
-		if unicode.IsSpace(rune) {
-			width += piece.WordSpacing
-		}
-	}
-	return
 }
 
 func (piece *RichText) TrimFunc(f func(rune) bool) *RichText {
@@ -485,13 +495,15 @@ func (piece *RichText) WordsToWidth(
 	currentWidth := 0.0
 	words := 0
 	wordWidth := 0.0
+	extra := 0.0
 
 	var lastPiece *RichText
 	var metrics FontMetrics
 	var fsize float64
+	var lastRune rune
 
 	fn := func(rune rune, p *RichText, offset int) bool {
-		if words > 0 && currentWidth+wordWidth > width {
+		if words > 0 && currentWidth+extra+wordWidth > width {
 			return true
 		}
 		if offset > 0 &&
@@ -501,17 +513,26 @@ func (piece *RichText) WordsToWidth(
 			currentWidth += wordWidth
 			wordWidth = 0.0
 			words++
+			if lastRune == wordbreaking.SoftHyphen {
+				extraRuneWidth, _ := metrics.AdvanceWidth(wordbreaking.HyphenMinus)
+				extra = (fsize * float64(extraRuneWidth)) + p.CharSpacing
+			} else {
+				extra = 0.0
+			}
 		}
 		if p != lastPiece {
 			metrics = p.Font.metrics
 			fsize = p.FontSize / float64(metrics.UnitsPerEm())
 			lastPiece = p
 		}
-		runeWidth, _ := metrics.AdvanceWidth(rune)
-		wordWidth += (fsize * float64(runeWidth)) + p.CharSpacing
-		if unicode.IsSpace(rune) {
-			wordWidth += p.WordSpacing
+		if rune != wordbreaking.SoftHyphen {
+			runeWidth, _ := metrics.AdvanceWidth(rune)
+			wordWidth += (fsize * float64(runeWidth)) + p.CharSpacing
+			if unicode.IsSpace(rune) {
+				wordWidth += p.WordSpacing
+			}
 		}
+		lastRune = rune
 		return false
 	}
 
@@ -521,6 +542,11 @@ func (piece *RichText) WordsToWidth(
 	}
 	line, remainder = piece.Split(current)
 	lineFlags, remainderFlags = wordFlags[:current], wordFlags[current:]
+	if extra > 0.0 {
+		p := piece.lastPiece().clone()
+		p.Text = "-"
+		line, err = line.AddPiece(p)
+	}
 	return
 }
 

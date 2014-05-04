@@ -312,8 +312,26 @@ func TestRichText_Len_simple(t *testing.T) {
 	st.Equal(5, rt.Len())
 }
 
-func sampleText(s string) *RichText {
+func arialText(s string) *RichText {
 	fonts := testTtfFonts("Arial")
+	rt, err := NewRichText(s, fonts, 10, Options{})
+	if err != nil {
+		panic(err)
+	}
+	return rt
+}
+
+func helveticaText(s string) *RichText {
+	fonts := testAfmFonts("Helvetica")
+	rt, err := NewRichText(s, fonts, 10, Options{})
+	if err != nil {
+		panic(err)
+	}
+	return rt
+}
+
+func courierNewText(s string) *RichText {
+	fonts := testTtfFonts("Courier New")
 	rt, err := NewRichText(s, fonts, 10, Options{})
 	if err != nil {
 		panic(err)
@@ -361,7 +379,7 @@ func TestRichText_MatchesAttributes(t *testing.T) {
 }
 
 func TestRichText_measure(t *testing.T) {
-	piece := sampleText("Lorem")
+	piece := arialText("Lorem")
 	piece.measure()
 	expectNFdelta(t, "ascent", 9.052734, piece.ascent, 0.001)
 	expectNFdelta(t, "descent", -2.119141, piece.descent, 0.001)
@@ -578,7 +596,7 @@ func TestRichText_WordsToWidth_empty(t *testing.T) {
 
 func TestRichText_WordsToWidth_short(t *testing.T) {
 	st := SuperTest{t}
-	p := sampleText("Lorem")
+	p := arialText("Lorem")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
 	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(30, flags, false)
@@ -619,7 +637,7 @@ func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
 		"expi-ali-do-",
 		"cious",
 	}
-	rt := sampleText(hyphenatedText)
+	rt := arialText(hyphenatedText)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
 	lines, err := rt.WrapToWidth(60, flags, false)
@@ -630,6 +648,51 @@ func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
 	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
 	for i := range lines {
 		st.Equal(expected[i], lines[i].String())
+	}
+}
+
+func TestRichText_WrapToWidth_soft_hyphenated(t *testing.T) {
+	const hyphenatedText = "Super\u00ADcali\u00ADfragil\u00ADistic\u00ADexpi\u00ADali\u00ADdo\u00ADcious"
+	expected := []string{
+		"Super\u00ADcali\u00AD-",
+		"fragil\u00AD-",
+		"istic\u00ADexpi\u00AD-",
+		"ali\u00ADdo\u00ADcious",
+	}
+	rt := courierNewText(hyphenatedText)
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	lines, err := rt.WrapToWidth(62, flags, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := SuperTest{t}
+	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
+	for i := range lines {
+		st.Equal(expected[i], lines[i].String())
+		st.True(lines[i].Width() <= 62, "Line too long.")
+	}
+}
+
+// Should not add hyphen-minus to end of string that does not end with a soft hyphen.
+func TestRichText_WrapToWidth_soft_hyphenated2(t *testing.T) {
+	const hyphenatedText = "Super\u00ADbad example"
+	expected := []string{
+		"Super\u00ADbad",
+		"example",
+	}
+	rt := courierNewText(hyphenatedText)
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	lines, err := rt.WrapToWidth(62, flags, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := SuperTest{t}
+	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
+	for i := range lines {
+		st.Equal(expected[i], lines[i].String())
+		st.True(lines[i].Width() <= 62, "Line too long.")
 	}
 }
 
@@ -767,7 +830,7 @@ func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 // 299 ns go1.2.1
 func BenchmarkRichText_measure(b *testing.B) {
 	b.StopTimer()
-	piece := sampleText("Lorem")
+	piece := arialText("Lorem")
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
