@@ -4,7 +4,6 @@
 package pdf
 
 import (
-	"fmt"
 	"leadtype/wordbreaking"
 	"reflect"
 	"testing"
@@ -31,8 +30,7 @@ func TestNewRichText_English(t *testing.T) {
 
 func TestNewRichText_EnglishAndChinese_Fail(t *testing.T) {
 	st := SuperTest{t}
-	fonts := testTtfFonts("Arial")
-	_, err := NewRichText("abc所有测", fonts, 10, Options{})
+	_, err := NewRichText("abc所有测", testTtfFonts("Arial"), 10, Options{})
 	st.False(err == nil, "NewRichText should fail with Chinese text and only Arial.")
 	st.Equal("No font found for 所有测.", err.Error())
 }
@@ -129,8 +127,7 @@ func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 }
 
 func richTextMixedText() *RichText {
-	fonts := testTtfFonts("Arial", "STSong")
-	rt, err := NewRichText("abc所有测def", fonts, 10, Options{})
+	rt, err := NewRichText("abc所有测def", testTtfFonts("Arial", "STSong"), 10, Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -313,8 +310,7 @@ func TestRichText_Len_simple(t *testing.T) {
 }
 
 func arialText(s string) *RichText {
-	fonts := testTtfFonts("Arial")
-	rt, err := NewRichText(s, fonts, 10, Options{})
+	rt, err := NewRichText(s, testTtfFonts("Arial"), 10, Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -322,8 +318,7 @@ func arialText(s string) *RichText {
 }
 
 func helveticaText(s string) *RichText {
-	fonts := testAfmFonts("Helvetica")
-	rt, err := NewRichText(s, fonts, 10, Options{})
+	rt, err := NewRichText(s, testAfmFonts("Helvetica"), 10, Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -331,8 +326,7 @@ func helveticaText(s string) *RichText {
 }
 
 func courierNewText(s string) *RichText {
-	fonts := testTtfFonts("Courier New")
-	rt, err := NewRichText(s, fonts, 10, Options{})
+	rt, err := NewRichText(s, testTtfFonts("Courier New"), 10, Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -700,26 +694,20 @@ func TestRichText_WrapToWidth_soft_hyphenated2(t *testing.T) {
 
 func TestRichText_WrapToWidth_short(t *testing.T) {
 	st := SuperTest{t}
-	fonts := testTtfFonts("Arial")
-	p, err := NewRichText("Lorem ipsum.", fonts, 10, Options{"nobreak": true})
+	p, err := NewRichText("Lorem ipsum.", testTtfFonts("Arial"), 10, Options{"nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
 	lines := p.WrapToWidth(100, flags, false)
-	st.Must(len(lines) == 1, "Should return one piece.")
+	st.Must(len(lines) == 1, "Should return one line.")
 	st.Equal(p.Text, lines[0].Text, "Text should match.")
 	st.True(p.MatchesAttributes(lines[0]))
 }
 
 func TestRichText_WrapToWidth_mixed(t *testing.T) {
 	st := SuperTest{t}
-	p := mixedText()
-	flags := make([]wordbreaking.Flags, p.Len())
-	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	lines := p.WrapToWidth(60, flags, false)
-	st.Must(len(lines) > 1, "Should return at least one piece.")
 	expected := []string{
 		"Here is some",
 		"Russian,",
@@ -728,6 +716,11 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 		"Chinese,",
 		"表明你已明确同意你的回答接受评估.",
 	}
+	p := mixedText()
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	lines := p.WrapToWidth(60, flags, false)
+	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
 	for i := 0; i < len(expected); i++ {
 		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
 	}
@@ -735,16 +728,16 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 
 func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
 	st := SuperTest{t}
-	p := arialText("Supercalifragilisticexpialidocious")
-	flags := make([]wordbreaking.Flags, p.Len())
-	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	lines := p.WrapToWidth(60, flags, true)
-	st.Must(len(lines) == 3, "Should return 3 pieces.")
 	expected := []string{
 		"Supercalifrag",
 		"ilisticexpialid",
 		"ocious",
 	}
+	p := arialText("Supercalifragilisticexpialidocious")
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	lines := p.WrapToWidth(60, flags, true)
+	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
 	for i := 0; i < len(expected); i++ {
 		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
 	}
@@ -752,8 +745,7 @@ func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
 
 func TestRichText_WrapToWidth_nobreak_simple(t *testing.T) {
 	st := SuperTest{t}
-	fonts := testTtfFonts("Arial")
-	rt, err := NewRichText("Here is a long sentence with mostly small words.", fonts, 10, Options{"nobreak": true})
+	rt, err := NewRichText("Here is a long sentence with mostly small words.", testTtfFonts("Arial"), 10, Options{"nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -762,13 +754,6 @@ func TestRichText_WrapToWidth_nobreak_simple(t *testing.T) {
 	rt.MarkNoBreak(flags)
 	lines := rt.WrapToWidth(60, flags, false)
 	st.Equal(1, len(lines), "Should return a single line.")
-}
-
-func dump(rt *RichText) {
-	fmt.Println("---")
-	rt.VisitAll(func(p *RichText) {
-		fmt.Printf("Text: %s, FontSize: %v, NoBreak: %v\n", p.Text, p.FontSize, p.NoBreak)
-	})
 }
 
 func TestRichText_WrapToWidth_nobreak_complex(t *testing.T) {
