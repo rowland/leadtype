@@ -270,7 +270,7 @@ func (piece *RichText) measure() *RichText {
 	if piece.Font == nil {
 		return piece
 	}
-	piece.chars, piece.width = 0, 0
+	piece.chars, piece.width = 0, 0.0
 	metrics := piece.Font.metrics
 	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
 	piece.ascent = float64(metrics.Ascent()) * fsize
@@ -349,12 +349,12 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 			} else {
 				newLeft := *piece
 				newLeft.Text = piece.Text[:offset-*current]
-				newLeft.width, newLeft.chars = 0, 0
+				newLeft.width, newLeft.chars = 0.0, 0
 				left.pieces = append(left.pieces, &newLeft)
 
 				newRight := *piece
 				newRight.Text = piece.Text[offset-*current:]
-				newRight.width, newRight.chars = 0, 0
+				newRight.width, newRight.chars = 0.0, 0
 				right.pieces = append(right.pieces, &newRight)
 			}
 		} else {
@@ -488,9 +488,6 @@ func (piece *RichText) Width() float64 {
 func (piece *RichText) WordsToWidth(
 	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
 	line, remainder *RichText, remainderFlags []wordbreaking.Flags) {
-	if width < 0 {
-		width = 0
-	}
 	current := 0
 	currentWidth := 0.0
 	words := 0
