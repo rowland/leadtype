@@ -58,10 +58,10 @@ func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options Op
 	if err != nil {
 		return piece, err
 	}
-	return piece.AddPiece(p)
+	return piece.AddPiece(p), nil
 }
 
-func (piece *RichText) AddPiece(p *RichText) (*RichText, error) {
+func (piece *RichText) AddPiece(p *RichText) *RichText {
 	if len(piece.pieces) > 0 {
 		piece.pieces = append(piece.pieces, p)
 		piece.chars = 0
@@ -69,7 +69,7 @@ func (piece *RichText) AddPiece(p *RichText) (*RichText, error) {
 	} else {
 		piece = &RichText{pieces: []*RichText{piece, p}}
 	}
-	return piece, nil
+	return piece
 }
 
 func (piece *RichText) Ascent() float64 {
@@ -487,7 +487,7 @@ func (piece *RichText) Width() float64 {
 
 func (piece *RichText) WordsToWidth(
 	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
-	line, remainder *RichText, lineFlags, remainderFlags []wordbreaking.Flags, err error) {
+	line, remainder *RichText, lineFlags, remainderFlags []wordbreaking.Flags) {
 	if width < 0 {
 		width = 0
 	}
@@ -543,26 +543,24 @@ func (piece *RichText) WordsToWidth(
 
 	finished := !piece.EachRune(fn)
 	if current == 0 || finished {
-		return piece, nil, wordFlags, nil, nil
+		return piece, nil, wordFlags, nil
 	}
 	line, remainder = piece.Split(current)
 	lineFlags, remainderFlags = wordFlags[:current], wordFlags[current:]
 	if extra > 0.0 {
 		p := piece.lastPiece().clone()
 		p.Text = "-"
-		line, err = line.AddPiece(p)
+		line = line.AddPiece(p)
 	}
 	return
 }
 
-func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
-	lines []*RichText, err error) {
-	line, remainder, _, remainderFlags, err2 := piece.WordsToWidth(width, wordFlags, hardBreak)
-	for err2 == nil && remainder != nil {
+func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (lines []*RichText) {
+	line, remainder, _, remainderFlags := piece.WordsToWidth(width, wordFlags, hardBreak)
+	for remainder != nil {
 		lines = append(lines, line.TrimSpace())
-		line, remainder, _, remainderFlags, err2 = remainder.WordsToWidth(width, remainderFlags, hardBreak)
+		line, remainder, _, remainderFlags = remainder.WordsToWidth(width, remainderFlags, hardBreak)
 	}
 	lines = append(lines, line.TrimSpace())
-	err = err2
 	return
 }

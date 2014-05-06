@@ -582,7 +582,7 @@ func TestRichText_WordsToWidth_empty(t *testing.T) {
 	st := SuperTest{t}
 	p := new(RichText)
 	flags := make([]wordbreaking.Flags, p.Len())
-	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(10, flags, false)
+	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(10, flags, false)
 	st.Equal(p, line, "Should return original piece.")
 	if remainder != nil {
 		t.Error("There should be nothing left over.")
@@ -591,7 +591,6 @@ func TestRichText_WordsToWidth_empty(t *testing.T) {
 	if remainderFlags != nil {
 		t.Error("There should be no flags remaining.")
 	}
-	st.True(err == nil, "No error is expected.")
 }
 
 func TestRichText_WordsToWidth_short(t *testing.T) {
@@ -599,7 +598,7 @@ func TestRichText_WordsToWidth_short(t *testing.T) {
 	p := arialText("Lorem")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(30, flags, false)
+	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(30, flags, false)
 	st.Equal(p, line, "Should return original piece.")
 	if remainder != nil {
 		t.Error("There should be nothing left over.")
@@ -608,7 +607,6 @@ func TestRichText_WordsToWidth_short(t *testing.T) {
 	if remainderFlags != nil {
 		t.Error("There should be no flags remaining.")
 	}
-	st.True(err == nil, "No error is expected.")
 }
 
 func TestRichText_WordsToWidth_mixed(t *testing.T) {
@@ -616,7 +614,7 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	p := mixedText()
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(60, flags, false)
+	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(60, flags, false)
 	st.MustNot(line == nil, "Line must not be nil.")
 	st.Equal("Here is some", line.String())
 	st.MustNot(remainder == nil, "There should be text left over.")
@@ -626,7 +624,6 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	if remainderFlags == nil {
 		t.Error("There should be flags remaining.")
 	}
-	st.Equal(nil, err, "No error is expected.")
 }
 
 func TestRichText_WordsToWidth_hardbreak(t *testing.T) {
@@ -634,14 +631,13 @@ func TestRichText_WordsToWidth_hardbreak(t *testing.T) {
 	p := arialText("Supercalifragilisticexpialidocious")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(60, flags, true)
+	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(60, flags, true)
 	st.MustNot(line == nil, "Line must not be nil.")
 	st.Equal("Supercalifrag", line.String())
 	st.MustNot(remainder == nil, "There should be text left over.")
 	st.Equal("ilisticexpialidocious", remainder.String())
 	st.Equal(13, len(lineFlags))
 	st.Equal(21, len(remainderFlags))
-	st.Equal(nil, err, "No error is expected.")
 }
 
 func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
@@ -655,10 +651,7 @@ func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
 	rt := arialText(hyphenatedText)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
-	lines, err := rt.WrapToWidth(60, flags, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := rt.WrapToWidth(60, flags, false)
 	st := SuperTest{t}
 	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
 	for i := range lines {
@@ -677,10 +670,7 @@ func TestRichText_WrapToWidth_soft_hyphenated(t *testing.T) {
 	rt := courierNewText(hyphenatedText)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
-	lines, err := rt.WrapToWidth(62, flags, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := rt.WrapToWidth(62, flags, false)
 	st := SuperTest{t}
 	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
 	for i := range lines {
@@ -699,10 +689,7 @@ func TestRichText_WrapToWidth_soft_hyphenated2(t *testing.T) {
 	rt := courierNewText(hyphenatedText)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
-	lines, err := rt.WrapToWidth(62, flags, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := rt.WrapToWidth(62, flags, false)
 	st := SuperTest{t}
 	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
 	for i := range lines {
@@ -720,10 +707,7 @@ func TestRichText_WrapToWidth_short(t *testing.T) {
 	}
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	lines, err := p.WrapToWidth(100, flags, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := p.WrapToWidth(100, flags, false)
 	st.Must(len(lines) == 1, "Should return one piece.")
 	st.Equal(p.Text, lines[0].Text, "Text should match.")
 	st.True(p.MatchesAttributes(lines[0]))
@@ -734,10 +718,7 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 	p := mixedText()
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	lines, err := p.WrapToWidth(60, flags, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := p.WrapToWidth(60, flags, false)
 	st.Must(len(lines) > 1, "Should return at least one piece.")
 	expected := []string{
 		"Here is some",
@@ -757,10 +738,7 @@ func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
 	p := arialText("Supercalifragilisticexpialidocious")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	lines, err := p.WrapToWidth(60, flags, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := p.WrapToWidth(60, flags, true)
 	st.Must(len(lines) == 3, "Should return 3 pieces.")
 	expected := []string{
 		"Supercalifrag",
@@ -782,10 +760,7 @@ func TestRichText_WrapToWidth_nobreak_simple(t *testing.T) {
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
 	rt.MarkNoBreak(flags)
-	lines, err2 := rt.WrapToWidth(60, flags, false)
-	if err2 != nil {
-		t.Fatal(err2)
-	}
+	lines := rt.WrapToWidth(60, flags, false)
 	st.Equal(1, len(lines), "Should return a single line.")
 }
 
@@ -816,10 +791,7 @@ func TestRichText_WrapToWidth_nobreak_complex(t *testing.T) {
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
 	rt.MarkNoBreak(flags)
-	lines, err := rt.WrapToWidth(60, flags, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	lines := rt.WrapToWidth(60, flags, false)
 	st.Equal(3, len(lines), "Should return 3 lines.")
 }
 
