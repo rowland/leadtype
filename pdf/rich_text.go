@@ -496,6 +496,7 @@ func (piece *RichText) WordsToWidth(
 	words := 0
 	wordWidth := 0.0
 	extra := 0.0
+	lastOffset := 0
 
 	var lastPiece *RichText
 	var metrics FontMetrics
@@ -504,6 +505,9 @@ func (piece *RichText) WordsToWidth(
 
 	fn := func(rune rune, p *RichText, offset int) bool {
 		if words > 0 && currentWidth+extra+wordWidth > width {
+			return true
+		} else if words == 0 && hardBreak && wordWidth > width {
+			current = lastOffset
 			return true
 		}
 		if offset > 0 &&
@@ -533,6 +537,7 @@ func (piece *RichText) WordsToWidth(
 			}
 		}
 		lastRune = rune
+		lastOffset = offset
 		return false
 	}
 

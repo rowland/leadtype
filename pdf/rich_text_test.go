@@ -629,6 +629,21 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	st.Equal(nil, err, "No error is expected.")
 }
 
+func TestRichText_WordsToWidth_hardbreak(t *testing.T) {
+	st := SuperTest{t}
+	p := arialText("Supercalifragilisticexpialidocious")
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	line, remainder, lineFlags, remainderFlags, err := p.WordsToWidth(60, flags, true)
+	st.MustNot(line == nil, "Line must not be nil.")
+	st.Equal("Supercalifrag", line.String())
+	st.MustNot(remainder == nil, "There should be text left over.")
+	st.Equal("ilisticexpialidocious", remainder.String())
+	st.Equal(13, len(lineFlags))
+	st.Equal(21, len(remainderFlags))
+	st.Equal(nil, err, "No error is expected.")
+}
+
 func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
 	const hyphenatedText = "Super-cali-fragil-istic-expi-ali-do-cious"
 	expected := []string{
@@ -731,6 +746,26 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 		"and some",
 		"Chinese,",
 		"表明你已明确同意你的回答接受评估.",
+	}
+	for i := 0; i < len(expected); i++ {
+		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
+	}
+}
+
+func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
+	st := SuperTest{t}
+	p := arialText("Supercalifragilisticexpialidocious")
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	lines, err := p.WrapToWidth(60, flags, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Must(len(lines) == 3, "Should return 3 pieces.")
+	expected := []string{
+		"Supercalifrag",
+		"ilisticexpialid",
+		"ocious",
 	}
 	for i := 0; i < len(expected); i++ {
 		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
