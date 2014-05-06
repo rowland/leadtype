@@ -5,7 +5,6 @@ package pdf
 
 import (
 	"leadtype/wordbreaking"
-	"reflect"
 	"testing"
 	"unicode"
 )
@@ -576,12 +575,11 @@ func TestRichText_WordsToWidth_empty(t *testing.T) {
 	st := SuperTest{t}
 	p := new(RichText)
 	flags := make([]wordbreaking.Flags, p.Len())
-	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(10, flags, false)
+	line, remainder, remainderFlags := p.WordsToWidth(10, flags, false)
 	st.Equal(p, line, "Should return original piece.")
 	if remainder != nil {
 		t.Error("There should be nothing left over.")
 	}
-	st.True(reflect.DeepEqual(flags, lineFlags), "Should return original flags.")
 	if remainderFlags != nil {
 		t.Error("There should be no flags remaining.")
 	}
@@ -592,12 +590,11 @@ func TestRichText_WordsToWidth_short(t *testing.T) {
 	p := arialText("Lorem")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(30, flags, false)
+	line, remainder, remainderFlags := p.WordsToWidth(30, flags, false)
 	st.Equal(p, line, "Should return original piece.")
 	if remainder != nil {
 		t.Error("There should be nothing left over.")
 	}
-	st.True(reflect.DeepEqual(flags, lineFlags), "Should return original flags.")
 	if remainderFlags != nil {
 		t.Error("There should be no flags remaining.")
 	}
@@ -608,12 +605,11 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	p := mixedText()
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(60, flags, false)
+	line, remainder, remainderFlags := p.WordsToWidth(60, flags, false)
 	st.MustNot(line == nil, "Line must not be nil.")
 	st.Equal("Here is some", line.String())
 	st.MustNot(remainder == nil, "There should be text left over.")
 	st.Equal(" Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估.", remainder.String())
-	st.Equal(12, len(lineFlags))
 	st.Equal(115, len(remainderFlags))
 	if remainderFlags == nil {
 		t.Error("There should be flags remaining.")
@@ -625,12 +621,11 @@ func TestRichText_WordsToWidth_hardbreak(t *testing.T) {
 	p := arialText("Supercalifragilisticexpialidocious")
 	flags := make([]wordbreaking.Flags, p.Len())
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
-	line, remainder, lineFlags, remainderFlags := p.WordsToWidth(60, flags, true)
+	line, remainder, remainderFlags := p.WordsToWidth(60, flags, true)
 	st.MustNot(line == nil, "Line must not be nil.")
 	st.Equal("Supercalifrag", line.String())
 	st.MustNot(remainder == nil, "There should be text left over.")
 	st.Equal("ilisticexpialidocious", remainder.String())
-	st.Equal(13, len(lineFlags))
 	st.Equal(21, len(remainderFlags))
 }
 

@@ -487,7 +487,7 @@ func (piece *RichText) Width() float64 {
 
 func (piece *RichText) WordsToWidth(
 	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
-	line, remainder *RichText, lineFlags, remainderFlags []wordbreaking.Flags) {
+	line, remainder *RichText, remainderFlags []wordbreaking.Flags) {
 	if width < 0 {
 		width = 0
 	}
@@ -543,10 +543,10 @@ func (piece *RichText) WordsToWidth(
 
 	finished := !piece.EachRune(fn)
 	if current == 0 || finished {
-		return piece, nil, wordFlags, nil
+		return piece, nil, nil
 	}
 	line, remainder = piece.Split(current)
-	lineFlags, remainderFlags = wordFlags[:current], wordFlags[current:]
+	remainderFlags = wordFlags[current:]
 	if extra > 0.0 {
 		p := piece.lastPiece().clone()
 		p.Text = "-"
@@ -556,10 +556,10 @@ func (piece *RichText) WordsToWidth(
 }
 
 func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (lines []*RichText) {
-	line, remainder, _, remainderFlags := piece.WordsToWidth(width, wordFlags, hardBreak)
+	line, remainder, remainderFlags := piece.WordsToWidth(width, wordFlags, hardBreak)
 	for remainder != nil {
 		lines = append(lines, line.TrimSpace())
-		line, remainder, _, remainderFlags = remainder.WordsToWidth(width, remainderFlags, hardBreak)
+		line, remainder, remainderFlags = remainder.WordsToWidth(width, remainderFlags, hardBreak)
 	}
 	lines = append(lines, line.TrimSpace())
 	return
