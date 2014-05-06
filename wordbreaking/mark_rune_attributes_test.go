@@ -8,7 +8,7 @@ import "testing"
 func TestMarkRuneAttributes(t *testing.T) {
 	const quick = "The quick red fox jumps over the lazy brown dog."
 	var quickFlags = []Flags{
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // The
+		CharStop | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // The
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // quick
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // red
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // fox
@@ -32,7 +32,7 @@ func TestMarkRuneAttributes(t *testing.T) {
 func TestMarkRuneAttributes_with_hyphens(t *testing.T) {
 	const hyphenTest = "Word-breaking test with regular and soft\u00ADhyphens."
 	var hyphenFlags = []Flags{
-		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, // Word-
+		CharStop | WordStop, CharStop, CharStop, CharStop, CharStop, // Word-
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // breaking
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // test
 		CharStop | SoftBreak | WordStop, CharStop, CharStop, CharStop, CharStop | WhiteSpace | SoftBreak, // with

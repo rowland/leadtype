@@ -53,7 +53,7 @@ func MarkRuneAttributes(text string, flags []Flags) {
 		flags[i] |= CharStop
 		rc = classifyRune(r)
 		if i == 0 {
-			flags[i] |= SoftBreak | WordStop
+			flags[i] |= WordStop
 		} else if rc == rcWhiteSpace {
 			flags[i] |= SoftBreak | WhiteSpace
 		} else if last == rcWhiteSpace && (rc == rcHyphen || rc == rcOther) {
