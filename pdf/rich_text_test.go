@@ -187,8 +187,10 @@ func TestRichText_InsertStringAtOffsets(t *testing.T) {
 	}
 
 	offsets := []int{4, 16, 36}
+	chars := rt.Chars()
 	rt0 := rt.InsertStringAtOffsets("-", offsets)
 	st.Equal("Auto-matic hyphen-ation aids word wrap-ping.", rt0.String())
+	st.Equal(chars+len(offsets), rt0.Chars(), "New text should be larger.")
 }
 
 func TestRichText_InsertStringAtOffsets_simple(t *testing.T) {

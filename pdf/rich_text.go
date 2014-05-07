@@ -12,6 +12,7 @@ import (
 	"unicode"
 )
 
+// Hierarchical structure of text and attributes, allowing text to be described, measured and wrapped.
 type RichText struct {
 	Text               string
 	Font               *Font
@@ -32,6 +33,26 @@ type RichText struct {
 	pieces             []*RichText
 }
 
+// NewRichText returns a structure containing text with the specified attributes.
+//
+// Fonts in the list will be applied in order. That is, the first font will be used for every rune for which it has a glyph. Successive
+// fonts will only be used where they have glyphs lacking in previous fonts.
+//
+// Font size is in points.
+//
+// Options:
+//   color:        Fill text with color.
+//                 A value of type Color, a string with a color name from NamedColors map, or an RGB color as int, int32 or hexadecimal string.
+//   underline:    Draw a line under text.
+//                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
+//   line_through: Draw a line through (or strikethrough) text.
+//                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
+//   char_spacing: Add extra space between characters, expressed in points.
+//   word_spacing: Add extra space between words, expressed in points.
+//   nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
+//                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
+//
+// An error is returned when a rune is encountered for which none of the fonts specified have a suitable glyph.
 func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
 	piece := &RichText{
 		Text:        s,
@@ -53,6 +74,8 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*R
 	return &RichText{pieces: pieces}, nil
 }
 
+// Add appends text with specified attributes to existing structure, possibly returning a new root.
+// Options are the same as for NewRichText.
 func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
 	p, err := NewRichText(s, fonts, fontSize, options)
 	if err != nil {
@@ -61,6 +84,7 @@ func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options Op
 	return piece.AddPiece(p), nil
 }
 
+// AddPiece appends one piece of text to another, possibly returning a new root.
 func (piece *RichText) AddPiece(p *RichText) *RichText {
 	if len(piece.pieces) > 0 {
 		piece.pieces = append(piece.pieces, p)
@@ -72,6 +96,7 @@ func (piece *RichText) AddPiece(p *RichText) *RichText {
 	return piece
 }
 
+// Ascent calculates, caches and returns the maximum ascent from the text, expressed in points.
 func (piece *RichText) Ascent() float64 {
 	if piece.ascent == 0.0 {
 		if piece.IsLeaf() {
@@ -87,6 +112,7 @@ func (piece *RichText) Ascent() float64 {
 	return piece.ascent
 }
 
+// Chars counts, caches and returns the number of discrete characters (not bytes) in the text.
 func (piece *RichText) Chars() int {
 	if piece.chars == 0 {
 		if piece.IsLeaf() {
@@ -106,6 +132,7 @@ func (piece *RichText) clone() *RichText {
 	return &p
 }
 
+// Count counts and returns the number of text pieces in this structure.
 func (piece *RichText) Count() int {
 	result := 1
 	for _, p := range piece.pieces {
@@ -114,6 +141,7 @@ func (piece *RichText) Count() int {
 	return result
 }
 
+// Descent calculates, caches and returns the maximum descent from the text, expressed in points.
 func (piece *RichText) Descent() float64 {
 	if piece.descent == 0.0 {
 		if piece.IsLeaf() {
@@ -129,6 +157,7 @@ func (piece *RichText) Descent() float64 {
 	return piece.descent
 }
 
+// EachRune invokes the callback function for each rune within the text, in sequence.
 func (piece *RichText) EachRune(fn func(r rune, p *RichText, offset int) bool) bool {
 	offset := 0
 	return piece.eachRune(fn, &offset)
@@ -149,10 +178,11 @@ func (piece *RichText) eachRune(fn func(rune rune, p *RichText, offset int) bool
 	return false
 }
 
+// Height calculates, caches and returns the maximum height of the text, expressed in points.
 func (piece *RichText) Height() float64 {
 	if piece.height == 0.0 {
 		if piece.IsLeaf() {
-			return piece.measure().descent
+			return piece.measure().height
 		}
 		for _, p := range piece.pieces {
 			height := p.Height()
@@ -164,6 +194,7 @@ func (piece *RichText) Height() float64 {
 	return piece.height
 }
 
+// InsertStringAtOffsets returns a new structure with the given string inserted at the specified offsets. This is meant to facilitate dictionary-based hyphenation or similar functionality.
 func (piece *RichText) InsertStringAtOffsets(s string, offsets []int) *RichText {
 	sort.Ints(offsets)
 	current := 0
@@ -193,32 +224,35 @@ func (piece *RichText) insertStringAtOffsets(s string, offsets []int, i *int, cu
 					dst += d + len(s)
 				}
 				copy(buf[dst:], piece.Text[src:])
-				newPiece := *piece
+				newPiece := piece.clone()
 				newPiece.Text = string(buf)
-				res.pieces = append(res.pieces, &newPiece)
+				res.pieces = append(res.pieces, newPiece)
 			}
 		}
 		*current += n
 		return
 	}
 
-	newPiece := *piece
+	newPiece := piece.clone()
 	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
-	res.pieces = append(res.pieces, &newPiece)
+	res.pieces = append(res.pieces, newPiece)
 
 	for _, p := range piece.pieces {
-		p.insertStringAtOffsets(s, offsets, i, current, &newPiece)
+		p.insertStringAtOffsets(s, offsets, i, current, newPiece)
 	}
 }
 
+// IsLeaf returns true if this piece of the structure is a leaf node.
 func (piece *RichText) IsLeaf() bool {
 	return len(piece.pieces) == 0
 }
 
+// IsNewLine returns true if this piece contains a single new line character.
 func (piece *RichText) IsNewLine() bool {
 	return piece.Text == "\n"
 }
 
+// IsWhiteSpace returns true if this piece contains whitespace and only whitespace.
 func (piece *RichText) IsWhiteSpace() bool {
 	for _, rune := range piece.Text {
 		if !unicode.IsSpace(rune) {
@@ -235,6 +269,7 @@ func (piece *RichText) lastPiece() *RichText {
 	return piece
 }
 
+// Len returns the length in bytes of the text in the entire structure.
 func (piece *RichText) Len() int {
 	result := len(piece.Text)
 	for _, p := range piece.pieces {
@@ -243,6 +278,9 @@ func (piece *RichText) Len() int {
 	return result
 }
 
+// MarkNoBreak sets the NoBreak bits in the previously-allocated flags at every character offset within piece hierarchies
+// with NoBreak set to true, except for the offsets corresponding to the initial characters. MarkNoBreak must be called
+// before WordsToWidth or WrapToWidth or the NoBreak flags on text pieces will have no effect.
 func (piece *RichText) MarkNoBreak(wordFlags []wordbreaking.Flags) {
 	offset := 0
 	piece.VisitAll(func(p *RichText) {
@@ -256,6 +294,7 @@ func (piece *RichText) MarkNoBreak(wordFlags []wordbreaking.Flags) {
 	})
 }
 
+// MatchesAttributes returns true if this piece shares the same attributes as the other piece.
 func (piece *RichText) MatchesAttributes(other *RichText) bool {
 	return (piece.Font != nil && other.Font != nil) && (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
 		piece.FontSize == other.FontSize &&
@@ -292,6 +331,7 @@ func (piece *RichText) measure() *RichText {
 	return piece
 }
 
+// Merge returns a new structure where text pieces with matching attributes have been merged together for more efficient printing.
 func (piece *RichText) Merge() *RichText {
 	if len(piece.pieces) == 0 {
 		return piece
@@ -307,7 +347,7 @@ func (piece *RichText) Merge() *RichText {
 		}
 	}
 
-	mergedText := *piece
+	mergedText := piece.clone()
 	mergedText.pieces = make([]*RichText, 0, len(piece.pieces))
 	var last *RichText
 	for _, p := range flattened {
@@ -322,9 +362,10 @@ func (piece *RichText) Merge() *RichText {
 	if len(mergedText.pieces) == 1 {
 		return mergedText.pieces[0]
 	}
-	return &mergedText
+	return mergedText
 }
 
+// Split returns the two structures resulting from splitting this text at the specified offset.
 func (piece *RichText) Split(offset int) (left, right *RichText) {
 	if offset < 0 {
 		offset = 0
@@ -347,15 +388,13 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 			if (offset - *current) >= len(piece.Text) {
 				left.pieces = append(left.pieces, piece)
 			} else {
-				newLeft := *piece
+				newLeft := piece.clone()
 				newLeft.Text = piece.Text[:offset-*current]
-				newLeft.width, newLeft.chars = 0.0, 0
-				left.pieces = append(left.pieces, &newLeft)
+				left.pieces = append(left.pieces, newLeft)
 
-				newRight := *piece
+				newRight := piece.clone()
 				newRight.Text = piece.Text[offset-*current:]
-				newRight.width, newRight.chars = 0.0, 0
-				right.pieces = append(right.pieces, &newRight)
+				right.pieces = append(right.pieces, newRight)
 			}
 		} else {
 			right.pieces = append(right.pieces, piece)
@@ -364,14 +403,14 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 		return
 	}
 
-	newPiece := *piece
+	newPiece := piece.clone()
 	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
 	if *current < offset {
-		left.pieces = append(left.pieces, &newPiece)
-		left = &newPiece
+		left.pieces = append(left.pieces, newPiece)
+		left = newPiece
 	} else {
-		right.pieces = append(right.pieces, &newPiece)
-		right = &newPiece
+		right.pieces = append(right.pieces, newPiece)
+		right = newPiece
 	}
 
 	for _, p := range piece.pieces {
@@ -390,12 +429,12 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 		runeInFont := (rune == '\t') || (rune == '\n') || (rune == wordbreaking.SoftHyphen) || font.HasRune(rune)
 		if runeInFont != inFont {
 			if index > start {
-				newPiece := *piece
+				newPiece := piece.clone()
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
 					newPiece.Font = font
 					newPiece.measure()
-					pieces = append(pieces, &newPiece)
+					pieces = append(pieces, newPiece)
 				} else {
 					var newPieces []*RichText
 					newPieces, err = newPiece.splitByFont(fonts[1:])
@@ -407,12 +446,12 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 		}
 	}
 	if len(piece.Text) > start {
-		newPiece := *piece
+		newPiece := piece.clone()
 		newPiece.Text = piece.Text[start:]
 		if inFont {
 			newPiece.Font = font
 			newPiece.measure()
-			pieces = append(pieces, &newPiece)
+			pieces = append(pieces, newPiece)
 		} else {
 			var newPieces []*RichText
 			newPieces, err = newPiece.splitByFont(fonts[1:])
@@ -422,6 +461,7 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 	return
 }
 
+// String returns the simple concatenation of the text from each piece in the structure in order.
 func (piece *RichText) String() string {
 	var buf bytes.Buffer
 	piece.VisitAll(func(p *RichText) {
@@ -430,10 +470,14 @@ func (piece *RichText) String() string {
 	return buf.String()
 }
 
+// TrimFunc trims the runes from both ends of the text where the specified callback function returns true,
+// returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimFunc(f func(rune) bool) *RichText {
 	return piece.TrimLeftFunc(f).TrimRightFunc(f)
 }
 
+// TrimLeftFunc trims the runes from the left end of the text where the specified callback function returns true,
+// returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimLeftFunc(f func(rune) bool) *RichText {
 	s := piece.String()
 	trimmed := strings.TrimLeftFunc(s, f)
@@ -444,10 +488,14 @@ func (piece *RichText) TrimLeftFunc(f func(rune) bool) *RichText {
 	return right
 }
 
+// TrimLeftSpace trims the runes from the left end of the text where unicode.IsSpace returns true,
+// returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimLeftSpace() *RichText {
 	return piece.TrimLeftFunc(unicode.IsSpace)
 }
 
+// TrimRightFunc trims the runes from the right end of the text where the specified callback function returns true,
+// returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimRightFunc(f func(rune) bool) *RichText {
 	s := piece.String()
 	trimmed := strings.TrimRightFunc(s, f)
@@ -458,14 +506,19 @@ func (piece *RichText) TrimRightFunc(f func(rune) bool) *RichText {
 	return left
 }
 
+// TrimRightSpace trims the runes from the right end of the text where unicode.IsSpace returns true,
+// returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimRightSpace() *RichText {
 	return piece.TrimRightFunc(unicode.IsSpace)
 }
 
+// TrimSpace trims the runes from both ends of the text where unicode.IsSpace returns true,
+// returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimSpace() *RichText {
 	return piece.TrimFunc(unicode.IsSpace)
 }
 
+// VisitAll invokes the callback function for each piece of text within the structure, in order.
 func (piece *RichText) VisitAll(fn func(*RichText)) {
 	fn(piece)
 	for _, p := range piece.pieces {
@@ -473,6 +526,7 @@ func (piece *RichText) VisitAll(fn func(*RichText)) {
 	}
 }
 
+// Width calculates, caches and returns the width of the text, expressed in points.
 func (piece *RichText) Width() float64 {
 	if piece.width == 0.0 {
 		if piece.IsLeaf() {
@@ -485,6 +539,10 @@ func (piece *RichText) Width() float64 {
 	return piece.width
 }
 
+// WordsToWidth splits the text at the last breaking point before width is exceeded, making use of the previously-allocated and marked flags
+// and returning new structures representing both halves and the remaining flags. The original structure is unchanged.
+// A minimum of one word is split off, even if width is exceeded, unless hardBreak is true, in which case the text is split along character
+// boundaries.
 func (piece *RichText) WordsToWidth(
 	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
 	line, remainder *RichText, remainderFlags []wordbreaking.Flags) {
@@ -552,6 +610,7 @@ func (piece *RichText) WordsToWidth(
 	return
 }
 
+// WrapToWidth returns one or more lines of text resulting from repeatedly invoking WordsToWidth.
 func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (lines []*RichText) {
 	line, remainder, remainderFlags := piece.WordsToWidth(width, wordFlags, hardBreak)
 	for remainder != nil {
