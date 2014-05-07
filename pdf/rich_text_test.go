@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"leadtype/wordbreaking"
+	"math"
 	"testing"
 	"unicode"
 )
@@ -161,8 +162,20 @@ func TestRichText_Height(t *testing.T) {
 	st := SuperTest{t}
 	p := new(RichText)
 	st.Equal(0.0, p.Height())
-	p = richTextMixedText()
-	st.AlmostEqual(11.171875, p.Height(), 0.001)
+	fonts := testTtfFonts("Courier New", "STSong")
+	p, err := NewRichText("abc所有测", fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ascent0 := p.pieces[0].Ascent()
+	descent0 := p.pieces[0].Descent()
+	ascent1 := p.pieces[1].Ascent()
+	descent1 := p.pieces[1].Descent()
+	maxAscent := math.Max(ascent0, ascent1)
+	minDecent := math.Min(descent0, descent1)
+	expected := maxAscent + -minDecent
+	st.AlmostEqual(expected, p.Height(), 0.001, "Where baselines do not match, Height should allow for the tallest Ascent and Descent.")
+	st.AlmostEqual(11.6029296875, p.Height(), 0.001)
 }
 
 func TestRichText_InsertStringAtOffsets(t *testing.T) {

@@ -184,12 +184,7 @@ func (piece *RichText) Height() float64 {
 		if piece.IsLeaf() {
 			return piece.measure().height
 		}
-		for _, p := range piece.pieces {
-			height := p.Height()
-			if height > piece.height {
-				piece.height = height
-			}
-		}
+		piece.height = piece.Ascent() + -piece.Descent()
 	}
 	return piece.height
 }
