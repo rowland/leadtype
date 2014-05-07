@@ -354,9 +354,9 @@ func (piece *RichText) Merge() *RichText {
 		if last != nil && p.MatchesAttributes(last) {
 			last.Text += p.Text
 		} else {
-			newPiece := *p
-			mergedText.pieces = append(mergedText.pieces, &newPiece)
-			last = &newPiece
+			newPiece := p.clone()
+			mergedText.pieces = append(mergedText.pieces, newPiece)
+			last = newPiece
 		}
 	}
 	if len(mergedText.pieces) == 1 {

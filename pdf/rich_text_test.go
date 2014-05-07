@@ -467,6 +467,28 @@ func TestRichText_Merge(t *testing.T) {
 	st.Equal(piece0.Text, original.pieces[0].Text, "Original should be unchanged.")
 }
 
+func TestRichText_Merge_width_chars(t *testing.T) {
+	st := SuperTest{t}
+	fonts := testTtfFonts("Arial")
+	text := "Here is some "
+	text1 := "English text."
+	original, err := NewRichText(text, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	original, err = original.Add(text1, fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	width0 := original.Width()
+	chars0 := original.Chars()
+	merged := original.Merge()
+
+	st.Equal(width0, merged.Width(), "Merged text should be the same width as before.")
+	st.Equal(chars0, merged.Chars(), "Merged text should have same char count as before.")
+}
+
 func mixedText() *RichText {
 	afmFonts := testAfmFonts("Helvetica")
 	ttfFonts := testTtfFonts("Arial", "STSong")
