@@ -541,6 +541,9 @@ func (piece *RichText) Width() float64 {
 func (piece *RichText) WordsToWidth(
 	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
 	line, remainder *RichText, remainderFlags []wordbreaking.Flags) {
+	if width < 0.0 {
+		width = 0.0
+	}
 	current := 0
 	currentWidth := 0.0
 	words := 0
@@ -557,7 +560,11 @@ func (piece *RichText) WordsToWidth(
 		if words > 0 && currentWidth+extra+wordWidth > width {
 			return true
 		} else if words == 0 && hardBreak && wordWidth > width {
-			current = lastOffset
+			if lastOffset > 0 {
+				current = lastOffset
+			} else {
+				current = offset
+			}
 			return true
 		}
 		if offset > 0 &&

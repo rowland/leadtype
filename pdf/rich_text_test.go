@@ -666,6 +666,19 @@ func TestRichText_WordsToWidth_hardbreak(t *testing.T) {
 	st.Equal(21, len(remainderFlags))
 }
 
+func TestRichText_WordsToWidth_zero(t *testing.T) {
+	st := SuperTest{t}
+	p := arialText("Supercalifragilisticexpialidocious")
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	line, remainder, remainderFlags := p.WordsToWidth(0, flags, true)
+	st.MustNot(line == nil, "Line must not be nil.")
+	st.Equal("S", line.String())
+	st.MustNot(remainder == nil, "There should be text left over.")
+	st.Equal("upercalifragilisticexpialidocious", remainder.String())
+	st.Equal(33, len(remainderFlags))
+}
+
 func TestRichText_WrapToWidth_hyphenated(t *testing.T) {
 	const hyphenatedText = "Super-cali-fragil-istic-expi-ali-do-cious"
 	expected := []string{
@@ -810,6 +823,19 @@ func TestRichText_WrapToWidth_nobreak_complex(t *testing.T) {
 	rt.MarkNoBreak(flags)
 	lines := rt.WrapToWidth(60, flags, false)
 	st.Equal(3, len(lines), "Should return 3 lines.")
+}
+
+func TestRichText_WrapToWidth_zero(t *testing.T) {
+	const testString = "Lorem"
+	st := SuperTest{t}
+	p := arialText(testString)
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	lines := p.WrapToWidth(0, flags, true)
+	st.Must(len(lines) == len(testString))
+	for i, l := range lines {
+		st.Equal(string(testString[i]), l.String())
+	}
 }
 
 // 14,930 ns go1.1.2
