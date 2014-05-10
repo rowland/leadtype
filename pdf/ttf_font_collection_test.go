@@ -42,6 +42,10 @@ func testTtfFonts(families ...string) (fonts []*Font) {
 		panic(err)
 	}
 	for _, family := range families {
+		if family == "" {
+			fonts = append(fonts, nil)
+			continue
+		}
 		metrics, err := fc.Select(family, "", "", nil)
 		if err != nil {
 			panic(err)

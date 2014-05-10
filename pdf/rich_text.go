@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Hierarchical structure of text and attributes, allowing text to be described, measured and wrapped.
@@ -35,8 +36,10 @@ type RichText struct {
 
 // NewRichText returns a structure containing text with the specified attributes.
 //
-// Fonts in the list will be applied in order. That is, the first font will be used for every rune for which it has a glyph. Successive
-// fonts will only be used where they have glyphs lacking in previous fonts.
+// Fonts in the list will be applied in order. That is, the first font will be used for every rune for which it has a glyph.
+// Successive fonts will only be used where they have glyphs lacking in previous fonts.
+// If NewRichText finds a nil in fonts before finding a font with a glyph for a rune, an error is returned.
+// Otherwise, the runes are replaced with question marks in the first font in the list.
 //
 // Font size is in points.
 //
@@ -51,8 +54,6 @@ type RichText struct {
 //   word_spacing: Add extra space between words, expressed in points.
 //   nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
 //                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-//
-// An error is returned when a rune is encountered for which none of the fonts specified have a suitable glyph.
 func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
 	piece := &RichText{
 		Text:        s,
@@ -64,7 +65,11 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*R
 		WordSpacing: options.FloatDefault("word_spacing", 0),
 		NoBreak:     options.BoolDefault("nobreak", false),
 	}
-	pieces, err := piece.splitByFont(fonts)
+	var defaultFont *Font
+	if len(fonts) > 0 {
+		defaultFont = fonts[0]
+	}
+	pieces, err := piece.splitByFont(fonts, defaultFont)
 	if err != nil {
 		return nil, err
 	}
@@ -413,11 +418,18 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 	}
 }
 
-func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error) {
+func (piece *RichText) splitByFont(fonts []*Font, defaultFont *Font) (pieces []*RichText, err error) {
 	if len(fonts) == 0 {
-		return nil, fmt.Errorf("No font found for %s.", piece.Text)
+		newPiece := piece.clone()
+		newPiece.Text = strings.Repeat("?", utf8.RuneCountInString(piece.Text))
+		newPiece.Font = defaultFont
+		pieces = append(pieces, newPiece)
+		return
 	}
 	font := fonts[0]
+	if font == nil {
+		return nil, fmt.Errorf("No font found for %s.", piece.Text)
+	}
 	start := 0
 	inFont := false
 	for index, rune := range piece.Text {
@@ -428,11 +440,11 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
 					newPiece.Font = font
-					newPiece.measure()
+					// newPiece.measure()
 					pieces = append(pieces, newPiece)
 				} else {
 					var newPieces []*RichText
-					newPieces, err = newPiece.splitByFont(fonts[1:])
+					newPieces, err = newPiece.splitByFont(fonts[1:], defaultFont)
 					pieces = append(pieces, newPieces...)
 				}
 			}
@@ -445,11 +457,11 @@ func (piece *RichText) splitByFont(fonts []*Font) (pieces []*RichText, err error
 		newPiece.Text = piece.Text[start:]
 		if inFont {
 			newPiece.Font = font
-			newPiece.measure()
+			// newPiece.measure()
 			pieces = append(pieces, newPiece)
 		} else {
 			var newPieces []*RichText
-			newPieces, err = newPiece.splitByFont(fonts[1:])
+			newPieces, err = newPiece.splitByFont(fonts[1:], defaultFont)
 			pieces = append(pieces, newPieces...)
 		}
 	}

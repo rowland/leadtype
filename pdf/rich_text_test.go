@@ -30,9 +30,18 @@ func TestNewRichText_English(t *testing.T) {
 
 func TestNewRichText_EnglishAndChinese_Fail(t *testing.T) {
 	st := SuperTest{t}
-	_, err := NewRichText("abc所有测", testTtfFonts("Arial"), 10, Options{})
+	_, err := NewRichText("abc所有测", testTtfFonts("Arial", ""), 10, Options{})
 	st.False(err == nil, "NewRichText should fail with Chinese text and only Arial.")
 	st.Equal("No font found for 所有测.", err.Error())
+}
+
+func TestNewRichText_EnglishAndChinese_substitute(t *testing.T) {
+	st := SuperTest{t}
+	rt, err := NewRichText("abc所有测", testTtfFonts("Arial"), 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Equal("abc???", rt.String())
 }
 
 func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
