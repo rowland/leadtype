@@ -559,12 +559,12 @@ func TestRichText_String(t *testing.T) {
 }
 
 const (
-	leadingWhiteSpaceText                   = "\n\t  Here is some text with leading whitespace."
+	leadingWhiteSpaceText                   = "\r\n\t  Here is some text with leading whitespace."
 	leadingWhiteSpaceText_trimmed           = "Here is some text with leading whitespace."
-	trailingwhiteSpaceText_simple           = "Here is some text with trailing whitespace \t\n"
+	trailingwhiteSpaceText_simple           = "Here is some text with trailing whitespace \t\r\n"
 	trailingwhiteSpaceText_simple_trimmed   = "Here is some text with trailing whitespace"
 	whiteSpaceText_complex1                 = "Here is some text "
-	whiteSpaceText_complex2                 = "with trailing whitespace \t\n"
+	whiteSpaceText_complex2                 = "with trailing whitespace \t\r\n"
 	leadingAndTrailingWhitespaceText        = leadingWhiteSpaceText + " " + trailingwhiteSpaceText_simple
 	leadingAndTrailingWhitespaceTextTrimmed = leadingWhiteSpaceText_trimmed + " " + trailingwhiteSpaceText_simple_trimmed
 )

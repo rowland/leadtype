@@ -433,7 +433,7 @@ func (piece *RichText) splitByFont(fonts []*Font, defaultFont *Font) (pieces []*
 	start := 0
 	inFont := false
 	for index, rune := range piece.Text {
-		runeInFont := (rune == '\t') || (rune == '\n') || (rune == wordbreaking.SoftHyphen) || font.HasRune(rune)
+		runeInFont := (rune == '\t') || (rune == '\n') || (rune == '\r') || (rune == wordbreaking.SoftHyphen) || font.HasRune(rune)
 		if runeInFont != inFont {
 			if index > start {
 				newPiece := piece.clone()
