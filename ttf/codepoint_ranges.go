@@ -4,6 +4,7 @@
 package ttf
 
 import (
+	"fmt"
 	"sort"
 )
 
@@ -51,6 +52,10 @@ func (list CodepointRangeList) RangeForRune(rune rune) *CodepointRange {
 		return nil
 	}
 	return nil
+}
+
+func (list CodepointRangeList) HasRune(rune rune) bool {
+	return list.RangeForRune(rune) != nil
 }
 
 type CodepointRangeLists [][]CodepointRange
@@ -249,4 +254,18 @@ func init() {
 	for i := 0; i < len(CodepointRanges); i++ {
 		CodepointRangesByName[CodepointRanges[i].Name] = CodepointRanges[i]
 	}
+}
+
+// NewCodepointRangeSet returns a CodepointRangeList including the specified ranges.
+// HasRune implements the RuneSet interface.
+func NewCodepointRangeSet(ranges ...string) (CodepointRangeList, error) {
+	result := make(CodepointRangeList, 0, len(ranges))
+	for _, name := range ranges {
+		if cpr, ok := CodepointRangesByName[name]; ok {
+			result = append(result, cpr)
+		} else {
+			return nil, fmt.Errorf("unknown range: %s", name)
+		}
+	}
+	return result, nil
 }

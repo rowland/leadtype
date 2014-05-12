@@ -16,6 +16,46 @@ func TestCodepointRanges_RangeByName(t *testing.T) {
 	expectI8(t, "Missing range name", 30, CodepointRangesByName["Greek Extended"].Bit)
 }
 
+func TestNewCodepointRangeSet(t *testing.T) {
+	empty, err := NewCodepointRangeSet()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(empty) != 0 {
+		t.Error("Expecting empty list")
+	}
+
+	_, err = NewCodepointRangeSet("bogus")
+	if err == nil {
+		t.Error("Expecting error from bogus range.")
+	}
+
+	single, err := NewCodepointRangeSet("Basic Latin")
+	if err != nil {
+		t.Error(err)
+	}
+	if len(single) != 1 {
+		t.Error("Expecting single CodepointRange.")
+	}
+	if single[0] != &NestedCodepointRanges[0][0] {
+		t.Errorf("Expecting %v, got %v", &NestedCodepointRanges[0][0], single[0])
+	}
+
+	double, err := NewCodepointRangeSet("Basic Latin", "Greek Extended")
+	if err != nil {
+		t.Error(err)
+	}
+	if len(double) != 2 {
+		t.Error("Expecting 2 CodepointRanges.")
+	}
+	if double[0] != &NestedCodepointRanges[0][0] {
+		t.Errorf("Expecting %v, got %v", &NestedCodepointRanges[0][0], double[0])
+	}
+	if double[1] != &NestedCodepointRanges[30][0] {
+		t.Errorf("Expecting %v, got %v", &NestedCodepointRanges[30][0], double[1])
+	}
+}
+
 // 23.2 ns
 // 21.2 ns go1.1.1
 func BenchmarkRangeForRune(b *testing.B) {
