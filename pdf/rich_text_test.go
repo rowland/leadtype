@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"leadtype/ttf"
 	"leadtype/wordbreaking"
 	"math"
 	"testing"
@@ -90,6 +91,46 @@ func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	st.Equal(10.0, rt.pieces[1].FontSize)
 	st.Equal(fonts[1], rt.pieces[0].Font, "Should be tagged with Arial font.")
 	st.Equal(fonts[0], rt.pieces[1].Font, "Should be tagged with STSong font.")
+}
+
+// Test restricting a "preferred" font's usage to a particular range.
+// If two fonts each implement both of two ranges, but one font is superior for
+// one range and the other font is superior for the other range, the first font
+// can be restricted to only specified ranges.
+func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
+	st := SuperTest{t}
+
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stSongMetrics, err := fc.Select("STSong", "", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cjk, err := ttf.NewCodepointRangeSet("CJK Unified Ideographs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stSong := &Font{family: "STSong", metrics: stSongMetrics, runeSet: cjk}
+	arialMetrics, err := fc.Select("Arial", "", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arial := &Font{family: "Arial", metrics: arialMetrics}
+	fonts := []*Font{stSong, arial}
+
+	rt, err := NewRichText("所有测abc", fonts, 10, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Must(len(rt.pieces) == 2, "Expecting 2 pieces.")
+	st.Equal("所有测", rt.pieces[0].Text)
+	st.Equal(10.0, rt.pieces[0].FontSize)
+	st.Equal("abc", rt.pieces[1].Text)
+	st.Equal(10.0, rt.pieces[1].FontSize)
+	st.Equal(fonts[0], rt.pieces[0].Font, "Should be tagged with STSong font.")
+	st.Equal(fonts[1], rt.pieces[1].Font, "Should be tagged with Arial font.")
 }
 
 const englishRussianChinese = "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
