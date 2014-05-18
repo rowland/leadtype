@@ -284,8 +284,20 @@ func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
 	prev = prevFonts[0].style
 	pw.ResetFonts()
 	for _, font := range prevFonts {
-		font.style = style
-		pw.addFont(font)
+		options := Options{
+			"weight":       font.weight,
+			"style":        style,
+			"sub_type":     font.subType,
+			"relativeSize": font.relativeSize,
+		}
+		if font.runeSet != nil {
+			options["ranges"] = font.runeSet
+		} else {
+			options["ranges"] = font.ranges
+		}
+		if _, err = pw.AddFont(font.family, options); err != nil {
+			break
+		}
 	}
 	return
 }

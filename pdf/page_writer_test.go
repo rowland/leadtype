@@ -152,25 +152,27 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 	check(t, pw.FontStyle() == "", "Should default to empty string")
 
-	prev, err := pw.SetFontStyle("Bold")
-	expectS(t, "No current font to apply style Bold to.", err.Error())
+	prev, err := pw.SetFontStyle("Italic")
+	expectS(t, "No current font to apply style Italic to.", err.Error())
 	check(t, prev == "", "Should return empty string when no font is set")
 
-	_, err = pw.AddFont("Arial", Options{"style": "Italic"})
+	_, err = pw.AddFont("Arial", Options{})
 	check(t, err == nil, "Failed to add Arial")
 	_, err = pw.AddFont("Helvetica", Options{"sub_type": "Type1"})
 	check(t, err == nil, "Failed to add Helvetica")
 
 	fonts := pw.Fonts()
 	checkFatal(t, len(fonts) == 2, "length of fonts should be 2")
-	expectS(t, "Italic", fonts[0].style)
+	expectS(t, "", fonts[0].style)
 	expectS(t, "", fonts[1].style)
 
-	prev, err = pw.SetFontStyle("Bold")
-	check(t, pw.FontStyle() == "Bold", "FontStyle should now be Bold")
+	prev, err = pw.SetFontStyle("Italic")
+	check(t, err == nil, "Error setting style to Italic.")
+	check(t, pw.FontStyle() == "Italic", "FontStyle should now be Italic")
 	fonts = pw.Fonts()
-	expectS(t, "Bold", fonts[0].style)
-	expectS(t, "Bold", fonts[1].style)
+	checkFatal(t, len(fonts) == 2, "length of fonts should be 2")
+	expectS(t, "Italic", fonts[0].style)
+	expectS(t, "Italic", fonts[1].style)
 }
 
 func TestPageWriter_LineCapStyle(t *testing.T) {
