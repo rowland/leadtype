@@ -65,36 +65,16 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 }
 
 func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
-	f := &Font{
-		family:       family,
-		weight:       options.StringDefault("weight", ""),
-		style:        options.StringDefault("style", ""),
-		subType:      options.StringDefault("sub_type", "TrueType"),
-		relativeSize: options.FloatDefault("relative_size", 100) / 100.0,
+	if font, err := NewFont(family, options, pw.dw.fontSources); err != nil {
+		return nil, err
+	} else {
+		return pw.addFont(font), nil
 	}
-	if ranges, ok := options["ranges"]; ok {
-		switch ranges := ranges.(type) {
-		case []string:
-			f.ranges = ranges
-		case RuneSet:
-			f.runeSet = ranges
-		}
-	}
-	return pw.addFont(f)
 }
 
-func (pw *PageWriter) addFont(font *Font) ([]*Font, error) {
-	var fontSource FontSource
-	var ok bool
-	if fontSource, ok = pw.dw.fontSources[font.subType]; !ok {
-		return nil, fmt.Errorf("Font subtype %s not found", font.subType)
-	}
-	var err error
-	if font.metrics, err = fontSource.Select(font.family, font.weight, font.style, font.ranges); err != nil {
-		return nil, err
-	}
+func (pw *PageWriter) addFont(font *Font) []*Font {
 	pw.fonts = append(pw.fonts, font)
-	return pw.fonts, nil
+	return pw.fonts
 }
 
 func (pw *PageWriter) checkSetFontColor() {
@@ -305,7 +285,7 @@ func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
 	pw.ResetFonts()
 	for _, font := range prevFonts {
 		font.style = style
-		_, err = pw.addFont(font)
+		pw.addFont(font)
 	}
 	return
 }

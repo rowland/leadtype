@@ -3,6 +3,8 @@
 
 package pdf
 
+import "fmt"
+
 type Font struct {
 	family       string
 	weight       string
@@ -12,6 +14,34 @@ type Font struct {
 	runeSet      RuneSet
 	relativeSize float64
 	metrics      FontMetrics
+}
+
+func NewFont(family string, options Options, fontSources map[string]FontSource) (*Font, error) {
+	font := &Font{
+		family:       family,
+		weight:       options.StringDefault("weight", ""),
+		style:        options.StringDefault("style", ""),
+		subType:      options.StringDefault("sub_type", "TrueType"),
+		relativeSize: options.FloatDefault("relative_size", 100) / 100.0,
+	}
+	if ranges, ok := options["ranges"]; ok {
+		switch ranges := ranges.(type) {
+		case []string:
+			font.ranges = ranges
+		case RuneSet:
+			font.runeSet = ranges
+		}
+	}
+	var fontSource FontSource
+	var ok bool
+	if fontSource, ok = fontSources[font.subType]; !ok {
+		return nil, fmt.Errorf("Font subtype %s not found", font.subType)
+	}
+	var err error
+	if font.metrics, err = fontSource.Select(font.family, font.weight, font.style, font.ranges); err != nil {
+		return nil, err
+	}
+	return font, nil
 }
 
 func (font *Font) Ascent() int {
