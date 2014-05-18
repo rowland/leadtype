@@ -4,8 +4,7 @@
 package codepage
 
 const (
-	idx_ASCII = iota
-	idx_ISO_8859_1
+	idx_ISO_8859_1 = iota
 	idx_ISO_8859_2
 	idx_ISO_8859_3
 	idx_ISO_8859_4
@@ -32,8 +31,7 @@ const (
 )
 
 var CodepointCodepages = CodepageRanges{
-	{0x0000, 0x007F, 128, idx_ASCII},
-	{0x0080, 0x00FF, 128, idx_ISO_8859_1},
+	{0x0000, 0x00FF, 256, idx_ISO_8859_1},
 	{0x0100, 0x0101, 2, idx_ISO_8859_4},
 	{0x0102, 0x0107, 6, idx_ISO_8859_2},
 	{0x0108, 0x010B, 4, idx_ISO_8859_3},
@@ -98,7 +96,6 @@ var CodepointCodepages = CodepageRanges{
 }
 
 var Codepages = []Codepage{
-	ASCII,
 	ISO_8859_1,
 	ISO_8859_2,
 	ISO_8859_3,

@@ -6,20 +6,6 @@ package codepage
 import "testing"
 
 func TestRanges_CharForCodepoint(t *testing.T) {
-	// Full ASCII range
-	for cp := rune(0); cp < 128; cp++ {
-		if ch, found := ASCII.CharForCodepoint(cp); found {
-			if ch != cp {
-				t.Errorf("ASCII: expected %d, got %d", cp, ch)
-			}
-		} else {
-			t.Errorf("ASCII: codepoint %d not found", cp)
-		}
-	}
-	// Outside of ASCII range
-	if _, found := ASCII.CharForCodepoint(128); found {
-		t.Errorf("ASCII: codepoint %d should not be found", 128)
-	}
 	// 2-codepoint range within CP1252
 	if ch, found := CP1252.CharForCodepoint(0x2013); found {
 		if ch != 150 {
@@ -41,14 +27,6 @@ func TestRanges_CharForCodepoint(t *testing.T) {
 	}
 	if _, found := CP1252.CharForCodepoint(0x2015); found {
 		t.Errorf("CP1252: codepoint %d should not be found", 0x2015)
-	}
-}
-
-// 7.8 ns
-// 7.3 ns go1.1.1
-func BenchmarkRanges_CharForCodepoint_ASCII(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		ASCII.CharForCodepoint(rune(i) % 0x2122)
 	}
 }
 
@@ -245,26 +223,6 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_16(b *testing.B) {
 }
 
 func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
-	// Full ASCII range
-	for cp := rune(0); cp < 128; cp++ {
-		if page, found := CodepointCodepages.CodepageForCodepoint(cp); found {
-			if page != idx_ASCII {
-				t.Errorf("CodepointCodepages: expected %d, got %d", idx_ASCII, page)
-			}
-		} else {
-			t.Errorf("CodepointCodepages: codepoint %d not found", cp)
-		}
-	}
-	// Outside of ASCII range
-	for cp := rune(128); cp < 256; cp++ {
-		if page, found := CodepointCodepages.CodepageForCodepoint(cp); found {
-			if page != idx_ISO_8859_1 {
-				t.Errorf("CodepointCodepages: expected %d, got %d", idx_ISO_8859_1, page)
-			}
-		} else {
-			t.Errorf("CodepointCodepages: codepoint %d not found", cp)
-		}
-	}
 	// 2-codepoint range within CP1252
 	if page, found := CodepointCodepages.CodepageForCodepoint(0x2013); found {
 		if page != idx_CP1252 {
