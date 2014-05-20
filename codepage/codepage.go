@@ -1,4 +1,4 @@
-// Copyright 2011-2012 Brent Rowland.
+// Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package codepage
@@ -34,12 +34,12 @@ type CodepageRange struct {
 	firstCode  rune
 	lastCode   rune
 	entryCount int
-	codepage   int
+	codepage   CodepageIndex
 }
 
 type CodepageRanges []CodepageRange
 
-func (list CodepageRanges) CodepageForCodepoint(cp rune) (codepage int, found bool) {
+func (list CodepageRanges) CodepageForCodepoint(cp rune) (codepage CodepageIndex, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2
