@@ -11,8 +11,18 @@ func TestCodepageIndex_Codepage(t *testing.T) {
 		if !reflect.DeepEqual(idx.Codepage(), Codepages[idx]) {
 			t.Errorf("Expected %#v, got %#v", Codepages[idx], idx)
 		}
-		if idx.String() != CodepageNames[idx] {
-			t.Errorf("Expected %s, got %s", CodepageNames[idx], idx.String())
+		if idx.String() != codepageNames[idx] {
+			t.Errorf("Expected %s, got %s", codepageNames[idx], idx.String())
+		}
+	}
+}
+
+// 162 ns when CodepageIndex returns slices
+// 173 ns when CodepageIndex returns pointers to slices
+func BenchmarkCharForCodepointForEachCodepage(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for idx := idx_CP1250; idx <= idx_CP874; idx++ {
+			_, _ = idx.Codepage().CharForCodepoint(' ')
 		}
 	}
 }

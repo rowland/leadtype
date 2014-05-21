@@ -124,7 +124,7 @@ var Codepages = []Codepage{
 	CP874,
 }
 
-var CodepageNames = []string{
+var codepageNames = []string{
 	"ISO-8859-1",
 	"ISO-8859-2",
 	"ISO-8859-3",
@@ -156,5 +156,5 @@ func (idx CodepageIndex) Codepage() Codepage {
 }
 
 func (idx CodepageIndex) String() string {
-	return CodepageNames[idx]
+	return codepageNames[idx]
 }
