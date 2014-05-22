@@ -32,7 +32,7 @@ const (
 	idx_CP874
 )
 
-var CodepointCodepages = CodepageRanges{
+var codepointCodepages = CodepageRanges{
 	{0x0000, 0x00FF, 256, idx_ISO_8859_1},
 	{0x0100, 0x0101, 2, idx_ISO_8859_4},
 	{0x0102, 0x0107, 6, idx_ISO_8859_2},
@@ -95,6 +95,14 @@ var CodepointCodepages = CodepageRanges{
 	{0x20AC, 0x20AD, 2, idx_ISO_8859_7},
 	{0x2116, 0x2116, 1, idx_ISO_8859_5},
 	{0x2122, 0x2122, 1, idx_CP1252},
+}
+
+func ForCodepoint(rune rune) (codepage Codepage, found bool) {
+	cpi, found := codepointCodepages.CodepageIndexForCodepoint(rune)
+	if found {
+		codepage = cpi.Codepage()
+	}
+	return
 }
 
 var Codepages = []Codepage{

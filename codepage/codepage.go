@@ -39,7 +39,7 @@ type CodepageRange struct {
 
 type CodepageRanges []CodepageRange
 
-func (list CodepageRanges) CodepageForCodepoint(cp rune) (codepage CodepageIndex, found bool) {
+func (list CodepageRanges) CodepageIndexForCodepoint(cp rune) (codepage CodepageIndex, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
 		i := (low + high) / 2
@@ -54,5 +54,5 @@ func (list CodepageRanges) CodepageForCodepoint(cp rune) (codepage CodepageIndex
 		}
 		return r.codepage, true
 	}
-	return
+	return 0, false
 }

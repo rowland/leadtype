@@ -222,40 +222,40 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_16(b *testing.B) {
 	}
 }
 
-func TestCodepageRanges_CodepageForCodepoint(t *testing.T) {
+func TestCodepageRanges_CodepageIndexForCodepoint(t *testing.T) {
 	// 2-codepoint range within CP1252
-	if page, found := CodepointCodepages.CodepageForCodepoint(0x2013); found {
+	if page, found := codepointCodepages.CodepageIndexForCodepoint(0x2013); found {
 		if page != idx_CP1252 {
-			t.Errorf("CodepointCodepages: expected %d, got %d", idx_CP1252, page)
+			t.Errorf("codepointCodepages: expected %d, got %d", idx_CP1252, page)
 		}
 	} else {
-		t.Errorf("CodepointCodepages: codepoint '%d' not found", 0x2013)
+		t.Errorf("codepointCodepages: codepoint '%d' not found", 0x2013)
 	}
-	if page, found := CodepointCodepages.CodepageForCodepoint(0x2014); found {
+	if page, found := codepointCodepages.CodepageIndexForCodepoint(0x2014); found {
 		if page != idx_CP1252 {
-			t.Errorf("CodepointCodepages: expected %d, got %d", idx_CP1252, page)
+			t.Errorf("codepointCodepages: expected %d, got %d", idx_CP1252, page)
 		}
 	} else {
-		t.Errorf("CodepointCodepages: codepoint %d not found", 0x2013)
+		t.Errorf("codepointCodepages: codepoint %d not found", 0x2013)
 	}
 	// Codepoints before and after previous range
 	// 2-codepoint range within CP1252
-	if _, found := CodepointCodepages.CodepageForCodepoint(0x2012); found {
-		t.Errorf("CodepointCodepages: codepoint %d should not be found", 0x2012)
+	if _, found := codepointCodepages.CodepageIndexForCodepoint(0x2012); found {
+		t.Errorf("codepointCodepages: codepoint %d should not be found", 0x2012)
 	}
-	if page, found := CodepointCodepages.CodepageForCodepoint(0x2015); found {
+	if page, found := codepointCodepages.CodepageIndexForCodepoint(0x2015); found {
 		if page != idx_ISO_8859_7 {
-			t.Errorf("CodepointCodepages: expected %d, got %d", idx_ISO_8859_7, page)
+			t.Errorf("codepointCodepages: expected %d, got %d", idx_ISO_8859_7, page)
 		}
 	} else {
-		t.Errorf("CodepointCodepages: codepoint %x not found", 0x2015)
+		t.Errorf("codepointCodepages: codepoint %x not found", 0x2015)
 	}
 }
 
 // 26.1 ns
 // 25.2 ns go1.1.1
-func BenchmarkCodepageRanges_CodepageForCodepoint(b *testing.B) {
+func BenchmarkCodepageRanges_CodepageIndexForCodepoint(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		CodepointCodepages.CodepageForCodepoint(rune(i) % 0x2122)
+		codepointCodepages.CodepageIndexForCodepoint(rune(i) % 0x2122)
 	}
 }
