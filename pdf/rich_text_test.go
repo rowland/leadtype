@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"leadtype/codepage"
 	"leadtype/ttf"
 	"leadtype/wordbreaking"
 	"math"
@@ -206,6 +207,30 @@ func TestRichText_Descent(t *testing.T) {
 	st.Equal(0.0, p.Descent())
 	p = richTextMixedText()
 	st.AlmostEqual(-2.119141, p.Descent(), 0.001)
+}
+
+func TestRichText_EachCodepage(t *testing.T) {
+	rt := mixedText()
+	expected := []struct {
+		idx  codepage.CodepageIndex
+		text string
+	}{
+		{0, "Here is some Russian, "},
+		{4, "Неприкосновенность"},
+		{0, ", and some Chinese, "},
+		{-1, "表明你已明确同意你的回答接受评估"},
+		{0, "."},
+	}
+	i := 0
+	rt.EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
+		if i >= len(expected) {
+			t.Fatalf("Unexpected text <%s> in codepage <%d>", text, cpi)
+		}
+		if cpi != expected[i].idx || text != expected[i].text {
+			t.Errorf("Expected codepage <%d> with text <%s>, got <%d> with text <%s>", expected[i].idx, expected[i].text, cpi, text)
+		}
+		i++
+	})
 }
 
 func TestRichText_Height(t *testing.T) {

@@ -6,6 +6,7 @@ package pdf
 import (
 	"bytes"
 	"fmt"
+	"leadtype/codepage"
 	"leadtype/wordbreaking"
 	"sort"
 	"strings"
@@ -160,6 +161,37 @@ func (piece *RichText) Descent() float64 {
 		}
 	}
 	return piece.descent
+}
+
+func (piece *RichText) EachCodepage(fn func(cpi codepage.CodepageIndex, text string, p *RichText)) {
+	piece.VisitAll(func(p *RichText) {
+		var lastIdx codepage.CodepageIndex = -1
+		start := 0
+		for i, r := range p.Text {
+			if lastIdx >= 0 {
+				if _, found := lastIdx.Codepage().CharForCodepoint(r); found {
+					continue
+				} else {
+					if i > start {
+						fn(lastIdx, p.Text[start:i], p)
+						start = i
+					}
+					lastIdx, _ = codepage.IndexForCodepoint(r)
+				}
+			} else {
+				if idx, found := codepage.IndexForCodepoint(r); found {
+					if i > start {
+						fn(lastIdx, p.Text[start:i], p)
+						start = i
+					}
+					lastIdx = idx
+				}
+			}
+		}
+		if start < len(p.Text) {
+			fn(lastIdx, p.Text[start:], p)
+		}
+	})
 }
 
 // EachRune invokes the callback function for each rune within the text, in sequence.
