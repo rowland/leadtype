@@ -105,6 +105,12 @@ func ForCodepoint(rune rune) (codepage Codepage, found bool) {
 	return
 }
 
+// IndexForCodepoint returns the index into Codepages for which a codepage containing the rune can be found.
+// Returns -1 if no codepage can be found containing the rune.
+func IndexForCodepoint(rune rune) (index CodepageIndex, found bool) {
+	return codepointCodepages.CodepageIndexForCodepoint(rune)
+}
+
 var Codepages = []Codepage{
 	ISO_8859_1,
 	ISO_8859_2,
@@ -164,5 +170,8 @@ func (idx CodepageIndex) Codepage() Codepage {
 }
 
 func (idx CodepageIndex) String() string {
+	if idx < 0 {
+		return "Unicode"
+	}
 	return codepageNames[idx]
 }

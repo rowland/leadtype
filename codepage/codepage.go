@@ -39,6 +39,8 @@ type CodepageRange struct {
 
 type CodepageRanges []CodepageRange
 
+// CodepageIndexForCodepoint returns the index into CodepageRanges for which a codepage containing the rune can be found.
+// Returns -1 if no codepage can be found containing the rune.
 func (list CodepageRanges) CodepageIndexForCodepoint(cp rune) (codepage CodepageIndex, found bool) {
 	low, high := 0, len(list)-1
 	for low <= high {
@@ -54,5 +56,5 @@ func (list CodepageRanges) CodepageIndexForCodepoint(cp rune) (codepage Codepage
 		}
 		return r.codepage, true
 	}
-	return 0, false
+	return -1, false
 }
