@@ -134,6 +134,7 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	st.Equal(fonts[1], rt.pieces[1].Font, "Should be tagged with Arial font.")
 }
 
+const englishRussian = "Here is some Russian, Неприкосновенность, and some random English."
 const englishRussianChinese = "Here is some Russian, Неприкосновенность, and some Chinese, 表明你已明确同意你的回答接受评估."
 
 func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
@@ -209,6 +210,7 @@ func TestRichText_Descent(t *testing.T) {
 	st.AlmostEqual(-2.119141, p.Descent(), 0.001)
 }
 
+// Codepages in this sample align with the 3 fonts used.
 func TestRichText_EachCodepage(t *testing.T) {
 	rt := mixedText()
 	expected := []struct {
@@ -220,6 +222,29 @@ func TestRichText_EachCodepage(t *testing.T) {
 		{0, ", and some Chinese, "},
 		{-1, "表明你已明确同意你的回答接受评估"},
 		{0, "."},
+	}
+	i := 0
+	rt.EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
+		if i >= len(expected) {
+			t.Fatalf("Unexpected text <%s> in codepage <%d>", text, cpi)
+		}
+		if cpi != expected[i].idx || text != expected[i].text {
+			t.Errorf("Expected codepage <%d> with text <%s>, got <%d> with text <%s>", expected[i].idx, expected[i].text, cpi, text)
+		}
+		i++
+	})
+}
+
+// By using a single font, we show segmentation still works with a single run of text, and, after switching to the Russian codepage,
+// sticks with it because it also handles plain ASCII text.
+func TestRichText_EachCodepage2(t *testing.T) {
+	rt := arialText(englishRussian)
+	expected := []struct {
+		idx  codepage.CodepageIndex
+		text string
+	}{
+		{0, "Here is some Russian, "},
+		{4, "Неприкосновенность, and some random English."},
 	}
 	i := 0
 	rt.EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
