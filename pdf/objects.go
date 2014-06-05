@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"sort"
-	"strings"
 )
 
 type array []writer
@@ -442,12 +441,21 @@ type seqGen interface {
 	Gen() int
 }
 
-type str string
+type str []byte
 
-func (s str) escape() string {
-	s1 := strings.Replace(string(s), "\\", "\\\\", -1)
-	s2 := strings.Replace(s1, "(", "\\(", -1)
-	s3 := strings.Replace(s2, ")", "\\)", -1)
+var (
+	backSlash         = []byte("\\")
+	escapedBackslash  = []byte("\\\\")
+	leftParen         = []byte("(")
+	escapedLeftParen  = []byte("\\(")
+	rightParen        = []byte(")")
+	escapedRightParen = []byte("\\)")
+)
+
+func (s str) escape() []byte {
+	s1 := bytes.Replace(s, backSlash, escapedBackslash, -1)
+	s2 := bytes.Replace(s1, leftParen, escapedLeftParen, -1)
+	s3 := bytes.Replace(s2, rightParen, escapedRightParen, -1)
 	return s3
 }
 

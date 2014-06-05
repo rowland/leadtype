@@ -309,7 +309,7 @@ func TestResources_XObject(t *testing.T) {
 func TestStr(t *testing.T) {
 	var buf bytes.Buffer
 	s := str("a\\b(cd)")
-	expectS(t, "a\\\\b\\(cd\\)", s.escape())
+	expectS(t, "a\\\\b\\(cd\\)", string(s.escape()))
 	s.write(&buf)
 	expectS(t, "(a\\\\b\\(cd\\)) ", buf.String())
 }
