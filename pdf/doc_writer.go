@@ -119,6 +119,10 @@ func (dw *DocWriter) LineDashPattern() string {
 	return dw.curPage.LineDashPattern()
 }
 
+func (dw *DocWriter) LineThrough() bool {
+	return dw.curPage.LineThrough()
+}
+
 func (dw *DocWriter) LineTo(x, y float64) {
 	dw.curPage.LineTo(x, y)
 }
@@ -185,6 +189,14 @@ func (dw *DocWriter) PagesUp() int {
 	return dw.PagesAcross() * dw.PagesDown()
 }
 
+func (dw *DocWriter) Print(text string) (err error) {
+	return dw.curPage.Print(text)
+}
+
+func (dw *DocWriter) PrintRichText(text *RichText) {
+	dw.curPage.PrintRichText(text)
+}
+
 func (dw *DocWriter) ResetFonts() {
 	dw.curPage.ResetFonts()
 }
@@ -213,10 +225,26 @@ func (dw *DocWriter) SetLineDashPattern(lineDashPattern string) (prev string) {
 	return dw.curPage.SetLineDashPattern(lineDashPattern)
 }
 
+func (dw *DocWriter) SetLineThrough(lineThrough bool) (prev bool) {
+	return dw.curPage.SetLineThrough(lineThrough)
+}
+
 func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
 	return dw.curPage.SetLineWidth(width, units)
 }
 
+func (dw *DocWriter) SetUnderline(underline bool) (prev bool) {
+	return dw.curPage.SetUnderline(underline)
+}
+
 func (dw *DocWriter) SetUnits(units string) {
 	dw.curPage.SetUnits(units)
+}
+
+func (dw *DocWriter) Underline() bool {
+	return dw.curPage.Underline()
+}
+
+func (dw *DocWriter) Write(text []byte) (n int, err error) {
+	return dw.curPage.Write(text)
 }

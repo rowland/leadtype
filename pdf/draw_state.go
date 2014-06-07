@@ -9,6 +9,8 @@ type drawState struct {
 	lineCapStyle    LineCapStyle
 	lineColor       Color
 	lineDashPattern string
+	lineThrough     bool
 	lineWidth       float64
 	loc             location
+	underline       bool
 }

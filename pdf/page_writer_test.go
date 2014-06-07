@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -223,6 +224,18 @@ func TestPageWriter_LineDashPattern(t *testing.T) {
 	check(t, last == "solid", "Previous pattern was solid")
 }
 
+func TestPageWriter_LineThrough(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.LineThrough() == false, "Should default to false")
+
+	last := pw.SetLineThrough(true)
+	check(t, pw.LineThrough() == true, "Should have changed to true")
+	check(t, last == false, "Previous setting was false")
+}
+
 func TestPageWriter_LineTo(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
@@ -287,6 +300,26 @@ func TestPageWriter_PageHeight(t *testing.T) {
 	UnitConversions.Add("dp", 0.072)
 	pw.SetUnits("dp")
 	expectF(t, 11000, pw.PageHeight())
+}
+
+func TestPageWriter_Print(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc, "TrueType")
+	pw.SetFont("Arial", 12, Options{})
+
+	check(t, pw.line == nil, "line should start out nil")
+	pw.Print("Hello")
+	check(t, pw.line != nil, "line should no longer be nil")
+	expectS(t, "Hello", pw.line.String())
+	pw.Print(", World!")
+	expectS(t, "Hello, World!", pw.line.String())
 }
 
 func TestPageWriter_SetFont(t *testing.T) {
@@ -357,6 +390,18 @@ func TestPageWriter_translate(t *testing.T) {
 	expectF(t, 792-200, loc.y)
 }
 
+func TestPageWriter_Underline(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.Underline() == false, "Should default to false")
+
+	last := pw.SetUnderline(true)
+	check(t, pw.Underline() == true, "Should have changed to true")
+	check(t, last == false, "Previous setting was false")
+}
+
 func TestPageWriter_units(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
@@ -377,4 +422,24 @@ func TestPageWriter_units(t *testing.T) {
 	pw4 := newPageWriter(dw, Options{"units": "dp"})
 	expectS(t, "dp", pw4.units.name)
 	expectF(t, 0.072, pw4.units.ratio)
+}
+
+func TestPageWriter_Write(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	pw := newPageWriter(dw, Options{})
+
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc, "TrueType")
+	pw.SetFont("Arial", 12, Options{})
+
+	check(t, pw.line == nil, "line should start out nil")
+	fmt.Fprint(pw, "Hello")
+	check(t, pw.line != nil, "line should no longer be nil")
+	expectS(t, "Hello", pw.line.String())
+	fmt.Fprint(pw, ", World!")
+	expectS(t, "Hello, World!", pw.line.String())
 }

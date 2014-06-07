@@ -131,7 +131,7 @@ func (piece *RichText) Chars() int {
 	return piece.chars
 }
 
-func (piece *RichText) clone() *RichText {
+func (piece *RichText) Clone() *RichText {
 	p := *piece
 	p.chars = 0
 	p.width = 0.0
@@ -256,7 +256,7 @@ func (piece *RichText) insertStringAtOffsets(s string, offsets []int, i *int, cu
 					dst += d + len(s)
 				}
 				copy(buf[dst:], piece.Text[src:])
-				newPiece := piece.clone()
+				newPiece := piece.Clone()
 				newPiece.Text = string(buf)
 				res.pieces = append(res.pieces, newPiece)
 			}
@@ -265,7 +265,7 @@ func (piece *RichText) insertStringAtOffsets(s string, offsets []int, i *int, cu
 		return
 	}
 
-	newPiece := piece.clone()
+	newPiece := piece.Clone()
 	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
 	res.pieces = append(res.pieces, newPiece)
 
@@ -379,14 +379,14 @@ func (piece *RichText) Merge() *RichText {
 		}
 	}
 
-	mergedText := piece.clone()
+	mergedText := piece.Clone()
 	mergedText.pieces = make([]*RichText, 0, len(piece.pieces))
 	var last *RichText
 	for _, p := range flattened {
 		if last != nil && p.MatchesAttributes(last) {
 			last.Text += p.Text
 		} else {
-			newPiece := p.clone()
+			newPiece := p.Clone()
 			mergedText.pieces = append(mergedText.pieces, newPiece)
 			last = newPiece
 		}
@@ -420,11 +420,11 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 			if (offset - *current) >= len(piece.Text) {
 				left.pieces = append(left.pieces, piece)
 			} else {
-				newLeft := piece.clone()
+				newLeft := piece.Clone()
 				newLeft.Text = piece.Text[:offset-*current]
 				left.pieces = append(left.pieces, newLeft)
 
-				newRight := piece.clone()
+				newRight := piece.Clone()
 				newRight.Text = piece.Text[offset-*current:]
 				right.pieces = append(right.pieces, newRight)
 			}
@@ -435,7 +435,7 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 		return
 	}
 
-	newPiece := piece.clone()
+	newPiece := piece.Clone()
 	newPiece.pieces = make([]*RichText, 0, len(piece.pieces))
 	if *current < offset {
 		left.pieces = append(left.pieces, newPiece)
@@ -452,7 +452,7 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 
 func (piece *RichText) splitByFont(fonts []*Font, defaultFont *Font) (pieces []*RichText, err error) {
 	if len(fonts) == 0 {
-		newPiece := piece.clone()
+		newPiece := piece.Clone()
 		newPiece.Text = strings.Repeat("?", utf8.RuneCountInString(piece.Text))
 		newPiece.Font = defaultFont
 		pieces = append(pieces, newPiece)
@@ -468,7 +468,7 @@ func (piece *RichText) splitByFont(fonts []*Font, defaultFont *Font) (pieces []*
 		runeInFont := (rune == '\t') || (rune == '\n') || (rune == '\r') || (rune == wordbreaking.SoftHyphen) || font.HasRune(rune)
 		if runeInFont != inFont {
 			if index > start {
-				newPiece := piece.clone()
+				newPiece := piece.Clone()
 				newPiece.Text = piece.Text[start:index]
 				if inFont {
 					newPiece.Font = font
@@ -485,7 +485,7 @@ func (piece *RichText) splitByFont(fonts []*Font, defaultFont *Font) (pieces []*
 		}
 	}
 	if len(piece.Text) > start {
-		newPiece := piece.clone()
+		newPiece := piece.Clone()
 		newPiece.Text = piece.Text[start:]
 		if inFont {
 			newPiece.Font = font
@@ -649,7 +649,7 @@ func (piece *RichText) WordsToWidth(
 	line, remainder = piece.Split(current)
 	remainderFlags = wordFlags[current:]
 	if extra > 0.0 {
-		p := piece.lastPiece().clone()
+		p := piece.lastPiece().Clone()
 		p.Text = "-"
 		line = line.AddPiece(p)
 	}

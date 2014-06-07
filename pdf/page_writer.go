@@ -6,6 +6,7 @@ package pdf
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
 type LineCapStyle int
@@ -30,8 +31,10 @@ type PageWriter struct {
 	last       drawState
 	mw         *miscWriter
 	options    Options
+	origin     location
 	page       *page
 	pageHeight float64
+	line       *RichText
 	stream     bytes.Buffer
 	units      *units
 }
@@ -208,6 +211,10 @@ func (pw *PageWriter) LineDashPattern() string {
 	return pw.lineDashPattern
 }
 
+func (pw *PageWriter) LineThrough() bool {
+	return pw.lineThrough
+}
+
 func (pw *PageWriter) LineTo(x, y float64) {
 	pw.startGraph()
 	if !pw.last.loc.equal(pw.loc) {
@@ -240,6 +247,42 @@ func (pw *PageWriter) MoveTo(x, y float64) {
 
 func (pw *PageWriter) PageHeight() float64 {
 	return pw.units.fromPts(pw.pageHeight)
+}
+
+func (pw *PageWriter) Print(text string) (err error) {
+	i := strings.IndexAny(text, "\t\r\n")
+	for i >= 0 {
+		if err = pw.print(text[:i]); err != nil {
+			return
+		}
+		switch text[i] {
+		case '\t':
+		case '\r':
+		case '\n':
+		}
+		text = text[i+1:]
+		i = strings.IndexAny(text, "\t\r\n")
+	}
+	return pw.print(text)
+}
+
+func (pw *PageWriter) print(text string) (err error) {
+	piece, err := NewRichText(text, pw.fonts, pw.fontSize, Options{
+		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
+	if err != nil {
+		return
+	}
+	pw.PrintRichText(piece)
+	return
+}
+
+func (pw *PageWriter) PrintRichText(text *RichText) {
+	if pw.line == nil {
+		pw.origin = pw.loc
+		pw.line = text.Clone() // Avoid mutating text.
+	} else {
+		pw.line = pw.line.AddPiece(text)
+	}
 }
 
 func (pw *PageWriter) ResetFonts() {
@@ -320,9 +363,21 @@ func (pw *PageWriter) SetLineDashPattern(lineDashPattern string) (prev string) {
 	return
 }
 
+func (pw *PageWriter) SetLineThrough(lineThrough bool) (prev bool) {
+	prev = pw.lineThrough
+	pw.lineThrough = lineThrough
+	return
+}
+
 func (pw *PageWriter) SetLineWidth(width float64, units string) (prev float64) {
 	prev = unitsFromPts(units, pw.lineWidth)
 	pw.lineWidth = unitsToPts(units, width)
+	return
+}
+
+func (pw *PageWriter) SetUnderline(underline bool) (prev bool) {
+	prev = pw.underline
+	pw.underline = underline
 	return
 }
 
@@ -354,6 +409,14 @@ func (pw *PageWriter) translate(x, y float64) location {
 	return location{x, pw.pageHeight - y}
 }
 
+func (pw *PageWriter) Underline() bool {
+	return pw.underline
+}
+
 func (pw *PageWriter) Units() string {
 	return pw.units.name
+}
+
+func (pw *PageWriter) Write(text []byte) (n int, err error) {
+	return len(text), pw.Print(string(text))
 }
