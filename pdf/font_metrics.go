@@ -7,7 +7,7 @@ type FontMetrics interface {
 	AdvanceWidth(codepoint rune) (width int, err bool)
 	Ascent() int
 	// AvgWidth() int
-	// BoundingBox() BoundingBox xxx
+	BoundingBox() [4]int
 	CapHeight() int
 	Copyright() string
 	Descent() int

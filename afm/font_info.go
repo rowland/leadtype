@@ -18,7 +18,7 @@ type FontInfo struct {
 	copyright          string
 	descender          int
 	familyName         string
-	fontBBox           BoundingBox
+	fontBBox           [4]int
 	fontName           string
 	fullName           string
 	italicAngle        float64
@@ -81,10 +81,9 @@ func (fi *FontInfo) init(file *bufio.Reader) (err error) {
 			fi.ascender, _ = strconv.Atoi(string(m[1]))
 		} else if m := reFontBBox.FindSubmatch(line); m != nil {
 			sa := strings.Split(strings.TrimSpace(string(m[1])), " ")
-			fi.fontBBox.XMin, _ = strconv.Atoi(sa[0])
-			fi.fontBBox.YMin, _ = strconv.Atoi(sa[1])
-			fi.fontBBox.XMax, _ = strconv.Atoi(sa[2])
-			fi.fontBBox.YMax, _ = strconv.Atoi(sa[3])
+			for i, s := range sa {
+				fi.fontBBox[i], _ = strconv.Atoi(s)
+			}
 		} else if m := reDescender.FindSubmatch(line); m != nil {
 			fi.descender, _ = strconv.Atoi(string(m[1]))
 		} else if m := reFamilyName.FindSubmatch(line); m != nil {
@@ -119,7 +118,7 @@ func (fi *FontInfo) Ascent() int {
 	return fi.ascender
 }
 
-func (fi *FontInfo) BoundingBox() BoundingBox {
+func (fi *FontInfo) BoundingBox() [4]int {
 	return fi.fontBBox
 }
 
@@ -177,8 +176,4 @@ func (fi *FontInfo) Version() string {
 
 func (fi *FontInfo) XHeight() int {
 	return fi.xHeight
-}
-
-type BoundingBox struct {
-	XMin, YMin, XMax, YMax int
 }

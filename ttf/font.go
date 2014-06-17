@@ -96,8 +96,8 @@ func (font *Font) Ascent() int {
 	return int(font.hheaTable.ascent)
 }
 
-func (font *Font) BoundingBox() BoundingBox {
-	return BoundingBox{int(font.headTable.xMin), int(font.headTable.yMin), int(font.headTable.xMax), int(font.headTable.yMax)}
+func (font *Font) BoundingBox() [4]int {
+	return [...]int{int(font.headTable.xMin), int(font.headTable.yMin), int(font.headTable.xMax), int(font.headTable.yMax)}
 }
 
 func (font *Font) Descent() int {
@@ -219,10 +219,6 @@ func (font *Font) writeHeader(wr io.Writer) {
 	fmt.Fprintf(wr, "searchRange = %d\n", font.searchRange)
 	fmt.Fprintf(wr, "entrySelector = %d\n", font.entrySelector)
 	fmt.Fprintf(wr, "rangeShift = %d\n", font.rangeShift)
-}
-
-type BoundingBox struct {
-	XMin, YMin, XMax, YMax int
 }
 
 type missingCodepoint int

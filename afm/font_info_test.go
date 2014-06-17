@@ -35,10 +35,10 @@ func TestLoadFontInfo(t *testing.T) {
 	expectS(t, "Version", "002.000", fi.Version())
 	expectI(t, "XHeight", 523, fi.XHeight())
 
-	expectI(t, "BoundingBox.XMin", -166, fi.BoundingBox().XMin)
-	expectI(t, "BoundingBox.YMin", -225, fi.BoundingBox().YMin)
-	expectI(t, "BoundingBox.XMax", 1000, fi.BoundingBox().XMax)
-	expectI(t, "BoundingBox.YMax", 931, fi.BoundingBox().YMax)
+	expectI(t, "BoundingBox[0]", -166, fi.BoundingBox()[0])
+	expectI(t, "BoundingBox[1]", -225, fi.BoundingBox()[1])
+	expectI(t, "BoundingBox[2]", 1000, fi.BoundingBox()[2])
+	expectI(t, "BoundingBox[3]", 931, fi.BoundingBox()[3])
 }
 
 // 323,331 ns

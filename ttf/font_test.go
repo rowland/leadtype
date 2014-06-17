@@ -20,10 +20,10 @@ func TestLoadFont(t *testing.T) {
 
 	expectI(t, "UnitsPerEm", 2048, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 3381, f.NumGlyphs())
-	expectI(t, "BoundingBox.XMin", -1361, f.BoundingBox().XMin)
-	expectI(t, "BoundingBox.YMin", -665, f.BoundingBox().YMin)
-	expectI(t, "BoundingBox.XMax", 4096, f.BoundingBox().XMax)
-	expectI(t, "BoundingBox.YMax", 2060, f.BoundingBox().YMax)
+	expectI(t, "BoundingBox[0]", -1361, f.BoundingBox()[0])
+	expectI(t, "BoundingBox[1]", -665, f.BoundingBox()[1])
+	expectI(t, "BoundingBox[2]", 4096, f.BoundingBox()[2])
+	expectI(t, "BoundingBox[3]", 2060, f.BoundingBox()[3])
 
 	expectI(t, "registered", 1509, aw(f.AdvanceWidth(0xAE)))
 	expectI(t, "copyright", 1509, aw(f.AdvanceWidth(0xA9)))
