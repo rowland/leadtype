@@ -20,6 +20,14 @@ func (a array) write(w io.Writer) {
 	fmt.Fprintf(w, "] ")
 }
 
+func arrayFromInts(ints []int) array {
+	ary := make(array, len(ints))
+	for i, v := range ints {
+		ary[i] = integer(v)
+	}
+	return ary
+}
+
 type body struct {
 	list genWriterArray
 }
@@ -131,6 +139,55 @@ func (f *file) write(w io.Writer) {
 	table.write(&buf)
 	f.trailer.write(&buf)
 	buf.WriteTo(w)
+}
+
+type fontDescriptor struct {
+	dictionaryObject
+}
+
+func newFontDescriptor(seq, gen int,
+	fontName, fontFamily string,
+	flags int,
+	fontBBox []int,
+	missingWidth, stemV, stemH int,
+	italicAngle float64,
+	capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth int) *fontDescriptor {
+	return new(fontDescriptor).init(seq, gen,
+		fontName, fontFamily,
+		flags,
+		fontBBox,
+		missingWidth, stemV, stemH,
+		italicAngle,
+		capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth)
+}
+
+func (fd *fontDescriptor) init(seq, gen int,
+	fontName, fontFamily string,
+	flags int,
+	fontBBox []int,
+	missingWidth, stemV, stemH int,
+	italicAngle float64,
+	capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth int) *fontDescriptor {
+	fd.dictionaryObject.init(seq, gen)
+	fd.dict["Type"] = name("FontDescriptor")
+	fd.dict["FontName"] = name(fontName)
+	fd.dict["FontFamily"] = str(fontFamily)
+	// TODO: FontStretch
+	// TODO: FontWeight
+	fd.dict["Flags"] = integer(flags)
+	fd.dict["FontBBox"] = arrayFromInts(fontBBox)
+	fd.dict["ItalicAngle"] = real(italicAngle)
+	fd.dict["Ascent"] = integer(ascent)
+	fd.dict["Descent"] = integer(descent)
+	fd.dict["Leading"] = integer(leading)
+	fd.dict["CapHeight"] = integer(capHeight)
+	fd.dict["XHeight"] = integer(xHeight)
+	fd.dict["StemV"] = integer(stemV)
+	fd.dict["StemH"] = integer(stemH)
+	fd.dict["AvgWidth"] = integer(avgWidth)
+	fd.dict["MaxWidth"] = integer(maxWidth)
+	fd.dict["MissingWidth"] = integer(missingWidth)
+	return fd
 }
 
 type freeXRefEntry indirectObject
@@ -386,6 +443,12 @@ func (ps *pages) write(w io.Writer) {
 	}
 	ps.dict["Kids"] = kidsRefs
 	ps.pageBase.write(w)
+}
+
+type real float64
+
+func (r real) write(w io.Writer) {
+	fmt.Fprintf(w, "%s ", g(float64(r)))
 }
 
 type rectangle struct {

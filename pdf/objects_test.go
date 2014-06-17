@@ -79,6 +79,39 @@ func TestFile(t *testing.T) {
 	expectS(t, "%PDF-1.3\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<\n/Size 1 \n>>\nstartxref\n9\n%%EOF\n", stringFromWriter(f))
 }
 
+func TestFontDescriptor(t *testing.T) {
+	fd := newFontDescriptor(100, 0,
+		"ArialMT", "Arial",
+		32,
+		[]int{-665, -325, 2029, 1006},
+		0, 0, 0,
+		9.1,
+		723, 525, 905, -212, 33, 2000, 0)
+	expected := "100 0 obj\n" +
+		"<<\n" +
+		"/Ascent 905 \n" +
+		"/AvgWidth 0 \n" +
+		"/CapHeight 723 \n" +
+		"/Descent -212 \n" +
+		"/Flags 32 \n" +
+		"/FontBBox [-665 -325 2029 1006 ] \n" +
+		"/FontFamily (Arial) \n" +
+		"/FontName /ArialMT \n" +
+		"/ItalicAngle 9.1 \n" +
+		"/Leading 33 \n" +
+		"/MaxWidth 2000 \n" +
+		"/MissingWidth 0 \n" +
+		"/StemH 0 \n" +
+		"/StemV 0 \n" +
+		"/Type /FontDescriptor \n" +
+		"/XHeight 525 \n" +
+		">>\n" +
+		"endobj\n"
+	var buf bytes.Buffer
+	fd.write(&buf)
+	expectS(t, expected, buf.String())
+}
+
 func TestFreeXRefEntry(t *testing.T) {
 	var buf bytes.Buffer
 	e := &freeXRefEntry{1, 0, nil}
@@ -264,6 +297,14 @@ func TestPages(t *testing.T) {
 	var buf bytes.Buffer
 	ps.write(&buf)
 	expectS(t, "1 0 obj\n<<\n/Count 1 \n/Kids [2 0 R ] \n/Type /Pages \n>>\nendobj\n", buf.String())
+}
+
+func TestReal(t *testing.T) {
+	var buf bytes.Buffer
+	r := real(9.1)
+	r.write(&buf)
+
+	expectS(t, "9.1 ", buf.String())
 }
 
 func TestRectangle(t *testing.T) {
