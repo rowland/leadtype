@@ -138,6 +138,33 @@ var Codepages = []Codepage{
 	CP874,
 }
 
+var CodepageMaps = [][]rune{
+	ISO_8859_1_Map,
+	ISO_8859_2_Map,
+	ISO_8859_3_Map,
+	ISO_8859_4_Map,
+	ISO_8859_5_Map,
+	ISO_8859_6_Map,
+	ISO_8859_7_Map,
+	ISO_8859_8_Map,
+	ISO_8859_9_Map,
+	ISO_8859_10_Map,
+	ISO_8859_11_Map,
+	ISO_8859_13_Map,
+	ISO_8859_14_Map,
+	ISO_8859_15_Map,
+	ISO_8859_16_Map,
+	CP1252_Map,
+	CP1250_Map,
+	CP1251_Map,
+	CP1253_Map,
+	CP1254_Map,
+	CP1256_Map,
+	CP1257_Map,
+	CP1258_Map,
+	CP874_Map,
+}
+
 var codepageNames = []string{
 	"ISO-8859-1",
 	"ISO-8859-2",
@@ -167,6 +194,10 @@ var codepageNames = []string{
 
 func (idx CodepageIndex) Codepage() Codepage {
 	return Codepages[idx]
+}
+
+func (idx CodepageIndex) Map() []rune {
+	return CodepageMaps[idx]
 }
 
 func (idx CodepageIndex) String() string {

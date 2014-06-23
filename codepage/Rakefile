@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Brent Rowland.
+# Copyright 2011-2014 Brent Rowland.
 # Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 require 'iconv'
@@ -14,9 +14,16 @@ codepages.each do |cp|
   task cp do
     generate_codepage_table(cp)
   end
+
+  desc "Generate codepage map for #{cp}"
+  task "#{cp}_map" do
+    generate_codepage_map(cp)
+  end
 end
 
-task :default => codepages + [:cpselect]
+task :maps => codepages.map { |cp| "#{cp}_map" }
+
+# task :default => codepages + [:cpselect]
 
 def generate_codepage_table(cp)
   puts "Generating codepage table for #{cp}"
@@ -36,6 +43,28 @@ def codepage_table(cp)
     (0..255).map { |c| ic.iconv(c.chr) }.map { |s| s.unpack('n') }.map { |a| a.first }
   end
   ranges_from_ary(codepoints, cp).sort! { |a, b| a.first <=> b.first }
+end
+
+def codepage_map(cp)
+  Iconv.open("UCS-2BE//IGNORE", cp) do |ic|
+    (0..255).map { |c| ic.iconv(c.chr) }.map { |s| s.unpack('n') }.map { |a| a.first }
+  end
+end
+
+def generate_codepage_map(cp)
+  puts "Generating codepage map for #{cp}"
+  map = codepage_map(cp)
+  open(cp.downcase+"_map.go", "w") do |f|
+    f.puts "// Copyright 2014 Brent Rowland."
+    f.puts "// Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file."
+    f.puts
+    f.puts "package codepage", ""
+    f.puts "var #{cp.gsub('-', '_')}_Map = []rune{"
+    map.each_with_index do |r, i|
+      f.puts "\t0x%04X, // #{i}" % [r, i]
+    end
+    f.puts "}"
+  end
 end
 
 CPRange = Struct.new(:first, :count, :delta, :codepage)

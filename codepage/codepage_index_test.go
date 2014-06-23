@@ -17,6 +17,15 @@ func TestCodepageIndex_Codepage(t *testing.T) {
 	}
 }
 
+func TestCodepageIndex_Map(t *testing.T) {
+	m := idx_ISO_8859_1.Map()
+	for i := 0; i < 256; i++ {
+		if m[i] != rune(i) {
+			t.Errorf("Expected %d, got %d", i, m[i])
+		}
+	}
+}
+
 // 162 ns when CodepageIndex returns slices
 // 173 ns when CodepageIndex returns pointers to slices
 func BenchmarkCharForCodepointForEachCodepage(b *testing.B) {
