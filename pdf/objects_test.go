@@ -347,6 +347,71 @@ func TestResources_XObject(t *testing.T) {
 	expectS(t, "1 0 obj\n<<\n/XObject <<\n/Im1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
 }
 
+var arial1252Widths = []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 10
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 20
+	0, 0, 278, 278, 355, 556, 556, 889, 667, 191, // 30
+	333, 333, 389, 584, 278, 333, 278, 278, 556, 556, // 40
+	556, 556, 556, 556, 556, 556, 556, 556, 278, 278, // 50
+	584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, // 60
+	611, 778, 722, 278, 500, 667, 556, 833, 722, 778, // 70
+	667, 778, 722, 667, 611, 722, 667, 944, 667, 667, // 80
+	611, 278, 278, 278, 469, 556, 333, 556, 556, 500, // 90
+	556, 556, 278, 556, 556, 222, 222, 500, 222, 833, // 100
+	556, 556, 556, 556, 333, 500, 278, 556, 500, 722, // 110
+	500, 500, 500, 334, 260, 334, 584, 750, 556, 750, // 120
+	222, 556, 333, 1000, 556, 556, 333, 1000, 667, 333, // 130
+	1000, 750, 611, 750, 750, 222, 222, 333, 333, 350, // 140
+	556, 1000, 333, 1000, 500, 333, 944, 750, 500, 667, // 150
+	278, 333, 556, 556, 556, 556, 260, 556, 333, 737, // 160
+	370, 556, 584, 333, 737, 552, 400, 549, 333, 333, // 170
+	333, 576, 537, 278, 333, 333, 365, 556, 834, 834, // 180
+	834, 611, 667, 667, 667, 667, 667, 667, 1000, 722, // 190
+	667, 667, 667, 667, 278, 278, 278, 278, 722, 722, // 200
+	778, 778, 778, 778, 778, 584, 778, 722, 722, 722, // 210
+	722, 667, 667, 611, 556, 556, 556, 556, 556, 556, // 220
+	889, 500, 556, 556, 556, 556, 278, 278, 278, 278, // 230
+	556, 556, 556, 556, 556, 556, 556, 549, 611, 556, // 240
+	556, 556, 556, 500, 556, 500}
+
+func TestSimpleFont_TrueType(t *testing.T) {
+	widths := arrayFromInts(arial1252Widths)
+	fd := newFontDescriptor(100, 0, // seq, gen
+		"ArialMT", "Arial", // fontName, fontFamily
+		32, // flags
+		[]int{-665, -325, 2029, 1006}, // fontBBox
+		0, 0, 0, // missingWidth, stemV, stemH
+		9.1,                              // italicAngle
+		723, 525, 905, -212, 33, 2000, 0) // capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth
+	f := newTrueTypeFont(200, 0, // seq, gen
+		"ArialMT", // baseFont
+		0, 255,    // firstChar, lastChar
+		&indirectObject{50, 0, &widths}, // widths
+		fd) // fontDescriptor
+
+	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /TrueType \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
+	expectS(t, expected, stringFromWriter(f))
+}
+
+func TestSimpleFont_Type1(t *testing.T) {
+	widths := arrayFromInts(arial1252Widths)
+	fd := newFontDescriptor(100, 0, // seq, gen
+		"ArialMT", "Arial", // fontName, fontFamily
+		32, // flags
+		[]int{-665, -325, 2029, 1006}, // fontBBox
+		0, 0, 0, // missingWidth, stemV, stemH
+		9.1,                              // italicAngle
+		723, 525, 905, -212, 33, 2000, 0) // capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth
+	f := newType1Font(200, 0, // seq, gen
+		"ArialMT", // baseFont
+		0, 255,    // firstChar, lastChar
+		&indirectObject{50, 0, &widths}, // widths
+		fd) // fontDescriptor
+
+	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /Type1 \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
+	expectS(t, expected, stringFromWriter(f))
+}
+
 func TestStr(t *testing.T) {
 	var buf bytes.Buffer
 	s := str("a\\b(cd)")

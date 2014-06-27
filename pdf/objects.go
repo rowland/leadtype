@@ -504,6 +504,44 @@ type seqGen interface {
 	Gen() int
 }
 
+type simpleFont struct {
+	dictionaryObject
+}
+
+func (f *simpleFont) init(seq, gen int,
+	subType, baseFont string,
+	firstChar, lastChar int,
+	widths *indirectObject,
+	fontDescriptor *fontDescriptor) *simpleFont {
+	f.dictionaryObject.init(seq, gen)
+	f.dict["Type"] = name("Font")
+	f.dict["Subtype"] = name(subType)
+	f.dict["BaseFont"] = name(baseFont)
+	f.dict["FirstChar"] = integer(firstChar)
+	f.dict["LastChar"] = integer(lastChar)
+	f.dict["Widths"] = &indirectObjectRef{widths}
+	f.dict["FontDescriptor"] = &indirectObjectRef{fontDescriptor}
+	// TODO: Encoding
+	// TODO: ToUnicode
+	return f
+}
+
+func newTrueTypeFont(seq, gen int,
+	baseFont string,
+	firstChar, lastChar int,
+	widths *indirectObject,
+	fontDescriptor *fontDescriptor) *simpleFont {
+	return new(simpleFont).init(seq, gen, "TrueType", baseFont, firstChar, lastChar, widths, fontDescriptor)
+}
+
+func newType1Font(seq, gen int,
+	baseFont string,
+	firstChar, lastChar int,
+	widths *indirectObject,
+	fontDescriptor *fontDescriptor) *simpleFont {
+	return new(simpleFont).init(seq, gen, "Type1", baseFont, firstChar, lastChar, widths, fontDescriptor)
+}
+
 type str []byte
 
 var (
