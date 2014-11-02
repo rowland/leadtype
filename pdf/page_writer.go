@@ -6,6 +6,8 @@ package pdf
 import (
 	"bytes"
 	"fmt"
+	"leadtype/codepage"
+	"math"
 	"strings"
 )
 
@@ -24,18 +26,20 @@ type PageWriter struct {
 	fonts      []*Font
 	gw         *graphWriter
 	inGraph    bool
-	inMisc     bool
 	inPath     bool
 	inText     bool
 	isClosed   bool
+	keepOrigin bool
 	last       drawState
+	line       *RichText
+	lineHeight float64
 	mw         *miscWriter
 	options    Options
 	origin     location
 	page       *page
 	pageHeight float64
-	line       *RichText
 	stream     bytes.Buffer
+	tw         *textWriter
 	units      *units
 }
 
@@ -63,7 +67,10 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	pw.page.setResources(pw.dw.resources)
 	pw.dw.file.body.add(pw.page)
 	pw.autoPath = true
-	pw.startMisc()
+	pw.mw = newMiscWriter(&pw.stream)
+	pw.tw = newTextWriter(&pw.stream)
+	pw.gw = newGraphWriter(&pw.stream)
+
 	return pw
 }
 
@@ -78,6 +85,10 @@ func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
 func (pw *PageWriter) addFont(font *Font) []*Font {
 	pw.fonts = append(pw.fonts, font)
 	return pw.fonts
+}
+
+func (pw *PageWriter) carriageReturn() {
+	pw.MoveTo(pw.origin.x, pw.origin.y)
 }
 
 func (pw *PageWriter) checkSetFontColor() {
@@ -145,12 +156,11 @@ func (pw *PageWriter) Close() {
 	// end sub page
 	pw.endText()
 	pw.endGraph()
-	pw.endMisc()
 	// compress stream
-	pdf_stream := newStream(pw.dw.nextSeq(), 0, pw.stream.Bytes())
-	pw.dw.file.body.add(pdf_stream)
+	pdfStream := newStream(pw.dw.nextSeq(), 0, pw.stream.Bytes())
+	pw.dw.file.body.add(pdfStream)
 	// set annots
-	pw.page.add(pdf_stream)
+	pw.page.add(pdfStream)
 	pw.dw.catalog.pages.add(pw.page) // unless reusing page
 	pw.stream.Reset()
 	pw.isClosed = true
@@ -160,13 +170,7 @@ func (pw *PageWriter) endGraph() {
 	if pw.inPath {
 		pw.endPath()
 	}
-	pw.gw = nil
 	pw.inGraph = false
-}
-
-func (pw *PageWriter) endMisc() {
-	pw.mw = nil
-	pw.inMisc = false
 }
 
 func (pw *PageWriter) endPath() {
@@ -177,7 +181,30 @@ func (pw *PageWriter) endPath() {
 }
 
 func (pw *PageWriter) endText() {
+	pw.flushText()
+	pw.inText = false
+}
 
+func (pw *PageWriter) flushText() {
+	if pw.line == nil {
+		return
+	}
+	pw.startText()
+	var buf bytes.Buffer
+	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
+		buf.Reset()
+		cp := cpi.Codepage()
+		for _, r := range text {
+			ch, _ := cp.CharForCodepoint(r)
+			buf.WriteByte(byte(ch))
+		}
+		pw.tw.setFontAndSize(pw.dw.fontKey(p.Font, cpi), p.FontSize)
+		pw.tw.show(buf.Bytes())
+	})
+	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Height())
+	pw.loc.x += pw.line.Width()
+	// TODO: Adjust pw.loc.y if printing at an angle.
+	pw.line = nil
 }
 
 func (pw *PageWriter) FontColor() Color {
@@ -241,8 +268,15 @@ func (pw *PageWriter) LineWidth(units string) float64 {
 }
 
 func (pw *PageWriter) MoveTo(x, y float64) {
+	if pw.inText {
+		pw.flushText()
+	}
 	xpts, ypts := pw.units.toPts(x), pw.units.toPts(y)
 	pw.loc = pw.translate(xpts, ypts)
+}
+
+func (pw *PageWriter) newLine() {
+	pw.MoveTo(pw.origin.x, pw.origin.y+pw.lineHeight)
 }
 
 func (pw *PageWriter) PageHeight() float64 {
@@ -257,8 +291,11 @@ func (pw *PageWriter) Print(text string) (err error) {
 		}
 		switch text[i] {
 		case '\t':
+			pw.tab()
 		case '\r':
+			pw.carriageReturn()
 		case '\n':
+			pw.newLine()
 		}
 		text = text[i+1:]
 		i = strings.IndexAny(text, "\t\r\n")
@@ -278,7 +315,12 @@ func (pw *PageWriter) print(text string) (err error) {
 
 func (pw *PageWriter) PrintRichText(text *RichText) {
 	if pw.line == nil {
-		pw.origin = pw.loc
+		if pw.keepOrigin {
+			pw.keepOrigin = false
+		} else {
+			pw.origin = pw.loc
+			pw.lineHeight = 0.0
+		}
 		pw.line = text.Clone() // Avoid mutating text.
 	} else {
 		pw.line = pw.line.AddPiece(text)
@@ -393,16 +435,24 @@ func (pw *PageWriter) startGraph() {
 		pw.endText()
 	}
 	pw.last.loc = location{0, 0}
-	pw.gw = newGraphWriter(&pw.stream)
 	pw.inGraph = true
 }
 
-func (pw *PageWriter) startMisc() {
-	if pw.inMisc {
+func (pw *PageWriter) startText() {
+	if pw.inText {
 		return
 	}
-	pw.mw = newMiscWriter(&pw.stream)
-	pw.inMisc = true
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	pw.last.loc = location{0, 0}
+	pw.tw.open()
+	pw.inText = true
+}
+
+func (pw *PageWriter) tab() {
+	pw.keepOrigin = true
+	// TODO: move to next horizontal tab position or print space
 }
 
 func (pw *PageWriter) translate(x, y float64) location {

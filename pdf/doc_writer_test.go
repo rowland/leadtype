@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"leadtype/codepage"
 	"testing"
 )
 
@@ -56,6 +57,28 @@ func TestDocWriter_ClosePage(t *testing.T) {
 	check(t, p.isClosed, "Page should be closed")
 	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
 	check(t, dw.curPage == nil, "DocWriter curPage should be nil again")
+}
+
+func TestDocWriter_fontKey(t *testing.T) {
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	dw.AddFontSource(fc, "TrueType")
+	dw.OpenPage()
+	fonts, err := dw.AddFont("Arial", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key1 := dw.fontKey(fonts[0], codepage.CodepageIndex(0))
+	check(t, key1 == "F0", "1st fontKey should be F0.")
+	key2 := dw.fontKey(fonts[0], codepage.CodepageIndex(0))
+	check(t, key2 == "F0", "Same font and cpi should yield same key.")
+	key3 := dw.fontKey(fonts[0], codepage.CodepageIndex(1))
+	check(t, key3 == "F1", "2nd fontKey should be F1.")
 }
 
 func TestDocWriter_indexOfPage(t *testing.T) {

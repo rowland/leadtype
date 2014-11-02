@@ -4,7 +4,10 @@
 package pdf
 
 import (
+	"fmt"
 	"io"
+
+	"leadtype/codepage"
 )
 
 type DocWriter struct {
@@ -19,6 +22,7 @@ type DocWriter struct {
 	curPage     *PageWriter
 	options     Options
 	fontSources map[string]FontSource
+	fontKeys    map[string]string
 }
 
 func NewDocWriter(wr io.Writer) *DocWriter {
@@ -33,7 +37,8 @@ func NewDocWriter(wr io.Writer) *DocWriter {
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
 	fontSources := make(map[string]FontSource, 2)
-	return &DocWriter{wr: wr, nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, fontSources: fontSources}
+	fontKeys := make(map[string]string)
+	return &DocWriter{wr: wr, nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, fontSources: fontSources, fontKeys: fontKeys}
 }
 
 func nextSeqFunc() func() int {
@@ -72,6 +77,16 @@ func (dw *DocWriter) ClosePage() {
 
 func (dw *DocWriter) FontColor() Color {
 	return dw.curPage.FontColor()
+}
+
+func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
+	name := fmt.Sprintf("%s/%s-%s", f.metrics.PostScriptName(), cpi, f.subType)
+	if key, ok := dw.fontKeys[name]; ok {
+		return key
+	}
+	key := fmt.Sprintf("F%d", len(dw.fontKeys))
+	dw.fontKeys[name] = key
+	return key
 }
 
 func (dw *DocWriter) Fonts() []*Font {

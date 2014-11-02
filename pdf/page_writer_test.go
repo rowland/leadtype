@@ -121,6 +121,24 @@ func TestclonePageWriter(t *testing.T) {
 	check(t, pwc.LineWidth("pt") == 42, "LineWidth should be 42")
 }
 
+func TestPageWriter_flushText(t *testing.T) {
+	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	dw := NewDocWriter(&buf)
+	dw.AddFontSource(fc, "TrueType")
+	pw := dw.OpenPage()
+
+	pw.SetFont("Arial", 12, Options{})
+	pw.Print("Hello")
+	pw.Print(", World!")
+	pw.flushText()
+	expectS(t, "BT\n/F0 12 Tf\n(Hello, World!) Tj\n", pw.stream.String())
+}
+
 func TestPageWriter_FontSize(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter(&buf)
@@ -370,7 +388,7 @@ func TestPageWriter_startGraph(t *testing.T) {
 	dw := NewDocWriter(&buf)
 	pw := newPageWriter(dw, Options{})
 
-	check(t, pw.gw == nil, "GraphWriter should be nil by default.")
+	check(t, pw.gw != nil, "GraphWriter should not be nil.")
 	check(t, !pw.inGraph, "Should not be in graph mode by default.")
 	pw.last.loc = location{7, 7} // prove last.loc gets reset
 
@@ -378,7 +396,6 @@ func TestPageWriter_startGraph(t *testing.T) {
 
 	check(t, pw.inGraph, "Should be in graph mode now.")
 	check(t, pw.last.loc.equal(location{0, 0}), "startGraph should reset location")
-	check(t, pw.gw != nil, "GraphWriter should no longer be nil.")
 }
 
 func TestPageWriter_translate(t *testing.T) {
