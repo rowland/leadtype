@@ -11,7 +11,7 @@ import (
 )
 
 type TtfFontCollection struct {
-	fontInfos []*ttf.FontInfo
+	FontInfos []*ttf.FontInfo
 	fonts     map[string]*ttf.Font
 }
 
@@ -34,13 +34,13 @@ func (fc *TtfFontCollection) Add(pattern string) (err error) {
 			err = fmt.Errorf("Error loading %s: %s", pathname, err2)
 			continue
 		}
-		fc.fontInfos = append(fc.fontInfos, fi)
+		fc.FontInfos = append(fc.FontInfos, fi)
 	}
 	return
 }
 
 func (fc *TtfFontCollection) Len() int {
-	return len(fc.fontInfos)
+	return len(fc.FontInfos)
 }
 
 func (fc *TtfFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics FontMetrics, err error) {
@@ -58,7 +58,7 @@ func (fc *TtfFontCollection) Select(family, weight, style string, ranges []strin
 		fc.fonts = make(map[string]*ttf.Font)
 	}
 search:
-	for _, f := range fc.fontInfos {
+	for _, f := range fc.FontInfos {
 		if strings.EqualFold(f.Family(), family) && strings.EqualFold(f.Style(), ws) {
 			for _, r := range ranges {
 				cpr, ok := ttf.CodepointRangesByName[r]
