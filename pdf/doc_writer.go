@@ -295,9 +295,12 @@ func (dw *DocWriter) Underline() bool {
 func (dw *DocWriter) widthsForFontCodepage(f *Font, cpi codepage.CodepageIndex) *indirectObject {
 	var widths [256]int
 	upm := f.metrics.UnitsPerEm()
-	for i, r := range cpi.Map() {
-		designWidth, _ := f.metrics.AdvanceWidth(r)
-		widths[i] = designWidth * 1000 / upm
+	// Avoid divide by zero error for unusual fonts.
+	if upm > 0 {
+		for i, r := range cpi.Map() {
+			designWidth, _ := f.metrics.AdvanceWidth(r)
+			widths[i] = designWidth * 1000 / upm
+		}
 	}
 	pdfWidths := arrayFromInts(widths[32:])
 	ioWidths := &indirectObject{dw.nextSeq(), 0, &pdfWidths}
