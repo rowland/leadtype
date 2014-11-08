@@ -13,7 +13,7 @@ import (
 )
 
 type AfmFontCollection struct {
-	fontInfos []*afm.FontInfo
+	FontInfos []*afm.FontInfo
 	fonts     map[string]*afm.Font
 }
 
@@ -37,13 +37,13 @@ func (fc *AfmFontCollection) Add(pattern string) (err error) {
 			err = fmt.Errorf("Error loading %s: %s", pathname, err2)
 			continue
 		}
-		fc.fontInfos = append(fc.fontInfos, fi)
+		fc.FontInfos = append(fc.FontInfos, fi)
 	}
 	return
 }
 
 func (fc *AfmFontCollection) Len() int {
-	return len(fc.fontInfos)
+	return len(fc.FontInfos)
 }
 
 func makeFontSelectRegexp(family, weight, style string) (re *regexp.Regexp, err error) {
@@ -81,7 +81,7 @@ func (fc *AfmFontCollection) Select(family, weight, style string, ranges []strin
 	if fc.fonts == nil {
 		fc.fonts = make(map[string]*afm.Font)
 	}
-	for _, f := range fc.fontInfos {
+	for _, f := range fc.FontInfos {
 		if re.MatchString(f.PostScriptName()) {
 			font := fc.fonts[f.Filename]
 			if font == nil {
