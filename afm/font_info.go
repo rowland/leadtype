@@ -174,6 +174,10 @@ func (fi *FontInfo) Version() string {
 	return fi.version
 }
 
+func (fi *FontInfo) Weight() string {
+	return fi.weight
+}
+
 func (fi *FontInfo) XHeight() int {
 	return fi.xHeight
 }

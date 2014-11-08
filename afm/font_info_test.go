@@ -33,6 +33,7 @@ func TestLoadFontInfo(t *testing.T) {
 	expectI(t, "UnderlineThickness", 50, fi.UnderlineThickness())
 	// expectS(t, "UniqueName", "Monotype:Arial Regular:Version 5.01 (Microsoft)", fi.UniqueName())
 	expectS(t, "Version", "002.000", fi.Version())
+	expectS(t, "Weight", "Medium", fi.Weight())
 	expectI(t, "XHeight", 523, fi.XHeight())
 
 	expectI(t, "BoundingBox[0]", -166, fi.BoundingBox()[0])
