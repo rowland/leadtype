@@ -80,12 +80,44 @@ func (dw *DocWriter) FontColor() Color {
 }
 
 func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
+	if f == nil {
+		panic("fontKey: No font specified.")
+	}
+	if f.metrics == nil {
+		panic("fontKey: font missing metrics.")
+	}
 	name := fmt.Sprintf("%s/%s-%s", f.metrics.PostScriptName(), cpi, f.subType)
 	if key, ok := dw.fontKeys[name]; ok {
 		return key
 	}
+	descriptor := newFontDescriptor(
+		dw.nextSeq(), 0,
+		f.metrics.PostScriptName(), f.metrics.Family(),
+		0, // flags
+		f.metrics.BoundingBox(),
+		0, // missingWidth
+		f.metrics.StemV(),
+		0, // stemH
+		f.metrics.ItalicAngle(),
+		f.metrics.CapHeight(),
+		f.metrics.XHeight(),
+		f.metrics.Ascent(),
+		f.metrics.Descent(),
+		f.metrics.Leading(),
+		0, 0) // maxWidth, avgWidth
+	dw.file.body.add(descriptor)
 	key := fmt.Sprintf("F%d", len(dw.fontKeys))
 	dw.fontKeys[name] = key
+	widths := dw.widthsForFontCodepage(f, cpi)
+	dw.file.body.add(widths)
+	font := newSimpleFont(
+		dw.nextSeq(), 0,
+		f.subType,
+		f.metrics.PostScriptName(),
+		32, 255, widths,
+		descriptor)
+	dw.file.body.add(font)
+	dw.resources.fonts[key] = &indirectObjectRef{font}
 	return key
 }
 
@@ -258,6 +290,18 @@ func (dw *DocWriter) SetUnits(units string) {
 
 func (dw *DocWriter) Underline() bool {
 	return dw.curPage.Underline()
+}
+
+func (dw *DocWriter) widthsForFontCodepage(f *Font, cpi codepage.CodepageIndex) *indirectObject {
+	var widths [256]int
+	upm := f.metrics.UnitsPerEm()
+	for i, r := range cpi.Map() {
+		designWidth, _ := f.metrics.AdvanceWidth(r)
+		widths[i] = designWidth * 1000 / upm
+	}
+	pdfWidths := arrayFromInts(widths[32:])
+	ioWidths := &indirectObject{dw.nextSeq(), 0, &pdfWidths}
+	return ioWidths
 }
 
 func (dw *DocWriter) Write(text []byte) (n int, err error) {

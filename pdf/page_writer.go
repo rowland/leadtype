@@ -182,6 +182,7 @@ func (pw *PageWriter) endPath() {
 
 func (pw *PageWriter) endText() {
 	pw.flushText()
+	pw.tw.close()
 	pw.inText = false
 }
 
@@ -190,6 +191,9 @@ func (pw *PageWriter) flushText() {
 		return
 	}
 	pw.startText()
+	if pw.loc != pw.last.loc {
+		pw.tw.moveBy(pw.loc.x-pw.last.loc.x, pw.loc.y-pw.last.loc.y)
+	}
 	var buf bytes.Buffer
 	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
 		buf.Reset()
@@ -201,6 +205,7 @@ func (pw *PageWriter) flushText() {
 		pw.tw.setFontAndSize(pw.dw.fontKey(p.Font, cpi), p.FontSize)
 		pw.tw.show(buf.Bytes())
 	})
+	pw.last.loc = pw.loc
 	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Height())
 	pw.loc.x += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
@@ -309,6 +314,7 @@ func (pw *PageWriter) print(text string) (err error) {
 	if err != nil {
 		return
 	}
+	pw.startText()
 	pw.PrintRichText(piece)
 	return
 }

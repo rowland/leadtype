@@ -148,7 +148,7 @@ type fontDescriptor struct {
 func newFontDescriptor(seq, gen int,
 	fontName, fontFamily string,
 	flags int,
-	fontBBox []int,
+	fontBBox [4]int,
 	missingWidth, stemV, stemH int,
 	italicAngle float64,
 	capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth int) *fontDescriptor {
@@ -164,7 +164,7 @@ func newFontDescriptor(seq, gen int,
 func (fd *fontDescriptor) init(seq, gen int,
 	fontName, fontFamily string,
 	flags int,
-	fontBBox []int,
+	fontBBox [4]int,
 	missingWidth, stemV, stemH int,
 	italicAngle float64,
 	capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth int) *fontDescriptor {
@@ -175,7 +175,7 @@ func (fd *fontDescriptor) init(seq, gen int,
 	// TODO: FontStretch
 	// TODO: FontWeight
 	fd.dict["Flags"] = integer(flags)
-	fd.dict["FontBBox"] = arrayFromInts(fontBBox)
+	fd.dict["FontBBox"] = arrayFromInts(fontBBox[:])
 	fd.dict["ItalicAngle"] = real(italicAngle)
 	fd.dict["Ascent"] = integer(ascent)
 	fd.dict["Descent"] = integer(descent)
@@ -472,6 +472,8 @@ type resources struct {
 
 func (r *resources) init(seq, gen int) *resources {
 	r.dictionaryObject.init(seq, gen)
+	r.fonts = make(dictionary)
+	r.dict["Font"] = r.fonts
 	return r
 }
 
@@ -524,6 +526,15 @@ func (f *simpleFont) init(seq, gen int,
 	// TODO: Encoding
 	// TODO: ToUnicode
 	return f
+}
+
+func newSimpleFont(seq, gen int,
+	subType string,
+	baseFont string,
+	firstChar, lastChar int,
+	widths *indirectObject,
+	fontDescriptor *fontDescriptor) *simpleFont {
+	return new(simpleFont).init(seq, gen, subType, baseFont, firstChar, lastChar, widths, fontDescriptor)
 }
 
 func newTrueTypeFont(seq, gen int,

@@ -83,7 +83,7 @@ func TestFontDescriptor(t *testing.T) {
 	fd := newFontDescriptor(100, 0,
 		"ArialMT", "Arial",
 		32,
-		[]int{-665, -325, 2029, 1006},
+		[4]int{-665, -325, 2029, 1006},
 		0, 0, 0,
 		9.1,
 		723, 525, 905, -212, 33, 2000, 0)
@@ -344,7 +344,7 @@ func TestResources_XObject(t *testing.T) {
 	r.setXObject("Im1", ref)
 	r.write(&buf)
 
-	expectS(t, "1 0 obj\n<<\n/XObject <<\n/Im1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
+	expectS(t, "1 0 obj\n<<\n/Font <<\n>>\n\n/XObject <<\n/Im1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
 }
 
 var arial1252Widths = []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0
@@ -379,7 +379,7 @@ func TestSimpleFont_TrueType(t *testing.T) {
 	fd := newFontDescriptor(100, 0, // seq, gen
 		"ArialMT", "Arial", // fontName, fontFamily
 		32, // flags
-		[]int{-665, -325, 2029, 1006}, // fontBBox
+		[4]int{-665, -325, 2029, 1006}, // fontBBox
 		0, 0, 0, // missingWidth, stemV, stemH
 		9.1,                              // italicAngle
 		723, 525, 905, -212, 33, 2000, 0) // capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth
@@ -398,7 +398,7 @@ func TestSimpleFont_Type1(t *testing.T) {
 	fd := newFontDescriptor(100, 0, // seq, gen
 		"ArialMT", "Arial", // fontName, fontFamily
 		32, // flags
-		[]int{-665, -325, 2029, 1006}, // fontBBox
+		[4]int{-665, -325, 2029, 1006}, // fontBBox
 		0, 0, 0, // missingWidth, stemV, stemH
 		9.1,                              // italicAngle
 		723, 525, 905, -212, 33, 2000, 0) // capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth
