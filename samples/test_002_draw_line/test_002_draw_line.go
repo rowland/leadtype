@@ -28,7 +28,6 @@ func main() {
 	doc.MoveTo(1, 1)
 	doc.LineTo(2, 2)
 
-	doc.ClosePage()
 	doc.Close()
 	f.Close()
 	exec.Command("open", name).Start()

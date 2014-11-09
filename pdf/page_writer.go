@@ -148,7 +148,7 @@ func (pw *PageWriter) checkSetLineWidth() {
 	pw.last.lineWidth = pw.lineWidth
 }
 
-func (pw *PageWriter) Close() {
+func (pw *PageWriter) close() {
 	if pw.isClosed {
 		return
 	}

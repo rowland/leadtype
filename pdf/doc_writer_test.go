@@ -48,17 +48,6 @@ func TestDocWriter_Close(t *testing.T) {
 	check(t, len(dw.pages) == 1, "DocWriter pages should have minimum of 1 page after Close")
 }
 
-func TestDocWriter_ClosePage(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
-	dw.ClosePage() // ignored when not in a page
-	p := dw.OpenPage()
-	dw.ClosePage()
-	check(t, p.isClosed, "Page should be closed")
-	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
-	check(t, dw.curPage == nil, "DocWriter curPage should be nil again")
-}
-
 func TestDocWriter_fontKey(t *testing.T) {
 	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
 	if err != nil {

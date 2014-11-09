@@ -62,17 +62,10 @@ func (dw *DocWriter) Close() {
 		dw.OpenPageWithOptions(Options{})
 	}
 	for _, pw := range dw.pages {
-		pw.Close()
+		pw.close()
 	}
 	dw.curPage = nil
 	dw.file.write(dw.wr)
-}
-
-func (dw *DocWriter) ClosePage() {
-	if dw.inPage() {
-		dw.curPage.Close()
-		dw.curPage = nil
-	}
 }
 
 func (dw *DocWriter) FontColor() Color {

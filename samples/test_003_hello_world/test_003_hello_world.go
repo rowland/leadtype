@@ -46,7 +46,6 @@ func main() {
 	doc.MoveTo(2, 2)
 	doc.Print("Goodbye, cruel world...")
 
-	doc.ClosePage()
 	doc.Close()
 	f.Close()
 	exec.Command("open", name).Start()
