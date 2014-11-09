@@ -23,7 +23,6 @@ func main() {
 	}
 	doc.AddFontSource(ttfc, "TrueType")
 
-	doc.Open()
 	doc.OpenPage()
 	doc.SetUnits("in")
 

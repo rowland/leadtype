@@ -17,7 +17,6 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	doc.Open()
 	doc.OpenPage()
 
 	doc.SetLineColor(pdf.Blue)

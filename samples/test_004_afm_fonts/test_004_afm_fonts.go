@@ -23,7 +23,6 @@ func main() {
 	}
 	doc.AddFontSource(afmfc, "Type1")
 
-	doc.Open()
 	doc.OpenPage()
 	doc.SetUnits("in")
 

@@ -68,7 +68,6 @@ func TestDocWriter_fontKey(t *testing.T) {
 
 func TestDocWriter_indexOfPage(t *testing.T) {
 	dw := NewDocWriter()
-	dw.Open()
 
 	p1 := dw.OpenPage()
 	p2 := dw.OpenPage()
@@ -84,7 +83,6 @@ func TestDocWriter_indexOfPage(t *testing.T) {
 
 func TestDocWriter_Open(t *testing.T) {
 	dw := NewDocWriter()
-	dw.Open()
 	check(t, len(dw.options) == 0, "Default page options should be empty")
 }
 
@@ -142,13 +140,6 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 	check(t, p2.LineWidth("pt") == 42, "LineWidth should be 42")
 }
 
-func TestDocWriter_OpenWithOptions(t *testing.T) {
-	dw := NewDocWriter()
-	dw.OpenWithOptions(Options{"units": "in"})
-	check(t, len(dw.options) == 1, "Default page options should have 1 option")
-	check(t, dw.options["units"] == "in", "Default units should be in")
-}
-
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	dw := NewDocWriter()
 
@@ -197,6 +188,13 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 	// check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
 	check(t, fonts[0].subType == "Type1", "Font subType should be Type1.")
+}
+
+func TestDocWriter_SetOptions(t *testing.T) {
+	dw := NewDocWriter()
+	dw.SetOptions(Options{"units": "in"})
+	check(t, len(dw.options) == 1, "Default page options should have 1 option")
+	check(t, dw.options["units"] == "in", "Default units should be in")
 }
 
 // TODO: TestPagesAcross
