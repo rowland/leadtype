@@ -36,7 +36,7 @@ func TestDocWriter_AddFontSource(t *testing.T) {
 func TestDocWriter_Close(t *testing.T) {
 	var buf bytes.Buffer
 	dw := NewDocWriter()
-	dw.OpenPage()
+	dw.NewPage()
 	dw.WriteTo(&buf)
 	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
 
@@ -52,7 +52,7 @@ func TestDocWriter_fontKey(t *testing.T) {
 	}
 	dw := NewDocWriter()
 	dw.AddFontSource(fc, "TrueType")
-	dw.OpenPage()
+	dw.NewPage()
 	fonts, err := dw.AddFont("Arial", "TrueType", Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -69,9 +69,9 @@ func TestDocWriter_fontKey(t *testing.T) {
 func TestDocWriter_indexOfPage(t *testing.T) {
 	dw := NewDocWriter()
 
-	p1 := dw.OpenPage()
-	p2 := dw.OpenPage()
-	p3 := dw.OpenPage()
+	p1 := dw.NewPage()
+	p2 := dw.NewPage()
+	p3 := dw.NewPage()
 
 	i1 := dw.indexOfPage(p1)
 	check(t, i1 == 0, "1st PageWriter should have index 0")
@@ -81,24 +81,19 @@ func TestDocWriter_indexOfPage(t *testing.T) {
 	check(t, i3 == 2, "3rd PageWriter should have index 2")
 }
 
-func TestDocWriter_Open(t *testing.T) {
+func TestDocWriter_NewPage(t *testing.T) {
 	dw := NewDocWriter()
-	check(t, len(dw.options) == 0, "Default page options should be empty")
-}
-
-func TestDocWriter_OpenPage(t *testing.T) {
-	dw := NewDocWriter()
-	dw.OpenPage()
+	dw.NewPage()
 	check(t, dw.curPage != nil, "DocWriter curPage should not be nil")
 	check(t, dw.inPage(), "DocWriter should be in page now")
 	check(t, len(dw.pages) == 1, "DocWriter should have 1 page now")
 }
 
-func TestDocWriter_OpenPageAfter(t *testing.T) {
+func TestDocWriter_NewPageAfter(t *testing.T) {
 	dw := NewDocWriter()
-	p1 := dw.OpenPage()
+	p1 := dw.NewPage()
 
-	checkFatal(t, p1 != nil, "OpenPageAfter should return a valid reference p1")
+	checkFatal(t, p1 != nil, "NewPageAfter should return a valid reference p1")
 	checkFatal(t, len(dw.pages) == 1, "pages should have len 1")
 	check(t, p1 == dw.pages[0], "p1 should be in 1st slot")
 
@@ -112,9 +107,9 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 	p1.SetLineDashPattern("dotted")
 	p1.SetLineWidth(42, "pt")
 
-	p3 := dw.OpenPageAfter(p1)
+	p3 := dw.NewPageAfter(p1)
 
-	checkFatal(t, p3 != nil, "OpenPageAfter should return a valid reference p3")
+	checkFatal(t, p3 != nil, "NewPageAfter should return a valid reference p3")
 	checkFatal(t, len(dw.pages) == 2, "pages should have len 2")
 	check(t, p3 == dw.pages[1], "p3 should be in 2nd slot for now")
 
@@ -128,8 +123,8 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 	p3.SetLineDashPattern("dashed")
 	p3.SetLineWidth(36, "pt")
 
-	p2 := dw.OpenPageAfter(p1)
-	checkFatal(t, p2 != nil, "OpenPageAfter should return a valid reference p2")
+	p2 := dw.NewPageAfter(p1)
+	checkFatal(t, p2 != nil, "NewPageAfter should return a valid reference p2")
 	checkFatal(t, len(dw.pages) == 3, "pages should have len 3")
 	check(t, p2 == dw.pages[1], "p2 should now be in 2nd slot")
 	check(t, p3 == dw.pages[2], "p3 should be in 3rd slot now")
@@ -138,6 +133,11 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 	check(t, p2.LineColor() == AliceBlue, "LineColor should be AliceBlue")
 	check(t, p2.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
 	check(t, p2.LineWidth("pt") == 42, "LineWidth should be 42")
+}
+
+func TestDocWriter_Open(t *testing.T) {
+	dw := NewDocWriter()
+	check(t, len(dw.options) == 0, "Default page options should be empty")
 }
 
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
@@ -149,7 +149,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	}
 	dw.AddFontSource(fc, "TrueType")
 
-	dw.OpenPage()
+	dw.NewPage()
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
@@ -174,7 +174,7 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 	}
 	dw.AddFontSource(fc, "Type1")
 
-	dw.OpenPage()
+	dw.NewPage()
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 

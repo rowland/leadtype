@@ -37,7 +37,7 @@ func NewDocWriter() *DocWriter {
 	file.body.add(resources)
 	fontSources := make(map[string]FontSource, 2)
 	fontKeys := make(map[string]string)
-	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, fontSources: fontSources, fontKeys: fontKeys}
+	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, options: Options{}, fontSources: fontSources, fontKeys: fontKeys}
 }
 
 func nextSeqFunc() func() int {
@@ -58,7 +58,7 @@ func (dw *DocWriter) AddFontSource(fontSource FontSource, subType string) {
 
 func (dw *DocWriter) WriteTo(wr io.Writer) {
 	if len(dw.pages) == 0 {
-		dw.OpenPageWithOptions(Options{})
+		dw.NewPageWithOptions(Options{})
 	}
 	for _, pw := range dw.pages {
 		pw.close()
@@ -174,18 +174,14 @@ func (dw *DocWriter) MoveTo(x, y float64) {
 	dw.curPage.MoveTo(x, y)
 }
 
-func (dw *DocWriter) SetOptions(options Options) {
-	dw.options = options
-}
-
-func (dw *DocWriter) OpenPage() *PageWriter {
+func (dw *DocWriter) NewPage() *PageWriter {
 	if dw.curPage == nil {
-		return dw.OpenPageWithOptions(Options{})
+		return dw.NewPageWithOptions(Options{})
 	}
-	return dw.OpenPageAfter(dw.curPage)
+	return dw.NewPageAfter(dw.curPage)
 }
 
-func (dw *DocWriter) OpenPageAfter(pw *PageWriter) *PageWriter {
+func (dw *DocWriter) NewPageAfter(pw *PageWriter) *PageWriter {
 	var i int
 	if pw == nil {
 		i = len(dw.pages)
@@ -200,7 +196,7 @@ func (dw *DocWriter) OpenPageAfter(pw *PageWriter) *PageWriter {
 	return nil
 }
 
-func (dw *DocWriter) OpenPageWithOptions(options Options) *PageWriter {
+func (dw *DocWriter) NewPageWithOptions(options Options) *PageWriter {
 	dw.curPage = newPageWriter(dw, dw.options.Merge(options))
 	dw.pages = append(dw.pages, dw.curPage)
 	return dw.curPage
@@ -268,12 +264,19 @@ func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
 	return dw.curPage.SetLineWidth(width, units)
 }
 
+func (dw *DocWriter) SetOptions(options Options) {
+	dw.options = options
+}
+
 func (dw *DocWriter) SetUnderline(underline bool) (prev bool) {
 	return dw.curPage.SetUnderline(underline)
 }
 
 func (dw *DocWriter) SetUnits(units string) {
-	dw.curPage.SetUnits(units)
+	dw.options["units"] = units
+	if dw.curPage != nil {
+		dw.curPage.SetUnits(units)
+	}
 }
 
 func (dw *DocWriter) Underline() bool {

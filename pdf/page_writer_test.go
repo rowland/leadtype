@@ -123,7 +123,7 @@ func TestPageWriter_flushText(t *testing.T) {
 
 	dw := NewDocWriter()
 	dw.AddFontSource(fc, "TrueType")
-	pw := dw.OpenPage()
+	pw := dw.NewPage()
 
 	pw.SetFont("Arial", 12, "TrueType", Options{})
 	pw.Print("Hello")
@@ -157,7 +157,7 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	}
 	dw.AddFontSource(afmfc, "Type1")
 
-	pw := dw.OpenPage()
+	pw := dw.NewPage()
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 	check(t, pw.FontStyle() == "", "Should default to empty string")
@@ -331,7 +331,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 	}
 	dw.AddFontSource(fc, "TrueType")
 
-	pw := dw.OpenPage()
+	pw := dw.NewPage()
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 

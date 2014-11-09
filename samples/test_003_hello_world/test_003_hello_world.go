@@ -28,7 +28,7 @@ func main() {
 	}
 	doc.AddFontSource(ttfc, "TrueType")
 
-	doc.OpenPage()
+	doc.NewPage()
 	doc.SetUnits("in")
 
 	_, err = doc.SetFont("Helvetica", 12, "Type1", pdf.Options{})

@@ -23,13 +23,12 @@ func main() {
 	}
 	doc.AddFontSource(ttfc, "TrueType")
 
-	doc.OpenPage()
 	doc.SetUnits("in")
 
 	for i, info := range ttfc.FontInfos {
 		offset := i % 20
-		if offset == 0 && i > 0 {
-			doc.OpenPage()
+		if offset == 0 {
+			doc.NewPage()
 		}
 		doc.MoveTo(1, 1+float64(offset)*0.5)
 		_, err = doc.SetFont(info.Family(), 12, "TrueType", pdf.Options{"style": info.Style()})
