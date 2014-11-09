@@ -11,7 +11,6 @@ import (
 )
 
 type DocWriter struct {
-	wr          io.Writer
 	pages       []*PageWriter
 	nextSeq     func() int
 	file        *file
@@ -25,7 +24,7 @@ type DocWriter struct {
 	fontKeys    map[string]string
 }
 
-func NewDocWriter(wr io.Writer) *DocWriter {
+func NewDocWriter() *DocWriter {
 	nextSeq := nextSeqFunc()
 	file := newFile()
 	pages := newPages(nextSeq(), 0)
@@ -38,7 +37,7 @@ func NewDocWriter(wr io.Writer) *DocWriter {
 	file.body.add(resources)
 	fontSources := make(map[string]FontSource, 2)
 	fontKeys := make(map[string]string)
-	return &DocWriter{wr: wr, nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, fontSources: fontSources, fontKeys: fontKeys}
+	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, fontSources: fontSources, fontKeys: fontKeys}
 }
 
 func nextSeqFunc() func() int {
@@ -57,7 +56,7 @@ func (dw *DocWriter) AddFontSource(fontSource FontSource, subType string) {
 	dw.fontSources[subType] = fontSource
 }
 
-func (dw *DocWriter) Close() {
+func (dw *DocWriter) WriteTo(wr io.Writer) {
 	if len(dw.pages) == 0 {
 		dw.OpenPageWithOptions(Options{})
 	}
@@ -65,7 +64,7 @@ func (dw *DocWriter) Close() {
 		pw.close()
 	}
 	dw.curPage = nil
-	dw.file.write(dw.wr)
+	dw.file.write(wr)
 }
 
 func (dw *DocWriter) FontColor() Color {

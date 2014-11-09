@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc := pdf.NewDocWriter(f)
+	doc := pdf.NewDocWriter()
 	doc.Open()
 	doc.OpenPage()
 
@@ -28,7 +28,7 @@ func main() {
 	doc.MoveTo(1, 1)
 	doc.LineTo(2, 2)
 
-	doc.Close()
+	doc.WriteTo(f)
 	f.Close()
 	exec.Command("open", name).Start()
 }

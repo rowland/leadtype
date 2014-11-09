@@ -16,8 +16,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc := pdf.NewDocWriter(f)
-	doc.Close()
+	doc := pdf.NewDocWriter()
+	doc.WriteTo(f)
 	f.Close()
 	exec.Command("open", name).Start()
 }

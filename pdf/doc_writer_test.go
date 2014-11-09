@@ -10,9 +10,7 @@ import (
 )
 
 func TestNewDocWriter(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
-	check(t, dw.wr == &buf, "DocWriter should have reference to io.Writer")
+	dw := NewDocWriter()
 	check(t, dw.nextSeq != nil, "DocWriter should have nextSeq func")
 	check(t, dw.file != nil, "DocWriter should have file")
 	check(t, dw.catalog != nil, "DocWriter should have catalog")
@@ -28,8 +26,7 @@ func TestNewDocWriter(t *testing.T) {
 }
 
 func TestDocWriter_AddFontSource(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	check(t, dw.fontSources["TrueType"] == nil, "No font source should exist for subtype TrueType.")
 	var fc TtfFontCollection
 	dw.AddFontSource(&fc, "TrueType")
@@ -38,13 +35,13 @@ func TestDocWriter_AddFontSource(t *testing.T) {
 
 func TestDocWriter_Close(t *testing.T) {
 	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	dw.OpenPage()
-	dw.Close()
+	dw.WriteTo(&buf)
 	check(t, !dw.inPage(), "DocWriter should not be in page anymore")
 
-	dw2 := NewDocWriter(&buf)
-	dw2.Close()
+	dw2 := NewDocWriter()
+	dw2.WriteTo(&buf)
 	check(t, len(dw.pages) == 1, "DocWriter pages should have minimum of 1 page after Close")
 }
 
@@ -53,8 +50,7 @@ func TestDocWriter_fontKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	dw.AddFontSource(fc, "TrueType")
 	dw.OpenPage()
 	fonts, err := dw.AddFont("Arial", "TrueType", Options{})
@@ -71,8 +67,7 @@ func TestDocWriter_fontKey(t *testing.T) {
 }
 
 func TestDocWriter_indexOfPage(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	dw.Open()
 
 	p1 := dw.OpenPage()
@@ -88,15 +83,13 @@ func TestDocWriter_indexOfPage(t *testing.T) {
 }
 
 func TestDocWriter_Open(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	dw.Open()
 	check(t, len(dw.options) == 0, "Default page options should be empty")
 }
 
 func TestDocWriter_OpenPage(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	dw.OpenPage()
 	check(t, dw.curPage != nil, "DocWriter curPage should not be nil")
 	check(t, dw.inPage(), "DocWriter should be in page now")
@@ -104,8 +97,7 @@ func TestDocWriter_OpenPage(t *testing.T) {
 }
 
 func TestDocWriter_OpenPageAfter(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	p1 := dw.OpenPage()
 
 	checkFatal(t, p1 != nil, "OpenPageAfter should return a valid reference p1")
@@ -151,16 +143,14 @@ func TestDocWriter_OpenPageAfter(t *testing.T) {
 }
 
 func TestDocWriter_OpenWithOptions(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 	dw.OpenWithOptions(Options{"units": "in"})
 	check(t, len(dw.options) == 1, "Default page options should have 1 option")
 	check(t, dw.options["units"] == "in", "Default units should be in")
 }
 
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 
 	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
 	if err != nil {
@@ -185,8 +175,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 }
 
 func TestDocWriter_SetFont_Type1(t *testing.T) {
-	var buf bytes.Buffer
-	dw := NewDocWriter(&buf)
+	dw := NewDocWriter()
 
 	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
 	if err != nil {

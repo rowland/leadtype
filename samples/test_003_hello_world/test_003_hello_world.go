@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc := pdf.NewDocWriter(f)
+	doc := pdf.NewDocWriter()
 	afmfc, err := pdf.NewAfmFontCollection("../../afm/data/fonts/*.afm")
 	if err != nil {
 		panic(err)
@@ -46,7 +46,7 @@ func main() {
 	doc.MoveTo(2, 2)
 	doc.Print("Goodbye, cruel world...")
 
-	doc.Close()
+	doc.WriteTo(f)
 	f.Close()
 	exec.Command("open", name).Start()
 }
