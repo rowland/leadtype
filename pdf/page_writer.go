@@ -74,8 +74,8 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
-	if font, err := NewFont(family, options, pw.dw.fontSources); err != nil {
+func (pw *PageWriter) AddFont(family string, subType string, options Options) ([]*Font, error) {
+	if font, err := NewFont(family, subType, options, pw.dw.fontSources); err != nil {
 		return nil, err
 	} else {
 		return pw.addFont(font), nil
@@ -337,11 +337,11 @@ func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
 }
 
-func (pw *PageWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
+func (pw *PageWriter) SetFont(name string, size float64, subType string, options Options) ([]*Font, error) {
 	pw.ResetFonts()
 	pw.SetFontSize(size)
 	pw.SetFontColor(options["color"])
-	return pw.AddFont(name, options)
+	return pw.AddFont(name, subType, options)
 }
 
 func (pw *PageWriter) SetFontColor(color interface{}) (prev Color) {
@@ -378,7 +378,6 @@ func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
 		options := Options{
 			"weight":       font.weight,
 			"style":        style,
-			"sub_type":     font.subType,
 			"relativeSize": font.relativeSize,
 		}
 		if font.runeSet != nil {
@@ -386,7 +385,7 @@ func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
 		} else {
 			options["ranges"] = font.ranges
 		}
-		if _, err = pw.AddFont(font.family, options); err != nil {
+		if _, err = pw.AddFont(font.family, font.subType, options); err != nil {
 			break
 		}
 	}

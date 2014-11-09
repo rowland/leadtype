@@ -16,12 +16,12 @@ type Font struct {
 	metrics      FontMetrics
 }
 
-func NewFont(family string, options Options, fontSources map[string]FontSource) (*Font, error) {
+func NewFont(family string, subType string, options Options, fontSources map[string]FontSource) (*Font, error) {
 	font := &Font{
 		family:       family,
 		weight:       options.StringDefault("weight", ""),
 		style:        options.StringDefault("style", ""),
-		subType:      options.StringDefault("sub_type", "TrueType"),
+		subType:      subType,
 		relativeSize: options.FloatDefault("relative_size", 100) / 100.0,
 	}
 	if ranges, ok := options["ranges"]; ok {

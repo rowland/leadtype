@@ -32,14 +32,14 @@ func main() {
 	doc.OpenPage()
 	doc.SetUnits("in")
 
-	_, err = doc.SetFont("Helvetica", 12, pdf.Options{"sub_type": "Type1"})
+	_, err = doc.SetFont("Helvetica", 12, "Type1", pdf.Options{})
 	if err != nil {
 		panic(err)
 	}
 	doc.MoveTo(1, 1)
 	doc.Print("Hello, World!")
 
-	_, err = doc.SetFont("Arial", 14, pdf.Options{"sub_type": "TrueType"})
+	_, err = doc.SetFont("Arial", 14, "TrueType", pdf.Options{})
 	if err != nil {
 		panic(err)
 	}

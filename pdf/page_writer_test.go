@@ -132,7 +132,7 @@ func TestPageWriter_flushText(t *testing.T) {
 	dw.AddFontSource(fc, "TrueType")
 	pw := dw.OpenPage()
 
-	pw.SetFont("Arial", 12, Options{})
+	pw.SetFont("Arial", 12, "TrueType", Options{})
 	pw.Print("Hello")
 	pw.Print(", World!")
 	pw.flushText()
@@ -175,9 +175,9 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	expectS(t, "No current font to apply style Italic to.", err.Error())
 	check(t, prev == "", "Should return empty string when no font is set")
 
-	_, err = pw.AddFont("Arial", Options{})
+	_, err = pw.AddFont("Arial", "TrueType", Options{})
 	check(t, err == nil, "Failed to add Arial")
-	_, err = pw.AddFont("Helvetica", Options{"sub_type": "Type1"})
+	_, err = pw.AddFont("Helvetica", "Type1", Options{})
 	check(t, err == nil, "Failed to add Helvetica")
 
 	fonts := pw.Fonts()
@@ -330,7 +330,7 @@ func TestPageWriter_Print(t *testing.T) {
 		t.Fatal(err)
 	}
 	dw.AddFontSource(fc, "TrueType")
-	pw.SetFont("Arial", 12, Options{})
+	pw.SetFont("Arial", 12, "TrueType", Options{})
 
 	check(t, pw.line == nil, "line should start out nil")
 	pw.Print("Hello")
@@ -354,7 +354,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 
-	fonts, _ := pw.SetFont("Arial", 12, Options{"color": green})
+	fonts, _ := pw.SetFont("Arial", 12, "TrueType", Options{"color": green})
 
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectS(t, "Arial", fonts[0].family)
@@ -451,7 +451,7 @@ func TestPageWriter_Write(t *testing.T) {
 		t.Fatal(err)
 	}
 	dw.AddFontSource(fc, "TrueType")
-	pw.SetFont("Arial", 12, Options{})
+	pw.SetFont("Arial", 12, "TrueType", Options{})
 
 	check(t, pw.line == nil, "line should start out nil")
 	fmt.Fprint(pw, "Hello")

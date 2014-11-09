@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"leadtype/pdf"
 	"os"
 	"os/exec"
@@ -34,8 +33,7 @@ func main() {
 			doc.OpenPage()
 		}
 		doc.MoveTo(1, 1+float64(offset)*0.5)
-		fmt.Println("<" + info.Family() + "><" + info.Style() + ">")
-		_, err = doc.SetFont(info.Family(), 12, pdf.Options{"sub_type": "TrueType", "style": info.Style()})
+		_, err = doc.SetFont(info.Family(), 12, "TrueType", pdf.Options{"style": info.Style()})
 		if err != nil {
 			panic(err)
 		}

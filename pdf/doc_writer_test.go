@@ -68,7 +68,7 @@ func TestDocWriter_fontKey(t *testing.T) {
 	dw := NewDocWriter(&buf)
 	dw.AddFontSource(fc, "TrueType")
 	dw.OpenPage()
-	fonts, err := dw.AddFont("Arial", Options{})
+	fonts, err := dw.AddFont("Arial", "TrueType", Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts, _ := dw.SetFont("Courier New", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue", "sub_type": "TrueType"})
+	fonts, _ := dw.SetFont("Courier New", 10, "TrueType", Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectNS(t, "family", "Courier New", fonts[0].family)
 	expectF(t, 10, dw.FontSize())
@@ -209,7 +209,7 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts, _ := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue", "sub_type": "Type1"})
+	fonts, _ := dw.SetFont("Courier", 10, "Type1", Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectNS(t, "family", "Courier", fonts[0].family)
 	expectF(t, 10, dw.FontSize())
