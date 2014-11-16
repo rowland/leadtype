@@ -380,9 +380,8 @@ func TestPageWriter_startGraph(t *testing.T) {
 func TestPageWriter_translate(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, Options{})
-	loc := pw.translate(100, 200)
-	expectF(t, 100, loc.x)
-	expectF(t, 792-200, loc.y)
+	actual := pw.translate(200)
+	expectF(t, 792-200, actual)
 }
 
 func TestPageWriter_Underline(t *testing.T) {

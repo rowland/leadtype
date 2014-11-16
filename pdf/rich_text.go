@@ -165,6 +165,9 @@ func (piece *RichText) Descent() float64 {
 
 func (piece *RichText) EachCodepage(fn func(cpi codepage.CodepageIndex, text string, p *RichText)) {
 	piece.VisitAll(func(p *RichText) {
+		if p == nil {
+			panic("Whoa there!")
+		}
 		var lastIdx codepage.CodepageIndex = -1
 		start := 0
 		for i, r := range p.Text {

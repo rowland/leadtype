@@ -16,7 +16,7 @@ type Font struct {
 	metrics      FontMetrics
 }
 
-func NewFont(family string, subType string, options Options, fontSources map[string]FontSource) (*Font, error) {
+func NewFont(family string, subType string, options Options, fontSources FontSources) (*Font, error) {
 	font := &Font{
 		family:       family,
 		weight:       options.StringDefault("weight", ""),

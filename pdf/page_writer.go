@@ -88,7 +88,7 @@ func (pw *PageWriter) addFont(font *Font) []*Font {
 }
 
 func (pw *PageWriter) carriageReturn() {
-	pw.MoveTo(pw.origin.x, pw.origin.y)
+	pw.moveTo(pw.origin.x, pw.origin.y)
 }
 
 func (pw *PageWriter) checkSetFontColor() {
@@ -196,6 +196,11 @@ func (pw *PageWriter) flushText() {
 	}
 	var buf bytes.Buffer
 	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
+		if p.Font == nil {
+			fmt.Println(cpi)
+			fmt.Println(text)
+			panic("EachCodepage calling back with nil p")
+		}
 		buf.Reset()
 		cp := cpi.Codepage()
 		for _, r := range text {
@@ -273,15 +278,24 @@ func (pw *PageWriter) LineWidth(units string) float64 {
 }
 
 func (pw *PageWriter) MoveTo(x, y float64) {
-	if pw.inText {
-		pw.flushText()
-	}
-	xpts, ypts := pw.units.toPts(x), pw.units.toPts(y)
-	pw.loc = pw.translate(xpts, ypts)
+	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y))
+	pw.moveTo(xpts, ypts)
+}
+
+func (pw *PageWriter) moveTo(x, y float64) {
+	pw.flushText()
+	pw.loc = location{x, y}
+	pw.lineHeight = 0
 }
 
 func (pw *PageWriter) newLine() {
-	pw.MoveTo(pw.origin.x, pw.origin.y+pw.lineHeight)
+	pw.flushText()
+	if pw.lineHeight == 0 {
+		if rt, err := pw.richTextForString("X"); err == nil {
+			pw.lineHeight = rt.Height()
+		}
+	}
+	pw.moveTo(pw.origin.x, pw.origin.y-pw.lineHeight)
 }
 
 func (pw *PageWriter) PageHeight() float64 {
@@ -309,8 +323,7 @@ func (pw *PageWriter) Print(text string) (err error) {
 }
 
 func (pw *PageWriter) print(text string) (err error) {
-	piece, err := NewRichText(text, pw.fonts, pw.fontSize, Options{
-		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
+	piece, err := pw.richTextForString(text)
 	if err != nil {
 		return
 	}
@@ -319,13 +332,19 @@ func (pw *PageWriter) print(text string) (err error) {
 	return
 }
 
+func (pw *PageWriter) PrintParagraph(para []*RichText) {
+	for _, p := range para {
+		pw.PrintRichText(p)
+		pw.newLine()
+	}
+}
+
 func (pw *PageWriter) PrintRichText(text *RichText) {
 	if pw.line == nil {
 		if pw.keepOrigin {
 			pw.keepOrigin = false
 		} else {
 			pw.origin = pw.loc
-			pw.lineHeight = 0.0
 		}
 		pw.line = text.Clone() // Avoid mutating text.
 	} else {
@@ -337,6 +356,11 @@ func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
 }
 
+func (pw *PageWriter) richTextForString(text string) (piece *RichText, err error) {
+	piece, err = NewRichText(text, pw.fonts, pw.fontSize, Options{
+		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
+	return
+}
 func (pw *PageWriter) SetFont(name string, size float64, subType string, options Options) ([]*Font, error) {
 	pw.ResetFonts()
 	pw.SetFontSize(size)
@@ -460,8 +484,8 @@ func (pw *PageWriter) tab() {
 	// TODO: move to next horizontal tab position or print space
 }
 
-func (pw *PageWriter) translate(x, y float64) location {
-	return location{x, pw.pageHeight - y}
+func (pw *PageWriter) translate(y float64) float64 {
+	return pw.pageHeight - y
 }
 
 func (pw *PageWriter) Underline() bool {

@@ -20,7 +20,7 @@ type DocWriter struct {
 	pagesDown   int
 	curPage     *PageWriter
 	options     Options
-	fontSources map[string]FontSource
+	fontSources FontSources
 	fontKeys    map[string]string
 }
 
@@ -35,7 +35,7 @@ func NewDocWriter() *DocWriter {
 	resources := newResources(nextSeq(), 0)
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
-	fontSources := make(map[string]FontSource, 2)
+	fontSources := make(FontSources, 2)
 	fontKeys := make(map[string]string)
 	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, options: Options{}, fontSources: fontSources, fontKeys: fontKeys}
 }
@@ -119,6 +119,10 @@ func (dw *DocWriter) Fonts() []*Font {
 
 func (dw *DocWriter) FontSize() float64 {
 	return dw.curPage.FontSize()
+}
+
+func (dw *DocWriter) FontSources() FontSources {
+	return dw.fontSources
 }
 
 func (dw *DocWriter) FontStyle() string {
@@ -222,6 +226,10 @@ func (dw *DocWriter) PagesUp() int {
 
 func (dw *DocWriter) Print(text string) (err error) {
 	return dw.curPage.Print(text)
+}
+
+func (dw *DocWriter) PrintParagraph(para []*RichText) {
+	dw.curPage.PrintParagraph(para)
 }
 
 func (dw *DocWriter) PrintRichText(text *RichText) {
