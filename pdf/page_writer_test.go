@@ -19,14 +19,14 @@ func TestPageWriter_checkSetFontColor(t *testing.T) {
 	pw := newPageWriter(dw, Options{})
 
 	check(t, pw.fontColor == black, "fontColor should default to black")
-	check(t, pw.last.fontColor == black, "last.fontColor should default to black")
+	check(t, pw.last.fillColor == black, "last.fillColor should default to black")
 
 	prev := pw.SetFontColor(red)
 	check(t, prev == black, "Previous color was black")
 	check(t, pw.fontColor == red, "fontColor should now be red")
-	check(t, pw.last.fontColor == black, "last.fontColor should still be black")
+	check(t, pw.last.fillColor == black, "last.fontColor should still be black")
 	pw.checkSetFontColor()
-	check(t, pw.last.fontColor == red, "last.fontColor should now be red")
+	check(t, pw.last.fillColor == red, "last.fontColor should now be red")
 
 	expectS(t, "1 0 0 rg\n", pw.stream.String())
 	// TODO: test for autoPath behavior

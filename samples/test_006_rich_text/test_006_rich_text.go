@@ -47,7 +47,7 @@ var line6 = []RT{
 	{"This text is ", pdf.Options{}},
 	{"Underlined. ", pdf.Options{"underline": true}},
 	{"This text is ", pdf.Options{}},
-	{"Red. ", pdf.Options{"color": "red"}},
+	{"Red. ", pdf.Options{"color": "Red"}},
 	{"This text is normal.", pdf.Options{}},
 }
 

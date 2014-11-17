@@ -92,7 +92,7 @@ func (pw *PageWriter) carriageReturn() {
 }
 
 func (pw *PageWriter) checkSetFontColor() {
-	if pw.fontColor == pw.last.fontColor {
+	if pw.fontColor == pw.last.fillColor {
 		return
 	}
 	if pw.inPath && pw.autoPath {
@@ -100,7 +100,7 @@ func (pw *PageWriter) checkSetFontColor() {
 		pw.inPath = false
 	}
 	pw.mw.setRgbColorFill(pw.fontColor.RGB64())
-	pw.last.fontColor = pw.fontColor
+	pw.last.fillColor = pw.fontColor
 }
 
 func (pw *PageWriter) checkSetLineColor() {
@@ -207,6 +207,8 @@ func (pw *PageWriter) flushText() {
 			ch, _ := cp.CharForCodepoint(r)
 			buf.WriteByte(byte(ch))
 		}
+		pw.SetFontColor(p.Color)
+		pw.checkSetFontColor()
 		pw.tw.setFontAndSize(pw.dw.fontKey(p.Font, cpi), p.FontSize)
 		pw.tw.show(buf.Bytes())
 	})
@@ -361,6 +363,7 @@ func (pw *PageWriter) richTextForString(text string) (piece *RichText, err error
 		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
 	return
 }
+
 func (pw *PageWriter) SetFont(name string, size float64, subType string, options Options) ([]*Font, error) {
 	pw.ResetFonts()
 	pw.SetFontSize(size)
@@ -380,6 +383,8 @@ func (pw *PageWriter) SetFontColor(color interface{}) (prev Color) {
 		pw.fontColor = Color(color)
 	case int32:
 		pw.fontColor = Color(color)
+	case Color:
+		pw.fontColor = color
 	}
 
 	return
