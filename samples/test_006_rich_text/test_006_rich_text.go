@@ -23,32 +23,32 @@ var line1 = []RT{
 }
 var line2 = []RT{
 	{"Here is some ", pdf.Options{}},
-	{"Italic ", pdf.Options{"style": "italic"}},
-	{"text.", pdf.Options{}},
+	{"Italic", pdf.Options{"style": "italic"}},
+	{" text.", pdf.Options{}},
 }
 var line3 = []RT{
 	{"Here is some ", pdf.Options{}},
-	{"Bold, Italic ", pdf.Options{"weight": "bold", "style": "italic"}},
-	{"text.", pdf.Options{}},
+	{"Bold, Italic", pdf.Options{"weight": "bold", "style": "italic"}},
+	{" text.", pdf.Options{}},
 }
 var line4 = []RT{
 	{"Here is some ", pdf.Options{}},
-	{"Red ", pdf.Options{"color": "red"}},
-	{"text.", pdf.Options{}},
+	{"Red", pdf.Options{"color": "red"}},
+	{" text.", pdf.Options{}},
 }
 var line5 = []RT{
 	{"Here is some ", pdf.Options{}},
-	{"Underlined ", pdf.Options{"underline": true}},
-	{"text.", pdf.Options{}},
+	{"Underlined", pdf.Options{"underline": true}},
+	{" text.", pdf.Options{}},
 }
 var line6 = []RT{
 	{"This text is ", pdf.Options{}},
-	{"Bold. ", pdf.Options{"weight": "bold"}},
-	{"This text is ", pdf.Options{}},
-	{"Underlined. ", pdf.Options{"underline": true}},
-	{"This text is ", pdf.Options{}},
-	{"Red. ", pdf.Options{"color": "Red"}},
-	{"This text is normal.", pdf.Options{}},
+	{"Bold", pdf.Options{"weight": "bold"}},
+	{". This text is ", pdf.Options{}},
+	{"Underlined", pdf.Options{"underline": true}},
+	{". This text is ", pdf.Options{}},
+	{"Red", pdf.Options{"color": "Red"}},
+	{". This text is normal.", pdf.Options{}},
 }
 
 func makeRtLine(doc *pdf.DocWriter, pieces []RT) *pdf.RichText {
@@ -99,23 +99,3 @@ func main() {
 	f.Close()
 	exec.Command("open", name).Start()
 }
-
-/*
-   rt = EideticPDF::PdfText::RichText.new
-   p.font('Helvetica', 12)
-   rt.add("This text is ", p.font)
-   p.font('Helvetica-Bold', 12)
-   rt.add("Bold.  ", p.font)
-
-   p.font('Helvetica', 12)
-   rt.add("This text is ", p.font)
-   rt.add("Underlined", p.font, :underline => true)
-   rt.add(".  ", p.font)
-
-   rt.add("This text is ", p.font)
-   rt.add("Red.  ", p.font, :color => 'Red')
-
-   rt.add("This text is normal.", p.font)
-
-   p.paragraph(rt)
-*/

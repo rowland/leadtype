@@ -56,7 +56,7 @@
         [ ] width
         [ ] add_vector
         [ ] set_text_angle
-        [ ] draw_underline
+        [x] draw_underline
 
 [ ] TrueType package
     [x] Font Selection (FontCollection)

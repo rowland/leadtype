@@ -6,6 +6,7 @@ package pdf
 type drawState struct {
 	fillColor       Color
 	fontColor       Color
+	fontKey         string
 	fontSize        float64
 	lineCapStyle    LineCapStyle
 	lineColor       Color

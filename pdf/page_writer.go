@@ -41,6 +41,7 @@ type PageWriter struct {
 	stream     bytes.Buffer
 	tw         *textWriter
 	units      *units
+	flushing   boolean
 }
 
 func newPageWriter(dw *DocWriter, options Options) *PageWriter {
@@ -89,6 +90,17 @@ func (pw *PageWriter) addFont(font *Font) []*Font {
 
 func (pw *PageWriter) carriageReturn() {
 	pw.moveTo(pw.origin.x, pw.origin.y)
+}
+
+func (pw *PageWriter) checkSetFont() {
+	if len(pw.fonts) == 0 {
+		pw.setDefaultFont()
+	}
+	if pw.last.fontKey != pw.fontKey {
+		pw.tw.setFontAndSize(pw.fontKey, pw.fontSize)
+		// TODO: check_set_v_text_align(true)
+		pw.last.fontKey = pw.fontKey
+	}
 }
 
 func (pw *PageWriter) checkSetFontColor() {
@@ -166,6 +178,14 @@ func (pw *PageWriter) close() {
 	pw.isClosed = true
 }
 
+func (pw *PageWriter) drawUnderline(loc1 location, loc2 location, position float64, thickness float64) {
+	saveWidth := pw.setLineWidth(thickness)
+	// TODO: rotate coordiates given angle
+	pw.moveTo(loc1.x, loc1.y+position)
+	pw.lineTo(loc2.x, loc2.y+position)
+	pw.setLineWidth(saveWidth)
+}
+
 func (pw *PageWriter) endGraph() {
 	if pw.inPath {
 		pw.endPath()
@@ -187,13 +207,15 @@ func (pw *PageWriter) endText() {
 }
 
 func (pw *PageWriter) flushText() {
-	if pw.line == nil {
+	if pw.line == nil || pw.flushing {
 		return
 	}
+	pw.flushing = true
 	pw.startText()
 	if pw.loc != pw.last.loc {
 		pw.tw.moveBy(pw.loc.x-pw.last.loc.x, pw.loc.y-pw.last.loc.y)
 	}
+	loc1 := pw.loc
 	var buf bytes.Buffer
 	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
 		if p.Font == nil {
@@ -209,14 +231,28 @@ func (pw *PageWriter) flushText() {
 		}
 		pw.SetFontColor(p.Color)
 		pw.checkSetFontColor()
-		pw.tw.setFontAndSize(pw.dw.fontKey(p.Font, cpi), p.FontSize)
+		pw.fontKey = pw.dw.fontKey(p.Font, cpi)
+		pw.SetFontSize(p.FontSize)
+		pw.checkSetFont()
 		pw.tw.show(buf.Bytes())
+	})
+	pw.line.VisitAll(func(p *RichText) {
+		if !p.IsLeaf() {
+			return
+		}
+		loc2 := location{loc1.x + p.Width(), loc1.y} // TODO: Adjust if print at an angle.
+		if p.Underline {
+			pw.drawUnderline(loc1, loc2, p.UnderlinePosition, p.UnderlineThickness)
+		}
+		loc1 = loc2
 	})
 	pw.last.loc = pw.loc
 	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Height())
 	pw.loc.x += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
+
 	pw.line = nil
+	pw.flushing = false
 }
 
 func (pw *PageWriter) FontColor() Color {
@@ -255,6 +291,11 @@ func (pw *PageWriter) LineThrough() bool {
 }
 
 func (pw *PageWriter) LineTo(x, y float64) {
+	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y))
+	pw.lineTo(xpts, ypts)
+}
+
+func (pw *PageWriter) lineTo(x, y float64) {
 	pw.startGraph()
 	if !pw.last.loc.equal(pw.loc) {
 		if pw.inPath && pw.autoPath {
@@ -269,7 +310,7 @@ func (pw *PageWriter) LineTo(x, y float64) {
 	if !pw.inPath {
 		pw.gw.moveTo(pw.loc.x, pw.loc.y)
 	}
-	pw.MoveTo(x, y)
+	pw.moveTo(x, y)
 	pw.gw.lineTo(pw.loc.x, pw.loc.y)
 	pw.inPath = true
 	pw.last.loc = pw.loc
@@ -364,6 +405,10 @@ func (pw *PageWriter) richTextForString(text string) (piece *RichText, err error
 	return
 }
 
+func (pw *PageWriter) setDefaultFont() {
+	// TODO: Set Courier, Courier New or first font found.
+}
+
 func (pw *PageWriter) SetFont(name string, size float64, subType string, options Options) ([]*Font, error) {
 	pw.ResetFonts()
 	pw.SetFontSize(size)
@@ -446,8 +491,13 @@ func (pw *PageWriter) SetLineThrough(lineThrough bool) (prev bool) {
 }
 
 func (pw *PageWriter) SetLineWidth(width float64, units string) (prev float64) {
-	prev = unitsFromPts(units, pw.lineWidth)
-	pw.lineWidth = unitsToPts(units, width)
+	prev = unitsFromPts(units, pw.setLineWidth(unitsToPts(units, width)))
+	return
+}
+
+func (pw *PageWriter) setLineWidth(width float64) (prev float64) {
+	prev = pw.lineWidth
+	pw.lineWidth = width
 	return
 }
 
