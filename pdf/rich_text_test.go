@@ -1,4 +1,4 @@
-// Copyright 2012, 2013 Brent Rowland.
+// Copyright 2012-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
@@ -447,6 +447,16 @@ func courierNewText(s string) *RichText {
 	return rt
 }
 
+func TestRichText_Leading(t *testing.T) {
+	piece := arialText("Lorem")
+	expectNFdelta(t, "Leading", piece.Height()+piece.LineGap(), piece.Leading(), 0.001)
+}
+
+func TestRichText_LineGap(t *testing.T) {
+	piece := arialText("Lorem")
+	expectNFdelta(t, "LineGap", 0.327148, piece.LineGap(), 0.001)
+}
+
 func TestRichText_MatchesAttributes(t *testing.T) {
 	st := SuperTest{t}
 
@@ -492,6 +502,7 @@ func TestRichText_measure(t *testing.T) {
 	expectNFdelta(t, "ascent", 9.052734, piece.ascent, 0.001)
 	expectNFdelta(t, "descent", -2.119141, piece.descent, 0.001)
 	expectNFdelta(t, "height", 11.171875, piece.height, 0.001)
+	expectNFdelta(t, "lineGap", 0.327148, piece.lineGap, 0.001)
 	expectNFdelta(t, "UnderlinePosition", -1.059570, piece.UnderlinePosition, 0.001)
 	expectNFdelta(t, "UnderlineThickness", 0.732422, piece.UnderlineThickness, 0.001)
 	expectNFdelta(t, "width", 28.344727, piece.width, 0.001)

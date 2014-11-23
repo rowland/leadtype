@@ -1,4 +1,4 @@
-// Copyright 2011-2012 Brent Rowland.
+// Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package afm
@@ -24,7 +24,7 @@ func TestLoadFontInfo(t *testing.T) {
 	expectS(t, "FullName", "Helvetica", fi.FullName())
 	expectF(t, "ItalicAngle", 0, fi.ItalicAngle())
 	// expectS(t, "License", "You may use this font to display and print content as permitted by the license terms for the product in which this font is included. You may only (i) embed this font in content as permitted by the embedding restrictions included in this font; and (ii) temporarily download this font to a printer or other output device to help print content.", fi.License())
-	expectI(t, "Leading", (718 - -207)*115/100, fi.Leading())
+	expectI(t, "Leading", (718 - -207)*120/100, fi.Leading())
 	// expectS(t, "Manufacturer", "The Monotype Corporation", fi.Manufacturer())
 	expectS(t, "PostScriptName", "Helvetica", fi.PostScriptName())
 	expectI(t, "StemV", 88, fi.StemV())

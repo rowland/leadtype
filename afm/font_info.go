@@ -1,4 +1,4 @@
-// Copyright 2011-2012 Brent Rowland.
+// Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package afm
@@ -147,7 +147,11 @@ func (fi *FontInfo) ItalicAngle() float64 {
 }
 
 func (fi *FontInfo) Leading() int {
-	return int(float64(fi.ascender-fi.descender) * 1.15)
+	return int(float64(fi.ascender-fi.descender) * 1.2)
+}
+
+func (fi *FontInfo) LineGap() int {
+	return int(float64(fi.ascender-fi.descender) * .2)
 }
 
 func (fi *FontInfo) PostScriptName() string {

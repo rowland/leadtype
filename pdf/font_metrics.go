@@ -1,4 +1,4 @@
-// Copyright 2012 Brent Rowland.
+// Copyright 2012-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
@@ -19,6 +19,7 @@ type FontMetrics interface {
 	ItalicAngle() float64
 	Leading() int
 	// License() string
+	LineGap() int
 	// Manufacturer() string
 	// MaxWidth() int
 	NumGlyphs() int

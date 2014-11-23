@@ -1,4 +1,4 @@
-// Copyright 2012, 2013, 2014 Brent Rowland.
+// Copyright 2012-2014 Brent Rowland.
 // Use of this source code is governed by the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
@@ -25,6 +25,7 @@ type RichText struct {
 	ascent             float64
 	descent            float64
 	height             float64
+	lineGap            float64
 	UnderlinePosition  float64
 	UnderlineThickness float64
 	width              float64
@@ -304,6 +305,11 @@ func (piece *RichText) lastPiece() *RichText {
 	return piece
 }
 
+// Leading calculates and returns the maximum leading of the text, expressed in points.
+func (piece *RichText) Leading() float64 {
+	return piece.Height() + piece.LineGap()
+}
+
 // Len returns the length in bytes of the text in the entire structure.
 func (piece *RichText) Len() int {
 	result := len(piece.Text)
@@ -311,6 +317,23 @@ func (piece *RichText) Len() int {
 		result += p.Len()
 	}
 	return result
+}
+
+// LineGap calculates, caches and returns the maximum line gap from the text, expressed in points.
+func (piece *RichText) LineGap() float64 {
+	// piece.lineGap will frequently be zero, so use piece.chars to detect if the piece has been measured.
+	if piece.chars == 0 {
+		if piece.IsLeaf() {
+			return piece.measure().lineGap
+		}
+		for _, p := range piece.pieces {
+			lineGap := p.LineGap()
+			if lineGap > piece.lineGap {
+				piece.lineGap = lineGap
+			}
+		}
+	}
+	return piece.lineGap
 }
 
 // MarkNoBreak sets the NoBreak bits in the previously-allocated flags at every character offset within piece hierarchies
@@ -350,6 +373,7 @@ func (piece *RichText) measure() *RichText {
 	piece.ascent = float64(metrics.Ascent()) * fsize
 	piece.descent = float64(metrics.Descent()) * fsize
 	piece.height = float64(piece.Font.Height()) * fsize
+	piece.lineGap = float64(metrics.LineGap()) * fsize
 	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
 	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
 	for _, rune := range piece.Text {

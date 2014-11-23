@@ -1,4 +1,4 @@
-// Copyright 2011-2012 Brent Rowland.
+// Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
@@ -247,7 +247,7 @@ func (pw *PageWriter) flushText() {
 		loc1 = loc2
 	})
 	pw.last.loc = pw.loc
-	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Height())
+	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Leading())
 	pw.loc.x += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
 
@@ -335,7 +335,7 @@ func (pw *PageWriter) newLine() {
 	pw.flushText()
 	if pw.lineHeight == 0 {
 		if rt, err := pw.richTextForString("X"); err == nil {
-			pw.lineHeight = rt.Height()
+			pw.lineHeight = rt.Leading()
 		}
 	}
 	pw.moveTo(pw.origin.x, pw.origin.y-pw.lineHeight)

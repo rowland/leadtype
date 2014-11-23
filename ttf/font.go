@@ -1,4 +1,4 @@
-// Copyright 2011-2012 Brent Rowland.
+// Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 // Read some of the tables specified in http://developer.apple.com/fonts/ttrefman/
@@ -171,6 +171,10 @@ func (font *Font) ItalicAngle() float64 {
 
 func (font *Font) Leading() int {
 	return int(font.hheaTable.ascent - font.hheaTable.descent + font.hheaTable.lineGap)
+}
+
+func (font *Font) LineGap() int {
+	return int(font.hheaTable.lineGap)
 }
 
 func (font *Font) MaxWidth() int {
