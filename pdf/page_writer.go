@@ -58,6 +58,7 @@ func clonePageWriter(opw *PageWriter) *PageWriter {
 func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	pw.dw = dw
 	pw.options = options
+	pw.lineSpacing = options.FloatDefault("line_spacing", 1.0)
 	pw.units = UnitConversions[options.StringDefault("units", "pt")]
 	ps := newPageStyle(options)
 	pw.pageHeight = ps.pageSize.y2
@@ -247,7 +248,7 @@ func (pw *PageWriter) flushText() {
 		loc1 = loc2
 	})
 	pw.last.loc = pw.loc
-	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Leading())
+	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Leading()*pw.lineSpacing)
 	pw.loc.x += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
 
@@ -335,7 +336,7 @@ func (pw *PageWriter) newLine() {
 	pw.flushText()
 	if pw.lineHeight == 0 {
 		if rt, err := pw.richTextForString("X"); err == nil {
-			pw.lineHeight = rt.Leading()
+			pw.lineHeight = rt.Leading() * pw.lineSpacing
 		}
 	}
 	pw.moveTo(pw.origin.x, pw.origin.y-pw.lineHeight)
@@ -481,6 +482,12 @@ func (pw *PageWriter) SetLineColor(color Color) (prev Color) {
 func (pw *PageWriter) SetLineDashPattern(lineDashPattern string) (prev string) {
 	prev = pw.lineDashPattern
 	pw.lineDashPattern = lineDashPattern
+	return
+}
+
+func (pw *PageWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
+	prev = pw.lineSpacing
+	pw.lineSpacing = lineSpacing
 	return
 }
 

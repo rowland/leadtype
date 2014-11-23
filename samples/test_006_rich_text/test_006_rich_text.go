@@ -85,6 +85,7 @@ func main() {
 	doc.SetUnderline(true)
 	doc.Print("Rich Text\n\n")
 	doc.SetUnderline(false)
+	doc.SetLineSpacing(1.2)
 
 	lines := []*pdf.RichText{
 		makeRtLine(doc, line1),
