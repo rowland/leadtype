@@ -35,7 +35,7 @@ func NewDocWriter() *DocWriter {
 	resources := newResources(nextSeq(), 0)
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
-	fontSources := make(FontSources, 2)
+	fontSources := make(FontSources, 0, 2)
 	fontKeys := make(map[string]string)
 	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, options: Options{}, fontSources: fontSources, fontKeys: fontKeys}
 }
@@ -48,12 +48,12 @@ func nextSeqFunc() func() int {
 	}
 }
 
-func (dw *DocWriter) AddFont(family string, subType string, options Options) ([]*Font, error) {
-	return dw.curPage.AddFont(family, subType, options)
+func (dw *DocWriter) AddFont(family string, options Options) ([]*Font, error) {
+	return dw.curPage.AddFont(family, options)
 }
 
-func (dw *DocWriter) AddFontSource(fontSource FontSource, subType string) {
-	dw.fontSources[subType] = fontSource
+func (dw *DocWriter) AddFontSource(fontSource FontSource) {
+	dw.fontSources = append(dw.fontSources, fontSource)
 }
 
 func (dw *DocWriter) WriteTo(wr io.Writer) {
@@ -240,8 +240,8 @@ func (dw *DocWriter) ResetFonts() {
 	dw.curPage.ResetFonts()
 }
 
-func (dw *DocWriter) SetFont(name string, size float64, subType string, options Options) ([]*Font, error) {
-	return dw.curPage.SetFont(name, size, subType, options)
+func (dw *DocWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
+	return dw.curPage.SetFont(name, size, options)
 }
 
 func (dw *DocWriter) SetFontColor(color interface{}) (lastColor Color) {

@@ -1,9 +1,7 @@
-// Copyright 2012 Brent Rowland.
+// Copyright 2012-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 package pdf
-
-import "fmt"
 
 type Font struct {
 	family       string
@@ -16,12 +14,11 @@ type Font struct {
 	metrics      FontMetrics
 }
 
-func NewFont(family string, subType string, options Options, fontSources FontSources) (*Font, error) {
+func NewFont(family string, options Options, fontSources FontSources) (*Font, error) {
 	font := &Font{
 		family:       family,
 		weight:       options.StringDefault("weight", ""),
 		style:        options.StringDefault("style", ""),
-		subType:      subType,
 		relativeSize: options.FloatDefault("relative_size", 100) / 100.0,
 	}
 	if ranges, ok := options["ranges"]; ok {
@@ -32,16 +29,14 @@ func NewFont(family string, subType string, options Options, fontSources FontSou
 			font.runeSet = ranges
 		}
 	}
-	var fontSource FontSource
-	var ok bool
-	if fontSource, ok = fontSources[font.subType]; !ok {
-		return nil, fmt.Errorf("Font subtype %s not found", font.subType)
-	}
 	var err error
-	if font.metrics, err = fontSource.Select(font.family, font.weight, font.style, font.ranges); err != nil {
-		return nil, err
+	for _, fontSource := range fontSources {
+		if font.metrics, err = fontSource.Select(font.family, font.weight, font.style, font.ranges); err == nil {
+			font.subType = fontSource.SubType()
+			return font, nil
+		}
 	}
-	return font, nil
+	return nil, err
 }
 
 func (font *Font) Ascent() int {

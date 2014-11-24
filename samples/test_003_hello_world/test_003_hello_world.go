@@ -21,24 +21,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc.AddFontSource(afmfc, "Type1")
+	doc.AddFontSource(afmfc)
 	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
 	}
-	doc.AddFontSource(ttfc, "TrueType")
+	doc.AddFontSource(ttfc)
 
 	doc.NewPage()
 	doc.SetUnits("in")
 
-	_, err = doc.SetFont("Helvetica", 12, "Type1", pdf.Options{})
+	_, err = doc.SetFont("Helvetica", 12, pdf.Options{})
 	if err != nil {
 		panic(err)
 	}
 	doc.MoveTo(1, 1)
 	doc.Print("Hello, World!")
 
-	_, err = doc.SetFont("Arial", 14, "TrueType", pdf.Options{})
+	_, err = doc.SetFont("Arial", 14, pdf.Options{})
 	if err != nil {
 		panic(err)
 	}

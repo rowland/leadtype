@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc.AddFontSource(ttfc, "TrueType")
+	doc.AddFontSource(ttfc)
 
 	doc.SetUnits("in")
 
@@ -31,7 +31,7 @@ func main() {
 			doc.NewPage()
 		}
 		doc.MoveTo(1, 1+float64(offset)*0.5)
-		_, err = doc.SetFont(info.Family(), 12, "TrueType", pdf.Options{"style": info.Style()})
+		_, err = doc.SetFont(info.Family(), 12, pdf.Options{"style": info.Style()})
 		if err != nil {
 			panic(err)
 		}

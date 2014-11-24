@@ -95,3 +95,7 @@ func (fc *AfmFontCollection) Select(family, weight, style string, ranges []strin
 	err = fmt.Errorf("Font '%s %s %s' not found", family, weight, style)
 	return
 }
+
+func (fc *AfmFontCollection) SubType() string {
+	return "Type1"
+}

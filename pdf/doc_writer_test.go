@@ -27,10 +27,10 @@ func TestNewDocWriter(t *testing.T) {
 
 func TestDocWriter_AddFontSource(t *testing.T) {
 	dw := NewDocWriter()
-	check(t, dw.fontSources["TrueType"] == nil, "No font source should exist for subtype TrueType.")
+	check(t, len(dw.fontSources) == 0, "No font sources should exist.")
 	var fc TtfFontCollection
-	dw.AddFontSource(&fc, "TrueType")
-	check(t, dw.fontSources["TrueType"] == &fc, "Font source should exist for subtype TrueType.")
+	dw.AddFontSource(&fc)
+	check(t, dw.fontSources[0] == &fc, "Font source should exist.")
 }
 
 func TestDocWriter_Close(t *testing.T) {
@@ -51,9 +51,9 @@ func TestDocWriter_fontKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	dw := NewDocWriter()
-	dw.AddFontSource(fc, "TrueType")
+	dw.AddFontSource(fc)
 	dw.NewPage()
-	fonts, err := dw.AddFont("Arial", "TrueType", Options{})
+	fonts, err := dw.AddFont("Arial", Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,13 +147,13 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dw.AddFontSource(fc, "TrueType")
+	dw.AddFontSource(fc)
 
 	dw.NewPage()
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts, _ := dw.SetFont("Courier New", 10, "TrueType", Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
+	fonts, _ := dw.SetFont("Courier New", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectNS(t, "family", "Courier New", fonts[0].family)
 	expectF(t, 10, dw.FontSize())
@@ -172,13 +172,13 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dw.AddFontSource(fc, "Type1")
+	dw.AddFontSource(fc)
 
 	dw.NewPage()
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts, _ := dw.SetFont("Courier", 10, "Type1", Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
+	fonts, _ := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectNS(t, "family", "Courier", fonts[0].family)
 	expectF(t, 10, dw.FontSize())

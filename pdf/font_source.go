@@ -5,6 +5,7 @@ package pdf
 
 type FontSource interface {
 	Select(family, weight, style string, ranges []string) (font FontMetrics, err error)
+	SubType() string
 }
 
-type FontSources map[string]FontSource
+type FontSources []FontSource

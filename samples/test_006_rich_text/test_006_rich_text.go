@@ -54,7 +54,7 @@ var line6 = []RT{
 func makeRtLine(doc *pdf.DocWriter, pieces []RT) *pdf.RichText {
 	rt := &pdf.RichText{}
 	for _, p := range pieces {
-		fonts, err := doc.SetFont("Arial", 12, "TrueType", p.options)
+		fonts, err := doc.SetFont("Arial", 12, p.options)
 		if err != nil {
 			panic(err)
 		}
@@ -76,12 +76,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc.AddFontSource(ttfc, "TrueType")
+	doc.AddFontSource(ttfc)
 	doc.SetUnits("in")
 
 	doc.NewPage()
 	doc.MoveTo(1, 1)
-	doc.SetFont("Courier New", 12, "TrueType", pdf.Options{})
+	doc.SetFont("Courier New", 12, pdf.Options{})
 	doc.SetUnderline(true)
 	doc.Print("Rich Text\n\n")
 	doc.SetUnderline(false)

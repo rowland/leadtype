@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	doc.AddFontSource(afmfc, "Type1")
+	doc.AddFontSource(afmfc)
 
 	doc.SetUnits("in")
 
@@ -31,7 +31,7 @@ func main() {
 			doc.NewPage()
 		}
 		doc.MoveTo(1, 1+float64(offset)*0.5)
-		_, err = doc.SetFont(info.PostScriptName(), 12, "Type1", pdf.Options{})
+		_, err = doc.SetFont(info.PostScriptName(), 12, pdf.Options{})
 		if err != nil {
 			panic(err)
 		}

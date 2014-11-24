@@ -78,3 +78,7 @@ search:
 	err = fmt.Errorf("Font %s %s not found", family, ws)
 	return
 }
+
+func (fc *TtfFontCollection) SubType() string {
+	return "TrueType"
+}
