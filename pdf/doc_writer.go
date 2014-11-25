@@ -314,7 +314,8 @@ func (dw *DocWriter) Write(text []byte) (n int, err error) {
 	return dw.CurPage().Write(text)
 }
 
-func (dw *DocWriter) WriteTo(wr io.Writer) {
+// WriteTo implements io.WriterTo.
+func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
 	if len(dw.pages) == 0 {
 		dw.NewPage()
 	}
@@ -323,6 +324,7 @@ func (dw *DocWriter) WriteTo(wr io.Writer) {
 	}
 	dw.curPage = nil
 	dw.file.write(wr)
+	return 0, nil
 }
 
 func (dw *DocWriter) X() float64 {

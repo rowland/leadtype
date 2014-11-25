@@ -455,7 +455,7 @@ func TestTrailer(t *testing.T) {
 		t.Errorf("xrefTableSize: Expected %d, got %d", 3, tr.xrefTableSize())
 	}
 	if tr.dict["Size"] != integer(3) {
-		t.Errorf("Size: Expected %d, got %d", 3, tr.dict["Size"])
+		t.Errorf("Size: Expected %d, got %v", 3, tr.dict["Size"])
 	}
 	tr.write(&buf)
 	expectS(t, "trailer\n<<\n/Size 3 \n>>\nstartxref\n0\n%%EOF\n", buf.String())
