@@ -14,6 +14,6 @@ type drawState struct {
 	lineSpacing     float64
 	lineThrough     bool
 	lineWidth       float64
-	loc             location
+	loc             Location
 	underline       bool
 }

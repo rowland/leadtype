@@ -35,7 +35,7 @@ type PageWriter struct {
 	lineHeight float64
 	mw         *miscWriter
 	options    Options
-	origin     location
+	origin     Location
 	page       *page
 	pageHeight float64
 	stream     bytes.Buffer
@@ -90,7 +90,7 @@ func (pw *PageWriter) addFont(font *Font) []*Font {
 }
 
 func (pw *PageWriter) carriageReturn() {
-	pw.moveTo(pw.origin.x, pw.origin.y)
+	pw.moveTo(pw.origin.X, pw.origin.Y)
 }
 
 func (pw *PageWriter) checkSetFont() {
@@ -179,11 +179,11 @@ func (pw *PageWriter) close() {
 	pw.isClosed = true
 }
 
-func (pw *PageWriter) drawUnderline(loc1 location, loc2 location, position float64, thickness float64) {
+func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, position float64, thickness float64) {
 	saveWidth := pw.setLineWidth(thickness)
 	// TODO: rotate coordiates given angle
-	pw.moveTo(loc1.x, loc1.y+position)
-	pw.lineTo(loc2.x, loc2.y+position)
+	pw.moveTo(loc1.X, loc1.Y+position)
+	pw.lineTo(loc2.X, loc2.Y+position)
 	pw.setLineWidth(saveWidth)
 }
 
@@ -214,7 +214,7 @@ func (pw *PageWriter) flushText() {
 	pw.flushing = true
 	pw.startText()
 	if pw.loc != pw.last.loc {
-		pw.tw.moveBy(pw.loc.x-pw.last.loc.x, pw.loc.y-pw.last.loc.y)
+		pw.tw.moveBy(pw.loc.X-pw.last.loc.X, pw.loc.Y-pw.last.loc.Y)
 	}
 	loc1 := pw.loc
 	var buf bytes.Buffer
@@ -241,7 +241,7 @@ func (pw *PageWriter) flushText() {
 		if !p.IsLeaf() {
 			return
 		}
-		loc2 := location{loc1.x + p.Width(), loc1.y} // TODO: Adjust if print at an angle.
+		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
 		if p.Underline {
 			pw.drawUnderline(loc1, loc2, p.UnderlinePosition, p.UnderlineThickness)
 		}
@@ -249,7 +249,7 @@ func (pw *PageWriter) flushText() {
 	})
 	pw.last.loc = pw.loc
 	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Leading()*pw.lineSpacing)
-	pw.loc.x += pw.line.Width()
+	pw.loc.X += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
 
 	pw.line = nil
@@ -309,16 +309,20 @@ func (pw *PageWriter) lineTo(x, y float64) {
 	pw.checkSetLineDashPattern()
 
 	if !pw.inPath {
-		pw.gw.moveTo(pw.loc.x, pw.loc.y)
+		pw.gw.moveTo(pw.loc.X, pw.loc.Y)
 	}
 	pw.moveTo(x, y)
-	pw.gw.lineTo(pw.loc.x, pw.loc.y)
+	pw.gw.lineTo(pw.loc.X, pw.loc.Y)
 	pw.inPath = true
 	pw.last.loc = pw.loc
 }
 
 func (pw *PageWriter) LineWidth(units string) float64 {
 	return unitsFromPts(units, pw.lineWidth)
+}
+
+func (pw *PageWriter) Loc() Location {
+	return Location{pw.X(), pw.Y()}
 }
 
 func (pw *PageWriter) MoveTo(x, y float64) {
@@ -328,7 +332,7 @@ func (pw *PageWriter) MoveTo(x, y float64) {
 
 func (pw *PageWriter) moveTo(x, y float64) {
 	pw.flushText()
-	pw.loc = location{x, y}
+	pw.loc = Location{x, y}
 	pw.lineHeight = 0
 }
 
@@ -339,7 +343,7 @@ func (pw *PageWriter) newLine() {
 			pw.lineHeight = rt.Leading() * pw.lineSpacing
 		}
 	}
-	pw.moveTo(pw.origin.x, pw.origin.y-pw.lineHeight)
+	pw.moveTo(pw.origin.X, pw.origin.Y-pw.lineHeight)
 }
 
 func (pw *PageWriter) PageHeight() float64 {
@@ -525,7 +529,7 @@ func (pw *PageWriter) startGraph() {
 	if pw.inText {
 		pw.endText()
 	}
-	pw.last.loc = location{0, 0}
+	pw.last.loc = Location{0, 0}
 	pw.inGraph = true
 }
 
@@ -536,7 +540,7 @@ func (pw *PageWriter) startText() {
 	if pw.inGraph {
 		pw.endGraph()
 	}
-	pw.last.loc = location{0, 0}
+	pw.last.loc = Location{0, 0}
 	pw.tw.open()
 	pw.inText = true
 }
@@ -560,4 +564,12 @@ func (pw *PageWriter) Units() string {
 
 func (pw *PageWriter) Write(text []byte) (n int, err error) {
 	return len(text), pw.Print(string(text))
+}
+
+func (pw *PageWriter) X() float64 {
+	return pw.units.fromPts(pw.loc.X)
+}
+
+func (pw *PageWriter) Y() float64 {
+	return pw.units.fromPts(pw.translate(pw.loc.Y))
 }

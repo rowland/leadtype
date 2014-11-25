@@ -281,11 +281,11 @@ func TestPageWriter_LineWidth(t *testing.T) {
 func TestPageWriter_MoveTo(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, Options{})
-	expectF(t, 0, pw.loc.x)
-	expectF(t, 0, pw.loc.y)
+	expectF(t, 0, pw.loc.X)
+	expectF(t, 0, pw.loc.Y)
 	pw.MoveTo(222, 333)
-	expectF(t, 222, pw.loc.x)
-	expectF(t, 792-333, pw.loc.y)
+	expectF(t, 222, pw.loc.X)
+	expectF(t, 792-333, pw.loc.Y)
 }
 
 func TestPageWriter_PageHeight(t *testing.T) {
@@ -369,12 +369,12 @@ func TestPageWriter_startGraph(t *testing.T) {
 
 	check(t, pw.gw != nil, "GraphWriter should not be nil.")
 	check(t, !pw.inGraph, "Should not be in graph mode by default.")
-	pw.last.loc = location{7, 7} // prove last.loc gets reset
+	pw.last.loc = Location{7, 7} // prove last.loc gets reset
 
 	pw.startGraph()
 
 	check(t, pw.inGraph, "Should be in graph mode now.")
-	check(t, pw.last.loc.equal(location{0, 0}), "startGraph should reset location")
+	check(t, pw.last.loc.equal(Location{0, 0}), "startGraph should reset location")
 }
 
 func TestPageWriter_translate(t *testing.T) {

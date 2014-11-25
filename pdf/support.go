@@ -20,12 +20,12 @@ func g(value float64) string {
 	return s[:n]
 }
 
-type location struct {
-	x, y float64
+type Location struct {
+	X, Y float64
 }
 
-func (this location) equal(other location) bool {
-	return this.x == other.x && this.y == other.y
+func (this Location) equal(other Location) bool {
+	return this.X == other.X && this.Y == other.Y
 }
 
 type Size struct {
