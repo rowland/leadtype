@@ -58,7 +58,7 @@ func BenchmarkAdvanceWidth(b *testing.B) {
 	if err != nil {
 		panic("Error loading font")
 	}
-	min, max := f.charMetrics[0].code, f.charMetrics[len(f.charMetrics)-1].code
+	min, max := f.CharMetrics[0].Code, f.CharMetrics[len(f.CharMetrics)-1].Code
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		f.AdvanceWidth(min + rune(i)%(max-min+1))

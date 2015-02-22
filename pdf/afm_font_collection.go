@@ -14,7 +14,7 @@ import (
 
 type AfmFontCollection struct {
 	FontInfos []*afm.FontInfo
-	fonts     map[string]*afm.Font
+	Fonts     map[string]*afm.Font
 }
 
 func NewAfmFontCollection(pattern string) (*AfmFontCollection, error) {
@@ -78,15 +78,15 @@ func (fc *AfmFontCollection) Select(family, weight, style string, ranges []strin
 	if re, err = makeFontSelectRegexp(family, weight, style); err != nil {
 		return
 	}
-	if fc.fonts == nil {
-		fc.fonts = make(map[string]*afm.Font)
+	if fc.Fonts == nil {
+		fc.Fonts = make(map[string]*afm.Font)
 	}
 	for _, f := range fc.FontInfos {
 		if re.MatchString(f.PostScriptName()) {
-			font := fc.fonts[f.Filename]
+			font := fc.Fonts[f.Filename]
 			if font == nil {
 				font, err = afm.LoadFont(f.Filename)
-				fc.fonts[f.Filename] = font
+				fc.Fonts[f.Filename] = font
 			}
 			fontMetrics = font
 			return
