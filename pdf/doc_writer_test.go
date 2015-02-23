@@ -140,6 +140,34 @@ func TestDocWriter_Open(t *testing.T) {
 	check(t, len(dw.options) == 0, "Default page options should be empty")
 }
 
+func TestDocWriter_PageHeight(t *testing.T) {
+	dw := NewDocWriter()
+	// height in (default) points
+	expectF(t, 792, dw.PageHeight())
+	dw.SetUnits("in")
+	expectF(t, 11, dw.PageHeight())
+	dw.SetUnits("cm")
+	expectFdelta(t, 27.93, dw.PageHeight(), 0.01)
+	// custom: "Dave points"
+	UnitConversions.Add("dp", 0.072)
+	dw.SetUnits("dp")
+	expectF(t, 11000, dw.PageHeight())
+}
+
+func TestDocWriter_PageWidth(t *testing.T) {
+	dw := NewDocWriter()
+	// width in (default) points
+	expectF(t, 612, dw.PageWidth())
+	dw.SetUnits("in")
+	expectF(t, 8.5, dw.PageWidth())
+	dw.SetUnits("cm")
+	expectFdelta(t, 21.58, dw.PageWidth(), 0.01)
+	// custom: "Dave points"
+	UnitConversions.Add("dp", 0.072)
+	dw.SetUnits("dp")
+	expectF(t, 8500, dw.PageWidth())
+}
+
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	dw := NewDocWriter()
 

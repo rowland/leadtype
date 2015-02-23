@@ -220,8 +220,16 @@ func (dw *DocWriter) PagesDown() int {
 	return dw.pagesDown
 }
 
+func (dw *DocWriter) PageHeight() float64 {
+	return dw.CurPage().PageHeight()
+}
+
 func (dw *DocWriter) PagesUp() int {
 	return dw.PagesAcross() * dw.PagesDown()
+}
+
+func (dw *DocWriter) PageWidth() float64 {
+	return dw.CurPage().PageWidth()
 }
 
 func (dw *DocWriter) Print(text string) (err error) {
@@ -234,6 +242,10 @@ func (dw *DocWriter) PrintParagraph(para []*RichText) {
 
 func (dw *DocWriter) PrintRichText(text *RichText) {
 	dw.CurPage().PrintRichText(text)
+}
+
+func (dw *DocWriter) PrintWithOptions(text string, options Options) (err error) {
+	return dw.CurPage().PrintWithOptions(text, options)
 }
 
 func (dw *DocWriter) ResetFonts() {
