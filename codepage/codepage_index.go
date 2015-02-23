@@ -196,7 +196,12 @@ func (idx CodepageIndex) Codepage() Codepage {
 	return Codepages[idx]
 }
 
+// Map returns a slice of runes for a codepage mapping chars 0-255 to Unicode runes.
+// A map for codepage ISO-8859-1 is returned if the CodepageIndex is invalid.
 func (idx CodepageIndex) Map() []rune {
+	if idx < 0 {
+		return CodepageMaps[0]
+	}
 	return CodepageMaps[idx]
 }
 

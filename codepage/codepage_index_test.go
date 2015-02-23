@@ -26,6 +26,18 @@ func TestCodepageIndex_Map(t *testing.T) {
 	}
 }
 
+func TestCodepageIndex_Map_default(t *testing.T) {
+	bogus := CodepageIndex(-1)
+	defer func() {
+		if p := recover(); p != nil {
+			t.Error(p)
+		}
+	}()
+	if !reflect.DeepEqual(bogus.Map(), ISO_8859_1_Map) {
+		t.Error("Expected map ISO-8859-1 for invalid CodepageIndex.")
+	}
+}
+
 // 162 ns when CodepageIndex returns slices
 // 173 ns when CodepageIndex returns pointers to slices
 func BenchmarkCharForCodepointForEachCodepage(b *testing.B) {
