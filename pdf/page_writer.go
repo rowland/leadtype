@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"leadtype/codepage"
+	"leadtype/wordbreaking"
 	"math"
 	"strings"
 )
@@ -38,6 +39,7 @@ type PageWriter struct {
 	origin     Location
 	page       *page
 	pageHeight float64
+	pageWidth  float64
 	stream     bytes.Buffer
 	tw         *textWriter
 	units      *units
@@ -62,6 +64,7 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	pw.units = UnitConversions[options.StringDefault("units", "pt")]
 	ps := newPageStyle(options)
 	pw.pageHeight = ps.pageSize.y2
+	pw.pageWidth = ps.pageSize.x2
 	pw.page = newPage(pw.dw.nextSeq(), 0, pw.dw.catalog.pages)
 	pw.page.setMediaBox(ps.pageSize)
 	pw.page.setCropBox(ps.cropSize)
@@ -350,6 +353,10 @@ func (pw *PageWriter) PageHeight() float64 {
 	return pw.units.fromPts(pw.pageHeight)
 }
 
+func (pw *PageWriter) PageWidth() float64 {
+	return pw.units.fromPts(pw.pageWidth)
+}
+
 func (pw *PageWriter) Print(text string) (err error) {
 	i := strings.IndexAny(text, "\t\r\n")
 	for i >= 0 {
@@ -398,6 +405,23 @@ func (pw *PageWriter) PrintRichText(text *RichText) {
 	} else {
 		pw.line = pw.line.AddPiece(text)
 	}
+}
+
+func (pw *PageWriter) PrintWithOptions(text string, options Options) (err error) {
+	var para []*RichText
+	rt, err := pw.richTextForString(text)
+	if err != nil {
+		return
+	}
+	if width := options.FloatDefault("width", 0); width > 0 {
+		flags := make([]wordbreaking.Flags, rt.Len())
+		wordbreaking.MarkRuneAttributes(rt.String(), flags)
+		para = rt.WrapToWidth(pw.units.toPts(width), flags, false)
+	} else {
+		para = []*RichText{rt}
+	}
+	pw.PrintParagraph(para)
+	return nil
 }
 
 func (pw *PageWriter) ResetFonts() {

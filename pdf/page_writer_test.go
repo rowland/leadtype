@@ -303,6 +303,21 @@ func TestPageWriter_PageHeight(t *testing.T) {
 	expectF(t, 11000, pw.PageHeight())
 }
 
+func TestPageWriter_PageWidth(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, Options{})
+	// width in (default) points
+	expectF(t, 612, pw.PageWidth())
+	pw.SetUnits("in")
+	expectF(t, 8.5, pw.PageWidth())
+	pw.SetUnits("cm")
+	expectFdelta(t, 21.58, pw.PageWidth(), 0.01)
+	// custom: "Dave points"
+	UnitConversions.Add("dp", 0.072)
+	pw.SetUnits("dp")
+	expectF(t, 8500, pw.PageWidth())
+}
+
 func TestPageWriter_Print(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, Options{})
