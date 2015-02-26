@@ -225,15 +225,15 @@ func BenchmarkRanges_CharForCodepoint_ISO_8859_16(b *testing.B) {
 func TestCodepageRanges_CodepageIndexForCodepoint(t *testing.T) {
 	// 2-codepoint range within CP1252
 	if page, found := codepointCodepages.CodepageIndexForCodepoint(0x2013); found {
-		if page != idx_CP1252 {
-			t.Errorf("codepointCodepages: expected %d, got %d", idx_CP1252, page)
+		if page != Idx_CP1252 {
+			t.Errorf("codepointCodepages: expected %d, got %d", Idx_CP1252, page)
 		}
 	} else {
 		t.Errorf("codepointCodepages: codepoint '%d' not found", 0x2013)
 	}
 	if page, found := codepointCodepages.CodepageIndexForCodepoint(0x2014); found {
-		if page != idx_CP1252 {
-			t.Errorf("codepointCodepages: expected %d, got %d", idx_CP1252, page)
+		if page != Idx_CP1252 {
+			t.Errorf("codepointCodepages: expected %d, got %d", Idx_CP1252, page)
 		}
 	} else {
 		t.Errorf("codepointCodepages: codepoint %d not found", 0x2013)
@@ -244,8 +244,8 @@ func TestCodepageRanges_CodepageIndexForCodepoint(t *testing.T) {
 		t.Errorf("codepointCodepages: codepoint %d should not be found", 0x2012)
 	}
 	if page, found := codepointCodepages.CodepageIndexForCodepoint(0x2015); found {
-		if page != idx_ISO_8859_7 {
-			t.Errorf("codepointCodepages: expected %d, got %d", idx_ISO_8859_7, page)
+		if page != Idx_ISO_8859_7 {
+			t.Errorf("codepointCodepages: expected %d, got %d", Idx_ISO_8859_7, page)
 		}
 	} else {
 		t.Errorf("codepointCodepages: codepoint %x not found", 0x2015)
