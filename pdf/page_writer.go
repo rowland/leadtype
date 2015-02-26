@@ -228,10 +228,15 @@ func (pw *PageWriter) flushText() {
 			panic("EachCodepage calling back with nil p")
 		}
 		buf.Reset()
-		cp := cpi.Codepage()
-		for _, r := range text {
-			ch, _ := cp.CharForCodepoint(r)
-			buf.WriteByte(byte(ch))
+		// fmt.Println(cpi)
+		if cpi < 0 {
+			// buf.WriteString(text)
+		} else {
+			cp := cpi.Codepage()
+			for _, r := range text {
+				ch, _ := cp.CharForCodepoint(r)
+				buf.WriteByte(byte(ch))
+			}
 		}
 		pw.SetFontColor(p.Color)
 		pw.checkSetFontColor()

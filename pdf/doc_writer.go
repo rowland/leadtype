@@ -11,17 +11,18 @@ import (
 )
 
 type DocWriter struct {
-	pages       []*PageWriter
-	nextSeq     func() int
-	file        *file
-	catalog     *catalog
-	resources   *resources
-	pagesAcross int
-	pagesDown   int
-	curPage     *PageWriter
-	options     Options
-	fontSources FontSources
-	fontKeys    map[string]string
+	pages         []*PageWriter
+	nextSeq       func() int
+	file          *file
+	catalog       *catalog
+	resources     *resources
+	pagesAcross   int
+	pagesDown     int
+	curPage       *PageWriter
+	options       Options
+	fontSources   FontSources
+	fontKeys      map[string]string
+	fontEncodings map[string]*fontEncoding
 }
 
 func NewDocWriter() *DocWriter {
@@ -37,7 +38,8 @@ func NewDocWriter() *DocWriter {
 	file.body.add(resources)
 	fontSources := make(FontSources, 0, 2)
 	fontKeys := make(map[string]string)
-	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, options: Options{}, fontSources: fontSources, fontKeys: fontKeys}
+	fontEncodings := make(map[string]*fontEncoding)
+	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, options: Options{}, fontSources: fontSources, fontKeys: fontKeys, fontEncodings: fontEncodings}
 }
 
 func nextSeqFunc() func() int {
@@ -98,12 +100,28 @@ func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
 	dw.fontKeys[name] = key
 	widths := dw.widthsForFontCodepage(f, cpi)
 	dw.file.body.add(widths)
-	font := newSimpleFont(
-		dw.nextSeq(), 0,
-		f.subType,
-		f.metrics.PostScriptName(),
-		32, 255, widths,
-		descriptor)
+	var font *simpleFont
+	switch f.subType {
+	case "Type1":
+		encoding, ok := dw.fontEncodings[cpi.String()]
+		if !ok {
+			differences := glyphDiffs(codepage.Idx_CP1252, cpi, 32, 255)
+			encoding = newFontEncoding(dw.nextSeq(), 0, "WinAnsiEncoding", differences)
+			dw.file.body.add(encoding)
+			dw.fontEncodings[cpi.String()] = encoding
+		}
+		font = newType1Font(
+			dw.nextSeq(), 0,
+			f.metrics.PostScriptName(),
+			32, 255, widths,
+			descriptor, &indirectObjectRef{encoding})
+	case "TrueType":
+		font = newTrueTypeFont(
+			dw.nextSeq(), 0,
+			f.metrics.PostScriptName(),
+			32, 255, widths,
+			descriptor)
+	}
 	dw.file.body.add(font)
 	dw.resources.fonts[key] = &indirectObjectRef{font}
 	return key

@@ -190,6 +190,25 @@ func (fd *fontDescriptor) init(seq, gen int,
 	return fd
 }
 
+type fontEncoding struct {
+	dictionaryObject
+}
+
+func newFontEncoding(seq, gen int,
+	baseEncoding string, differences array) *fontEncoding {
+	return new(fontEncoding).init(seq, gen,
+		baseEncoding, differences)
+}
+
+func (fe *fontEncoding) init(seq, gen int,
+	baseEncoding string, differences array) *fontEncoding {
+	fe.dictionaryObject.init(seq, gen)
+	fe.dict["Type"] = name("Encoding")
+	fe.dict["BaseEncoding"] = name(baseEncoding)
+	fe.dict["Differences"] = differences
+	return fe
+}
+
 type freeXRefEntry indirectObject
 
 func (e *freeXRefEntry) write(w io.Writer) {
@@ -514,7 +533,8 @@ func (f *simpleFont) init(seq, gen int,
 	subType, baseFont string,
 	firstChar, lastChar int,
 	widths *indirectObject,
-	fontDescriptor *fontDescriptor) *simpleFont {
+	fontDescriptor *fontDescriptor,
+	fontEncoding writer) *simpleFont {
 	f.dictionaryObject.init(seq, gen)
 	f.dict["Type"] = name("Font")
 	f.dict["Subtype"] = name(subType)
@@ -523,7 +543,9 @@ func (f *simpleFont) init(seq, gen int,
 	f.dict["LastChar"] = integer(lastChar)
 	f.dict["Widths"] = &indirectObjectRef{widths}
 	f.dict["FontDescriptor"] = &indirectObjectRef{fontDescriptor}
-	// TODO: Encoding
+	if fontEncoding != nil {
+		f.dict["Encoding"] = fontEncoding
+	}
 	// TODO: ToUnicode
 	return f
 }
@@ -533,8 +555,9 @@ func newSimpleFont(seq, gen int,
 	baseFont string,
 	firstChar, lastChar int,
 	widths *indirectObject,
-	fontDescriptor *fontDescriptor) *simpleFont {
-	return new(simpleFont).init(seq, gen, subType, baseFont, firstChar, lastChar, widths, fontDescriptor)
+	fontDescriptor *fontDescriptor,
+	fontEncoding writer) *simpleFont {
+	return new(simpleFont).init(seq, gen, subType, baseFont, firstChar, lastChar, widths, fontDescriptor, fontEncoding)
 }
 
 func newTrueTypeFont(seq, gen int,
@@ -542,15 +565,16 @@ func newTrueTypeFont(seq, gen int,
 	firstChar, lastChar int,
 	widths *indirectObject,
 	fontDescriptor *fontDescriptor) *simpleFont {
-	return new(simpleFont).init(seq, gen, "TrueType", baseFont, firstChar, lastChar, widths, fontDescriptor)
+	return new(simpleFont).init(seq, gen, "TrueType", baseFont, firstChar, lastChar, widths, fontDescriptor, nil)
 }
 
 func newType1Font(seq, gen int,
 	baseFont string,
 	firstChar, lastChar int,
 	widths *indirectObject,
-	fontDescriptor *fontDescriptor) *simpleFont {
-	return new(simpleFont).init(seq, gen, "Type1", baseFont, firstChar, lastChar, widths, fontDescriptor)
+	fontDescriptor *fontDescriptor,
+	fontEncoding writer) *simpleFont {
+	return new(simpleFont).init(seq, gen, "Type1", baseFont, firstChar, lastChar, widths, fontDescriptor, fontEncoding)
 }
 
 type str []byte

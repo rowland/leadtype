@@ -112,6 +112,22 @@ func TestFontDescriptor(t *testing.T) {
 	expectS(t, expected, buf.String())
 }
 
+func TestFontEncoding(t *testing.T) {
+	differences := array{integer(32), name("space")}
+	fe := newFontEncoding(1, 0, "MacRomanEncoding", differences)
+
+	expected := "1 0 obj\n" +
+		"<<\n" +
+		"/BaseEncoding /MacRomanEncoding \n" +
+		"/Differences [32 /space ] \n" +
+		"/Type /Encoding \n" +
+		">>\n" +
+		"endobj\n"
+	var buf bytes.Buffer
+	fe.write(&buf)
+	expectS(t, expected, buf.String())
+}
+
 func TestFreeXRefEntry(t *testing.T) {
 	var buf bytes.Buffer
 	e := &freeXRefEntry{1, 0, nil}
@@ -406,9 +422,9 @@ func TestSimpleFont_Type1(t *testing.T) {
 		"ArialMT", // baseFont
 		0, 255,    // firstChar, lastChar
 		&indirectObject{50, 0, &widths}, // widths
-		fd) // fontDescriptor
+		fd, name("WinAnsiEncoding")) // fontDescriptor, fontEncoding
 
-	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /Type1 \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
+	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/Encoding /WinAnsiEncoding \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /Type1 \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
 	expectS(t, expected, stringFromWriter(f))
 }
 
