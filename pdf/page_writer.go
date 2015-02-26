@@ -54,6 +54,7 @@ func clonePageWriter(opw *PageWriter) *PageWriter {
 	pw := new(PageWriter).init(opw.dw, opw.options)
 	pw.drawState = opw.drawState
 	pw.units = opw.units
+	pw.fonts = append(pw.fonts, opw.fonts...)
 	return pw
 }
 

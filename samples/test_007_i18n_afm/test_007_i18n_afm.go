@@ -38,7 +38,6 @@ func main() {
 		if doc.Y() > 10 {
 			doc.NewPage()
 			doc.MoveTo(1, 1)
-			doc.SetFont("Helvetica", 12, pdf.Options{})
 		}
 		fmt.Fprintf(doc, "%s:\n", k)
 		doc.PrintWithOptions(i18nText[k], pdf.Options{"width": 6.5})
