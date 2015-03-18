@@ -21,6 +21,7 @@ type FontInfo struct {
 	fontBBox           [4]int
 	fontName           string
 	fullName           string
+	isFixedPitch       bool
 	italicAngle        float64
 	numGlyphs          int
 	stdVW              int
@@ -54,6 +55,7 @@ var (
 	reFontBBox           = regexp.MustCompile("^FontBBox(([ ]+-?[0-9]+)([ ]+-?[0-9]+)([ ]+-?[0-9]+)([ ]+-?[0-9]+))")
 	reFontName           = regexp.MustCompile("^FontName[ ]+(.*)")
 	reFullName           = regexp.MustCompile("^FullName[ ]+(.*)")
+	reIsFixedPitch       = regexp.MustCompile("^IsFixedPitch[ ]+(.)")
 	reItalicAngle        = regexp.MustCompile("^ItalicAngle[ ]+(-?[0-9]+(\\.[0-9]+)?)")
 	reStartCharMetrics   = regexp.MustCompile("^StartCharMetrics[ ]+([0-9]+)")
 	reStdVW              = regexp.MustCompile("^StdVW[ ]+([0-9]+)")
@@ -88,6 +90,8 @@ func (fi *FontInfo) init(file *bufio.Reader) (err error) {
 			fi.descender, _ = strconv.Atoi(string(m[1]))
 		} else if m := reFamilyName.FindSubmatch(line); m != nil {
 			fi.familyName = strings.TrimSpace(string(m[1]))
+		} else if m := reIsFixedPitch.FindSubmatch(line); m != nil {
+			fi.isFixedPitch = string(m[1]) == "true"
 		} else if m := reItalicAngle.FindSubmatch(line); m != nil {
 			fi.italicAngle, _ = strconv.ParseFloat(string(m[1]), 64)
 		} else if m := reWeight.FindSubmatch(line); m != nil {
@@ -140,6 +144,10 @@ func (fi *FontInfo) Family() string {
 
 func (fi *FontInfo) FullName() string {
 	return fi.fullName
+}
+
+func (fi *FontInfo) IsFixedPitch() bool {
+	return fi.isFixedPitch
 }
 
 func (fi *FontInfo) ItalicAngle() float64 {

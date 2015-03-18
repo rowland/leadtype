@@ -118,6 +118,36 @@ func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
 	return 0, true
 }
 
+const (
+	flagFixedPitch  = 1 - 1
+	flagSerif       = 2 - 1
+	flagSymbolic    = 3 - 1
+	flagScript      = 4 - 1
+	flagNonsymbolic = 6 - 1
+	flagItalic      = 7 - 1
+	flagAllCap      = 17 - 1
+	flagSmallCap    = 18 - 1
+	flagForceBold   = 19 - 1
+)
+
+func (font *Font) Flags() (flags uint32) {
+	flags = 0
+	if font.isFixedPitch {
+		flags |= 1 << flagFixedPitch
+	}
+	if font.serif {
+		flags |= 1 << flagSerif
+	}
+	if font.italicAngle != 0 {
+		flags |= 1 << flagItalic
+	}
+	if strings.Contains(font.weight, "Bold") {
+		flags |= 1 << flagForceBold
+	}
+	return
+	// TODO: Set remainder of flags
+}
+
 func (font *Font) NumGlyphs() int {
 	return font.numGlyphs
 }

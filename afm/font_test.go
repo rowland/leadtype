@@ -21,6 +21,7 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "UnitsPerEm", 1000, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 315, f.NumGlyphs())
 	expect(t, "Serif", !f.Serif())
+	expectUI32(t, "Flags", 0, f.Flags())
 	expectI(t, "registered", 737, aw(f.AdvanceWidth(0xAE)))
 	expectI(t, "copyright", 737, aw(f.AdvanceWidth(0xA9)))
 	// expectI(t, "epsilon", 913, f.AdvanceWidth(0x03B5))

@@ -22,6 +22,7 @@ func TestLoadFontInfo(t *testing.T) {
 	// expectS(t, "Designer", "Monotype Type Drawing Office - Robin Nicholas, Patricia Saunders 1982", fi.Designer())
 	// expect(t, "Embeddable", fi.Embeddable())
 	expectS(t, "FullName", "Helvetica", fi.FullName())
+	expect(t, "IsFixedPitch", !fi.IsFixedPitch())
 	expectF(t, "ItalicAngle", 0, fi.ItalicAngle())
 	// expectS(t, "License", "You may use this font to display and print content as permitted by the license terms for the product in which this font is included. You may only (i) embed this font in content as permitted by the embedding restrictions included in this font; and (ii) temporarily download this font to a printer or other output device to help print content.", fi.License())
 	expectI(t, "Leading", (718 - -207)*120/100, fi.Leading())
