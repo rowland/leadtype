@@ -147,7 +147,7 @@ type fontDescriptor struct {
 
 func newFontDescriptor(seq, gen int,
 	fontName, fontFamily string,
-	flags int,
+	flags uint32,
 	fontBBox [4]int,
 	missingWidth, stemV, stemH int,
 	italicAngle float64,
@@ -163,7 +163,7 @@ func newFontDescriptor(seq, gen int,
 
 func (fd *fontDescriptor) init(seq, gen int,
 	fontName, fontFamily string,
-	flags int,
+	flags uint32,
 	fontBBox [4]int,
 	missingWidth, stemV, stemH int,
 	italicAngle float64,

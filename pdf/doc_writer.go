@@ -83,7 +83,7 @@ func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
 	descriptor := newFontDescriptor(
 		dw.nextSeq(), 0,
 		f.metrics.PostScriptName(), f.metrics.Family(),
-		0, // flags
+		f.metrics.Flags(),
 		f.metrics.BoundingBox(),
 		0, // missingWidth
 		f.metrics.StemV(),
