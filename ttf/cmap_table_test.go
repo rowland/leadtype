@@ -47,6 +47,7 @@ func TestCmapTable_glyphIndex_Courier(t *testing.T) {
 
 // 41.9 ns
 // 42.1 ns go1.1.1
+// 44.1 ns go1.2.1
 func BenchmarkGlyphIndex(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -61,6 +62,7 @@ func BenchmarkGlyphIndex(b *testing.B) {
 
 // 35.9 ns
 // 39.1 ns go1.1.1
+// 40.8 ns go1.2.1
 func BenchmarkGlyphIndex_format4(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -75,6 +77,7 @@ func BenchmarkGlyphIndex_format4(b *testing.B) {
 
 // 51.7 ns
 // 56.7 ns go1.1.1
+// 60.1 ns go1.2.1
 func BenchmarkGlyphIndex_format12(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/华文楷体.ttf")

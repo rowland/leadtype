@@ -40,6 +40,7 @@ func TestCodepageIndex_Map_default(t *testing.T) {
 
 // 162 ns when CodepageIndex returns slices
 // 173 ns when CodepageIndex returns pointers to slices
+// 167 ns go1.2.1
 func BenchmarkCharForCodepointForEachCodepage(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for idx := Idx_CP1250; idx <= Idx_CP874; idx++ {

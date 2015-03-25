@@ -80,6 +80,7 @@ var arialTableNames = []string{
 // 1,077,216 ns
 //   472,090 ns
 //   351,630 ns go1.1.1
+//   297,153 ns go1.2.1
 func BenchmarkLoadFontInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFontInfo("/Library/Fonts/Arial.ttf")

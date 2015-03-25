@@ -54,6 +54,7 @@ func TestMarkRuneAttributes_with_hyphens(t *testing.T) {
 // Baseline: 310 ns
 // 833 ns
 // 931 ns with hyphen tests
+// 977 ns go1.2.1
 func BenchmarkMarkRunAttributes(b *testing.B) {
 	const quick = "The quick red fox jumps over the lazy brown dog."
 	var flags [len(quick)]Flags
