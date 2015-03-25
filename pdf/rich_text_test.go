@@ -951,6 +951,7 @@ func TestRichText_WrapToWidth_zero(t *testing.T) {
 
 // 14,930 ns go1.1.2
 // 14,685 ns go1.2.1
+// 10,873 ns go1.4.2
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := testAfmFonts("Helvetica")
@@ -970,6 +971,7 @@ func BenchmarkNewRichText(b *testing.B) {
 // 76.9 ns go1.1.1
 // 70.8 ns go1.1.2
 // 74.1 ns go1.2.1
+// 77.8 ns go1.4.2
 func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
@@ -989,6 +991,7 @@ func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 // 301 ns go1.1.1
 // 296 ns go1.1.2
 // 299 ns go1.2.1
+// 323 ns go1.4.2
 func BenchmarkRichText_measure(b *testing.B) {
 	b.StopTimer()
 	piece := arialText("Lorem")
@@ -1001,6 +1004,7 @@ func BenchmarkRichText_measure(b *testing.B) {
 
 // 4488 ns go1.1.2
 // 4591 ns go1.2.1
+// 4997 ns go1.4.2
 func BenchmarkRichText_Ascent(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1019,6 +1023,7 @@ func BenchmarkRichText_Ascent(b *testing.B) {
 
 // 4547 ns go1.1.2
 // 4591 ns go1.2.1
+// 5026 ns go1.4.2
 func BenchmarkRichText_Chars(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1037,6 +1042,7 @@ func BenchmarkRichText_Chars(b *testing.B) {
 
 // 4492 ns go1.1.2
 // 4568 ns go1.2.1
+// 4957 ns go1.4.2
 func BenchmarkRichText_Descent(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1053,8 +1059,9 @@ func BenchmarkRichText_Descent(b *testing.B) {
 	}
 }
 
-// 4559 ns go1.1.2
-// 4593 ns go1.2.1
+// 17.8 ns go1.1.2
+// 16.7 ns go1.2.1
+// 17.2 ns go1.4.2
 func BenchmarkRichText_Height(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1073,6 +1080,7 @@ func BenchmarkRichText_Height(b *testing.B) {
 
 // 30.2 ns go1.1.2
 // 30.4 ns go1.2.1
+// 36.3 ns go1.4.2
 func BenchmarkRichText_Len(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1085,6 +1093,7 @@ func BenchmarkRichText_Len(b *testing.B) {
 
 // 4539 ns go1.1.2
 // 4636 ns go1.2.1
+// 5051 ns go1.4.2
 func BenchmarkRichText_Width(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()

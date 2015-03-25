@@ -83,6 +83,7 @@ func TestTtfFontCollection(t *testing.T) {
 // 37,788,928 ns go1.1.1
 // 33,604,903 ns go1.1.2
 // 29,678,826 ns go1.2.1
+// 33,674,155 ns go1.4.2
 func BenchmarkTtfFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var fc TtfFontCollection
@@ -94,6 +95,7 @@ func BenchmarkTtfFontCollection_Add(b *testing.B) {
 // 1,938 ns go1.1.1
 // 1,769 ns go1.1.2
 // 1,610 ns go1.2.1
+// 1,855 ns go1.4.2
 func BenchmarkTtfFontCollection_Select(b *testing.B) {
 	b.StopTimer()
 	var fc TtfFontCollection
