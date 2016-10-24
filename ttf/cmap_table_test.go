@@ -68,6 +68,7 @@ func BenchmarkGlyphIndex(b *testing.B) {
 // 40.8 ns go1.2.1
 // 38.0 ns go1.4.2
 // 26.5 ns go1.6.2 mbp
+// 25.6 ns go1.7.3
 func BenchmarkGlyphIndex_format4(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
