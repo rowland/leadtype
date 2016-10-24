@@ -30,6 +30,8 @@ func TestCharRanges(t *testing.T) {
 // 3.6 ns
 // 3.9 ns go1.2.1
 // 3.9 ns go1.4.2
+// 2.5 ns go1.6.2 mbp
+// 0.9 ns go1.7.3
 func BenchmarkCharRanges(b *testing.B) {
 	cr := CharRanges{3758107391, 3221256259, 9, 0}
 	for i := 0; i < b.N; i++ {

@@ -50,6 +50,8 @@ func TestLoadFont(t *testing.T) {
 // 3,346,759 ns go1.1.1
 // 2,644,340 ns go1.2.1
 // 2,854,351 ns go1.4.2
+// 1,464,970 ns go1.6.2 mbp
+// 1,214,725 ns go1.7.3
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("/Library/Fonts/Arial.ttf")
@@ -62,6 +64,8 @@ func BenchmarkLoadFont(b *testing.B) {
 // 47.8 ns go1.1.1
 // 50.1 ns go1.2.1
 // 47.2 ns go1.4.2
+// 33.6 ns go1.6.2 mbp
+// 32.9 ns go1.7.3
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")

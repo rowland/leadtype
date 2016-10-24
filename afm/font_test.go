@@ -43,6 +43,8 @@ func TestLoadFont(t *testing.T) {
 // 2,161,622 ns/2.161 ms go1.1.1
 // 1,880,786 ns/1.880 ms go1.2.1
 // 2,095,878 ns/2.095 ms go1.4.2
+//   651,438 ns          go1.6.2 mbp
+//   539,770 ns          go1.7.3
 func BenchmarkLoadFont(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		LoadFont("data/fonts/Helvetica.afm")
@@ -57,6 +59,8 @@ func BenchmarkLoadFont(b *testing.B) {
 // 36.7 ns go1.1.1
 // 39.1 ns go1.2.1
 // 39.7 ns go1.4.2
+// 23.7 ns go1.6.2 mbp
+// 22.8 ns go1.7.3
 func BenchmarkAdvanceWidth(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("data/fonts/Helvetica.afm")

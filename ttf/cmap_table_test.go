@@ -49,6 +49,8 @@ func TestCmapTable_glyphIndex_Courier(t *testing.T) {
 // 42.1 ns go1.1.1
 // 44.1 ns go1.2.1
 // 42.1 ns go1.4.2
+// 28.3 ns go1.6.2 mbp
+// 30.1 ns go1.7.3
 func BenchmarkGlyphIndex(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -65,6 +67,7 @@ func BenchmarkGlyphIndex(b *testing.B) {
 // 39.1 ns go1.1.1
 // 40.8 ns go1.2.1
 // 38.0 ns go1.4.2
+// 26.5 ns go1.6.2 mbp
 func BenchmarkGlyphIndex_format4(b *testing.B) {
 	b.StopTimer()
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
@@ -81,14 +84,15 @@ func BenchmarkGlyphIndex_format4(b *testing.B) {
 // 56.7 ns go1.1.1
 // 60.1 ns go1.2.1
 // 61.8 ns go1.4.2
-func BenchmarkGlyphIndex_format12(b *testing.B) {
-	b.StopTimer()
-	f, err := LoadFont("/Library/Fonts/华文楷体.ttf")
-	if err != nil {
-		panic("Error loading font: " + err.Error())
-	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		f.cmapTable.format12Indexer.glyphIndex(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
-	}
-}
+// missing from mbp
+// func BenchmarkGlyphIndex_format12(b *testing.B) {
+// 	b.StopTimer()
+// 	f, err := LoadFont("/Library/Fonts/华文楷体.ttf")
+// 	if err != nil {
+// 		panic("Error loading font: " + err.Error())
+// 	}
+// 	b.StartTimer()
+// 	for i := 0; i < b.N; i++ {
+// 		f.cmapTable.format12Indexer.glyphIndex(int(f.os2Table.fsFirstCharIndex) + i%int(f.os2Table.fsLastCharIndex-f.os2Table.fsFirstCharIndex+1))
+// 	}
+// }
