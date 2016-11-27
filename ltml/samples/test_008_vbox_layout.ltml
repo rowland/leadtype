@@ -1,0 +1,19 @@
+<ltml>
+  <layout id="vbox" padding="18" />
+  <pen id="blue_dash" color="Blue" width="2" pattern="dashed" />
+  <pen id="red_dash" color="Red" width="2" pattern="dashed" />
+  <rules>
+    <!--
+      rect { width: 100%; }
+    -->
+  </rules>
+  <page units="in" margin="1" layout="vbox">
+    <p underline="true" align="top">VBox Layout</p>
+    <p border="dotted" text_align="justify" align="top" padding="5pt">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    <p border="dashed" text_align="justify" padding="5pt">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    <rect height="0.5" border="blue_dash" corners="0.2" />
+    <rect height="1.0" border="red_dash" corners="0.2" />
+    <rect height="1.0" border="blue_dash" corners="0.2" />
+    <rect height="0.5" border="red_dash" corners="0.2" align="bottom" />
+  </page>
+</ltml>
