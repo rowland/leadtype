@@ -28,5 +28,3 @@ var StdAliases = map[string]*Alias{
 	"layer": {"div", map[string]string{"position": "relative", "width": "100%", "height": "100%"}},
 	"br":    {"label", map[string]string{}},
 }
-
-var defaultScope = Scope{aliases: StdAliases}
