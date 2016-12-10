@@ -76,16 +76,6 @@ func (scope *Scope) Style(id string) (style Styler, ok bool) {
 	return
 }
 
-func ScopeFor(parent interface{}) HasScope {
-	for {
-		if s, ok := parent.(HasScope); ok {
-			return s
-		}
-		// panic here if tree is constructed with neither HasParent nor HasScope in ancestry
-		parent = parent.(HasParent).Parent()
-	}
-}
-
 var defaultScope = Scope{aliases: StdAliases}
 
 var _ HasScope = (*Scope)(nil)

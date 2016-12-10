@@ -4,6 +4,7 @@
 package ltml
 
 type Container interface {
-	AddChild(value interface{})
-	Query(f func(value interface{}) bool) []interface{}
+	Printer
+	AddChild(value Printer)
+	Query(f func(value Printer) bool) []Printer
 }

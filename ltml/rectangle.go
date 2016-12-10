@@ -10,3 +10,9 @@ type Rectangle struct {
 func init() {
 	registerTag(DefaultSpace, "rect", func() interface{} { return &Rectangle{} })
 }
+
+var _ Container = (*Rectangle)(nil)
+var _ HasAttrs = (*Rectangle)(nil)
+var _ Identifier = (*Rectangle)(nil)
+var _ Printer = (*Rectangle)(nil)
+var _ WantsContainer = (*Rectangle)(nil)

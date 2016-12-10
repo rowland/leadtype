@@ -9,11 +9,8 @@ import (
 
 type StdParagraph struct {
 	Widget
+	Children
 	richText []string
-}
-
-func (p *StdParagraph) AddChild(child interface{}) {
-	// add spans of rich text
 }
 
 func (p *StdParagraph) AddText(text string) {
@@ -31,10 +28,6 @@ func (p *StdParagraph) Print(w Writer) error {
 	return nil
 }
 
-func (p *StdParagraph) Query(f func(child interface{}) bool) []interface{} {
-	return nil
-}
-
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	p.Widget.SetAttrs(attrs)
 }
@@ -49,6 +42,6 @@ func init() {
 
 var _ Container = (*StdParagraph)(nil)
 var _ HasAttrs = (*StdParagraph)(nil)
-var _ HasParent = (*StdParagraph)(nil)
 var _ Identifier = (*StdParagraph)(nil)
 var _ Printer = (*StdParagraph)(nil)
+var _ WantsContainer = (*StdParagraph)(nil)

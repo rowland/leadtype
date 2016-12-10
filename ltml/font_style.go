@@ -69,16 +69,15 @@ func (fs *FontStyle) String() string {
 }
 
 func FontStyleFor(id string, scope HasScope) *FontStyle {
-	style, ok := scope.Style(id)
-	if !ok {
-		style, ok = scope.Style("font_" + id)
-	}
-	if ok {
+	if style, ok := scope.Style(id); ok {
 		fs, _ := style.(*FontStyle)
 		return fs
 	}
 	return nil
 }
+
+var _ HasAttrs = (*FontStyle)(nil)
+var _ Styler = (*FontStyle)(nil)
 
 func init() {
 	registerTag(DefaultSpace, "font", func() interface{} { return &FontStyle{} })

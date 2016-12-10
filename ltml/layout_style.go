@@ -8,7 +8,6 @@ import (
 )
 
 type LayoutStyle struct {
-	AParent
 	id       string
 	units    string
 	hpadding float64
@@ -58,16 +57,13 @@ func (ls *LayoutStyle) String() string {
 }
 
 func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
-	ls, ok := scope.Layout(id)
-	if !ok {
-		ls, ok = scope.Layout("layout_" + id)
-	}
-	if ok {
-		// ls, _ := style.(*LayoutStyle)
+	if ls, ok := scope.Layout(id); ok {
 		return ls
 	}
 	return nil
 }
+
+var _ HasAttrs = (*LayoutStyle)(nil)
 
 func init() {
 	registerTag(DefaultSpace, "layout", func() interface{} { return &LayoutStyle{} })

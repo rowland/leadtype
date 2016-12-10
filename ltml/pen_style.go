@@ -56,6 +56,9 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 	return nil
 }
 
+var _ HasAttrs = (*PenStyle)(nil)
+var _ Styler = (*PenStyle)(nil)
+
 func init() {
 	registerTag(DefaultSpace, "pen", func() interface{} { return &PenStyle{} })
 }

@@ -4,15 +4,15 @@
 package ltml
 
 type Children struct {
-	children []interface{}
+	children []Printer
 }
 
-func (c *Children) AddChild(child interface{}) {
+func (c *Children) AddChild(child Printer) {
 	c.children = append(c.children, child)
 }
 
-func (c *Children) Query(f func(child interface{}) bool) []interface{} {
-	var results []interface{}
+func (c *Children) Query(f func(child Printer) bool) []Printer {
+	var results []Printer
 	for _, child := range c.children {
 		if f(child) {
 			results = append(results, child)

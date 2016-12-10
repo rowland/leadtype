@@ -22,11 +22,11 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
 }
 
-func (p *StdPage) SetParent(value interface{}) error {
-	if d, ok := value.(*StdDocument); ok {
+func (p *StdPage) SetContainer(container Container) error {
+	if d, ok := container.(*StdDocument); ok {
 		p.margin = d.margin
 		p.units = d.units
-		return p.StdContainer.SetParent(value)
+		return p.StdContainer.SetContainer(container)
 	} else {
 		return fmt.Errorf("page must be child of ltml.")
 	}
@@ -42,6 +42,6 @@ func init() {
 
 var _ Container = (*StdPage)(nil)
 var _ HasAttrs = (*StdPage)(nil)
-var _ HasParent = (*StdPage)(nil)
 var _ Identifier = (*StdPage)(nil)
 var _ Printer = (*StdPage)(nil)
+var _ WantsContainer = (*StdPage)(nil)

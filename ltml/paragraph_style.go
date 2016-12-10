@@ -8,6 +8,7 @@ import (
 )
 
 type ParagraphStyle struct {
+	scope HasScope
 	TextStyle
 	bullet *BulletStyle
 }
@@ -20,9 +21,12 @@ func (ps *ParagraphStyle) Apply(w Writer) {
 func (ps *ParagraphStyle) SetAttrs(attrs map[string]string) {
 	ps.TextStyle.SetAttrs(attrs)
 	if bullet, ok := attrs["bullet"]; ok {
-		scope := ScopeFor(ps.parent)
-		ps.bullet = BulletStyleFor(bullet, scope)
+		ps.bullet = BulletStyleFor(bullet, ps.scope)
 	}
+}
+
+func (ps *ParagraphStyle) SetScope(scope HasScope) {
+	ps.scope = scope
 }
 
 func (ps *ParagraphStyle) String() string {
@@ -30,16 +34,16 @@ func (ps *ParagraphStyle) String() string {
 }
 
 func ParagraphStyleFor(id string, scope HasScope) *ParagraphStyle {
-	style, ok := scope.Style(id)
-	if !ok {
-		style, ok = scope.Style("para_" + id)
-	}
-	if ok {
+	if style, ok := scope.Style(id); ok {
 		ps, _ := style.(*ParagraphStyle)
 		return ps
 	}
 	return nil
 }
+
+var _ HasAttrs = (*ParagraphStyle)(nil)
+var _ Styler = (*ParagraphStyle)(nil)
+var _ WantsScope = (*ParagraphStyle)(nil)
 
 func init() {
 	registerTag(DefaultSpace, "para", func() interface{} { return &ParagraphStyle{} })

@@ -8,7 +8,7 @@ import (
 )
 
 type BulletStyle struct {
-	AParent
+	scope HasScope
 	id    string
 	font  *FontStyle
 	text  string
@@ -35,9 +35,12 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 		bs.width = ParseMeasurement(width, bs.units)
 	}
 	if font, ok := attrs["font"]; ok {
-		scope := ScopeFor(bs.parent)
-		bs.font = FontStyleFor(font, scope)
+		bs.font = FontStyleFor(font, bs.scope)
 	}
+}
+
+func (bs *BulletStyle) SetScope(scope HasScope) {
+	bs.scope = scope
 }
 
 func (bs *BulletStyle) String() string {
@@ -46,16 +49,16 @@ func (bs *BulletStyle) String() string {
 }
 
 func BulletStyleFor(id string, scope HasScope) *BulletStyle {
-	style, ok := scope.Style(id)
-	if !ok {
-		style, ok = scope.Style("bullet_" + id)
-	}
-	if ok {
+	if style, ok := scope.Style(id); ok {
 		bs, _ := style.(*BulletStyle)
 		return bs
 	}
 	return nil
 }
+
+var _ HasAttrs = (*BulletStyle)(nil)
+var _ Styler = (*BulletStyle)(nil)
+var _ WantsScope = (*BulletStyle)(nil)
 
 func init() {
 	registerTag(DefaultSpace, "bullet", func() interface{} { return &BulletStyle{} })

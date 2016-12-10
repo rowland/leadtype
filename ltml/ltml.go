@@ -85,6 +85,9 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if e == nil {
 		fmt.Fprintf(os.Stderr, "Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
 	}
+	if ws, ok := e.(WantsScope); ok {
+		ws.SetScope(doc.scope())
+	}
 	var err error
 	if child, ok := e.(HasParent); ok {
 		if err = child.SetParent(doc.current()); err != nil {
@@ -92,7 +95,14 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		}
 	}
 	if parent, ok := doc.current().(Container); ok && err == nil {
-		parent.AddChild(e)
+		if p, ok := e.(Printer); ok {
+			parent.AddChild(p)
+		}
+		if wc, ok := e.(WantsContainer); ok {
+			if err = wc.SetContainer(parent); err != nil {
+				fmt.Fprintf(os.Stderr, "Setting container: %s\n", err)
+			}
+		}
 	}
 	if d, ok := e.(*StdDocument); ok {
 		doc.ltmls = append(doc.ltmls, d)

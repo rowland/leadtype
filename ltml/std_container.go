@@ -38,6 +38,6 @@ func init() {
 
 var _ Container = (*StdContainer)(nil)
 var _ HasAttrs = (*StdContainer)(nil)
-var _ HasParent = (*StdContainer)(nil)
 var _ Identifier = (*StdContainer)(nil)
 var _ Printer = (*StdContainer)(nil)
+var _ WantsContainer = (*StdContainer)(nil)

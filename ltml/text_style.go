@@ -8,7 +8,6 @@ import (
 )
 
 type TextStyle struct {
-	AParent
 	id        string
 	color     Color
 	textAlign HAlign
@@ -57,3 +56,6 @@ func (ts *TextStyle) SetAttrs(attrs map[string]string) {
 func (ts *TextStyle) String() string {
 	return fmt.Sprintf("id=%s color=%s text-align=%s valign=%s", ts.id, ts.color, ts.textAlign, ts.vAlign)
 }
+
+var _ HasAttrs = (*TextStyle)(nil)
+var _ Styler = (*TextStyle)(nil)
