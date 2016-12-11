@@ -5,7 +5,7 @@ package pdf
 
 import (
 	"fmt"
-	"leadtype/ttf"
+	"github.com/rowland/leadtype/ttf"
 	"path/filepath"
 	"strings"
 )

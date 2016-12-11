@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"leadtype/codepage"
+	"github.com/rowland/leadtype/codepage"
 )
 
 type DocWriter struct {

@@ -6,8 +6,8 @@ package pdf
 import (
 	"bytes"
 	"fmt"
-	"leadtype/codepage"
-	"leadtype/wordbreaking"
+	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/wordbreaking"
 	"sort"
 	"strings"
 	"unicode"

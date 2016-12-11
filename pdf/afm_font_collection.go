@@ -6,7 +6,7 @@ package pdf
 import (
 	"errors"
 	"fmt"
-	"leadtype/afm"
+	"github.com/rowland/leadtype/afm"
 	"path/filepath"
 	"regexp"
 	"strings"

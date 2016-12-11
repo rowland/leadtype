@@ -5,7 +5,7 @@ package main
 
 import (
 	"fmt"
-	"leadtype/ttf"
+	"github.com/rowland/leadtype/ttf"
 	"os"
 )
 

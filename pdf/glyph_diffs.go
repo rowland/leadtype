@@ -4,8 +4,8 @@
 package pdf
 
 import (
-	"leadtype/afm"
-	"leadtype/codepage"
+	"github.com/rowland/leadtype/afm"
+	"github.com/rowland/leadtype/codepage"
 )
 
 func glyphDiffs(cp1, cp2 codepage.CodepageIndex, first, last int) (diffs array) {
