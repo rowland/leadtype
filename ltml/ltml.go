@@ -63,10 +63,12 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 	return nil
 }
 
-func (doc *Doc) Print(w Writer) error {
+func (doc *Doc) Print(w Writer) (err error) {
 	fmt.Println("Printing Doc")
 	for _, ltml := range doc.ltmls {
-		ltml.Print(w)
+		if err = ltml.Print(w); err != nil {
+			return
+		}
 	}
 	return nil
 }

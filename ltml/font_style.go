@@ -24,13 +24,19 @@ type FontStyle struct {
 
 func (fs *FontStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", fs)
+	w.SetFont(fs.name, fs.size)
 }
 
 func (fs *FontStyle) ID() string {
 	return fs.id
 }
 
-const defaultFontSize = 12
+const (
+	defaultFontName = "Courier New"
+	defaultFontSize = 12
+)
+
+var defaultFont = &FontStyle{id: "default", name: defaultFontName, size: defaultFontSize}
 
 func (fs *FontStyle) SetAttrs(attrs map[string]string) {
 	if id, ok := attrs["id"]; ok {

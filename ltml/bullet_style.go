@@ -13,7 +13,7 @@ type BulletStyle struct {
 	font  *FontStyle
 	text  string
 	width float64
-	units string
+	units Units
 }
 
 func (bs *BulletStyle) Apply(w Writer) {
@@ -29,7 +29,7 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 		bs.id = id
 	}
 	if units, ok := attrs["units"]; ok {
-		bs.units = units
+		bs.units = Units(units)
 	}
 	if width, ok := attrs["width"]; ok {
 		bs.width = ParseMeasurement(width, bs.units)

@@ -8,15 +8,40 @@ import (
 )
 
 type Widget struct {
+	units     Units
 	container Container
 	scope     HasScope
 	Identity
 	Dimensions
 	border  *PenStyle
 	borders [4]*PenStyle
+	font    *FontStyle
 }
 
 const defaultPenPattern = "solid"
+
+func (widget *Widget) ContentTop() float64 {
+	return widget.Top() + widget.MarginTop() + widget.PaddingTop()
+}
+
+func (widget *Widget) ContentRight() float64 {
+	return widget.Right() - widget.MarginRight() - widget.PaddingRight()
+}
+
+func (widget *Widget) ContentBottom() float64 {
+	return widget.Bottom() - widget.MarginBottom() - widget.PaddingBottom()
+}
+
+func (widget *Widget) ContentLeft() float64 {
+	return widget.Left() + widget.MarginLeft() + widget.PaddingLeft()
+}
+
+func (widget *Widget) Font() *FontStyle {
+	if widget.font == nil {
+		return widget.container.Font()
+	}
+	return widget.font
+}
 
 func (widget *Widget) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", widget)
@@ -24,7 +49,8 @@ func (widget *Widget) Print(w Writer) error {
 }
 
 func (widget *Widget) SetAttrs(attrs map[string]string) {
-	widget.Dimensions.SetAttrs(attrs)
+	widget.units.SetAttrs(attrs)
+	widget.Dimensions.SetAttrs(attrs, widget.Units())
 
 	if border, ok := attrs["border"]; ok {
 		widget.border = PenStyleFor(border, widget.scope)
@@ -46,7 +72,14 @@ func (widget *Widget) SetScope(scope HasScope) {
 }
 
 func (widget *Widget) String() string {
-	return fmt.Sprintf("Widget %s %s %s %s", &widget.Identity, &widget.Dimensions, widget.border, widget.borders)
+	return fmt.Sprintf("Widget %s units=%s %s %s %s", &widget.Identity, widget.units, &widget.Dimensions, widget.border, widget.borders)
+}
+
+func (widget *Widget) Units() Units {
+	if widget.units == "" {
+		return widget.container.Units()
+	}
+	return widget.units
 }
 
 var _ HasAttrs = (*Widget)(nil)

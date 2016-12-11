@@ -12,7 +12,7 @@ const maxCorners = 8
 
 type Corners []float64
 
-func (corners *Corners) SetAll(value, units string) {
+func (corners *Corners) SetAll(value string, units Units) {
 	values := strings.SplitN(value, " ", maxCorners)
 	switch len(values) {
 	case 8, 4, 2, 1:

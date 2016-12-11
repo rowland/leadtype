@@ -9,27 +9,33 @@ import (
 
 type StdDocument struct {
 	Identity
-	Units
+	units  Units
 	margin Sides
 	Scope
 	Children
+	font *FontStyle
+}
+
+func (d *StdDocument) Font() *FontStyle {
+	if d.font == nil {
+		return defaultFont
+	}
+	return d.font
 }
 
 func (d *StdDocument) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", d)
 	fmt.Print(&d.Scope)
 	for _, c := range d.children {
-		if c, ok := c.(Printer); ok {
-			if err := c.Print(w); err != nil {
-				return err
-			}
+		if err := c.Print(w); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
 func (d *StdDocument) SetAttrs(attrs map[string]string) {
-	d.Units.SetAttrs(attrs)
+	d.units.SetAttrs(attrs)
 	if margin, ok := attrs["margin"]; ok {
 		d.margin.SetAll(margin, d.units)
 	}
@@ -38,6 +44,10 @@ func (d *StdDocument) SetAttrs(attrs map[string]string) {
 
 func (d *StdDocument) String() string {
 	return fmt.Sprintf("StdDocument %s units=%s margin=%s", &d.Identity, d.units, &d.margin)
+}
+
+func (d *StdDocument) Units() Units {
+	return d.units
 }
 
 func init() {

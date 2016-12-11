@@ -15,6 +15,7 @@ type StdPage struct {
 func (p *StdPage) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", p)
 	fmt.Print(&p.Scope)
+	w.NewPage()
 	return p.StdContainer.Print(w)
 }
 

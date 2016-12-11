@@ -3,9 +3,6 @@
 
 package ltml
 
-type Writer interface {
-	MoveTo(x, y float64)
-	NewPage()
-	Print(text string) (err error)
-	SetFont(name string, size float64) error
+type HasFont interface {
+	Font() *FontStyle
 }

@@ -9,7 +9,7 @@ import (
 
 type LayoutStyle struct {
 	id       string
-	units    string
+	units    Units
 	hpadding float64
 	vpadding float64
 	manager  string // should be reference to manager
@@ -33,7 +33,7 @@ func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {
 		ls.id = id
 	}
 	if units, ok := attrs["units"]; ok {
-		ls.units = units
+		ls.units = Units(units)
 	}
 	if padding, ok := attrs["padding"]; ok {
 		hvpadding := ParseMeasurement(padding, ls.units)

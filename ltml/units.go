@@ -7,31 +7,29 @@ import (
 	"strconv"
 )
 
-type Units struct {
-	units string
-}
+type Units string
 
 func (u *Units) SetAttrs(attrs map[string]string) {
 	if units, ok := attrs["units"]; ok {
-		u.units = units
+		*u = Units(units)
 	}
 }
 
 // UnitConversions map custom units to points.
-var UnitConversions = map[string]float64{
+var UnitConversions = map[Units]float64{
 	"pt": 1,
 	"in": 72,
 	"cm": 28.35,
 }
 
-func FromUnits(measurement float64, units string) float64 {
+func FromUnits(measurement float64, units Units) float64 {
 	if points, ok := UnitConversions[units]; ok {
 		return measurement * points
 	}
 	return measurement
 }
 
-func ParseMeasurement(measurement string, units string) float64 {
+func ParseMeasurement(measurement string, units Units) float64 {
 	// TODO: Parse units out of value, if present, overriding units parameter.
 	// /([+-]?\d+(\.\d+)?)([a-z]+)/
 	if v, err := strconv.ParseFloat(measurement, 64); err == nil {

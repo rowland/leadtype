@@ -15,10 +15,8 @@ type StdContainer struct {
 func (c *StdContainer) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", c)
 	for _, c := range c.children {
-		if c, ok := c.(Printer); ok {
-			if err := c.Print(w); err != nil {
-				return err
-			}
+		if err := c.Print(w); err != nil {
+			return err
 		}
 	}
 	return nil

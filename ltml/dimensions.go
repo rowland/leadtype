@@ -10,7 +10,8 @@ import (
 )
 
 type Dimensions struct {
-	Units
+	// Units
+	sides     Sides
 	margin    Sides
 	padding   Sides
 	corners   Corners
@@ -27,21 +28,69 @@ var (
 	reRel = regexp.MustCompile(`^[+-](\d+(\.\d+)?)`)
 )
 
-func (d *Dimensions) SetAttrs(attrs map[string]string) {
-	d.Units.SetAttrs(attrs)
+func (d *Dimensions) Top() float64 {
+	return d.sides[topSide]
+}
+
+func (d *Dimensions) Right() float64 {
+	return d.sides[rightSide]
+}
+
+func (d *Dimensions) Bottom() float64 {
+	return d.sides[bottomSide]
+}
+
+func (d *Dimensions) Left() float64 {
+	return d.sides[leftSide]
+}
+
+func (d *Dimensions) MarginTop() float64 {
+	return d.margin[topSide]
+}
+
+func (d *Dimensions) MarginRight() float64 {
+	return d.margin[rightSide]
+}
+
+func (d *Dimensions) MarginBottom() float64 {
+	return d.margin[bottomSide]
+}
+
+func (d *Dimensions) MarginLeft() float64 {
+	return d.margin[leftSide]
+}
+
+func (d *Dimensions) PaddingTop() float64 {
+	return d.padding[topSide]
+}
+
+func (d *Dimensions) PaddingRight() float64 {
+	return d.padding[rightSide]
+}
+
+func (d *Dimensions) PaddingBottom() float64 {
+	return d.padding[bottomSide]
+}
+
+func (d *Dimensions) PaddingLeft() float64 {
+	return d.padding[leftSide]
+}
+
+func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
+	d.sides.SetAttrs("", attrs, units)
 
 	if margin, ok := attrs["margin"]; ok {
-		d.margin.SetAll(margin, d.units)
+		d.margin.SetAll(margin, units)
 	}
-	d.margin.SetAttrs("margin-", attrs, d.units)
+	d.margin.SetAttrs("margin-", attrs, units)
 
 	if padding, ok := attrs["padding"]; ok {
-		d.padding.SetAll(padding, d.units)
+		d.padding.SetAll(padding, units)
 	}
-	d.padding.SetAttrs("padding-", attrs, d.units)
+	d.padding.SetAttrs("padding-", attrs, units)
 
 	if corners, ok := attrs["corners"]; ok {
-		d.corners.SetAll(corners, d.units)
+		d.corners.SetAll(corners, units)
 	}
 
 	if width, ok := attrs["width"]; ok {
@@ -50,7 +99,7 @@ func (d *Dimensions) SetAttrs(attrs map[string]string) {
 		} else if reRel.MatchString(width) {
 			d.widthRel, _ = strconv.ParseFloat(width, 64)
 		} else {
-			d.width = ParseMeasurement(width, d.units)
+			d.width = ParseMeasurement(width, units)
 		}
 	}
 	if height, ok := attrs["height"]; ok {
@@ -59,12 +108,12 @@ func (d *Dimensions) SetAttrs(attrs map[string]string) {
 		} else if reRel.MatchString(height) {
 			d.heightRel, _ = strconv.ParseFloat(height, 64)
 		} else {
-			d.height = ParseMeasurement(height, d.units)
+			d.height = ParseMeasurement(height, units)
 		}
 	}
 }
 
 func (d *Dimensions) String() string {
-	return fmt.Sprintf("Dimensions units=%s width=%f height=%f margin=%s padding=%s corners=%s",
-		d.units, d.width, d.height, &d.margin, &d.padding, &d.corners)
+	return fmt.Sprintf("Dimensions width=%f height=%f margin=%s padding=%s corners=%s",
+		d.width, d.height, &d.margin, &d.padding, &d.corners)
 }

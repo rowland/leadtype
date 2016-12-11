@@ -5,9 +5,13 @@ package ltml
 
 import (
 	"bytes"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/rowland/leadtype/pdf"
 )
 
 func TestParse(t *testing.T) {
@@ -44,6 +48,29 @@ func TestParseReader(t *testing.T) {
 	}
 }
 
+type DocWriter struct {
+	*pdf.DocWriter
+}
+
+func (dw *DocWriter) NewPage() {
+	dw.DocWriter.NewPage()
+}
+
+func (dw *DocWriter) SetFont(name string, size float64) error {
+	_, err := dw.DocWriter.SetFont(name, size, pdf.Options{})
+	return err
+}
+
+func NewDocWriter() *DocWriter {
+	dw := pdf.NewDocWriter()
+	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")
+	if err != nil {
+		panic(err)
+	}
+	dw.AddFontSource(ttfc)
+	return &DocWriter{dw}
+}
+
 func sampleFile(filename string) string {
 	_, file, _, _ := runtime.Caller(0)
 	dir, _ := filepath.Abs(filepath.Dir(file))
@@ -51,82 +78,64 @@ func sampleFile(filename string) string {
 	return sample
 }
 
-func TestSample001(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_001_empty_doc.ltml"))
+func writeSample(name string, t *testing.T) {
+	doc, err := ParseFile(sampleFile(name + ".ltml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc.Print(nil)
+
+	f, err := os.Create(sampleFile(name + ".pdf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := NewDocWriter()
+
+	if err := doc.Print(w); err != nil {
+		t.Errorf("Printing sample: %v", err)
+	}
+
+	w.WriteTo(f)
+	f.Close()
+	exec.Command("open", sampleFile(name+".pdf")).Start()
+}
+
+func TestSample001(t *testing.T) {
+	writeSample("test_001_empty_doc", t)
 }
 
 func TestSample002(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_002_empty_page.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_002_empty_page", t)
 }
 
 func TestSample003(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_003_hello_world.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_003_hello_world", t)
 }
 
 func TestSample004(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_004_two_pages.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_004_two_pages", t)
 }
 
 func TestSample005(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_005_rounded_rect.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_005_rounded_rect", t)
 }
 
 func TestSample006(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_006_bullets.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_006_bullets", t)
 }
 
 func TestSample007(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_007_flow_layout.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_007_flow_layout", t)
 }
 
 func TestSample008(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_008_vbox_layout.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_008_vbox_layout", t)
 }
 
 func TestSample009(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_009_hbox_layout.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_009_hbox_layout", t)
 }
 
 func TestSample010(t *testing.T) {
-	doc, err := ParseFile(sampleFile("test_010_rich_text.ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc.Print(nil)
+	writeSample("test_010_rich_text", t)
 }

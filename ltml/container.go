@@ -4,7 +4,9 @@
 package ltml
 
 type Container interface {
-	Printer
 	AddChild(value Printer)
+	HasFont
+	Printer
 	Query(f func(value Printer) bool) []Printer
+	Units() Units
 }

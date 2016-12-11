@@ -18,7 +18,7 @@ const (
 
 type Sides [4]float64
 
-func (sides *Sides) SetAll(value, units string) {
+func (sides *Sides) SetAll(value string, units Units) {
 	values := strings.SplitN(value, " ", len(sides))
 	switch len(values) {
 	case 4, 3:
@@ -41,7 +41,7 @@ func (sides *Sides) SetAll(value, units string) {
 
 var sideNames = [4]string{"top", "right", "bottom", "left"}
 
-func (sides *Sides) SetAttrs(prefix string, attrs map[string]string, units string) {
+func (sides *Sides) SetAttrs(prefix string, attrs map[string]string, units Units) {
 	for i, name := range sideNames {
 		if value, ok := attrs[prefix+name]; ok {
 			sides[i] = ParseMeasurement(value, units)

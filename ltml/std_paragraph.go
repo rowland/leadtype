@@ -22,8 +22,13 @@ func (p *StdParagraph) Print(w Writer) error {
 	if err := p.Widget.Print(w); err != nil {
 		return err
 	}
+	w.MoveTo(p.Left(), p.Top())
+	p.Font().Apply(w)
 	for _, s := range p.richText {
 		fmt.Println(s)
+		if err := w.Print(s); err != nil {
+			return err
+		}
 	}
 	return nil
 }
