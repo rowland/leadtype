@@ -5,13 +5,15 @@ package pdf
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"github.com/rowland/leadtype/codepage"
-	"github.com/rowland/leadtype/wordbreaking"
 	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/wordbreaking"
 )
 
 // Hierarchical structure of text and attributes, allowing text to be described, measured and wrapped.
@@ -35,6 +37,8 @@ type RichText struct {
 	NoBreak            bool
 	pieces             []*RichText
 }
+
+var errNoFontSet = errors.New("No font set")
 
 // NewRichText returns a structure containing text with the specified attributes.
 //
@@ -68,9 +72,10 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*R
 		NoBreak:     options.BoolDefault("nobreak", false),
 	}
 	var defaultFont *Font
-	if len(fonts) > 0 {
-		defaultFont = fonts[0]
+	if len(fonts) == 0 {
+		return nil, errNoFontSet
 	}
+	defaultFont = fonts[0]
 	pieces, err := piece.splitByFont(fonts, defaultFont)
 	if err != nil {
 		return nil, err
