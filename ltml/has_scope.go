@@ -4,6 +4,7 @@
 package ltml
 
 type HasScope interface {
+	AddAlias(alias *Alias) error
 	AddLayout(layout *LayoutStyle) error
 	AddStyle(style Styler) error
 	Alias(name string) (alias *Alias, ok bool)

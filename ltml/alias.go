@@ -3,28 +3,60 @@
 
 package ltml
 
+import (
+	"fmt"
+)
+
 type Alias struct {
+	ID    string
 	Tag   string
 	Attrs map[string]string
 }
 
-func (a Alias) Clone() (clone Alias) {
-	clone.Tag = a.Tag
-	clone.Attrs = make(map[string]string, len(a.Attrs))
-	for k, v := range a.Attrs {
-		clone.Attrs[k] = v
+// func (a Alias) Clone() (clone Alias) {
+// 	clone.ID = a.ID
+// 	clone.Tag = a.Tag
+// 	clone.Attrs = make(map[string]string, len(a.Attrs))
+// 	for k, v := range a.Attrs {
+// 		clone.Attrs[k] = v
+// 	}
+// 	return
+// }
+
+func (a *Alias) SetAttrs(attrs map[string]string) {
+	if a.Attrs == nil {
+		a.Attrs = make(map[string]string, len(attrs))
 	}
-	return
+	if id, ok := attrs["id"]; ok {
+		a.ID = id
+	}
+	if tag, ok := attrs["tag"]; ok {
+		a.Tag = tag
+	}
+	for k, v := range a.Attrs {
+		a.Attrs[k] = v
+	}
+	delete(a.Attrs, "id")
+	delete(a.Attrs, "tag")
+}
+
+func (a *Alias) String() string {
+	return fmt.Sprintf("Alias id=%s tag=%s %v",
+		a.ID, a.Tag, a.Attrs)
 }
 
 var StdAliases = map[string]*Alias{
-	"h":     {"p", map[string]string{"font.weight": "Bold", "text_align": "center", "width": "100%"}},
-	"b":     {"span", map[string]string{"font.weight": "Bold"}},
-	"i":     {"span", map[string]string{"font.style": "Italic"}},
-	"u":     {"span", map[string]string{"underline": "true"}},
-	"hbox":  {"div", map[string]string{"layout": "hbox"}},
-	"vbox":  {"div", map[string]string{"layout": "vbox"}},
-	"table": {"div", map[string]string{"layout": "table"}},
-	"layer": {"div", map[string]string{"position": "relative", "width": "100%", "height": "100%"}},
-	"br":    {"label", map[string]string{}},
+	"h":     {"h", "p", map[string]string{"font.weight": "Bold", "text_align": "center", "width": "100%"}},
+	"b":     {"b", "span", map[string]string{"font.weight": "Bold"}},
+	"i":     {"i", "span", map[string]string{"font.style": "Italic"}},
+	"u":     {"u", "span", map[string]string{"underline": "true"}},
+	"hbox":  {"hbox", "div", map[string]string{"layout": "hbox"}},
+	"vbox":  {"vbox", "div", map[string]string{"layout": "vbox"}},
+	"table": {"table", "div", map[string]string{"layout": "table"}},
+	"layer": {"layer", "div", map[string]string{"position": "relative", "width": "100%", "height": "100%"}},
+	"br":    {"br", "label", map[string]string{}},
+}
+
+func init() {
+	registerTag(DefaultSpace, "define", func() interface{} { return &Alias{} })
 }

@@ -15,6 +15,17 @@ type Scope struct {
 	layouts map[string]*LayoutStyle
 }
 
+func (scope *Scope) AddAlias(alias *Alias) error {
+	if alias.ID == "" {
+		return fmt.Errorf("id required for alias: %s", alias)
+	}
+	if scope.aliases == nil {
+		scope.aliases = make(map[string]*Alias)
+	}
+	scope.aliases[alias.ID] = alias
+	return nil
+}
+
 func (scope *Scope) AddLayout(layout *LayoutStyle) error {
 	if layout.ID() == "" {
 		return fmt.Errorf("id required for layout: %s", layout)

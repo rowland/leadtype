@@ -14,8 +14,8 @@ type StdSpan struct {
 
 func (s *StdSpan) SetParent(value interface{}) error {
 	switch value.(type) {
-	case StdSpan:
-	case StdParagraph:
+	case *StdSpan:
+	case *StdParagraph:
 	default:
 		return fmt.Errorf("span must be child of p, pabel or another span.")
 	}

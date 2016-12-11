@@ -122,3 +122,11 @@ func TestSample009(t *testing.T) {
 	}
 	doc.Print(nil)
 }
+
+func TestSample010(t *testing.T) {
+	doc, err := ParseFile(sampleFile("test_010_rich_text.ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.Print(nil)
+}

@@ -79,6 +79,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if elem.Name.Space == DefaultSpace {
 		if alias, ok := doc.scope().Alias(trueTag); ok {
 			trueTag, defaultAttrs = alias.Tag, alias.Attrs
+			fmt.Fprintf(os.Stderr, "Alias %s=%s\n", elem.Name.Local, trueTag)
 		}
 	}
 	e := makeElement(elem.Name.Space, trueTag)
@@ -110,7 +111,9 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	doc.push(e)
 
 	attrs := mapFromXmlAttrs(elem.Attr)
-	attrs["tag"] = elem.Name.Local
+	if attrs["tag"] == "" {
+		attrs["tag"] = elem.Name.Local
+	}
 
 	if ident, ok := e.(Identifier); ok {
 		ident.SetIentifiers(attrs)
@@ -122,7 +125,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	}
 	if style, ok := e.(Styler); ok {
 		if err := doc.scope().AddStyle(style); err != nil {
-			fmt.Fprintf(os.Stderr, "adding style: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Adding style: %s\n", err)
 		}
 	}
 	if layout, ok := e.(*LayoutStyle); ok {
@@ -131,7 +134,12 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			layout.SetAttrs(attrs)
 		}
 		if err := doc.scope().AddLayout(layout); err != nil {
-			fmt.Fprintf(os.Stderr, "adding layout: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Adding layout: %s\n", err)
+		}
+	}
+	if alias, ok := e.(*Alias); ok {
+		if err := doc.scope().AddAlias(alias); err != nil {
+			fmt.Fprintf(os.Stderr, "Adding alias: %s\n", err)
 		}
 	}
 }
@@ -197,16 +205,14 @@ func ParseReader(r io.Reader) (*Doc, error) {
 }
 
 func traceStartElement(elem xml.StartElement) {
-	fmt.Println("StartElement")
-	fmt.Printf("%s:%s\n", elem.Name.Space, elem.Name.Local)
+	fmt.Printf("StartElement %s:%s\n", elem.Name.Space, elem.Name.Local)
 	for _, attr := range elem.Attr {
 		fmt.Printf("%s=%s\n", attr.Name.Local, attr.Value)
 	}
 }
 
 func traceEndElement(elem xml.EndElement) {
-	fmt.Println("EndElement")
-	fmt.Printf("%s:%s\n", elem.Name.Space, elem.Name.Local)
+	fmt.Printf("EndElement %s:%s\n", elem.Name.Space, elem.Name.Local)
 }
 
 func traceCharData(data xml.CharData) {
