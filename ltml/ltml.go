@@ -12,8 +12,6 @@ import (
 	"strings"
 )
 
-type WidgetFactory func(tag string) interface{}
-
 type Doc struct {
 	ltmls  []*StdDocument
 	stack  []interface{}
