@@ -12,7 +12,7 @@ type LayoutStyle struct {
 	units    Units
 	hpadding float64
 	vpadding float64
-	manager  string // should be reference to manager
+	manager  string
 }
 
 func (ls *LayoutStyle) Clone() *LayoutStyle {
@@ -24,8 +24,11 @@ func (ls *LayoutStyle) ID() string {
 	return ls.id
 }
 
-func (ls *LayoutStyle) Layout(c Container) {
-	// TODO: layout container using manager
+func (ls *LayoutStyle) Layout(c Container, w Writer) {
+	fmt.Println("In Layout")
+	// f := LayoutManagerFor(ls.manager)
+	// f(c, ls, w)
+	LayoutVBox(c, ls, w)
 }
 
 func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {
@@ -57,7 +60,9 @@ func (ls *LayoutStyle) String() string {
 }
 
 func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
+	fmt.Println("In LayoutStyleFor", id)
 	if ls, ok := scope.Layout(id); ok {
+		fmt.Println("Found LayoutStyle", ls)
 		return ls
 	}
 	return nil

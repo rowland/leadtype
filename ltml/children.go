@@ -20,3 +20,7 @@ func (c *Children) Query(f func(child Printer) bool) []Printer {
 	}
 	return results
 }
+
+func (c *Children) Widgets() []Printer {
+	return c.children
+}

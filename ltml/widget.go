@@ -20,6 +20,14 @@ type Widget struct {
 
 const defaultPenPattern = "solid"
 
+func (widget *Widget) ContentHeight() float64 {
+	return widget.Height() - widget.NonContentHeight()
+}
+
+func (widget *Widget) ContentWidth() float64 {
+	return widget.Width() - widget.NonContentWidth()
+}
+
 func (widget *Widget) ContentTop() float64 {
 	return widget.Top() + widget.MarginTop() + widget.PaddingTop()
 }
@@ -41,6 +49,17 @@ func (widget *Widget) Font() *FontStyle {
 		return widget.container.Font()
 	}
 	return widget.font
+}
+
+func (widget *Widget) Height() float64 {
+	if widget.heightPct > 0 {
+		return widget.heightPct * widget.container.ContentHeight()
+	}
+	return widget.height
+}
+
+func (widget *Widget) PreferredWidth() float64 {
+	return widget.width
 }
 
 func (widget *Widget) Print(w Writer) error {
@@ -76,10 +95,17 @@ func (widget *Widget) String() string {
 }
 
 func (widget *Widget) Units() Units {
-	if widget.units == "" {
+	if widget.units == "" && widget.container != nil {
 		return widget.container.Units()
 	}
 	return widget.units
+}
+
+func (widget *Widget) Width() float64 {
+	if widget.widthPct > 0 {
+		return widget.widthPct * widget.container.ContentWidth()
+	}
+	return widget.width
 }
 
 var _ HasAttrs = (*Widget)(nil)

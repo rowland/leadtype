@@ -10,7 +10,6 @@ import (
 )
 
 type Dimensions struct {
-	// Units
 	sides     Sides
 	margin    Sides
 	padding   Sides
@@ -27,6 +26,22 @@ var (
 	rePct = regexp.MustCompile(`^(\d+(\.\d+)?)%$`)
 	reRel = regexp.MustCompile(`^[+-](\d+(\.\d+)?)`)
 )
+
+func (d *Dimensions) ContentTop() float64 {
+	return d.Top() + d.MarginTop() + d.PaddingTop()
+}
+
+func (d *Dimensions) ContentRight() float64 {
+	return d.Right() - d.MarginRight() - d.PaddingRight()
+}
+
+func (d *Dimensions) ContentBottom() float64 {
+	return d.Bottom() - d.MarginBottom() - d.PaddingBottom()
+}
+
+func (d *Dimensions) ContentLeft() float64 {
+	return d.Left() + d.MarginLeft() + d.PaddingLeft()
+}
 
 func (d *Dimensions) Top() float64 {
 	return d.sides[topSide]
@@ -58,6 +73,14 @@ func (d *Dimensions) MarginBottom() float64 {
 
 func (d *Dimensions) MarginLeft() float64 {
 	return d.margin[leftSide]
+}
+
+func (d *Dimensions) NonContentHeight() float64 {
+	return d.MarginTop() + d.PaddingTop() + d.PaddingBottom() + d.MarginBottom()
+}
+
+func (d *Dimensions) NonContentWidth() float64 {
+	return d.MarginLeft() + d.PaddingLeft() + d.PaddingRight() + d.MarginRight()
 }
 
 func (d *Dimensions) PaddingTop() float64 {
@@ -111,6 +134,35 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 			d.height = ParseMeasurement(height, units)
 		}
 	}
+}
+
+func (d *Dimensions) SetHeight(value float64) {
+	d.height = value
+	d.heightPct = 0
+}
+
+func (d *Dimensions) SetTop(value float64) {
+	d.sides[topSide] = value
+	if d.Bottom() != 0 {
+		d.SetHeight(d.Bottom() - d.Top())
+	}
+}
+
+func (d *Dimensions) SetRight(value float64) {
+	d.sides[rightSide] = value
+}
+
+func (d *Dimensions) SetBottom(value float64) {
+	d.sides[bottomSide] = value
+}
+
+func (d *Dimensions) SetLeft(value float64) {
+	d.sides[leftSide] = value
+}
+
+func (d *Dimensions) SetWidth(value float64) {
+	d.width = value
+	d.widthPct = 0
 }
 
 func (d *Dimensions) String() string {

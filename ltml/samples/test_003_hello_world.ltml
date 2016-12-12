@@ -1,5 +1,5 @@
 <ltml>
   <page units="in" margin="1">
-    <p top="1" left="1">Hello, World!</p>
+    <p>Hello, World!</p>
   </page>
 </ltml>

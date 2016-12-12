@@ -12,6 +12,7 @@ type StdDocument struct {
 	units  Units
 	margin Sides
 	Scope
+	Dimensions
 	Children
 	font *FontStyle
 }
@@ -50,10 +51,24 @@ func (d *StdDocument) Units() Units {
 	return d.units
 }
 
+//----- to factor out?
+func (d *StdDocument) PreferredWidth() float64 {
+	return 0
+}
+
+func (d *StdDocument) ContentHeight() float64 {
+	return 0
+}
+
+func (d *StdDocument) ContentWidth() float64 {
+	return 0
+}
+
+//-----
+
 func init() {
 	registerTag(DefaultSpace, "ltml", func() interface{} { return &StdDocument{} })
 }
 
 var _ HasAttrs = (*StdDocument)(nil)
 var _ Identifier = (*StdDocument)(nil)
-var _ Printer = (*StdDocument)(nil)

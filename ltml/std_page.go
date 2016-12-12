@@ -16,6 +16,7 @@ func (p *StdPage) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", p)
 	fmt.Print(&p.Scope)
 	w.NewPage()
+	p.LayoutWidget(w)
 	return p.StdContainer.Print(w)
 }
 
