@@ -1,114 +1,68 @@
-// Copyright 2016 Brent Rowland.
-// Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
-
 package ltml
 
-import (
-	"fmt"
-)
+type Widget interface {
+	Printer
 
-type Widget struct {
-	units     Units
-	container Container
-	scope     HasScope
-	Identity
-	Dimensions
-	border  *PenStyle
-	borders [4]*PenStyle
-	font    *FontStyle
+	Top() float64
+	Right() float64
+	Bottom() float64
+	Left() float64
+
+	MarginTop() float64
+	MarginRight() float64
+	MarginBottom() float64
+	MarginLeft() float64
+
+	PaddingTop() float64
+	PaddingRight() float64
+	PaddingBottom() float64
+	PaddingLeft() float64
+
+	PreferredHeight(Writer) float64
+	PreferredWidth(Writer) float64
+
+	SetTop(float64)
+	SetRight(float64)
+	SetBottom(float64)
+	SetLeft(float64)
+
+	SetHeight(float64)
+	SetWidth(float64)
+
+	Height() float64
+	Width() float64
+
+	LayoutWidget(Writer)
 }
 
-const defaultPenPattern = "solid"
-
-func (widget *Widget) ContentHeight() float64 {
-	return widget.Height() - widget.NonContentHeight()
+func ContentHeight(widget Widget) float64 {
+	return widget.Height() - NonContentHeight(widget)
 }
 
-func (widget *Widget) ContentWidth() float64 {
-	return widget.Width() - widget.NonContentWidth()
+func ContentWidth(widget Widget) float64 {
+	return widget.Width() - NonContentWidth(widget)
 }
 
-func (widget *Widget) ContentTop() float64 {
+func ContentTop(widget Widget) float64 {
 	return widget.Top() + widget.MarginTop() + widget.PaddingTop()
 }
 
-func (widget *Widget) ContentRight() float64 {
+func ContentRight(widget Widget) float64 {
 	return widget.Right() - widget.MarginRight() - widget.PaddingRight()
 }
 
-func (widget *Widget) ContentBottom() float64 {
+func ContentBottom(widget Widget) float64 {
 	return widget.Bottom() - widget.MarginBottom() - widget.PaddingBottom()
 }
 
-func (widget *Widget) ContentLeft() float64 {
+func ContentLeft(widget Widget) float64 {
 	return widget.Left() + widget.MarginLeft() + widget.PaddingLeft()
 }
 
-func (widget *Widget) Font() *FontStyle {
-	if widget.font == nil {
-		return widget.container.Font()
-	}
-	return widget.font
+func NonContentHeight(widget Widget) float64 {
+	return widget.MarginTop() + widget.PaddingTop() + widget.PaddingBottom() + widget.MarginBottom()
 }
 
-func (widget *Widget) Height() float64 {
-	if widget.heightPct > 0 {
-		return widget.heightPct * widget.container.ContentHeight()
-	}
-	return widget.height
+func NonContentWidth(widget Widget) float64 {
+	return widget.MarginLeft() + widget.PaddingLeft() + widget.PaddingRight() + widget.MarginRight()
 }
-
-func (widget *Widget) PreferredWidth() float64 {
-	return widget.width
-}
-
-func (widget *Widget) Print(w Writer) error {
-	fmt.Printf("Printing %s\n", widget)
-	return nil
-}
-
-func (widget *Widget) SetAttrs(attrs map[string]string) {
-	widget.units.SetAttrs(attrs)
-	widget.Dimensions.SetAttrs(attrs, widget.Units())
-
-	if border, ok := attrs["border"]; ok {
-		widget.border = PenStyleFor(border, widget.scope)
-	}
-	for i, side := range sideNames {
-		if border, ok := attrs["border-"+side]; ok {
-			widget.borders[i] = PenStyleFor(border, widget.scope)
-		}
-	}
-}
-
-func (widget *Widget) SetContainer(container Container) error {
-	widget.container = container
-	return nil
-}
-
-func (widget *Widget) SetScope(scope HasScope) {
-	widget.scope = scope
-}
-
-func (widget *Widget) String() string {
-	return fmt.Sprintf("Widget %s units=%s %s %s %s", &widget.Identity, widget.units, &widget.Dimensions, widget.border, widget.borders)
-}
-
-func (widget *Widget) Units() Units {
-	if widget.units == "" && widget.container != nil {
-		return widget.container.Units()
-	}
-	return widget.units
-}
-
-func (widget *Widget) Width() float64 {
-	if widget.widthPct > 0 {
-		return widget.widthPct * widget.container.ContentWidth()
-	}
-	return widget.width
-}
-
-var _ HasAttrs = (*Widget)(nil)
-var _ Printer = (*Widget)(nil)
-var _ WantsContainer = (*Widget)(nil)
-var _ WantsScope = (*Widget)(nil)

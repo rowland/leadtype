@@ -39,6 +39,8 @@ func (ps *PenStyle) String() string {
 	return fmt.Sprintf("PenStyle color=%s width=%f pattern=%s", ps.color, ps.width, ps.pattern)
 }
 
+const defaultPenPattern = "solid"
+
 func PenStyleFor(id string, scope HasScope) *PenStyle {
 	style, ok := scope.Style(id)
 	if !ok {

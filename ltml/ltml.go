@@ -64,7 +64,6 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 }
 
 func (doc *Doc) Print(w Writer) (err error) {
-	fmt.Println("Printing Doc")
 	for _, ltml := range doc.ltmls {
 		if err = ltml.Print(w); err != nil {
 			return
@@ -96,8 +95,8 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		}
 	}
 	if parent, ok := doc.current().(Container); ok && err == nil {
-		if p, ok := e.(Printer); ok {
-			parent.AddChild(p)
+		if widget, ok := e.(Widget); ok {
+			parent.AddChild(widget)
 		}
 		if wc, ok := e.(WantsContainer); ok {
 			if err = wc.SetContainer(parent); err != nil {

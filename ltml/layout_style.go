@@ -70,6 +70,14 @@ func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
 
 var _ HasAttrs = (*LayoutStyle)(nil)
 
+var defaultLayouts = map[string]*LayoutStyle{
+	"absolute": {id: "absolute", manager: "absolute"},
+	"flow":     {id: "flow", manager: "flow"},
+	"hbox":     {id: "hbox", manager: "hbox"},
+	"relative": {id: "relative", manager: "relative"},
+	"vbox":     {id: "vbox", manager: "vbox"},
+}
+
 func init() {
 	registerTag(DefaultSpace, "layout", func() interface{} { return &LayoutStyle{} })
 }

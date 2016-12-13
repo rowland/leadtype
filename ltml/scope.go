@@ -9,10 +9,11 @@ import (
 )
 
 type Scope struct {
-	parent  HasScope
-	aliases map[string]*Alias
-	styles  map[string]Styler
-	layouts map[string]*LayoutStyle
+	parent     HasScope
+	aliases    map[string]*Alias
+	styles     map[string]Styler
+	layouts    map[string]*LayoutStyle
+	pageStyles map[string]*PageStyle
 }
 
 func (scope *Scope) AddAlias(alias *Alias) error {
@@ -34,6 +35,17 @@ func (scope *Scope) AddLayout(layout *LayoutStyle) error {
 		scope.layouts = make(map[string]*LayoutStyle)
 	}
 	scope.layouts[layout.ID()] = layout
+	return nil
+}
+
+func (scope *Scope) AddPageStyle(style *PageStyle) error {
+	if style.ID() == "" {
+		return fmt.Errorf("id required for page style: %s", style)
+	}
+	if scope.pageStyles == nil {
+		scope.pageStyles = make(map[string]*PageStyle)
+	}
+	scope.pageStyles[style.ID()] = style
 	return nil
 }
 
@@ -64,6 +76,14 @@ func (scope *Scope) Layout(id string) (style *LayoutStyle, ok bool) {
 	return
 }
 
+func (scope *Scope) PageStyle(id string) (style *PageStyle, ok bool) {
+	style, ok = scope.pageStyles[id]
+	if !ok && scope.parent != nil {
+		style, ok = scope.parent.PageStyle(id)
+	}
+	return
+}
+
 func (scope *Scope) SetParentScope(parent HasScope) {
 	scope.parent = parent
 }
@@ -87,6 +107,18 @@ func (scope *Scope) Style(id string) (style Styler, ok bool) {
 	return
 }
 
-var defaultScope = Scope{aliases: StdAliases}
+var defaultStyles = map[string]Styler{
+	"solid":  &PenStyle{id: "solid", color: "#000000", width: 0.001, pattern: "solid"},
+	"dotted": &PenStyle{id: "dotted", color: "#000000", width: 0.001, pattern: "dotted"},
+	"dashed": &PenStyle{id: "dashed", color: "#000000", width: 0.001, pattern: "dashed"},
+	"fixed":  &FontStyle{id: "fixed", name: "Courier New", size: 12},
+}
+
+var defaultScope = Scope{
+	aliases:    StdAliases,
+	styles:     defaultStyles,
+	layouts:    defaultLayouts,
+	pageStyles: defaultPageStyles,
+}
 
 var _ HasScope = (*Scope)(nil)

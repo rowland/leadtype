@@ -18,6 +18,24 @@ func (d *StdDocument) Font() *FontStyle {
 	return d.font
 }
 
+func (d *StdDocument) Page(i int) *StdPage {
+	if i < len(d.children) {
+		return d.children[i].(*StdPage)
+	}
+	return nil
+}
+
+func (d *StdDocument) PageStyle() *PageStyle {
+	if d.pageStyle == nil {
+		style := PageStyleFor("letter", d.scope)
+		if style == nil {
+			panic("default page style missing")
+		}
+		return style
+	}
+	return d.pageStyle
+}
+
 func (d *StdDocument) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", d)
 	fmt.Print(&d.Scope)
@@ -29,36 +47,9 @@ func (d *StdDocument) Print(w Writer) error {
 	return nil
 }
 
-func (d *StdDocument) SetAttrs(attrs map[string]string) {
-	d.units.SetAttrs(attrs)
-	if margin, ok := attrs["margin"]; ok {
-		d.margin.SetAll(margin, d.units)
-	}
-	d.margin.SetAttrs("margin-", attrs, d.units)
-}
-
 func (d *StdDocument) String() string {
 	return fmt.Sprintf("StdDocument %s units=%s margin=%s", &d.Identity, d.units, &d.margin)
 }
-
-func (d *StdDocument) Units() Units {
-	return d.units
-}
-
-//----- to factor out?
-func (d *StdDocument) PreferredWidth() float64 {
-	return 0
-}
-
-func (d *StdDocument) ContentHeight() float64 {
-	return 0
-}
-
-func (d *StdDocument) ContentWidth() float64 {
-	return 0
-}
-
-//-----
 
 func init() {
 	registerTag(DefaultSpace, "ltml", func() interface{} { return &StdDocument{} })

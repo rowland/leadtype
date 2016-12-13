@@ -4,15 +4,15 @@
 package ltml
 
 type Children struct {
-	children []Printer
+	children []Widget
 }
 
-func (c *Children) AddChild(child Printer) {
+func (c *Children) AddChild(child Widget) {
 	c.children = append(c.children, child)
 }
 
-func (c *Children) Query(f func(child Printer) bool) []Printer {
-	var results []Printer
+func (c *Children) Query(f func(child Widget) bool) []Widget {
+	var results []Widget
 	for _, child := range c.children {
 		if f(child) {
 			results = append(results, child)
@@ -21,6 +21,6 @@ func (c *Children) Query(f func(child Printer) bool) []Printer {
 	return results
 }
 
-func (c *Children) Widgets() []Printer {
+func (c *Children) Widgets() []Widget {
 	return c.children
 }

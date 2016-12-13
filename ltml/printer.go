@@ -5,11 +5,4 @@ package ltml
 
 type Printer interface {
 	Print(w Writer) error
-	Top() float64
-	Right() float64
-	Bottom() float64
-	Left() float64
-	PreferredWidth() float64
-	SetLeft(float64)
-	SetWidth(float64)
 }

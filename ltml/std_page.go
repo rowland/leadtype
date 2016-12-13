@@ -4,38 +4,138 @@
 package ltml
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 )
 
 type StdPage struct {
-	Scope
 	StdContainer
+	Scope
+	pageStyle     *PageStyle
+	marginChanged bool
+}
+
+func (p *StdPage) Bottom() float64 {
+	return p.Height()
+}
+
+func (p *StdPage) root() *StdPage {
+	if p.container == nil {
+		return p
+	}
+	return p.container.(*StdPage)
+}
+
+func (p *StdPage) document() *StdDocument {
+	if p.container != nil {
+		return p.container.(*StdDocument)
+	}
+	return nil
+}
+
+func (p *StdPage) Height() float64 {
+	return p.PageStyle().Height()
+}
+
+func (p *StdPage) Left() float64 {
+	return 0
+}
+
+func (p *StdPage) MarginTop() float64 {
+	if p.marginChanged {
+		return p.StdContainer.MarginTop()
+	}
+	if doc := p.document(); doc != nil {
+		return doc.MarginTop()
+	}
+	return 0
+}
+
+func (p *StdPage) MarginRight() float64 {
+	if p.marginChanged {
+		return p.StdContainer.MarginRight()
+	}
+	if doc := p.document(); doc != nil {
+		return doc.MarginRight()
+	}
+	return 0
+}
+
+func (p *StdPage) MarginBottom() float64 {
+	if p.marginChanged {
+		return p.StdContainer.MarginBottom()
+	}
+	if doc := p.document(); doc != nil {
+		return doc.MarginBottom()
+	}
+	return 0
+}
+
+func (p *StdPage) MarginLeft() float64 {
+	if p.marginChanged {
+		return p.StdContainer.MarginLeft()
+	}
+	if doc := p.document(); doc != nil {
+		return doc.MarginLeft()
+	}
+	return 0
+}
+
+func (p *StdPage) PageStyle() *PageStyle {
+	if p.pageStyle == nil {
+		return p.document().PageStyle()
+	}
+	return p.pageStyle
 }
 
 func (p *StdPage) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", p)
 	fmt.Print(&p.Scope)
 	w.NewPage()
-	p.LayoutWidget(w)
+	LayoutContainer(p, w)
 	return p.StdContainer.Print(w)
 }
 
-func (p *StdPage) SetAttrs(attrs map[string]string) {
-	p.StdContainer.SetAttrs(attrs)
+func (p *StdPage) Right() float64 {
+	return p.Width()
 }
 
+var reMargin = regexp.MustCompile(`^margin(-top|-right|-bottom|-left)?$`)
+
+func (p *StdPage) SetAttrs(attrs map[string]string) {
+	p.StdContainer.SetAttrs(attrs)
+	if style, ok := attrs["style"]; ok {
+		p.pageStyle = PageStyleFor(style, p.scope)
+	}
+	for k, _ := range attrs {
+		if reMargin.MatchString(k) {
+			p.marginChanged = true
+			break
+		}
+	}
+}
+
+var errBadPageContainer = errors.New("page must be child of ltml.")
+
 func (p *StdPage) SetContainer(container Container) error {
-	if d, ok := container.(*StdDocument); ok {
-		p.margin = d.margin
-		p.units = d.units
+	if _, ok := container.(*StdDocument); ok {
 		return p.StdContainer.SetContainer(container)
 	} else {
-		return fmt.Errorf("page must be child of ltml.")
+		return errBadPageContainer
 	}
 }
 
 func (p *StdPage) String() string {
 	return fmt.Sprintf("StdPage %s", &p.StdContainer)
+}
+
+func (p *StdPage) Top() float64 {
+	return 0
+}
+
+func (p *StdPage) Width() float64 {
+	return p.PageStyle().Width()
 }
 
 func init() {

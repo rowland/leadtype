@@ -4,16 +4,16 @@
 package ltml
 
 type Container interface {
-	AddChild(value Printer)
-	ContentTop() float64
-	ContentRight() float64
-	ContentBottom() float64
-	ContentLeft() float64
-	ContentHeight() float64
-	ContentWidth() float64
-	Widgets() []Printer
+	Widget
 	HasFont
-	Printer
-	Query(f func(value Printer) bool) []Printer
+
+	AddChild(value Widget)
+	LayoutStyle() *LayoutStyle
+	Query(f func(value Widget) bool) []Widget
 	Units() Units
+	Widgets() []Widget
+}
+
+func LayoutContainer(c Container, w Writer) {
+	c.LayoutStyle().Layout(c, w)
 }

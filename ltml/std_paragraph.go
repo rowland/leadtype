@@ -8,8 +8,7 @@ import (
 )
 
 type StdParagraph struct {
-	Widget
-	Children
+	StdContainer
 	richText []string
 }
 
@@ -19,7 +18,7 @@ func (p *StdParagraph) AddText(text string) {
 
 func (p *StdParagraph) Print(w Writer) error {
 	fmt.Printf("Printing %s\n", p)
-	if err := p.Widget.Print(w); err != nil {
+	if err := p.StdContainer.Print(w); err != nil {
 		return err
 	}
 	w.MoveTo(p.Left(), p.Top())
@@ -34,11 +33,11 @@ func (p *StdParagraph) Print(w Writer) error {
 }
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
-	p.Widget.SetAttrs(attrs)
+	p.StdContainer.SetAttrs(attrs)
 }
 
 func (p *StdParagraph) String() string {
-	return fmt.Sprintf("StdParagraph %s", &p.Widget)
+	return fmt.Sprintf("StdParagraph %s", &p.StdContainer)
 }
 
 func init() {

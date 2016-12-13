@@ -8,21 +8,16 @@ import (
 )
 
 type StdContainer struct {
-	Widget
+	StdWidget
 	Children
 	layout *LayoutStyle
 }
 
-func (c *StdContainer) LayoutWidget(w Writer) {
-	c.LayoutContainer(w)
-}
-
-func (c *StdContainer) LayoutContainer(w Writer) {
+func (c *StdContainer) LayoutStyle() *LayoutStyle {
 	if c.layout == nil {
-		fmt.Println("Finding default layout...")
-		c.layout = LayoutStyleFor("vbox", c.scope)
+		return LayoutStyleFor("vbox", c.scope)
 	}
-	c.layout.Layout(c, w)
+	return c.layout
 }
 
 func (c *StdContainer) Print(w Writer) error {
@@ -36,14 +31,14 @@ func (c *StdContainer) Print(w Writer) error {
 }
 
 func (c *StdContainer) SetAttrs(attrs map[string]string) {
-	c.Widget.SetAttrs(attrs)
+	c.StdWidget.SetAttrs(attrs)
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
 	}
 }
 
 func (c *StdContainer) String() string {
-	return fmt.Sprintf("StdContainer %s", &c.Widget)
+	return fmt.Sprintf("StdContainer %s", &c.StdWidget)
 }
 
 func init() {
