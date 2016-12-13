@@ -8,13 +8,7 @@ import (
 )
 
 type StdDocument struct {
-	Identity
-	units  Units
-	margin Sides
-	Scope
-	Dimensions
-	Children
-	font *FontStyle
+	StdPage
 }
 
 func (d *StdDocument) Font() *FontStyle {
