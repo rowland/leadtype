@@ -61,6 +61,20 @@ func (dw *DocWriter) SetFont(name string, size float64) error {
 	return err
 }
 
+func (dw *DocWriter) SetLineColor(color string) {
+	if c, err := pdf.NamedColor(color); err == nil {
+		dw.DocWriter.SetLineColor(c)
+	}
+}
+
+func (dw *DocWriter) SetLineDashPattern(pattern string) {
+	dw.DocWriter.SetLineDashPattern(pattern)
+}
+
+func (dw *DocWriter) SetLineWidth(width float64) {
+	dw.DocWriter.SetLineWidth(width, "pt")
+}
+
 func NewDocWriter() *DocWriter {
 	dw := pdf.NewDocWriter()
 	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")

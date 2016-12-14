@@ -16,6 +16,9 @@ type PenStyle struct {
 
 func (ps *PenStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", ps)
+	w.SetLineColor(string(ps.color))
+	w.SetLineWidth(ps.width)
+	w.SetLineDashPattern(ps.pattern)
 }
 
 func (ps *PenStyle) ID() string {
@@ -50,12 +53,9 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 		ps, _ := style.(*PenStyle)
 		return ps
 	}
-	if validColor(id) {
-		ps := &PenStyle{id: "pen_" + id, color: Color(id), pattern: defaultPenPattern}
-		scope.AddStyle(ps)
-		return ps
-	}
-	return nil
+	ps := &PenStyle{id: "pen_" + id, color: Color(id), pattern: defaultPenPattern}
+	scope.AddStyle(ps)
+	return ps
 }
 
 var _ HasAttrs = (*PenStyle)(nil)
