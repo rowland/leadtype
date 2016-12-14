@@ -5,7 +5,7 @@ package pdf
 
 import (
 	"bytes"
-	"leadtype/codepage"
+	"github.com/rowland/leadtype/codepage"
 	"testing"
 )
 

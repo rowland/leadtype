@@ -4,8 +4,8 @@
 package pdf
 
 import (
-	"leadtype/afm"
-	"leadtype/ttf"
+	"github.com/rowland/leadtype/afm"
+	"github.com/rowland/leadtype/ttf"
 	"testing"
 )
 
