@@ -93,8 +93,36 @@ func (pw *PageWriter) addFont(font *Font) []*Font {
 	return pw.fonts
 }
 
+func (pw *PageWriter) autoStrokeAndFill(stroke bool, fill bool) {
+	if !pw.autoPath {
+		return
+	}
+	if stroke && fill {
+		pw.gw.fillAndStroke()
+	} else if stroke {
+		pw.gw.stroke()
+	} else if fill {
+		pw.gw.fill()
+	} else {
+		pw.gw.newPath()
+	}
+	pw.inPath = false
+}
+
 func (pw *PageWriter) carriageReturn() {
 	pw.moveTo(pw.origin.X, pw.origin.Y)
+}
+
+func (pw *PageWriter) checkSetFillColor() {
+	if pw.fillColor == pw.last.fillColor {
+		return
+	}
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	pw.mw.setRgbColorFill(pw.fillColor.RGB64())
+	pw.last.fillColor = pw.fillColor
 }
 
 func (pw *PageWriter) checkSetFont() {
@@ -430,6 +458,61 @@ func (pw *PageWriter) PrintWithOptions(text string, options Options) (err error)
 	return nil
 }
 
+func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
+	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y))
+	wpts, hpts := pw.units.toPts(width), pw.units.toPts(height)
+
+	pw.startGraph()
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	if border {
+		pw.checkSetLineColor()
+		pw.checkSetLineWidth()
+		pw.checkSetLineDashPattern()
+	}
+	if fill {
+		pw.checkSetFillColor()
+	}
+
+	pw.gw.rectangle(xpts, ypts, wpts, hpts)
+	pw.autoStrokeAndFill(border, fill)
+	pw.MoveTo(x+width, y)
+}
+
+// def rectangle(x, y, width, height, options={}, &block)
+//   border = options[:border].nil? ? true : options[:border]
+//   fill = options[:fill].nil? ? false : options[:fill]
+//   clip = options[:clip].nil? ? false : options[:clip] && block_given?
+//   gw.stroke if @in_path and @auto_path
+
+//   line_colors.push(border)
+//   fill_colors.push(fill)
+//   check_set(:line_color, :line_width, :line_dash_pattern, :fill_color)
+
+//   if options[:corners]
+//     draw_rounded_rectangle(x, y, width, height, options)
+//   elsif options[:path] or options[:reverse]
+//     draw_rectangle_path(x, y, width, height, options)
+//   else
+//     gw.rectangle(
+//       to_points(@units, x),
+//       @page_height - to_points(@units, y + height),
+//       to_points(@units, width),
+//       to_points(@units, height))
+//   end
+
+//   gw.save_graphics_state if clip
+//   auto_stroke_and_fill(:stroke => border, :fill => fill, :clip => clip)
+//   yield if block_given?
+//   gw.restore_graphics_state if clip
+//   line_colors.pop
+//   fill_colors.pop
+//   move_to(x + width, y)
+//   nil
+// end
+
 func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
 }
@@ -449,6 +532,25 @@ func (pw *PageWriter) SetFont(name string, size float64, options Options) ([]*Fo
 	pw.SetFontSize(size)
 	pw.SetFontColor(options["color"])
 	return pw.AddFont(name, options)
+}
+
+func (pw *PageWriter) SetFillColor(color interface{}) (prev Color) {
+	prev = pw.fillColor
+
+	switch color := color.(type) {
+	case string:
+		if c, err := NamedColor(color); err == nil {
+			pw.fillColor = c
+		}
+	case int:
+		pw.fillColor = Color(color)
+	case int32:
+		pw.fillColor = Color(color)
+	case Color:
+		pw.fillColor = color
+	}
+
+	return
 }
 
 func (pw *PageWriter) SetFontColor(color interface{}) (prev Color) {

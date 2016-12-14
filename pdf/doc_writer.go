@@ -266,8 +266,16 @@ func (dw *DocWriter) PrintWithOptions(text string, options Options) (err error) 
 	return dw.CurPage().PrintWithOptions(text, options)
 }
 
+func (dw *DocWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
+	dw.CurPage().Rectangle(x, y, width, height, border, fill)
+}
+
 func (dw *DocWriter) ResetFonts() {
 	dw.CurPage().ResetFonts()
+}
+
+func (dw *DocWriter) SetFillColor(color interface{}) (prev Color) {
+	return dw.CurPage().SetFillColor(color)
 }
 
 func (dw *DocWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {

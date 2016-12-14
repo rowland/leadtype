@@ -14,6 +14,24 @@ const (
 	green = 0x00FF00
 )
 
+func TestPageWriter_checkSetFillColor(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, Options{})
+
+	check(t, pw.fillColor == black, "fillColor should default to black")
+	check(t, pw.last.fillColor == black, "last.fillColor should default to black")
+
+	prev := pw.SetFillColor(red)
+	check(t, prev == black, "Previous color was black")
+	check(t, pw.fillColor == red, "fillColor should now be red")
+	check(t, pw.last.fillColor == black, "last.fillColor should still be black")
+	pw.checkSetFillColor()
+	check(t, pw.last.fillColor == red, "last.fillColor should now be red")
+
+	expectS(t, "1 0 0 rg\n", pw.stream.String())
+	// TODO: test for autoPath behavior
+}
+
 func TestPageWriter_checkSetFontColor(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, Options{})
