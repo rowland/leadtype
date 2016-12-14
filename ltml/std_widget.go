@@ -18,6 +18,19 @@ type StdWidget struct {
 	font    *FontStyle
 }
 
+func (widget *StdWidget) BeforePrint(Writer) error {
+	// to be overridden
+	return nil
+}
+
+func (widget *StdWidget) DrawContent(w Writer) error {
+	return nil
+}
+
+func (widget *StdWidget) DrawBorder(w Writer) error {
+	return nil
+}
+
 func (widget *StdWidget) Font() *FontStyle {
 	if widget.font == nil {
 		return widget.container.Font()
@@ -34,6 +47,10 @@ func (widget *StdWidget) Height() float64 {
 
 func (widget *StdWidget) LayoutWidget(Writer) {
 	// to be overridden
+}
+
+func (widget *StdWidget) PaintBackground(w Writer) error {
+	return nil
 }
 
 func (widget *StdWidget) PreferredHeight(Writer) float64 {

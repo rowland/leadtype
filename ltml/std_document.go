@@ -37,14 +37,7 @@ func (d *StdDocument) PageStyle() *PageStyle {
 }
 
 func (d *StdDocument) Print(w Writer) error {
-	fmt.Printf("Printing %s\n", d)
-	fmt.Print(&d.Scope)
-	for _, c := range d.children {
-		if err := c.Print(w); err != nil {
-			return err
-		}
-	}
-	return nil
+	return d.DrawContent(w)
 }
 
 func (d *StdDocument) String() string {

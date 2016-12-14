@@ -16,6 +16,14 @@ type StdPage struct {
 	marginChanged bool
 }
 
+func (p *StdPage) BeforePrint(w Writer) error {
+	fmt.Printf("Printing %s\n", p)
+	fmt.Print(&p.Scope)
+	w.NewPage()
+	LayoutContainer(p, w)
+	return nil
+}
+
 func (p *StdPage) Bottom() float64 {
 	return p.Height()
 }
@@ -87,14 +95,6 @@ func (p *StdPage) PageStyle() *PageStyle {
 		return p.document().PageStyle()
 	}
 	return p.pageStyle
-}
-
-func (p *StdPage) Print(w Writer) error {
-	fmt.Printf("Printing %s\n", p)
-	fmt.Print(&p.Scope)
-	w.NewPage()
-	LayoutContainer(p, w)
-	return p.StdContainer.Print(w)
 }
 
 func (p *StdPage) Right() float64 {

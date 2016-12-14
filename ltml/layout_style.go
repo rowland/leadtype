@@ -26,9 +26,8 @@ func (ls *LayoutStyle) ID() string {
 
 func (ls *LayoutStyle) Layout(c Container, w Writer) {
 	fmt.Println("In Layout")
-	// f := LayoutManagerFor(ls.manager)
-	// f(c, ls, w)
-	LayoutVBox(c, ls, w)
+	f := LayoutManagerFor(ls.manager)
+	f(c, ls, w)
 }
 
 func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {

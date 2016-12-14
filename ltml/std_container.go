@@ -13,21 +13,21 @@ type StdContainer struct {
 	layout *LayoutStyle
 }
 
+func (c *StdContainer) DrawContent(w Writer) error {
+	fmt.Printf("DrawContent %s\n", c)
+	for _, child := range c.children {
+		if err := Print(child, w); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *StdContainer) LayoutStyle() *LayoutStyle {
 	if c.layout == nil {
 		return LayoutStyleFor("vbox", c.scope)
 	}
 	return c.layout
-}
-
-func (c *StdContainer) Print(w Writer) error {
-	fmt.Printf("Printing %s\n", c)
-	for _, c := range c.children {
-		if err := c.Print(w); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (c *StdContainer) SetAttrs(attrs map[string]string) {

@@ -16,11 +16,12 @@ func (p *StdParagraph) AddText(text string) {
 	p.richText = append(p.richText, text)
 }
 
-func (p *StdParagraph) Print(w Writer) error {
+func (p *StdParagraph) BeforePrint(w Writer) error {
 	fmt.Printf("Printing %s\n", p)
-	if err := p.StdContainer.Print(w); err != nil {
-		return err
-	}
+	return nil
+}
+
+func (p *StdParagraph) DrawContent(w Writer) error {
 	w.MoveTo(p.Left(), p.Top())
 	p.Font().Apply(w)
 	for _, s := range p.richText {
