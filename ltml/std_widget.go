@@ -28,6 +28,37 @@ func (widget *StdWidget) DrawContent(w Writer) error {
 }
 
 func (widget *StdWidget) DrawBorder(w Writer) error {
+	x1 := widget.Left() + widget.MarginLeft()
+	y1 := widget.Top() + widget.MarginTop()
+	x2 := widget.Right() - widget.MarginRight()
+	y2 := widget.Bottom() - widget.MarginBottom()
+	if widget.border != nil {
+		widget.border.Apply(w)
+		w.Rectangle(x1, y1,
+			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
+			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
+			true, false)
+	}
+	if widget.borders[topSide] != nil {
+		widget.borders[topSide].Apply(w)
+		w.MoveTo(x1, y1)
+		w.LineTo(x2, y1)
+	}
+	if widget.borders[rightSide] != nil {
+		widget.borders[rightSide].Apply(w)
+		w.MoveTo(x2, y1)
+		w.LineTo(x2, y2)
+	}
+	if widget.borders[bottomSide] != nil {
+		widget.borders[bottomSide].Apply(w)
+		w.MoveTo(x2, y2)
+		w.LineTo(x1, y2)
+	}
+	if widget.borders[leftSide] != nil {
+		widget.borders[leftSide].Apply(w)
+		w.MoveTo(x1, y2)
+		w.LineTo(x1, y1)
+	}
 	return nil
 }
 
@@ -91,6 +122,46 @@ func (widget *StdWidget) SetScope(scope HasScope) {
 
 func (widget *StdWidget) String() string {
 	return fmt.Sprintf("Widget %s units=%s %s %s %s", &widget.Identity, widget.units, &widget.Dimensions, widget.border, widget.borders)
+}
+
+func (widget *StdWidget) Top() float64 {
+	if widget.sides[topSide] != 0 {
+		return widget.sides[topSide]
+	}
+	if widget.sides[bottomSide] == 0 || widget.Height() == 0 {
+		return 0
+	}
+	return widget.sides[bottomSide] - widget.Height()
+}
+
+func (widget *StdWidget) Right() float64 {
+	if widget.sides[rightSide] != 0 {
+		return widget.sides[rightSide]
+	}
+	if widget.sides[leftSide] == 0 || widget.Width() == 0 {
+		return 0
+	}
+	return widget.sides[leftSide] + widget.Width()
+}
+
+func (widget *StdWidget) Bottom() float64 {
+	if widget.sides[bottomSide] != 0 {
+		return widget.sides[bottomSide]
+	}
+	if widget.sides[topSide] == 0 || widget.Height() == 0 {
+		return 0
+	}
+	return widget.sides[topSide] + widget.Height()
+}
+
+func (widget *StdWidget) Left() float64 {
+	if widget.sides[leftSide] != 0 {
+		return widget.sides[leftSide]
+	}
+	if widget.sides[rightSide] == 0 || widget.Width() == 0 {
+		return 0
+	}
+	return widget.sides[rightSide] - widget.Width()
 }
 
 func (widget *StdWidget) Units() Units {

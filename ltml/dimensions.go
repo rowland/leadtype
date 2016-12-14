@@ -27,22 +27,6 @@ var (
 	reRel = regexp.MustCompile(`^[+-](\d+(\.\d+)?)`)
 )
 
-func (d *Dimensions) Top() float64 {
-	return d.sides[topSide]
-}
-
-func (d *Dimensions) Right() float64 {
-	return d.sides[rightSide]
-}
-
-func (d *Dimensions) Bottom() float64 {
-	return d.sides[bottomSide]
-}
-
-func (d *Dimensions) Left() float64 {
-	return d.sides[leftSide]
-}
-
 func (d *Dimensions) MarginTop() float64 {
 	return d.margin[topSide]
 }
@@ -119,9 +103,6 @@ func (d *Dimensions) SetHeight(value float64) {
 
 func (d *Dimensions) SetTop(value float64) {
 	d.sides[topSide] = value
-	if d.Bottom() != 0 {
-		d.SetHeight(d.Bottom() - d.Top())
-	}
 }
 
 func (d *Dimensions) SetRight(value float64) {

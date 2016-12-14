@@ -62,9 +62,11 @@ func (dw *DocWriter) SetFont(name string, size float64) error {
 }
 
 func (dw *DocWriter) SetLineColor(color string) {
-	if c, err := pdf.NamedColor(color); err == nil {
-		dw.DocWriter.SetLineColor(c)
+	c, err := pdf.NamedColor(color)
+	if err != nil {
+		c = pdf.Black
 	}
+	dw.DocWriter.SetLineColor(c)
 }
 
 func (dw *DocWriter) SetLineDashPattern(pattern string) {

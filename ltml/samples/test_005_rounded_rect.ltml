@@ -1,5 +1,5 @@
 <ltml>
-  <pen id="blue_dash" color="Blue" width="4pt" pattern="dashed" />
+  <pen id="blue_dash" color="blue" width="4pt" pattern="dashed" />
   <page units="in" margin="1">
     <rect width="100%" height="2" border="blue_dash" corners="0.5" />
   </page>

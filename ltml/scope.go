@@ -108,9 +108,9 @@ func (scope *Scope) Style(id string) (style Styler, ok bool) {
 }
 
 var defaultStyles = map[string]Styler{
-	"solid":  &PenStyle{id: "solid", color: "#000000", width: 0.001, pattern: "solid"},
-	"dotted": &PenStyle{id: "dotted", color: "#000000", width: 0.001, pattern: "dotted"},
-	"dashed": &PenStyle{id: "dashed", color: "#000000", width: 0.001, pattern: "dashed"},
+	"solid":  &PenStyle{id: "solid", color: "000000", width: 0.001, pattern: "solid"},
+	"dotted": &PenStyle{id: "dotted", color: "000000", width: 0.001, pattern: "dotted"},
+	"dashed": &PenStyle{id: "dashed", color: "000000", width: 0.001, pattern: "dashed"},
 	"fixed":  &FontStyle{id: "fixed", name: "Courier New", size: 12},
 }
 
