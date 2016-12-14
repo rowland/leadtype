@@ -33,7 +33,7 @@ var testTtfSelectData = []ttfFontSelection{
 	{"times new roman", "bold", "italic", nil, "TimesNewRomanPS-BoldItalicMT"},
 
 	{"Arial Unicode MS", "", "", []string{"CJK Unified Ideographs"}, "ArialUnicodeMS"},
-	{"Myanmar Sangam MN", "", "", []string{"Myanmar"}, "MyanmarSangamMN"},
+	{"AppleMyungjo", "Regular", "", nil, "AppleMyungjo"},
 }
 
 func testTtfFonts(families ...string) (fonts []*Font) {
@@ -63,7 +63,7 @@ func TestTtfFontCollection(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectNI(t, "Len", 114, fc.Len())
+	expectNI(t, "Len", 85, fc.Len())
 	for _, fs := range testTtfSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {

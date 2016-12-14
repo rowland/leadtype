@@ -4,9 +4,9 @@
 package pdf
 
 import (
-	"leadtype/codepage"
-	"leadtype/ttf"
-	"leadtype/wordbreaking"
+	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/ttf"
+	"github.com/rowland/leadtype/wordbreaking"
 	"math"
 	"testing"
 	"unicode"
@@ -48,7 +48,7 @@ func TestNewRichText_EnglishAndChinese_substitute(t *testing.T) {
 
 func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 	st := SuperTest{t}
-	fonts := testTtfFonts("Arial", "STSong")
+	fonts := testTtfFonts("Arial", "STFangsong")
 	rt, err := NewRichText("abc所有测def", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -74,13 +74,13 @@ func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 	st.False(rt.pieces[2].LineThrough, "LineThrough should be (default) false.")
 
 	st.Equal(fonts[0], rt.pieces[0].Font, "abc should be tagged with Arial font.")
-	st.Equal(fonts[1], rt.pieces[1].Font, "Chinese should be tagged with STSong font.")
+	st.Equal(fonts[1], rt.pieces[1].Font, "Chinese should be tagged with STFangsong font.")
 	st.Equal(fonts[0], rt.pieces[2].Font, "def should be tagged with Arial font.")
 }
 
 func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	st := SuperTest{t}
-	fonts := testTtfFonts("Arial", "STSong")
+	fonts := testTtfFonts("Arial", "STFangsong")
 	rt, err := NewRichText("所有测abc", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -91,7 +91,7 @@ func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	st.Equal("abc", rt.pieces[1].Text)
 	st.Equal(10.0, rt.pieces[1].FontSize)
 	st.Equal(fonts[1], rt.pieces[0].Font, "Should be tagged with Arial font.")
-	st.Equal(fonts[0], rt.pieces[1].Font, "Should be tagged with STSong font.")
+	st.Equal(fonts[0], rt.pieces[1].Font, "Should be tagged with STFangsong font.")
 }
 
 // Test restricting a "preferred" font's usage to a particular range.
@@ -105,7 +105,7 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stSongMetrics, err := fc.Select("STSong", "", "", nil)
+	stFangsongMetrics, err := fc.Select("STFangsong", "", "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,13 +113,13 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stSong := &Font{family: "STSong", metrics: stSongMetrics, runeSet: cjk}
+	stFangsong := &Font{family: "STFangsong", metrics: stFangsongMetrics, runeSet: cjk}
 	arialMetrics, err := fc.Select("Arial", "", "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	arial := &Font{family: "Arial", metrics: arialMetrics}
-	fonts := []*Font{stSong, arial}
+	fonts := []*Font{stFangsong, arial}
 
 	rt, err := NewRichText("所有测abc", fonts, 10, Options{})
 	if err != nil {
@@ -130,7 +130,7 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	st.Equal(10.0, rt.pieces[0].FontSize)
 	st.Equal("abc", rt.pieces[1].Text)
 	st.Equal(10.0, rt.pieces[1].FontSize)
-	st.Equal(fonts[0], rt.pieces[0].Font, "Should be tagged with STSong font.")
+	st.Equal(fonts[0], rt.pieces[0].Font, "Should be tagged with STFangsong font.")
 	st.Equal(fonts[1], rt.pieces[1].Font, "Should be tagged with Arial font.")
 }
 
@@ -140,7 +140,7 @@ const englishRussianChinese = "Here is some Russian, Неприкосновен�
 func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
+	ttfFonts := testTtfFonts("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	rt, err := NewRichText(englishRussianChinese, fonts, 10, Options{})
 	if err != nil {
@@ -160,14 +160,14 @@ func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	st.Equal(fonts[0], rt.pieces[0].Font, "Should be tagged with Helvetica font.")
 	st.Equal(fonts[1], rt.pieces[1].Font, "Should be tagged with Arial font.")
 	st.Equal(fonts[0], rt.pieces[2].Font, "Should be tagged with Helvetica font.")
-	st.Equal(fonts[2], rt.pieces[3].Font, "Should be tagged with STSong font.")
+	st.Equal(fonts[2], rt.pieces[3].Font, "Should be tagged with STFangsong font.")
 	st.Equal(fonts[0], rt.pieces[4].Font, "Should be tagged with Helvetica font.")
 }
 
 // With Chinese font first in list, Arial is not called upon for English.
 func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 	st := SuperTest{t}
-	fonts := testTtfFonts("STSong", "Arial")
+	fonts := testTtfFonts("STFangsong", "Arial")
 	rt, err := NewRichText("所有测abc", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -179,7 +179,7 @@ func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 }
 
 func richTextMixedText() *RichText {
-	rt, err := NewRichText("abc所有测def", testTtfFonts("Arial", "STSong"), 10, Options{})
+	rt, err := NewRichText("abc所有测def", testTtfFonts("Arial", "STFangsong"), 10, Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -262,7 +262,7 @@ func TestRichText_Height(t *testing.T) {
 	st := SuperTest{t}
 	p := new(RichText)
 	st.Equal(0.0, p.Height())
-	fonts := testTtfFonts("Courier New", "STSong")
+	fonts := testTtfFonts("Courier New", "STFangsong")
 	p, err := NewRichText("abc所有测", fonts, 10, Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -281,7 +281,7 @@ func TestRichText_Height(t *testing.T) {
 func TestRichText_InsertStringAtOffsets(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
+	ttfFonts := testTtfFonts("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Automatic "
 	text1 := "hyphenation "
@@ -512,7 +512,7 @@ func TestRichText_measure(t *testing.T) {
 func TestRichText_Merge(t *testing.T) {
 	st := SuperTest{t}
 	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
+	ttfFonts := testTtfFonts("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Here is some "
 	text1 := "Russian, Неприкосновенность, "
@@ -582,7 +582,7 @@ func TestRichText_Merge(t *testing.T) {
 
 	st.Equal("表明你已明确同意你的回答接受评估", merged.pieces[3].Text)
 	st.Equal(10.0, merged.pieces[3].FontSize)
-	st.Equal(fonts[2], merged.pieces[3].Font, "Should be tagged with STSong font.")
+	st.Equal(fonts[2], merged.pieces[3].Font, "Should be tagged with STFangsong font.")
 
 	st.Equal(".", merged.pieces[4].Text)
 	st.Equal(10.0, merged.pieces[4].FontSize)
@@ -615,7 +615,7 @@ func TestRichText_Merge_width_chars(t *testing.T) {
 
 func mixedText() *RichText {
 	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
+	ttfFonts := testTtfFonts("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	rt, err := NewRichText(englishRussianChinese, fonts, 10, Options{})
 	if err != nil {
@@ -955,7 +955,7 @@ func TestRichText_WrapToWidth_zero(t *testing.T) {
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := testAfmFonts("Helvetica")
-	ttfFonts := testTtfFonts("Arial", "STSong")
+	ttfFonts := testTtfFonts("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	b.StartTimer()
 
