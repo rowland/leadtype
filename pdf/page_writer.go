@@ -459,7 +459,7 @@ func (pw *PageWriter) PrintWithOptions(text string, options Options) (err error)
 }
 
 func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
-	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y))
+	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y+height))
 	wpts, hpts := pw.units.toPts(width), pw.units.toPts(height)
 
 	pw.startGraph()
