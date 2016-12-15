@@ -79,10 +79,10 @@ func Print(widget Widget, writer Writer) error {
 	if err := widget.PaintBackground(writer); err != nil {
 		return err
 	}
-	if err := widget.DrawContent(writer); err != nil {
+	if err := widget.DrawBorder(writer); err != nil {
 		return err
 	}
-	if err := widget.DrawBorder(writer); err != nil {
+	if err := widget.DrawContent(writer); err != nil {
 		return err
 	}
 	return nil

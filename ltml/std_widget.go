@@ -34,10 +34,10 @@ func (widget *StdWidget) DrawBorder(w Writer) error {
 	y2 := widget.Bottom() - widget.MarginBottom()
 	if widget.border != nil {
 		widget.border.Apply(w)
-		w.Rectangle(x1, y1,
+		w.Rectangle2(x1, y1,
 			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
 			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
-			true, false)
+			true, false, widget.corners, false, false)
 	}
 	if widget.borders[topSide] != nil {
 		widget.borders[topSide].Apply(w)
