@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/wordbreaking"
@@ -209,6 +210,41 @@ func (pw *PageWriter) close() {
 	pw.dw.catalog.pages.add(pw.page) // unless reusing page
 	pw.stream.Reset()
 	pw.isClosed = true
+}
+
+var errTooFewPoints = errors.New("Need at least 4 points for curve")
+
+func (pw *PageWriter) CurvePoints(points []Location) error {
+	if len(points) < 4 {
+		return errTooFewPoints
+	}
+	pw.MoveTo(points[0].X, points[0].Y)
+	if !pw.last.loc.equal(pw.loc) {
+		if pw.inPath && pw.autoPath {
+			pw.gw.stroke()
+			pw.inPath = false
+		}
+	}
+
+	pw.checkSetLineColor()
+	pw.checkSetLineWidth()
+	pw.checkSetLineDashPattern()
+
+	if !(pw.loc.equal(pw.last.loc) && pw.inPath) {
+		pw.gw.moveTo(pw.units.toPts(pw.loc.X), pw.units.toPts(pw.loc.Y))
+	}
+	i := 1
+	for i+2 < len(points) {
+		pw.gw.curveTo(
+			pw.units.toPts(points[i].X), pw.pageHeight-pw.units.toPts(points[i].Y),
+			pw.units.toPts(points[i+1].X), pw.pageHeight-pw.units.toPts(points[i+1].Y),
+			pw.units.toPts(points[i+2].X), pw.pageHeight-pw.units.toPts(points[i+2].Y))
+		pw.MoveTo(points[i+2].X, points[i+2].Y)
+		pw.last.loc = pw.loc
+		i += 3
+	}
+	pw.inPath = true
+	return nil
 }
 
 func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, position float64, thickness float64) {
@@ -458,7 +494,41 @@ func (pw *PageWriter) PrintWithOptions(text string, options Options) (err error)
 	return nil
 }
 
+var signs = []Location{{1, -1}, {-1, -1}, {-1, 1}, {1, 1}}
+
+func quadrantBezierPoints(quadrant int, x, y, rx, ry float64) (bp []Location) {
+	const a = 4.0 / 3.0 * (math.Sqrt2 - 1.0)
+	if quadrant == 1 || quadrant == 3 {
+		// (1, 0)
+		bp = append(bp, Location{x + (rx * signs[quadrant-1].X), y})
+		// (1, a)
+		bp = append(bp, Location{bp[0].X, y + (a * ry * signs[quadrant-1].Y)})
+		// (a, 1)
+		bp = append(bp, Location{x + (a * rx * signs[quadrant-1].X), y + (ry * signs[quadrant-1].Y)})
+		// (0, 1)
+		bp = append(bp, Location{x, bp[2].Y})
+	} else {
+		// (0,1)
+		bp = append(bp, Location{x, y + (ry * signs[quadrant-1].Y)})
+		// (a,1)
+		bp = append(bp, Location{x + (a * rx * signs[quadrant-1].Y), bp[0].Y})
+		// (1,a)
+		bp = append(bp, Location{x + (rx * signs[quadrant-1].X), y + (a * ry * signs[quadrant-1].Y)})
+		// (1,0)
+		bp = append(bp, Location{bp[2].X, y})
+	}
+	return
+}
+
 func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
+	pw.rectangle(x, y, width, height, border, fill, nil, false, false)
+}
+
+func (pw *PageWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
+	pw.rectangle(x, y, width, height, border, fill, corners, path, reverse)
+}
+
+func (pw *PageWriter) rectangle(x, y, width, height float64, border, fill bool, corners []float64, path, reverse bool) {
 	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y+height))
 	wpts, hpts := pw.units.toPts(width), pw.units.toPts(height)
 
@@ -476,42 +546,30 @@ func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill b
 		pw.checkSetFillColor()
 	}
 
-	pw.gw.rectangle(xpts, ypts, wpts, hpts)
+	if len(corners) > 0 {
+		pw.roundedRectangle(x, y, width, height, corners, reverse)
+	} else if path || reverse {
+		pw.rectanglePath(x, y, width, height, reverse)
+	} else {
+		pw.gw.rectangle(xpts, ypts, wpts, hpts)
+	}
 	pw.autoStrokeAndFill(border, fill)
 	pw.MoveTo(x+width, y)
 }
 
-// def rectangle(x, y, width, height, options={}, &block)
-//   border = options[:border].nil? ? true : options[:border]
-//   fill = options[:fill].nil? ? false : options[:fill]
-//   clip = options[:clip].nil? ? false : options[:clip] && block_given?
-//   gw.stroke if @in_path and @auto_path
-
-//   line_colors.push(border)
-//   fill_colors.push(fill)
-//   check_set(:line_color, :line_width, :line_dash_pattern, :fill_color)
-
-//   if options[:corners]
-//     draw_rounded_rectangle(x, y, width, height, options)
-//   elsif options[:path] or options[:reverse]
-//     draw_rectangle_path(x, y, width, height, options)
-//   else
-//     gw.rectangle(
-//       to_points(@units, x),
-//       @page_height - to_points(@units, y + height),
-//       to_points(@units, width),
-//       to_points(@units, height))
-//   end
-
-//   gw.save_graphics_state if clip
-//   auto_stroke_and_fill(:stroke => border, :fill => fill, :clip => clip)
-//   yield if block_given?
-//   gw.restore_graphics_state if clip
-//   line_colors.pop
-//   fill_colors.pop
-//   move_to(x + width, y)
-//   nil
-// end
+func (pw *PageWriter) rectanglePath(x, y, width, height float64, reverse bool) {
+	pw.MoveTo(x, y)
+	if reverse {
+		pw.LineTo(x, y+height)
+		pw.LineTo(x+width, y+height)
+		pw.LineTo(x+width, y)
+	} else {
+		pw.LineTo(x+width, y)
+		pw.LineTo(x+width, y+height)
+		pw.LineTo(x, y+height)
+	}
+	pw.LineTo(x, y)
+}
 
 func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
@@ -521,6 +579,50 @@ func (pw *PageWriter) richTextForString(text string) (piece *RichText, err error
 	piece, err = NewRichText(text, pw.fonts, pw.fontSize, Options{
 		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
 	return
+}
+
+func (pw *PageWriter) roundedRectangle(x, y, width, height float64, corners []float64, reverse bool) {
+	var xr1, yr1, xr2, yr2, xr3, yr3, xr4, yr4 float64
+	switch len(corners) {
+	case 1:
+		xr1, yr1, xr2, yr2, xr3, yr3, xr4, yr4 =
+			corners[0], corners[0], corners[0], corners[0], corners[0], corners[0], corners[0], corners[0]
+	case 2:
+		xr1, yr1, xr2, yr2 = corners[0], corners[0], corners[0], corners[0]
+		xr3, yr3, xr4, yr4 = corners[1], corners[1], corners[1], corners[1]
+	case 4:
+		xr1, yr1 = corners[0], corners[0]
+		xr2, yr2 = corners[1], corners[1]
+		xr3, yr3 = corners[2], corners[2]
+		xr4, yr4 = corners[3], corners[3]
+	case 8:
+		xr1, yr1, xr2, yr2, xr3, yr3, xr4, yr4 =
+			corners[0], corners[1], corners[2], corners[3], corners[4], corners[5], corners[6], corners[7]
+	default:
+		// xr1, yr1, xr2, yr2, xr3, yr3, xr4, yr4 = 0
+	}
+
+	q2p := quadrantBezierPoints(2, x+xr1, y+yr1, xr1, yr1)
+	q1p := quadrantBezierPoints(1, x+width-xr2, y+yr2, xr2, yr2)
+	q4p := quadrantBezierPoints(4, x+width-xr3, y+height-yr3, xr3, yr3)
+	q3p := quadrantBezierPoints(3, x+xr4, y+height-yr4, xr4, yr4)
+	qpa := [][]Location{q1p, q2p, q3p, q4p}
+
+	if reverse {
+		LocationSliceSlice(qpa).Reverse()
+		for _, qp := range qpa {
+			LocationSlice(qp).Reverse()
+		}
+	}
+
+	pw.CurvePoints(qpa[0])
+	pw.LineTo(qpa[1][0].X, qpa[1][0].Y)
+	pw.CurvePoints(qpa[1])
+	pw.LineTo(qpa[2][0].X, qpa[2][0].Y)
+	pw.CurvePoints(qpa[2])
+	pw.LineTo(qpa[3][0].X, qpa[3][0].Y)
+	pw.CurvePoints(qpa[3])
+	pw.LineTo(qpa[0][0].X, qpa[0][0].Y)
 }
 
 func (pw *PageWriter) setDefaultFont() {

@@ -28,6 +28,22 @@ func (this Location) equal(other Location) bool {
 	return this.X == other.X && this.Y == other.Y
 }
 
+type LocationSlice []Location
+
+func (slice LocationSlice) Reverse() {
+	for left, right := 0, len(slice)-1; left < right; left, right = left+1, right-1 {
+		slice[left], slice[right] = slice[right], slice[left]
+	}
+}
+
+type LocationSliceSlice [][]Location
+
+func (slice LocationSliceSlice) Reverse() {
+	for left, right := 0, len(slice)-1; left < right; left, right = left+1, right-1 {
+		slice[left], slice[right] = slice[right], slice[left]
+	}
+}
+
 type Size struct {
 	Width, Height float64
 }

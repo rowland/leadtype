@@ -270,6 +270,10 @@ func (dw *DocWriter) Rectangle(x, y, width, height float64, border bool, fill bo
 	dw.CurPage().Rectangle(x, y, width, height, border, fill)
 }
 
+func (dw *DocWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
+	dw.CurPage().Rectangle2(x, y, width, height, border, fill, corners, path, reverse)
+}
+
 func (dw *DocWriter) ResetFonts() {
 	dw.CurPage().ResetFonts()
 }
