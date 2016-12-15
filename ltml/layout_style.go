@@ -24,6 +24,10 @@ func (ls *LayoutStyle) ID() string {
 	return ls.id
 }
 
+func (ls *LayoutStyle) HPadding() float64 {
+	return ls.hpadding
+}
+
 func (ls *LayoutStyle) Layout(c Container, w Writer) {
 	fmt.Println("In Layout")
 	f := LayoutManagerFor(ls.manager)
@@ -40,7 +44,7 @@ func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {
 	if padding, ok := attrs["padding"]; ok {
 		hvpadding := ParseMeasurement(padding, ls.units)
 		ls.hpadding = hvpadding
-		ls.hpadding = hvpadding
+		ls.vpadding = hvpadding
 	}
 	if hpadding, ok := attrs["hpadding"]; ok {
 		ls.hpadding = ParseMeasurement(hpadding, ls.units)
@@ -56,6 +60,10 @@ func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {
 func (ls *LayoutStyle) String() string {
 	return fmt.Sprintf("LayoutStyle id=%s units=%s hpadding=%f vpadding=%f manager=%s",
 		ls.id, ls.units, ls.hpadding, ls.vpadding, ls.manager)
+}
+
+func (ls *LayoutStyle) VPadding() float64 {
+	return ls.vpadding
 }
 
 func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {

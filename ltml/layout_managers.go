@@ -66,6 +66,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			widget.SetHeight(widget.PreferredHeight(writer))
 		}
 		top += widget.Height()
+		top += style.VPadding()
 	}
 }
 
