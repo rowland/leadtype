@@ -1,7 +1,7 @@
 // Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package options
 
 import (
 	"testing"
@@ -62,4 +62,34 @@ func TestOptions_StringDefault(t *testing.T) {
 	expectS(t, "something", o.StringDefault("s", ""))
 	expectS(t, "3.14", o.StringDefault("f", ""))
 	expectS(t, "missing", o.StringDefault("bogus", "missing"))
+}
+
+func expectB(t *testing.T, expected, actual bool) {
+	if expected != actual {
+		t.Errorf("Expected %t, got %t", expected, actual)
+	}
+}
+
+func expectF(t *testing.T, expected, actual float64) {
+	if expected != actual {
+		t.Errorf("Expected %f, got %f", expected, actual)
+	}
+}
+
+func expectNI(t *testing.T, name string, expected, actual int) {
+	if expected != actual {
+		t.Errorf("%s: expected %d, got %d", name, expected, actual)
+	}
+}
+
+func expectV(t *testing.T, expected, actual interface{}) {
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
+
+func expectS(t *testing.T, expected, actual string) {
+	if expected != actual {
+		t.Errorf("Expected |%s|, got |%s|", expected, actual)
+	}
 }

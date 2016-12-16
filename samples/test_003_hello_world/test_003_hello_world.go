@@ -4,9 +4,11 @@
 package main
 
 import (
-	"leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 )
 
 const name = "test_003_hello_world.pdf"
@@ -31,14 +33,14 @@ func main() {
 	doc.NewPage()
 	doc.SetUnits("in")
 
-	_, err = doc.SetFont("Helvetica", 12, pdf.Options{})
+	_, err = doc.SetFont("Helvetica", 12, options.Options{})
 	if err != nil {
 		panic(err)
 	}
 	doc.MoveTo(1, 1)
 	doc.Print("Hello, World!")
 
-	_, err = doc.SetFont("Arial", 14, pdf.Options{})
+	_, err = doc.SetFont("Arial", 14, options.Options{})
 	if err != nil {
 		panic(err)
 	}

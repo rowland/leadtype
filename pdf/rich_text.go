@@ -14,6 +14,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -61,7 +62,7 @@ var errNoFontSet = errors.New("No font set")
 //   word_spacing: Add extra space between words, expressed in points.
 //   nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
 //                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
+func NewRichText(s string, fonts []*Font, fontSize float64, options options.Options) (*RichText, error) {
 	piece := &RichText{
 		Text:        s,
 		FontSize:    fontSize,
@@ -89,7 +90,7 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*R
 
 // Add appends text with specified attributes to existing structure, possibly returning a new root.
 // Options are the same as for NewRichText.
-func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options Options) (*RichText, error) {
+func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options options.Options) (*RichText, error) {
 	p, err := NewRichText(s, fonts, fontSize, options)
 	if err != nil {
 		return piece, err

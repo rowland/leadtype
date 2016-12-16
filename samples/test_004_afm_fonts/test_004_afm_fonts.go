@@ -5,9 +5,11 @@ package main
 
 import (
 	"fmt"
-	"leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 )
 
 const name = "test_004_afm_fonts.pdf"
@@ -33,7 +35,7 @@ func main() {
 			doc.NewPage()
 			doc.MoveTo(1, 1)
 		}
-		_, err = doc.SetFont(info.PostScriptName(), 12, pdf.Options{})
+		_, err = doc.SetFont(info.PostScriptName(), 12, options.Options{})
 		if err != nil {
 			panic(err)
 		}

@@ -4,51 +4,53 @@
 package main
 
 import (
-	"leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 )
 
 const name = "test_006_rich_text.pdf"
 
 type RT struct {
 	s       string
-	options pdf.Options
+	options options.Options
 }
 
 var line1 = []RT{
-	{"Here is some ", pdf.Options{}},
-	{"Bold ", pdf.Options{"weight": "bold"}},
-	{"text.", pdf.Options{}},
+	{"Here is some ", options.Options{}},
+	{"Bold ", options.Options{"weight": "bold"}},
+	{"text.", options.Options{}},
 }
 var line2 = []RT{
-	{"Here is some ", pdf.Options{}},
-	{"Italic", pdf.Options{"style": "italic"}},
-	{" text.", pdf.Options{}},
+	{"Here is some ", options.Options{}},
+	{"Italic", options.Options{"style": "italic"}},
+	{" text.", options.Options{}},
 }
 var line3 = []RT{
-	{"Here is some ", pdf.Options{}},
-	{"Bold, Italic", pdf.Options{"weight": "bold", "style": "italic"}},
-	{" text.", pdf.Options{}},
+	{"Here is some ", options.Options{}},
+	{"Bold, Italic", options.Options{"weight": "bold", "style": "italic"}},
+	{" text.", options.Options{}},
 }
 var line4 = []RT{
-	{"Here is some ", pdf.Options{}},
-	{"Red", pdf.Options{"color": "red"}},
-	{" text.", pdf.Options{}},
+	{"Here is some ", options.Options{}},
+	{"Red", options.Options{"color": "red"}},
+	{" text.", options.Options{}},
 }
 var line5 = []RT{
-	{"Here is some ", pdf.Options{}},
-	{"Underlined", pdf.Options{"underline": true}},
-	{" text.", pdf.Options{}},
+	{"Here is some ", options.Options{}},
+	{"Underlined", options.Options{"underline": true}},
+	{" text.", options.Options{}},
 }
 var line6 = []RT{
-	{"This text is ", pdf.Options{}},
-	{"Bold", pdf.Options{"weight": "bold"}},
-	{". This text is ", pdf.Options{}},
-	{"Underlined", pdf.Options{"underline": true}},
-	{". This text is ", pdf.Options{}},
-	{"Red", pdf.Options{"color": "Red"}},
-	{". This text is normal.", pdf.Options{}},
+	{"This text is ", options.Options{}},
+	{"Bold", options.Options{"weight": "bold"}},
+	{". This text is ", options.Options{}},
+	{"Underlined", options.Options{"underline": true}},
+	{". This text is ", options.Options{}},
+	{"Red", options.Options{"color": "Red"}},
+	{". This text is normal.", options.Options{}},
 }
 
 func makeRtLine(doc *pdf.DocWriter, pieces []RT) *pdf.RichText {
@@ -81,7 +83,7 @@ func main() {
 
 	doc.NewPage()
 	doc.MoveTo(1, 1)
-	doc.SetFont("Courier New", 12, pdf.Options{})
+	doc.SetFont("Courier New", 12, options.Options{})
 	doc.SetUnderline(true)
 	doc.Print("Rich Text\n\n")
 	doc.SetUnderline(false)

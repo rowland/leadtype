@@ -12,6 +12,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -38,7 +39,7 @@ type PageWriter struct {
 	line       *RichText
 	lineHeight float64
 	mw         *miscWriter
-	options    Options
+	options    options.Options
 	origin     Location
 	page       *page
 	pageHeight float64
@@ -49,7 +50,7 @@ type PageWriter struct {
 	flushing   boolean
 }
 
-func newPageWriter(dw *DocWriter, options Options) *PageWriter {
+func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
 	return new(PageWriter).init(dw, options)
 }
 
@@ -61,7 +62,7 @@ func clonePageWriter(opw *PageWriter) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
+func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
 	pw.dw = dw
 	pw.options = options
 	pw.lineSpacing = options.FloatDefault("line_spacing", 1.0)
@@ -83,7 +84,7 @@ func (pw *PageWriter) init(dw *DocWriter, options Options) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) AddFont(family string, options Options) ([]*Font, error) {
+func (pw *PageWriter) AddFont(family string, options options.Options) ([]*Font, error) {
 	if font, err := NewFont(family, options, pw.dw.fontSources); err != nil {
 		return nil, err
 	} else {
@@ -479,7 +480,7 @@ func (pw *PageWriter) PrintRichText(text *RichText) {
 	}
 }
 
-func (pw *PageWriter) PrintWithOptions(text string, options Options) (err error) {
+func (pw *PageWriter) PrintWithOptions(text string, options options.Options) (err error) {
 	var para []*RichText
 	rt, err := pw.richTextForString(text)
 	if err != nil {
@@ -552,7 +553,7 @@ func (pw *PageWriter) ResetFonts() {
 }
 
 func (pw *PageWriter) richTextForString(text string) (piece *RichText, err error) {
-	piece, err = NewRichText(text, pw.fonts, pw.fontSize, Options{
+	piece, err = NewRichText(text, pw.fonts, pw.fontSize, options.Options{
 		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
 	return
 }
@@ -605,7 +606,7 @@ func (pw *PageWriter) setDefaultFont() {
 	// TODO: Set Courier, Courier New or first font found.
 }
 
-func (pw *PageWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
+func (pw *PageWriter) SetFont(name string, size float64, options options.Options) ([]*Font, error) {
 	pw.ResetFonts()
 	pw.SetFontSize(size)
 	pw.SetFontColor(options["color"])
@@ -664,7 +665,7 @@ func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
 	prev = prevFonts[0].style
 	pw.ResetFonts()
 	for _, font := range prevFonts {
-		options := Options{
+		options := options.Options{
 			"weight":       font.weight,
 			"style":        style,
 			"relativeSize": font.relativeSize,

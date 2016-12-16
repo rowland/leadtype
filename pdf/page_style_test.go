@@ -3,7 +3,11 @@
 
 package pdf
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/options"
+)
 
 func TestMakeSizeRectangle(t *testing.T) {
 	r := makeSizeRectangle("letter", "portrait")
@@ -14,7 +18,7 @@ func TestMakeSizeRectangle(t *testing.T) {
 }
 
 func TestNewPageStyle(t *testing.T) {
-	opt1 := Options{}
+	opt1 := options.Options{}
 	ps1 := newPageStyle(opt1)
 	expectF(t, 0, ps1.pageSize.x1)
 	expectF(t, 0, ps1.pageSize.y1)
@@ -25,7 +29,7 @@ func TestNewPageStyle(t *testing.T) {
 	expectF(t, 612, ps1.cropSize.x2)
 	expectF(t, 792, ps1.cropSize.y2)
 
-	opt2 := Options{"orientation": "landscape"}
+	opt2 := options.Options{"orientation": "landscape"}
 	ps2 := newPageStyle(opt2)
 	expectF(t, 0, ps2.pageSize.x1)
 	expectF(t, 0, ps2.pageSize.y1)
@@ -36,7 +40,7 @@ func TestNewPageStyle(t *testing.T) {
 	expectF(t, 792, ps2.cropSize.x2)
 	expectF(t, 612, ps2.cropSize.y2)
 
-	opt3 := Options{"page_size": "A4"}
+	opt3 := options.Options{"page_size": "A4"}
 	ps3 := newPageStyle(opt3)
 	expectF(t, 0, ps3.pageSize.x1)
 	expectF(t, 0, ps3.pageSize.y1)
@@ -47,7 +51,7 @@ func TestNewPageStyle(t *testing.T) {
 	expectF(t, 595, ps3.cropSize.x2)
 	expectF(t, 842, ps3.cropSize.y2)
 
-	opt4 := Options{"page_size": "A4", "orientation": "landscape"}
+	opt4 := options.Options{"page_size": "A4", "orientation": "landscape"}
 	ps4 := newPageStyle(opt4)
 	expectF(t, 0, ps4.pageSize.x1)
 	expectF(t, 0, ps4.pageSize.y1)
@@ -60,11 +64,11 @@ func TestNewPageStyle(t *testing.T) {
 
 	// TODO: Handle crop_size differently to allow non-zero x1 and y1.
 
-	opt5 := Options{"rotate": "portrait"}
+	opt5 := options.Options{"rotate": "portrait"}
 	ps5 := newPageStyle(opt5)
 	expectNI(t, "rotate", 0, ps5.rotate)
 
-	opt6 := Options{"rotate": "landscape"}
+	opt6 := options.Options{"rotate": "landscape"}
 	ps6 := newPageStyle(opt6)
 	expectNI(t, "rotate", 270, ps6.rotate)
 }

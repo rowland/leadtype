@@ -3,6 +3,8 @@
 
 package pdf
 
+import "github.com/rowland/leadtype/options"
+
 type Font struct {
 	family       string
 	weight       string
@@ -14,7 +16,7 @@ type Font struct {
 	metrics      FontMetrics
 }
 
-func NewFont(family string, options Options, fontSources FontSources) (*Font, error) {
+func NewFont(family string, options options.Options, fontSources FontSources) (*Font, error) {
 	font := &Font{
 		family:       family,
 		weight:       options.StringDefault("weight", ""),

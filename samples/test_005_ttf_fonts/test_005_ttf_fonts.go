@@ -5,9 +5,11 @@ package main
 
 import (
 	"fmt"
-	"leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 )
 
 const name = "test_005_ttf_fonts.pdf"
@@ -33,7 +35,7 @@ func main() {
 			doc.NewPage()
 			doc.MoveTo(1, 1)
 		}
-		_, err = doc.SetFont(info.Family(), 12, pdf.Options{"style": info.Style()})
+		_, err = doc.SetFont(info.Family(), 12, options.Options{"style": info.Style()})
 		if err != nil {
 			panic(err)
 		}

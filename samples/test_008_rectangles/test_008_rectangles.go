@@ -4,9 +4,11 @@
 package main
 
 import (
-	"github.com/rowland/leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/pdf"
 )
 
 const name = "test_008_rectangles.pdf"
@@ -19,7 +21,7 @@ func main() {
 	doc := pdf.NewDocWriter()
 	doc.NewPage()
 
-	doc.SetLineColor(pdf.Blue)
+	doc.SetLineColor(color.Blue)
 	doc.SetLineWidth(3, "pt")
 	doc.SetLineDashPattern("dashed")
 

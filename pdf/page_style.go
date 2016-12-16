@@ -3,6 +3,8 @@
 
 package pdf
 
+import "github.com/rowland/leadtype/options"
+
 var PageSizes = SizeMap{
 	"letter": Size{612, 792},
 	"legal":  Size{612, 1008},
@@ -19,7 +21,7 @@ type pageStyle struct {
 	rotate      int
 }
 
-func newPageStyle(options Options) *pageStyle {
+func newPageStyle(options options.Options) *pageStyle {
 	ps := new(pageStyle)
 	ps.orientation = options.StringDefault("orientation", "portrait")
 	pageSizeName := options.StringDefault("page_size", "letter")

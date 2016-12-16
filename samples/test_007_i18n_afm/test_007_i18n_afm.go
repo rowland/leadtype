@@ -4,9 +4,11 @@
 package main
 
 import (
-	"leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 )
 
 import "fmt"
@@ -24,7 +26,7 @@ func main() {
 
 	doc.NewPage()
 	doc.MoveTo(1, 1)
-	_, err = doc.SetFont("Helvetica", 12, pdf.Options{})
+	_, err = doc.SetFont("Helvetica", 12, options.Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +42,7 @@ func main() {
 			doc.MoveTo(1, 1)
 		}
 		fmt.Fprintf(doc, "%s:\n", k)
-		doc.PrintWithOptions(i18nText[k], pdf.Options{"width": 6.5})
+		doc.PrintWithOptions(i18nText[k], options.Options{"width": 6.5})
 		fmt.Fprintln(doc)
 	}
 	f, err := os.Create(name)

@@ -4,9 +4,10 @@
 package main
 
 import (
-	"leadtype/pdf"
 	"os"
 	"os/exec"
+
+	"github.com/rowland/leadtype/pdf"
 )
 
 const name = "test_001_empty_doc.pdf"

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/options"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 
 func TestPageWriter_checkSetFillColor(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.fillColor == black, "fillColor should default to black")
 	check(t, pw.last.fillColor == black, "last.fillColor should default to black")
@@ -36,7 +37,7 @@ func TestPageWriter_checkSetFillColor(t *testing.T) {
 
 func TestPageWriter_checkSetFontColor(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.fontColor == black, "fontColor should default to black")
 	check(t, pw.last.fillColor == black, "last.fillColor should default to black")
@@ -54,7 +55,7 @@ func TestPageWriter_checkSetFontColor(t *testing.T) {
 
 func TestPageWriter_checkSetLineColor(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.lineColor == black, "lineColor should default to black")
 	check(t, pw.last.lineColor == black, "last.lineColor should default to black")
@@ -71,7 +72,7 @@ func TestPageWriter_checkSetLineColor(t *testing.T) {
 
 func TestPageWriter_checkSetLineDashPattern(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.lineDashPattern == "", "lineDashPattern should default to unset")
 	check(t, pw.last.lineDashPattern == "", "last.lineDashPattern should default to unset")
@@ -98,7 +99,7 @@ func TestPageWriter_checkSetLineDashPattern(t *testing.T) {
 
 func TestPageWriter_checkSetLineWidth(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.lineWidth == 0, "lineWidth should default to 0")
 	check(t, pw.last.lineWidth == 0, "last.lineWidth should default to 0")
@@ -121,7 +122,7 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 
 func TestclonePageWriter(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	pw.SetLineCapStyle(ProjectingSquareCap)
 	pw.SetLineColor(color.AliceBlue)
@@ -145,7 +146,7 @@ func TestPageWriter_flushText(t *testing.T) {
 	dw.AddFontSource(fc)
 	pw := dw.NewPage()
 
-	pw.SetFont("Arial", 12, Options{})
+	pw.SetFont("Arial", 12, options.Options{})
 	pw.Print("Hello")
 	pw.Print(", World!")
 	pw.flushText()
@@ -154,7 +155,7 @@ func TestPageWriter_flushText(t *testing.T) {
 
 func TestPageWriter_FontSize(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.FontSize() == 0, "Should default to zero")
 	prev := pw.SetFontSize(12.5)
@@ -186,9 +187,9 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	expectS(t, "No current font to apply style Italic to.", err.Error())
 	check(t, prev == "", "Should return empty string when no font is set")
 
-	_, err = pw.AddFont("Arial", Options{})
+	_, err = pw.AddFont("Arial", options.Options{})
 	check(t, err == nil, "Failed to add Arial")
-	_, err = pw.AddFont("Helvetica", Options{})
+	_, err = pw.AddFont("Helvetica", options.Options{})
 	check(t, err == nil, "Failed to add Helvetica")
 
 	fonts := pw.Fonts()
@@ -207,7 +208,7 @@ func TestPageWriter_FontStyle(t *testing.T) {
 
 func TestPageWriter_LineCapStyle(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.LineCapStyle() == ButtCap, "Should default to ButtCap")
 
@@ -222,7 +223,7 @@ func TestPageWriter_LineCapStyle(t *testing.T) {
 
 func TestPageWriter_LineColor(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.LineColor() == black, "Should default to black")
 
@@ -237,7 +238,7 @@ func TestPageWriter_LineColor(t *testing.T) {
 
 func TestPageWriter_LineDashPattern(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.LineDashPattern() == "", "Should default to unset")
 
@@ -252,7 +253,7 @@ func TestPageWriter_LineDashPattern(t *testing.T) {
 
 func TestPageWriter_LineThrough(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.LineThrough() == false, "Should default to false")
 
@@ -263,7 +264,7 @@ func TestPageWriter_LineThrough(t *testing.T) {
 
 func TestPageWriter_LineTo(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.stream.String() == "", "Stream should default to empty")
 	check(t, pw.inPath == false, "Should not be in path by default")
@@ -288,7 +289,7 @@ func TestPageWriter_LineTo(t *testing.T) {
 
 func TestPageWriter_LineWidth(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.LineWidth("pt") == 0, "Should default to zero")
 	prev := pw.SetLineWidth(72, "pt")
@@ -300,7 +301,7 @@ func TestPageWriter_LineWidth(t *testing.T) {
 
 func TestPageWriter_MoveTo(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 	expectF(t, 0, pw.loc.X)
 	expectF(t, 0, pw.loc.Y)
 	pw.MoveTo(222, 333)
@@ -310,7 +311,7 @@ func TestPageWriter_MoveTo(t *testing.T) {
 
 func TestPageWriter_PageHeight(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 	// height in (default) points
 	expectF(t, 792, pw.PageHeight())
 	pw.SetUnits("in")
@@ -325,7 +326,7 @@ func TestPageWriter_PageHeight(t *testing.T) {
 
 func TestPageWriter_PageWidth(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 	// width in (default) points
 	expectF(t, 612, pw.PageWidth())
 	pw.SetUnits("in")
@@ -340,14 +341,14 @@ func TestPageWriter_PageWidth(t *testing.T) {
 
 func TestPageWriter_Print(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
 	dw.AddFontSource(fc)
-	pw.SetFont("Arial", 12, Options{})
+	pw.SetFont("Arial", 12, options.Options{})
 
 	check(t, pw.line == nil, "line should start out nil")
 	pw.Print("Hello")
@@ -370,7 +371,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 
 	check(t, pw.Fonts() == nil, "Page font list should be empty by default")
 
-	fonts, _ := pw.SetFont("Arial", 12, Options{"color": green})
+	fonts, _ := pw.SetFont("Arial", 12, options.Options{"color": green})
 
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectS(t, "Arial", fonts[0].family)
@@ -383,7 +384,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 
 func TestPageWriter_SetUnits(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 	// defaults to points
 	expectS(t, "pt", pw.Units())
 	// inches
@@ -400,7 +401,7 @@ func TestPageWriter_SetUnits(t *testing.T) {
 
 func TestPageWriter_startGraph(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.gw != nil, "GraphWriter should not be nil.")
 	check(t, !pw.inGraph, "Should not be in graph mode by default.")
@@ -414,14 +415,14 @@ func TestPageWriter_startGraph(t *testing.T) {
 
 func TestPageWriter_translate(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 	actual := pw.translate(200)
 	expectF(t, 792-200, actual)
 }
 
 func TestPageWriter_Underline(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.Underline() == false, "Should default to false")
 
@@ -433,34 +434,34 @@ func TestPageWriter_Underline(t *testing.T) {
 func TestPageWriter_units(t *testing.T) {
 	dw := NewDocWriter()
 	// defaults to points
-	pw1 := newPageWriter(dw, Options{})
+	pw1 := newPageWriter(dw, options.Options{})
 	expectS(t, "pt", pw1.units.name)
 	expectF(t, 1, pw1.units.ratio)
 	// inches
-	pw2 := newPageWriter(dw, Options{"units": "in"})
+	pw2 := newPageWriter(dw, options.Options{"units": "in"})
 	expectS(t, "in", pw2.units.name)
 	expectF(t, 72, pw2.units.ratio)
 	// centimeters
-	pw3 := newPageWriter(dw, Options{"units": "cm"})
+	pw3 := newPageWriter(dw, options.Options{"units": "cm"})
 	expectS(t, "cm", pw3.units.name)
 	expectF(t, 28.35, pw3.units.ratio)
 	// custom: "Dave points"
 	UnitConversions.Add("dp", 0.072)
-	pw4 := newPageWriter(dw, Options{"units": "dp"})
+	pw4 := newPageWriter(dw, options.Options{"units": "dp"})
 	expectS(t, "dp", pw4.units.name)
 	expectF(t, 0.072, pw4.units.ratio)
 }
 
 func TestPageWriter_Write(t *testing.T) {
 	dw := NewDocWriter()
-	pw := newPageWriter(dw, Options{})
+	pw := newPageWriter(dw, options.Options{})
 
 	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
 	dw.AddFontSource(fc)
-	pw.SetFont("Arial", 12, Options{})
+	pw.SetFont("Arial", 12, options.Options{})
 
 	check(t, pw.line == nil, "line should start out nil")
 	fmt.Fprint(pw, "Hello")

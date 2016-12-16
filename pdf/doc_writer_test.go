@@ -9,6 +9,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/options"
 )
 
 func TestNewDocWriter(t *testing.T) {
@@ -55,7 +56,7 @@ func TestDocWriter_fontKey(t *testing.T) {
 	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 	dw.NewPage()
-	fonts, err := dw.AddFont("Arial", Options{})
+	fonts, err := dw.AddFont("Arial", options.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +184,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts, _ := dw.SetFont("Courier New", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
+	fonts, _ := dw.SetFont("Courier New", 10, options.Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectNS(t, "family", "Courier New", fonts[0].family)
 	expectF(t, 10, dw.FontSize())
@@ -208,7 +209,7 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 
 	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
 
-	fonts, _ := dw.SetFont("Courier", 10, Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
+	fonts, _ := dw.SetFont("Courier", 10, options.Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
 	expectNS(t, "family", "Courier", fonts[0].family)
 	expectF(t, 10, dw.FontSize())
@@ -222,7 +223,7 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 
 func TestDocWriter_SetOptions(t *testing.T) {
 	dw := NewDocWriter()
-	dw.SetOptions(Options{"units": "in"})
+	dw.SetOptions(options.Options{"units": "in"})
 	check(t, len(dw.options) == 1, "Default page options should have 1 option")
 	check(t, dw.options["units"] == "in", "Default units should be in")
 }

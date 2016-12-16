@@ -9,6 +9,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/options"
 )
 
 type DocWriter struct {
@@ -20,7 +21,7 @@ type DocWriter struct {
 	pagesAcross   int
 	pagesDown     int
 	curPage       *PageWriter
-	options       Options
+	options       options.Options
 	fontSources   FontSources
 	fontKeys      map[string]string
 	fontEncodings map[string]*fontEncoding
@@ -40,7 +41,15 @@ func NewDocWriter() *DocWriter {
 	fontSources := make(FontSources, 0, 2)
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
-	return &DocWriter{nextSeq: nextSeq, file: file, catalog: catalog, resources: resources, options: Options{}, fontSources: fontSources, fontKeys: fontKeys, fontEncodings: fontEncodings}
+	return &DocWriter{
+		nextSeq:       nextSeq,
+		file:          file,
+		catalog:       catalog,
+		resources:     resources,
+		options:       options.Options{},
+		fontSources:   fontSources,
+		fontKeys:      fontKeys,
+		fontEncodings: fontEncodings}
 }
 
 func nextSeqFunc() func() int {
@@ -51,7 +60,7 @@ func nextSeqFunc() func() int {
 	}
 }
 
-func (dw *DocWriter) AddFont(family string, options Options) ([]*Font, error) {
+func (dw *DocWriter) AddFont(family string, options options.Options) ([]*Font, error) {
 	return dw.CurPage().AddFont(family, options)
 }
 
@@ -199,7 +208,7 @@ func (dw *DocWriter) MoveTo(x, y float64) {
 
 func (dw *DocWriter) NewPage() *PageWriter {
 	if dw.curPage == nil {
-		return dw.NewPageWithOptions(Options{})
+		return dw.NewPageWithOptions(options.Options{})
 	}
 	return dw.NewPageAfter(dw.curPage)
 }
@@ -219,7 +228,7 @@ func (dw *DocWriter) NewPageAfter(pw *PageWriter) *PageWriter {
 	return nil
 }
 
-func (dw *DocWriter) NewPageWithOptions(options Options) *PageWriter {
+func (dw *DocWriter) NewPageWithOptions(options options.Options) *PageWriter {
 	dw.curPage = newPageWriter(dw, dw.options.Merge(options))
 	dw.pages = append(dw.pages, dw.curPage)
 	return dw.curPage
@@ -263,7 +272,7 @@ func (dw *DocWriter) PrintRichText(text *RichText) {
 	dw.CurPage().PrintRichText(text)
 }
 
-func (dw *DocWriter) PrintWithOptions(text string, options Options) (err error) {
+func (dw *DocWriter) PrintWithOptions(text string, options options.Options) (err error) {
 	return dw.CurPage().PrintWithOptions(text, options)
 }
 
@@ -283,7 +292,7 @@ func (dw *DocWriter) SetFillColor(color interface{}) (prev color.Color) {
 	return dw.CurPage().SetFillColor(color)
 }
 
-func (dw *DocWriter) SetFont(name string, size float64, options Options) ([]*Font, error) {
+func (dw *DocWriter) SetFont(name string, size float64, options options.Options) ([]*Font, error) {
 	return dw.CurPage().SetFont(name, size, options)
 }
 
@@ -319,7 +328,7 @@ func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
 	return dw.CurPage().SetLineWidth(width, units)
 }
 
-func (dw *DocWriter) SetOptions(options Options) {
+func (dw *DocWriter) SetOptions(options options.Options) {
 	dw.options = options
 }
 
