@@ -102,15 +102,3 @@ func quadrantBezierPoints(quadrant int, x, y, rx, ry float64) (bp []Location) {
 	}
 	return
 }
-
-func stringSlicesEqual(sl1, sl2 []string) bool {
-	if len(sl1) != len(sl2) {
-		return false
-	}
-	for i, s := range sl1 {
-		if s != sl2[i] {
-			return false
-		}
-	}
-	return true
-}

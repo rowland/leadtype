@@ -3,7 +3,12 @@
 
 package pdf
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/options"
+)
 
 type afmFontSelection struct {
 	family         string
@@ -53,18 +58,17 @@ var testAfmSelectData = []afmFontSelection{
 	{"zapf chancery", "medium", "italic", nil, "ZapfChancery-MediumItalic"},
 }
 
-func testAfmFonts(families ...string) (fonts []*Font) {
+func testAfmFonts(families ...string) (fonts []*font.Font) {
 	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
 	if err != nil {
 		panic(err)
 	}
 	for _, family := range families {
-		metrics, err := fc.Select(family, "", "", nil)
+		f, err := font.New(family, options.Options{}, font.FontSources{fc})
 		if err != nil {
 			panic(err)
 		}
-		font := &Font{family: family, metrics: metrics}
-		fonts = append(fonts, font)
+		fonts = append(fonts, f)
 	}
 	return
 }
@@ -97,6 +101,7 @@ func TestAfmFontCollection(t *testing.T) {
 // 11,984,518 ns go1.1.2
 // 10,951,804 ns go1.2.1
 // 13,275,334 ns go1.4.2
+//  4,440,591 ns go1.7.3 mbp
 func BenchmarkAfmFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var fc AfmFontCollection
@@ -114,6 +119,7 @@ func BenchmarkAfmFontCollection_Add(b *testing.B) {
 // 41,299 ns go1.1.2
 // 39,918 ns go1.2.1
 // 99,394 ns go1.4.2
+// 31,638 ns go1.7.3 mbp
 func BenchmarkAfmFontCollection_Select(b *testing.B) {
 	b.StopTimer()
 	var fc AfmFontCollection

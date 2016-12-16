@@ -9,6 +9,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 )
 
@@ -22,7 +23,7 @@ type DocWriter struct {
 	pagesDown     int
 	curPage       *PageWriter
 	options       options.Options
-	fontSources   FontSources
+	fontSources   font.FontSources
 	fontKeys      map[string]string
 	fontEncodings map[string]*fontEncoding
 }
@@ -38,7 +39,7 @@ func NewDocWriter() *DocWriter {
 	resources := newResources(nextSeq(), 0)
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
-	fontSources := make(FontSources, 0, 2)
+	fontSources := make(font.FontSources, 0, 2)
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
@@ -60,11 +61,11 @@ func nextSeqFunc() func() int {
 	}
 }
 
-func (dw *DocWriter) AddFont(family string, options options.Options) ([]*Font, error) {
+func (dw *DocWriter) AddFont(family string, options options.Options) ([]*font.Font, error) {
 	return dw.CurPage().AddFont(family, options)
 }
 
-func (dw *DocWriter) AddFontSource(fontSource FontSource) {
+func (dw *DocWriter) AddFontSource(fontSource font.FontSource) {
 	dw.fontSources = append(dw.fontSources, fontSource)
 }
 
@@ -79,31 +80,31 @@ func (dw *DocWriter) FontColor() color.Color {
 	return dw.CurPage().FontColor()
 }
 
-func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
+func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	if f == nil {
 		panic("fontKey: No font specified.")
 	}
-	if f.metrics == nil {
+	if !f.HasMetrics() {
 		panic("fontKey: font missing metrics.")
 	}
-	name := fmt.Sprintf("%s/%s-%s", f.metrics.PostScriptName(), cpi, f.subType)
+	name := fmt.Sprintf("%s/%s-%s", f.PostScriptName(), cpi, f.SubType())
 	if key, ok := dw.fontKeys[name]; ok {
 		return key
 	}
 	descriptor := newFontDescriptor(
 		dw.nextSeq(), 0,
-		f.metrics.PostScriptName(), f.metrics.Family(),
-		f.metrics.Flags(),
-		f.metrics.BoundingBox(),
+		f.PostScriptName(), f.Family(),
+		f.Flags(),
+		f.BoundingBox(),
 		0, // missingWidth
-		f.metrics.StemV(),
+		f.StemV(),
 		0, // stemH
-		f.metrics.ItalicAngle(),
-		f.metrics.CapHeight(),
-		f.metrics.XHeight(),
-		f.metrics.Ascent(),
-		f.metrics.Descent(),
-		f.metrics.Leading(),
+		f.ItalicAngle(),
+		f.CapHeight(),
+		f.XHeight(),
+		f.Ascent(),
+		f.Descent(),
+		f.Leading(),
 		0, 0) // maxWidth, avgWidth
 	dw.file.body.add(descriptor)
 	key := fmt.Sprintf("F%d", len(dw.fontKeys))
@@ -111,7 +112,7 @@ func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
 	widths := dw.widthsForFontCodepage(f, cpi)
 	dw.file.body.add(widths)
 	var font *simpleFont
-	switch f.subType {
+	switch f.SubType() {
 	case "Type1":
 		encoding, ok := dw.fontEncodings[cpi.String()]
 		if !ok {
@@ -122,13 +123,13 @@ func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
 		}
 		font = newType1Font(
 			dw.nextSeq(), 0,
-			f.metrics.PostScriptName(),
+			f.PostScriptName(),
 			32, 255, widths,
 			descriptor, &indirectObjectRef{encoding})
 	case "TrueType":
 		font = newTrueTypeFont(
 			dw.nextSeq(), 0,
-			f.metrics.PostScriptName(),
+			f.PostScriptName(),
 			32, 255, widths,
 			descriptor)
 	}
@@ -137,7 +138,7 @@ func (dw *DocWriter) fontKey(f *Font, cpi codepage.CodepageIndex) string {
 	return key
 }
 
-func (dw *DocWriter) Fonts() []*Font {
+func (dw *DocWriter) Fonts() []*font.Font {
 	return dw.CurPage().Fonts()
 }
 
@@ -145,7 +146,7 @@ func (dw *DocWriter) FontSize() float64 {
 	return dw.CurPage().FontSize()
 }
 
-func (dw *DocWriter) FontSources() FontSources {
+func (dw *DocWriter) FontSources() font.FontSources {
 	return dw.fontSources
 }
 
@@ -292,7 +293,7 @@ func (dw *DocWriter) SetFillColor(color interface{}) (prev color.Color) {
 	return dw.CurPage().SetFillColor(color)
 }
 
-func (dw *DocWriter) SetFont(name string, size float64, options options.Options) ([]*Font, error) {
+func (dw *DocWriter) SetFont(name string, size float64, options options.Options) ([]*font.Font, error) {
 	return dw.CurPage().SetFont(name, size, options)
 }
 
@@ -347,13 +348,13 @@ func (dw *DocWriter) Underline() bool {
 	return dw.CurPage().Underline()
 }
 
-func (dw *DocWriter) widthsForFontCodepage(f *Font, cpi codepage.CodepageIndex) *indirectObject {
+func (dw *DocWriter) widthsForFontCodepage(f *font.Font, cpi codepage.CodepageIndex) *indirectObject {
 	var widths [256]int
-	upm := f.metrics.UnitsPerEm()
+	upm := f.UnitsPerEm()
 	// Avoid divide by zero error for unusual fonts.
 	if upm > 0 {
 		for i, r := range cpi.Map() {
-			designWidth, _ := f.metrics.AdvanceWidth(r)
+			designWidth, _ := f.AdvanceWidth(r)
 			widths[i] = designWidth * 1000 / upm
 		}
 	}

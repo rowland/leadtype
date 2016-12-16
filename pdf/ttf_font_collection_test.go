@@ -3,7 +3,12 @@
 
 package pdf
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/options"
+)
 
 type ttfFontSelection struct {
 	family         string
@@ -36,7 +41,7 @@ var testTtfSelectData = []ttfFontSelection{
 	{"AppleMyungjo", "Regular", "", nil, "AppleMyungjo"},
 }
 
-func testTtfFonts(families ...string) (fonts []*Font) {
+func testTtfFonts(families ...string) (fonts []*font.Font) {
 	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
@@ -46,12 +51,11 @@ func testTtfFonts(families ...string) (fonts []*Font) {
 			fonts = append(fonts, nil)
 			continue
 		}
-		metrics, err := fc.Select(family, "", "", nil)
+		f, err := font.New(family, options.Options{}, font.FontSources{fc})
 		if err != nil {
 			panic(err)
 		}
-		font := &Font{family: family, metrics: metrics}
-		fonts = append(fonts, font)
+		fonts = append(fonts, f)
 	}
 	return
 }
@@ -84,6 +88,7 @@ func TestTtfFontCollection(t *testing.T) {
 // 33,604,903 ns go1.1.2
 // 29,678,826 ns go1.2.1
 // 33,674,155 ns go1.4.2
+// 13,663,640 ns go1.7.3 mbp
 func BenchmarkTtfFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var fc TtfFontCollection
@@ -96,6 +101,7 @@ func BenchmarkTtfFontCollection_Add(b *testing.B) {
 // 1,769 ns go1.1.2
 // 1,610 ns go1.2.1
 // 1,855 ns go1.4.2
+//   729 ns go1.7.3 mbp
 func BenchmarkTtfFontCollection_Select(b *testing.B) {
 	b.StopTimer()
 	var fc TtfFontCollection

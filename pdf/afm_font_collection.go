@@ -6,10 +6,12 @@ package pdf
 import (
 	"errors"
 	"fmt"
-	"github.com/rowland/leadtype/afm"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/rowland/leadtype/afm"
+	"github.com/rowland/leadtype/font"
 )
 
 type AfmFontCollection struct {
@@ -70,7 +72,7 @@ func makeFontSelectRegexp(family, weight, style string) (re *regexp.Regexp, err 
 	return
 }
 
-func (fc *AfmFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics FontMetrics, err error) {
+func (fc *AfmFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics font.FontMetrics, err error) {
 	if len(ranges) > 0 {
 		return nil, errors.New("Named ranges not supported for Type1 fonts.")
 	}
@@ -99,3 +101,5 @@ func (fc *AfmFontCollection) Select(family, weight, style string, ranges []strin
 func (fc *AfmFontCollection) SubType() string {
 	return "Type1"
 }
+
+var _ font.FontSource = (*AfmFontCollection)(nil)

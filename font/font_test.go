@@ -1,7 +1,7 @@
 // Copyright 2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package font
 
 import (
 	"github.com/rowland/leadtype/ttf"
@@ -49,5 +49,21 @@ func BenchmarkFont_HasRune(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		f.HasRune('A')
+	}
+}
+
+func TestStringSlicesEqual(t *testing.T) {
+	a := []string{"abc", "def"}
+	b := []string{"abc", "def"}
+	c := []string{"abc", "def", "ghi"}
+	d := []string{"abc", "ghi"}
+	check(t, stringSlicesEqual(a, b), "Slices a and b should be equal.")
+	check(t, !stringSlicesEqual(a, c), "Slices a and c should not be equal.")
+	check(t, !stringSlicesEqual(a, d), "Slices a and d should not be equal.")
+}
+
+func check(t *testing.T, condition bool, msg string) {
+	if !condition {
+		t.Error(msg)
 	}
 }

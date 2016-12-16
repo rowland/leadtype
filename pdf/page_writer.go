@@ -12,6 +12,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/wordbreaking"
 )
@@ -28,7 +29,7 @@ type PageWriter struct {
 	drawState
 	autoPath   bool
 	dw         *DocWriter
-	fonts      []*Font
+	fonts      []*font.Font
 	gw         *graphWriter
 	inGraph    bool
 	inPath     bool
@@ -84,15 +85,15 @@ func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
 	return pw
 }
 
-func (pw *PageWriter) AddFont(family string, options options.Options) ([]*Font, error) {
-	if font, err := NewFont(family, options, pw.dw.fontSources); err != nil {
+func (pw *PageWriter) AddFont(family string, options options.Options) ([]*font.Font, error) {
+	if font, err := font.New(family, options, pw.dw.fontSources); err != nil {
 		return nil, err
 	} else {
 		return pw.addFont(font), nil
 	}
 }
 
-func (pw *PageWriter) addFont(font *Font) []*Font {
+func (pw *PageWriter) addFont(font *font.Font) []*font.Font {
 	pw.fonts = append(pw.fonts, font)
 	return pw.fonts
 }
@@ -336,7 +337,7 @@ func (pw *PageWriter) FontColor() color.Color {
 	return pw.fontColor
 }
 
-func (pw *PageWriter) Fonts() []*Font {
+func (pw *PageWriter) Fonts() []*font.Font {
 	return pw.fonts
 }
 
@@ -346,7 +347,7 @@ func (pw *PageWriter) FontSize() float64 {
 
 func (pw *PageWriter) FontStyle() string {
 	if len(pw.fonts) > 0 {
-		return pw.fonts[0].style
+		return pw.fonts[0].Style()
 	}
 	return ""
 }
@@ -606,7 +607,7 @@ func (pw *PageWriter) setDefaultFont() {
 	// TODO: Set Courier, Courier New or first font found.
 }
 
-func (pw *PageWriter) SetFont(name string, size float64, options options.Options) ([]*Font, error) {
+func (pw *PageWriter) SetFont(name string, size float64, options options.Options) ([]*font.Font, error) {
 	pw.ResetFonts()
 	pw.SetFontSize(size)
 	pw.SetFontColor(options["color"])
@@ -662,20 +663,20 @@ func (pw *PageWriter) SetFontStyle(style string) (prev string, err error) {
 	if len(prevFonts) < 1 {
 		return "", fmt.Errorf("No current font to apply style %s to.", style)
 	}
-	prev = prevFonts[0].style
+	prev = prevFonts[0].Style()
 	pw.ResetFonts()
 	for _, font := range prevFonts {
 		options := options.Options{
-			"weight":       font.weight,
+			"weight":       font.Weight,
 			"style":        style,
-			"relativeSize": font.relativeSize,
+			"relativeSize": font.RelativeSize,
 		}
-		if font.runeSet != nil {
-			options["ranges"] = font.runeSet
+		if font.RuneSet != nil {
+			options["ranges"] = font.RuneSet
 		} else {
-			options["ranges"] = font.ranges
+			options["ranges"] = font.Ranges
 		}
-		if _, err = pw.AddFont(font.family, options); err != nil {
+		if _, err = pw.AddFont(font.Family(), options); err != nil {
 			break
 		}
 	}

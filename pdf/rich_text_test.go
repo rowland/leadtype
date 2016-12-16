@@ -10,6 +10,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/ttf"
 	"github.com/rowland/leadtype/wordbreaking"
@@ -108,21 +109,19 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stFangsongMetrics, err := fc.Select("STFangsong", "", "", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
 	cjk, err := ttf.NewCodepointRangeSet("CJK Unified Ideographs")
 	if err != nil {
 		t.Fatal(err)
 	}
-	stFangsong := &Font{family: "STFangsong", metrics: stFangsongMetrics, runeSet: cjk}
-	arialMetrics, err := fc.Select("Arial", "", "", nil)
+	stFangsong, err := font.New("STFangsong", options.Options{"ranges": cjk}, font.FontSources{fc})
 	if err != nil {
 		t.Fatal(err)
 	}
-	arial := &Font{family: "Arial", metrics: arialMetrics}
-	fonts := []*Font{stFangsong, arial}
+	arial, err := font.New("Arial", options.Options{}, font.FontSources{fc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fonts := []*font.Font{stFangsong, arial}
 
 	rt, err := NewRichText("所有测abc", fonts, 10, options.Options{})
 	if err != nil {
@@ -958,6 +957,7 @@ func TestRichText_WrapToWidth_zero(t *testing.T) {
 // 14,930 ns go1.1.2
 // 14,685 ns go1.2.1
 // 10,873 ns go1.4.2
+//  5,664 ns go1.7.3 mbp
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := testAfmFonts("Helvetica")
@@ -978,6 +978,7 @@ func BenchmarkNewRichText(b *testing.B) {
 // 70.8 ns go1.1.2
 // 74.1 ns go1.2.1
 // 77.8 ns go1.4.2
+// 48.3 ns go1.7.3 mbp
 func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
 	font := testTtfFonts("Arial")[0]
@@ -998,6 +999,7 @@ func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 // 296 ns go1.1.2
 // 299 ns go1.2.1
 // 323 ns go1.4.2
+// 224 ns go1.7.3 mbp
 func BenchmarkRichText_measure(b *testing.B) {
 	b.StopTimer()
 	piece := arialText("Lorem")
@@ -1011,6 +1013,7 @@ func BenchmarkRichText_measure(b *testing.B) {
 // 4488 ns go1.1.2
 // 4591 ns go1.2.1
 // 4997 ns go1.4.2
+// 3210 ns go1.7.3 mbp
 func BenchmarkRichText_Ascent(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1030,6 +1033,7 @@ func BenchmarkRichText_Ascent(b *testing.B) {
 // 4547 ns go1.1.2
 // 4591 ns go1.2.1
 // 5026 ns go1.4.2
+// 3265 ns go1.7.3 mbp
 func BenchmarkRichText_Chars(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1049,6 +1053,7 @@ func BenchmarkRichText_Chars(b *testing.B) {
 // 4492 ns go1.1.2
 // 4568 ns go1.2.1
 // 4957 ns go1.4.2
+// 3240 ns go1.7.3 mbp
 func BenchmarkRichText_Descent(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1068,6 +1073,7 @@ func BenchmarkRichText_Descent(b *testing.B) {
 // 17.8 ns go1.1.2
 // 16.7 ns go1.2.1
 // 17.2 ns go1.4.2
+// 10.8 ns go1.7.3 mbp
 func BenchmarkRichText_Height(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1087,6 +1093,7 @@ func BenchmarkRichText_Height(b *testing.B) {
 // 30.2 ns go1.1.2
 // 30.4 ns go1.2.1
 // 36.3 ns go1.4.2
+// 24.3 ns go1.7.3 mbp
 func BenchmarkRichText_Len(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()
@@ -1100,6 +1107,7 @@ func BenchmarkRichText_Len(b *testing.B) {
 // 4539 ns go1.1.2
 // 4636 ns go1.2.1
 // 5051 ns go1.4.2
+// 3304 ns go1.7.3 mbp
 func BenchmarkRichText_Width(b *testing.B) {
 	b.StopTimer()
 	text := mixedText()

@@ -14,6 +14,7 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/wordbreaking"
 )
@@ -21,7 +22,7 @@ import (
 // Hierarchical structure of text and attributes, allowing text to be described, measured and wrapped.
 type RichText struct {
 	Text               string
-	Font               *Font
+	Font               *font.Font
 	FontSize           float64
 	Color              color.Color
 	Underline          bool
@@ -62,7 +63,7 @@ var errNoFontSet = errors.New("No font set")
 //   word_spacing: Add extra space between words, expressed in points.
 //   nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
 //                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-func NewRichText(s string, fonts []*Font, fontSize float64, options options.Options) (*RichText, error) {
+func NewRichText(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
 	piece := &RichText{
 		Text:        s,
 		FontSize:    fontSize,
@@ -73,7 +74,7 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options options.Opti
 		WordSpacing: options.FloatDefault("word_spacing", 0),
 		NoBreak:     options.BoolDefault("nobreak", false),
 	}
-	var defaultFont *Font
+	var defaultFont *font.Font
 	if len(fonts) == 0 {
 		return nil, errNoFontSet
 	}
@@ -90,7 +91,7 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options options.Opti
 
 // Add appends text with specified attributes to existing structure, possibly returning a new root.
 // Options are the same as for NewRichText.
-func (piece *RichText) Add(s string, fonts []*Font, fontSize float64, options options.Options) (*RichText, error) {
+func (piece *RichText) Add(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
 	p, err := NewRichText(s, fonts, fontSize, options)
 	if err != nil {
 		return piece, err
@@ -375,7 +376,7 @@ func (piece *RichText) measure() *RichText {
 		return piece
 	}
 	piece.chars, piece.width = 0, 0.0
-	metrics := piece.Font.metrics
+	metrics := piece.Font
 	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
 	piece.ascent = float64(metrics.Ascent()) * fsize
 	piece.descent = float64(metrics.Descent()) * fsize
@@ -484,7 +485,7 @@ func (piece *RichText) split(offset int, left, right *RichText, current *int) {
 	}
 }
 
-func (piece *RichText) splitByFont(fonts []*Font, defaultFont *Font) (pieces []*RichText, err error) {
+func (piece *RichText) splitByFont(fonts []*font.Font, defaultFont *font.Font) (pieces []*RichText, err error) {
 	if len(fonts) == 0 {
 		newPiece := piece.Clone()
 		newPiece.Text = strings.Repeat("?", utf8.RuneCountInString(piece.Text))
@@ -630,7 +631,7 @@ func (piece *RichText) WordsToWidth(
 	lastOffset := 0
 
 	var lastPiece *RichText
-	var metrics FontMetrics
+	var metrics font.FontMetrics
 	var fsize float64
 	var lastRune rune
 
@@ -660,8 +661,8 @@ func (piece *RichText) WordsToWidth(
 			}
 		}
 		if p != lastPiece {
-			metrics = p.Font.metrics
-			fsize = p.FontSize / float64(metrics.UnitsPerEm())
+			metrics = p.Font
+			fsize = p.FontSize / float64(p.Font.UnitsPerEm())
 			lastPiece = p
 		}
 		if rune != wordbreaking.SoftHyphen {

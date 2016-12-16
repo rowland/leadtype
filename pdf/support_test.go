@@ -97,13 +97,3 @@ func TestFloat64Slice(t *testing.T) {
 	expectS(t, "1 2.5 3.1416", float64Slice(values).join(" "))
 	expectS(t, "1, 2.5, 3.1416", float64Slice(values).join(", "))
 }
-
-func TestStringSlicesEqual(t *testing.T) {
-	a := []string{"abc", "def"}
-	b := []string{"abc", "def"}
-	c := []string{"abc", "def", "ghi"}
-	d := []string{"abc", "ghi"}
-	check(t, stringSlicesEqual(a, b), "Slices a and b should be equal.")
-	check(t, !stringSlicesEqual(a, c), "Slices a and c should not be equal.")
-	check(t, !stringSlicesEqual(a, d), "Slices a and d should not be equal.")
-}

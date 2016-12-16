@@ -182,18 +182,18 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 
 	dw.NewPage()
 
-	check(t, dw.Fonts() == nil, "Document font list should be empty by default.")
+	st := SuperTest{t}
+	st.True(dw.Fonts() == nil, "Document font list should be empty by default.")
 
 	fonts, _ := dw.SetFont("Courier New", 10, options.Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
-	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
-	expectNS(t, "family", "Courier New", fonts[0].family)
-	expectF(t, 10, dw.FontSize())
-	expectF(t, 1.0, fonts[0].relativeSize)
-	expectNS(t, "weight", "Bold", fonts[0].weight)
-	expectNS(t, "style", "Italic", fonts[0].style)
-	// check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
-	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
-	check(t, fonts[0].subType == "TrueType", "Font subType should be TrueType.")
+	st.Must(len(fonts) == 1, "length of fonts should be 1")
+	st.Equal("Courier New", fonts[0].Family())
+	st.True(10 == dw.FontSize())
+	st.True(1.0 == fonts[0].RelativeSize)
+	st.Equal("Bold", fonts[0].Weight)
+	st.Equal("Italic", fonts[0].Style())
+	st.True(fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
+	st.True(fonts[0].SubType() == "TrueType", "Font subType should be TrueType.")
 }
 
 func TestDocWriter_SetFont_Type1(t *testing.T) {
@@ -211,14 +211,13 @@ func TestDocWriter_SetFont_Type1(t *testing.T) {
 
 	fonts, _ := dw.SetFont("Courier", 10, options.Options{"weight": "Bold", "style": "Italic", "color": "AliceBlue"})
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
-	expectNS(t, "family", "Courier", fonts[0].family)
+	expectNS(t, "family", "Courier", fonts[0].Family())
 	expectF(t, 10, dw.FontSize())
-	expectF(t, 1.0, fonts[0].relativeSize)
-	expectNS(t, "weight", "Bold", fonts[0].weight)
-	expectNS(t, "style", "Italic", fonts[0].style)
-	// check(t, fonts[0].color == AliceBlue, "Font color should be AliceBlue.")
+	expectF(t, 1.0, fonts[0].RelativeSize)
+	expectNS(t, "weight", "Bold", fonts[0].Weight)
+	expectNS(t, "style", "Italic", fonts[0].Style())
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont result should match new font list.")
-	check(t, fonts[0].subType == "Type1", "Font subType should be Type1.")
+	check(t, fonts[0].SubType() == "Type1", "Font subType should be Type1.")
 }
 
 func TestDocWriter_SetOptions(t *testing.T) {

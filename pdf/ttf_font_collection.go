@@ -5,9 +5,11 @@ package pdf
 
 import (
 	"fmt"
-	"github.com/rowland/leadtype/ttf"
 	"path/filepath"
 	"strings"
+
+	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/ttf"
 )
 
 type TtfFontCollection struct {
@@ -43,7 +45,7 @@ func (fc *TtfFontCollection) Len() int {
 	return len(fc.FontInfos)
 }
 
-func (fc *TtfFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics FontMetrics, err error) {
+func (fc *TtfFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics font.FontMetrics, err error) {
 	var ws string
 	if weight != "" && style != "" {
 		ws = weight + " " + style

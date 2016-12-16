@@ -120,7 +120,7 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 	// TODO: test for autoPath behavior
 }
 
-func TestclonePageWriter(t *testing.T) {
+func TestClonePageWriter(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
@@ -194,16 +194,17 @@ func TestPageWriter_FontStyle(t *testing.T) {
 
 	fonts := pw.Fonts()
 	checkFatal(t, len(fonts) == 2, "length of fonts should be 2")
-	expectS(t, "", fonts[0].style)
-	expectS(t, "", fonts[1].style)
+	expectS(t, "", fonts[0].Style())
+	expectS(t, "", fonts[1].Style())
 
 	prev, err = pw.SetFontStyle("Italic")
 	check(t, err == nil, "Error setting style to Italic.")
 	check(t, pw.FontStyle() == "Italic", "FontStyle should now be Italic")
 	fonts = pw.Fonts()
 	checkFatal(t, len(fonts) == 2, "length of fonts should be 2")
-	expectS(t, "Italic", fonts[0].style)
-	expectS(t, "Italic", fonts[1].style)
+
+	expectS(t, "Italic", fonts[0].Style())
+	expectS(t, "Italic", fonts[1].Style())
 }
 
 func TestPageWriter_LineCapStyle(t *testing.T) {
@@ -374,10 +375,10 @@ func TestPageWriter_SetFont(t *testing.T) {
 	fonts, _ := pw.SetFont("Arial", 12, options.Options{"color": green})
 
 	checkFatal(t, len(fonts) == 1, "length of fonts should be 1")
-	expectS(t, "Arial", fonts[0].family)
+	expectS(t, "Arial", fonts[0].Family())
 	check(t, pw.FontColor() == green, "FontColor should now be green")
 	expectF(t, 12, pw.FontSize())
-	expectF(t, 1.0, fonts[0].relativeSize)
+	expectF(t, 1.0, fonts[0].RelativeSize)
 	check(t, fonts[0] == pw.Fonts()[0], "SetFont should return new font list")
 	check(t, fonts[0] == dw.Fonts()[0], "SetFont changes to font list should be global")
 }
