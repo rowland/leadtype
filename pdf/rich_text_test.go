@@ -4,12 +4,14 @@
 package pdf
 
 import (
-	"github.com/rowland/leadtype/codepage"
-	"github.com/rowland/leadtype/ttf"
-	"github.com/rowland/leadtype/wordbreaking"
 	"math"
 	"testing"
 	"unicode"
+
+	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/ttf"
+	"github.com/rowland/leadtype/wordbreaking"
 )
 
 // import "fmt"
@@ -17,13 +19,13 @@ import (
 func TestNewRichText_English(t *testing.T) {
 	st := SuperTest{t}
 	fonts := testTtfFonts("Arial")
-	rt, err := NewRichText("abc", fonts, 10, Options{"color": Green, "underline": true, "line_through": true, "nobreak": true})
+	rt, err := NewRichText("abc", fonts, 10, Options{"color": color.Green, "underline": true, "line_through": true, "nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	st.Equal("abc", rt.Text)
 	st.Equal(10.0, rt.FontSize)
-	st.Equal(Green, rt.Color)
+	st.Equal(color.Green, rt.Color)
 	st.True(rt.Underline)
 	st.True(rt.LineThrough)
 	st.True(rt.NoBreak)
@@ -57,19 +59,19 @@ func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 
 	st.Equal("abc", rt.pieces[0].Text)
 	st.Equal(10.0, rt.pieces[0].FontSize)
-	st.Equal(Black, rt.pieces[0].Color, "Color should be (default) black.")
+	st.Equal(color.Black, rt.pieces[0].Color, "Color should be (default) black.")
 	st.False(rt.pieces[0].Underline, "Underline should be (default) false.")
 	st.False(rt.pieces[0].LineThrough, "LineThrough should be (default) false.")
 
 	st.Equal("所有测", rt.pieces[1].Text)
 	st.Equal(10.0, rt.pieces[1].FontSize)
-	st.Equal(Black, rt.pieces[1].Color, "Color should be (default) black.")
+	st.Equal(color.Black, rt.pieces[1].Color, "Color should be (default) black.")
 	st.False(rt.pieces[1].Underline, "Underline should be (default) false.")
 	st.False(rt.pieces[1].LineThrough, "LineThrough should be (default) false.")
 
 	st.Equal("def", rt.pieces[2].Text)
 	st.Equal(10.0, rt.pieces[2].FontSize)
-	st.Equal(Black, rt.pieces[2].Color, "Color should be (default) black.")
+	st.Equal(color.Black, rt.pieces[2].Color, "Color should be (default) black.")
 	st.False(rt.pieces[2].Underline, "Underline should be (default) false.")
 	st.False(rt.pieces[2].LineThrough, "LineThrough should be (default) false.")
 
@@ -476,7 +478,7 @@ func TestRichText_MatchesAttributes(t *testing.T) {
 	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1
-	p2.Color = Azure
+	p2.Color = color.Azure
 	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1
