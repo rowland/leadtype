@@ -7,10 +7,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/rowland/leadtype/codepage"
-	"github.com/rowland/leadtype/wordbreaking"
 	"math"
 	"strings"
+
+	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/wordbreaking"
 )
 
 type LineCapStyle int
@@ -329,7 +331,7 @@ func (pw *PageWriter) flushText() {
 	pw.flushing = false
 }
 
-func (pw *PageWriter) FontColor() Color {
+func (pw *PageWriter) FontColor() color.Color {
 	return pw.fontColor
 }
 
@@ -352,7 +354,7 @@ func (pw *PageWriter) LineCapStyle() LineCapStyle {
 	return pw.lineCapStyle
 }
 
-func (pw *PageWriter) LineColor() Color {
+func (pw *PageWriter) LineColor() color.Color {
 	return pw.lineColor
 }
 
@@ -610,39 +612,39 @@ func (pw *PageWriter) SetFont(name string, size float64, options Options) ([]*Fo
 	return pw.AddFont(name, options)
 }
 
-func (pw *PageWriter) SetFillColor(color interface{}) (prev Color) {
+func (pw *PageWriter) SetFillColor(value interface{}) (prev color.Color) {
 	prev = pw.fillColor
 
-	switch color := color.(type) {
+	switch value := value.(type) {
 	case string:
-		if c, err := NamedColor(color); err == nil {
+		if c, err := color.NamedColor(value); err == nil {
 			pw.fillColor = c
 		}
 	case int:
-		pw.fillColor = Color(color)
+		pw.fillColor = color.Color(value)
 	case int32:
-		pw.fillColor = Color(color)
-	case Color:
-		pw.fillColor = color
+		pw.fillColor = color.Color(value)
+	case color.Color:
+		pw.fillColor = value
 	}
 
 	return
 }
 
-func (pw *PageWriter) SetFontColor(color interface{}) (prev Color) {
+func (pw *PageWriter) SetFontColor(value interface{}) (prev color.Color) {
 	prev = pw.fontColor
 
-	switch color := color.(type) {
+	switch value := value.(type) {
 	case string:
-		if c, err := NamedColor(color); err == nil {
+		if c, err := color.NamedColor(value); err == nil {
 			pw.fontColor = c
 		}
 	case int:
-		pw.fontColor = Color(color)
+		pw.fontColor = color.Color(value)
 	case int32:
-		pw.fontColor = Color(color)
-	case Color:
-		pw.fontColor = color
+		pw.fontColor = color.Color(value)
+	case color.Color:
+		pw.fontColor = value
 	}
 
 	return
@@ -685,9 +687,9 @@ func (pw *PageWriter) SetLineCapStyle(lineCapStyle LineCapStyle) (prev LineCapSt
 	return
 }
 
-func (pw *PageWriter) SetLineColor(color Color) (prev Color) {
+func (pw *PageWriter) SetLineColor(value color.Color) (prev color.Color) {
 	prev = pw.lineColor
-	pw.lineColor = color
+	pw.lineColor = value
 	return
 }
 

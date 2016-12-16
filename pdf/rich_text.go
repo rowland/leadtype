@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/color"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -21,7 +22,7 @@ type RichText struct {
 	Text               string
 	Font               *Font
 	FontSize           float64
-	Color              Color
+	Color              color.Color
 	Underline          bool
 	LineThrough        bool
 	ascent             float64
@@ -64,7 +65,7 @@ func NewRichText(s string, fonts []*Font, fontSize float64, options Options) (*R
 	piece := &RichText{
 		Text:        s,
 		FontSize:    fontSize,
-		Color:       options.ColorDefault("color", Black),
+		Color:       options.ColorDefault("color", color.Black),
 		Underline:   options.BoolDefault("underline", false),
 		LineThrough: options.BoolDefault("line_through", false),
 		CharSpacing: options.FloatDefault("char_spacing", 0),

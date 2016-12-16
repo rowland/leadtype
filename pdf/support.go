@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"math"
 	"strconv"
 )
 

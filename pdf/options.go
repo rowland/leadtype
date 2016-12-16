@@ -5,6 +5,8 @@ package pdf
 
 import (
 	"strconv"
+
+	"github.com/rowland/leadtype/color"
 )
 
 type Options map[string]interface{}
@@ -28,20 +30,20 @@ func (this Options) BoolDefault(key string, def bool) bool {
 	return def
 }
 
-func (this Options) ColorDefault(key string, def Color) (color Color) {
-	color = def
+func (this Options) ColorDefault(key string, def color.Color) (result color.Color) {
+	result = def
 	if value, ok := this[key]; ok {
 		switch value := value.(type) {
-		case Color:
-			color = value
+		case color.Color:
+			result = value
 		case string:
-			if c, err := NamedColor(value); err == nil {
-				color = c
+			if c, err := color.NamedColor(value); err == nil {
+				result = c
 			}
 		case int:
-			color = Color(value)
+			result = color.Color(value)
 		case int32:
-			color = Color(value)
+			result = color.Color(value)
 		}
 	}
 	return

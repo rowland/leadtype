@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/rowland/leadtype/codepage"
+	"github.com/rowland/leadtype/color"
 )
 
 type DocWriter struct {
@@ -65,7 +66,7 @@ func (dw *DocWriter) CurPage() *PageWriter {
 	return dw.curPage
 }
 
-func (dw *DocWriter) FontColor() Color {
+func (dw *DocWriter) FontColor() color.Color {
 	return dw.CurPage().FontColor()
 }
 
@@ -168,7 +169,7 @@ func (dw *DocWriter) LineCapStyle() LineCapStyle {
 	return dw.CurPage().LineCapStyle()
 }
 
-func (dw *DocWriter) LineColor() Color {
+func (dw *DocWriter) LineColor() color.Color {
 	return dw.CurPage().LineColor()
 }
 
@@ -278,7 +279,7 @@ func (dw *DocWriter) ResetFonts() {
 	dw.CurPage().ResetFonts()
 }
 
-func (dw *DocWriter) SetFillColor(color interface{}) (prev Color) {
+func (dw *DocWriter) SetFillColor(color interface{}) (prev color.Color) {
 	return dw.CurPage().SetFillColor(color)
 }
 
@@ -286,7 +287,7 @@ func (dw *DocWriter) SetFont(name string, size float64, options Options) ([]*Fon
 	return dw.CurPage().SetFont(name, size, options)
 }
 
-func (dw *DocWriter) SetFontColor(color interface{}) (lastColor Color) {
+func (dw *DocWriter) SetFontColor(color interface{}) (lastColor color.Color) {
 	return dw.CurPage().SetFontColor(color)
 }
 
@@ -298,7 +299,7 @@ func (dw *DocWriter) SetFontStyle(style string) (prev string, err error) {
 	return dw.CurPage().SetFontStyle(style)
 }
 
-func (dw *DocWriter) SetLineColor(color Color) (prev Color) {
+func (dw *DocWriter) SetLineColor(color color.Color) (prev color.Color) {
 	return dw.CurPage().SetLineColor(color)
 }
 

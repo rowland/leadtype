@@ -1,7 +1,7 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package color
 
 import (
 	"testing"
@@ -35,4 +35,22 @@ func TestNamedColor(t *testing.T) {
 	_, err3 := NamedColor("")
 	check(t, err3 != nil, "Expecting error looking up empty string.")
 	check(t, err3.Error() == "Expected name of color or numeric value in hex format.", "Unexpected error message looking up color.")
+}
+
+func expectNI(t *testing.T, name string, expected, actual int) {
+	if expected != actual {
+		t.Errorf("%s: expected %d, got %d", name, expected, actual)
+	}
+}
+
+func expectF(t *testing.T, expected, actual float64) {
+	if expected != actual {
+		t.Errorf("Expected %f, got %f", expected, actual)
+	}
+}
+
+func check(t *testing.T, condition bool, msg string) {
+	if !condition {
+		t.Error(msg)
+	}
 }
