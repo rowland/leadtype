@@ -494,32 +494,6 @@ func (pw *PageWriter) PrintWithOptions(text string, options Options) (err error)
 	return nil
 }
 
-var signs = []Location{{1, -1}, {-1, -1}, {-1, 1}, {1, 1}}
-
-func quadrantBezierPoints(quadrant int, x, y, rx, ry float64) (bp []Location) {
-	const a = 4.0 / 3.0 * (math.Sqrt2 - 1.0)
-	if quadrant == 1 || quadrant == 3 {
-		// (1, 0)
-		bp = append(bp, Location{x + (rx * signs[quadrant-1].X), y})
-		// (1, a)
-		bp = append(bp, Location{bp[0].X, y + (a * ry * signs[quadrant-1].Y)})
-		// (a, 1)
-		bp = append(bp, Location{x + (a * rx * signs[quadrant-1].X), y + (ry * signs[quadrant-1].Y)})
-		// (0, 1)
-		bp = append(bp, Location{x, bp[2].Y})
-	} else {
-		// (0,1)
-		bp = append(bp, Location{x, y + (ry * signs[quadrant-1].Y)})
-		// (a,1)
-		bp = append(bp, Location{x + (a * rx * signs[quadrant-1].Y), bp[0].Y})
-		// (1,a)
-		bp = append(bp, Location{x + (rx * signs[quadrant-1].X), y + (a * ry * signs[quadrant-1].Y)})
-		// (1,0)
-		bp = append(bp, Location{bp[2].X, y})
-	}
-	return
-}
-
 func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
 	pw.rectangle(x, y, width, height, border, fill, nil, false, false)
 }
