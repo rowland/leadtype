@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 )
 
@@ -125,13 +125,13 @@ func TestClonePageWriter(t *testing.T) {
 	pw := newPageWriter(dw, options.Options{})
 
 	pw.SetLineCapStyle(ProjectingSquareCap)
-	pw.SetLineColor(color.AliceBlue)
+	pw.SetLineColor(colors.AliceBlue)
 	pw.SetLineDashPattern("dotted")
 	pw.SetLineWidth(42, "pt")
 
 	pwc := clonePageWriter(pw)
 	check(t, pwc.LineCapStyle() == ProjectingSquareCap, "LineCapStyle should be ProjectingSquareCap")
-	check(t, pwc.LineColor() == color.AliceBlue, "LineColor should be AliceBlue")
+	check(t, pwc.LineColor() == colors.AliceBlue, "LineColor should be AliceBlue")
 	check(t, pwc.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
 	check(t, pwc.LineWidth("pt") == 42, "LineWidth should be 42")
 }
@@ -269,7 +269,7 @@ func TestPageWriter_LineTo(t *testing.T) {
 
 	check(t, pw.stream.String() == "", "Stream should default to empty")
 	check(t, pw.inPath == false, "Should not be in path by default")
-	pw.SetLineColor(color.Blue)
+	pw.SetLineColor(colors.Blue)
 	pw.SetLineWidth(3, "pt")
 	pw.SetLineDashPattern("dashed")
 

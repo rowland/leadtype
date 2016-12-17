@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/rowland/leadtype/codepage"
-	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 )
 
@@ -101,12 +101,12 @@ func TestDocWriter_NewPageAfter(t *testing.T) {
 	check(t, p1 == dw.pages[0], "p1 should be in 1st slot")
 
 	check(t, p1.LineCapStyle() != ProjectingSquareCap, "LineCapStyle shouldn't default to ProjectingSquareCap")
-	check(t, p1.LineColor() != color.AliceBlue, "LineColor shouldn't default to AliceBlue")
+	check(t, p1.LineColor() != colors.AliceBlue, "LineColor shouldn't default to AliceBlue")
 	check(t, p1.LineDashPattern() != "dotted", "LineDashPattern shouldn't default to 'dotted'")
 	check(t, p1.LineWidth("pt") != 42, "LineWidth shouldn't default to 42")
 
 	p1.SetLineCapStyle(ProjectingSquareCap)
-	p1.SetLineColor(color.AliceBlue)
+	p1.SetLineColor(colors.AliceBlue)
 	p1.SetLineDashPattern("dotted")
 	p1.SetLineWidth(42, "pt")
 
@@ -117,12 +117,12 @@ func TestDocWriter_NewPageAfter(t *testing.T) {
 	check(t, p3 == dw.pages[1], "p3 should be in 2nd slot for now")
 
 	check(t, p3.LineCapStyle() == ProjectingSquareCap, "LineCapStyle should still be ProjectingSquareCap")
-	check(t, p3.LineColor() == color.AliceBlue, "LineColor should still be AliceBlue")
+	check(t, p3.LineColor() == colors.AliceBlue, "LineColor should still be AliceBlue")
 	check(t, p3.LineDashPattern() == "dotted", "LineDashPattern should still be 'dotted'")
 	check(t, p3.LineWidth("pt") == 42, "LineWidth should still be 42")
 
 	p3.SetLineCapStyle(RoundCap)
-	p3.SetLineColor(color.AntiqueWhite)
+	p3.SetLineColor(colors.AntiqueWhite)
 	p3.SetLineDashPattern("dashed")
 	p3.SetLineWidth(36, "pt")
 
@@ -133,7 +133,7 @@ func TestDocWriter_NewPageAfter(t *testing.T) {
 	check(t, p3 == dw.pages[2], "p3 should be in 3rd slot now")
 
 	check(t, p2.LineCapStyle() == ProjectingSquareCap, "LineCapStyle should be ProjectingSquareCap")
-	check(t, p2.LineColor() == color.AliceBlue, "LineColor should be AliceBlue")
+	check(t, p2.LineColor() == colors.AliceBlue, "LineColor should be AliceBlue")
 	check(t, p2.LineDashPattern() == "dotted", "LineDashPattern should be 'dotted'")
 	check(t, p2.LineWidth("pt") == 42, "LineWidth should be 42")
 }

@@ -3,15 +3,15 @@
 
 package pdf
 
-import "github.com/rowland/leadtype/color"
+import "github.com/rowland/leadtype/colors"
 
 type drawState struct {
-	fillColor       color.Color
-	fontColor       color.Color
+	fillColor       colors.Color
+	fontColor       colors.Color
 	fontKey         string
 	fontSize        float64
 	lineCapStyle    LineCapStyle
-	lineColor       color.Color
+	lineColor       colors.Color
 	lineDashPattern string
 	lineSpacing     float64
 	lineThrough     bool

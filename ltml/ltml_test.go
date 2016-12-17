@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 )
@@ -64,9 +64,9 @@ func (dw *DocWriter) SetFont(name string, size float64) error {
 }
 
 func (dw *DocWriter) SetLineColor(value string) {
-	c, err := color.NamedColor(value)
+	c, err := colors.NamedColor(value)
 	if err != nil {
-		c = color.Black
+		c = colors.Black
 	}
 	dw.DocWriter.SetLineColor(c)
 }
