@@ -10,6 +10,7 @@ import (
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 func TestNewDocWriter(t *testing.T) {
@@ -31,9 +32,9 @@ func TestNewDocWriter(t *testing.T) {
 func TestDocWriter_AddFontSource(t *testing.T) {
 	dw := NewDocWriter()
 	check(t, len(dw.fontSources) == 0, "No font sources should exist.")
-	var fc TtfFontCollection
-	dw.AddFontSource(&fc)
-	check(t, dw.fontSources[0] == &fc, "Font source should exist.")
+	var fonts ttf_fonts.TtfFonts
+	dw.AddFontSource(&fonts)
+	check(t, dw.fontSources[0] == &fonts, "Font source should exist.")
 }
 
 func TestDocWriter_Close(t *testing.T) {
@@ -49,7 +50,7 @@ func TestDocWriter_Close(t *testing.T) {
 }
 
 func TestDocWriter_fontKey(t *testing.T) {
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +175,7 @@ func TestDocWriter_PageWidth(t *testing.T) {
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	dw := NewDocWriter()
 
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}

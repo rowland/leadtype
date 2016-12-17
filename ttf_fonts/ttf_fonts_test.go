@@ -1,13 +1,10 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package ttf_fonts
 
 import (
 	"testing"
-
-	"github.com/rowland/leadtype/font"
-	"github.com/rowland/leadtype/options"
 )
 
 type ttfFontSelection struct {
@@ -41,44 +38,34 @@ var testTtfSelectData = []ttfFontSelection{
 	{"AppleMyungjo", "Regular", "", nil, "AppleMyungjo"},
 }
 
-func testTtfFonts(families ...string) (fonts []*font.Font) {
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
-	if err != nil {
-		panic(err)
-	}
-	for _, family := range families {
-		if family == "" {
-			fonts = append(fonts, nil)
-			continue
-		}
-		f, err := font.New(family, options.Options{}, font.FontSources{fc})
-		if err != nil {
-			panic(err)
-		}
-		fonts = append(fonts, f)
-	}
-	return
-}
-
-func TestTtfFontCollection(t *testing.T) {
-	var fc TtfFontCollection
+func TestTtfFonts(t *testing.T) {
+	var fc TtfFonts
 
 	if err := fc.Add("/Library/Fonts/*.ttf"); err != nil {
 		t.Error(err)
 	}
 
-	expectNI(t, "Len", 85, fc.Len())
+	if expected, actual := 85, fc.Len(); actual != expected {
+		t.Errorf("expected %v, got %v", expected, actual)
+	}
 	for _, fs := range testTtfSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
-			expectNS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
+			if f.PostScriptName() != fs.postscriptName {
+				t.Errorf("%s: expected %v, got %v", fs.postscriptName, fs.postscriptName, f.PostScriptName())
+			}
 		} else {
 			t.Error(err)
 		}
 	}
 	bogusFont, err2 := fc.Select("Bogus", "Regular", "", nil)
-	expect(t, "Bogus Select Font", bogusFont == nil)
-	expectNS(t, "Bogus Select Error", "Font Bogus Regular not found", err2.Error())
+	if bogusFont != nil {
+		t.Errorf("%s: expected nil, got %v", "Bogus Select Font", bogusFont)
+	}
+	const expectedError = "Font Bogus Regular not found"
+	if err2.Error() != expectedError {
+		t.Errorf("%s: expected %v, got %v", "Bogus Select Error", expectedError, err2.Error())
+	}
 }
 
 // 81,980,000 ns
@@ -91,8 +78,8 @@ func TestTtfFontCollection(t *testing.T) {
 // 13,663,640 ns go1.7.3 mbp
 func BenchmarkTtfFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		var fc TtfFontCollection
-		fc.Add("/Library/Fonts/*.ttf")
+		var fonts TtfFonts
+		fonts.Add("/Library/Fonts/*.ttf")
 	}
 }
 
@@ -104,13 +91,13 @@ func BenchmarkTtfFontCollection_Add(b *testing.B) {
 //   729 ns go1.7.3 mbp
 func BenchmarkTtfFontCollection_Select(b *testing.B) {
 	b.StopTimer()
-	var fc TtfFontCollection
-	if err := fc.Add("/Library/Fonts/*.ttf"); err != nil {
+	var fonts TtfFonts
+	if err := fonts.Add("/Library/Fonts/*.ttf"); err != nil {
 		b.Fatal(err)
 	}
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		fc.Select("Times New Roman", "Bold", "Italic", nil)
+		fonts.Select("Times New Roman", "Bold", "Italic", nil)
 	}
 }

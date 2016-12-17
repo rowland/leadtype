@@ -1,7 +1,7 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package ttf_fonts
 
 import (
 	"fmt"
@@ -9,23 +9,43 @@ import (
 	"strings"
 
 	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/ttf"
 )
 
-type TtfFontCollection struct {
+type TtfFonts struct {
 	FontInfos []*ttf.FontInfo
 	fonts     map[string]*ttf.Font
 }
 
-func NewTtfFontCollection(pattern string) (*TtfFontCollection, error) {
-	var fc TtfFontCollection
+func New(pattern string) (*TtfFonts, error) {
+	var fc TtfFonts
 	if err := fc.Add(pattern); err != nil {
 		return nil, err
 	}
 	return &fc, nil
 }
 
-func (fc *TtfFontCollection) Add(pattern string) (err error) {
+func Families(families ...string) (fonts []*font.Font) {
+	fc, err := New("/Library/Fonts/*.ttf")
+	if err != nil {
+		panic(err)
+	}
+	for _, family := range families {
+		if family == "" {
+			fonts = append(fonts, nil)
+			continue
+		}
+		f, err := font.New(family, options.Options{}, font.FontSources{fc})
+		if err != nil {
+			panic(err)
+		}
+		fonts = append(fonts, f)
+	}
+	return
+}
+
+func (fc *TtfFonts) Add(pattern string) (err error) {
 	var pathnames []string
 	if pathnames, err = filepath.Glob(pattern); err != nil {
 		return
@@ -41,11 +61,11 @@ func (fc *TtfFontCollection) Add(pattern string) (err error) {
 	return
 }
 
-func (fc *TtfFontCollection) Len() int {
+func (fc *TtfFonts) Len() int {
 	return len(fc.FontInfos)
 }
 
-func (fc *TtfFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics font.FontMetrics, err error) {
+func (fc *TtfFonts) Select(family, weight, style string, ranges []string) (fontMetrics font.FontMetrics, err error) {
 	var ws string
 	if weight != "" && style != "" {
 		ws = weight + " " + style
@@ -81,6 +101,6 @@ search:
 	return
 }
 
-func (fc *TtfFontCollection) SubType() string {
+func (fc *TtfFonts) SubType() string {
 	return "TrueType"
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const (
@@ -137,7 +138,7 @@ func TestClonePageWriter(t *testing.T) {
 }
 
 func TestPageWriter_flushText(t *testing.T) {
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +167,7 @@ func TestPageWriter_FontSize(t *testing.T) {
 func TestPageWriter_FontStyle(t *testing.T) {
 	dw := NewDocWriter()
 
-	ttfc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +345,7 @@ func TestPageWriter_Print(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +363,7 @@ func TestPageWriter_Print(t *testing.T) {
 func TestPageWriter_SetFont(t *testing.T) {
 	dw := NewDocWriter()
 
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -457,7 +458,7 @@ func TestPageWriter_Write(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	fc, err := NewTtfFontCollection("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
 	}
