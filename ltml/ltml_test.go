@@ -14,6 +14,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 func TestParse(t *testing.T) {
@@ -81,7 +82,7 @@ func (dw *DocWriter) SetLineWidth(width float64) {
 
 func NewDocWriter() *DocWriter {
 	dw := pdf.NewDocWriter()
-	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
 	}
