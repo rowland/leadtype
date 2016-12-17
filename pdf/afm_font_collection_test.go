@@ -80,18 +80,28 @@ func TestAfmFontCollection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectNI(t, "Len", 77, fc.Len())
+	expected, actual := 77, fc.Len()
+	if actual != expected {
+		t.Errorf("%s: expected %d, got %d", "Len", expected, actual)
+	}
 	for _, fs := range testAfmSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
-			expectNS(t, fs.postscriptName, fs.postscriptName, f.PostScriptName())
+			if f.PostScriptName() != fs.postscriptName {
+				t.Errorf("%s: expected %d, got %d", "PostScriptName", fs.postscriptName, f.PostScriptName())
+			}
 		} else {
 			t.Error(err)
 		}
 	}
 	bogusFont, err2 := fc.Select("Bogus", "Medium", "", nil)
-	expect(t, "Bogus Select Font", bogusFont == nil)
-	expectNS(t, "Bogus Select Error", "Font 'Bogus Medium ' not found", err2.Error())
+	if bogusFont != nil {
+		t.Errorf("bogusFont: expected nil, got %v", bogusFont)
+	}
+	const expectedError = "Font 'Bogus Medium ' not found"
+	if err2.Error() != expectedError {
+		t.Errorf("%s: expected %s, got %s", "Bogus Select Error", expectedError, err2.Error())
+	}
 }
 
 // 81,980,000 ns
