@@ -8,6 +8,7 @@ import (
 	"testing"
 	"unicode"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
@@ -142,7 +143,7 @@ const englishRussianChinese = "Here is some Russian, Неприкосновен�
 
 func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	st := SuperTest{t}
-	afmFonts := testAfmFonts("Helvetica")
+	afmFonts := afm_fonts.Families("Helvetica")
 	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	rt, err := NewRichText(englishRussianChinese, fonts, 10, options.Options{})
@@ -283,7 +284,7 @@ func TestRichText_Height(t *testing.T) {
 
 func TestRichText_InsertStringAtOffsets(t *testing.T) {
 	st := SuperTest{t}
-	afmFonts := testAfmFonts("Helvetica")
+	afmFonts := afm_fonts.Families("Helvetica")
 	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Automatic "
@@ -435,7 +436,7 @@ func arialText(s string) *RichText {
 }
 
 func helveticaText(s string) *RichText {
-	rt, err := NewRichText(s, testAfmFonts("Helvetica"), 10, options.Options{})
+	rt, err := NewRichText(s, afm_fonts.Families("Helvetica"), 10, options.Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -514,7 +515,7 @@ func TestRichText_measure(t *testing.T) {
 
 func TestRichText_Merge(t *testing.T) {
 	st := SuperTest{t}
-	afmFonts := testAfmFonts("Helvetica")
+	afmFonts := afm_fonts.Families("Helvetica")
 	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Here is some "
@@ -617,7 +618,7 @@ func TestRichText_Merge_width_chars(t *testing.T) {
 }
 
 func mixedText() *RichText {
-	afmFonts := testAfmFonts("Helvetica")
+	afmFonts := afm_fonts.Families("Helvetica")
 	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	rt, err := NewRichText(englishRussianChinese, fonts, 10, options.Options{})
@@ -961,7 +962,7 @@ func TestRichText_WrapToWidth_zero(t *testing.T) {
 //  5,664 ns go1.7.3 mbp
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
-	afmFonts := testAfmFonts("Helvetica")
+	afmFonts := afm_fonts.Families("Helvetica")
 	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	b.StartTimer()

@@ -1,7 +1,7 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package afm_fonts
 
 import (
 	"errors"
@@ -12,23 +12,39 @@ import (
 
 	"github.com/rowland/leadtype/afm"
 	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/options"
 )
 
-type AfmFontCollection struct {
+type AfmFonts struct {
 	FontInfos []*afm.FontInfo
 	Fonts     map[string]*afm.Font
 }
 
-func NewAfmFontCollection(pattern string) (*AfmFontCollection, error) {
-	var fc AfmFontCollection
+func New(pattern string) (*AfmFonts, error) {
+	var fc AfmFonts
 	if err := fc.Add(pattern); err != nil {
 		return nil, err
 	}
 	return &fc, nil
 }
 
+func Families(families ...string) (fonts []*font.Font) {
+	fc, err := New("../afm/data/fonts/*.afm")
+	if err != nil {
+		panic(err)
+	}
+	for _, family := range families {
+		f, err := font.New(family, options.Options{}, font.FontSources{fc})
+		if err != nil {
+			panic(err)
+		}
+		fonts = append(fonts, f)
+	}
+	return
+}
+
 // 81,980,000 ns
-func (fc *AfmFontCollection) Add(pattern string) (err error) {
+func (fc *AfmFonts) Add(pattern string) (err error) {
 	var pathnames []string
 	if pathnames, err = filepath.Glob(pattern); err != nil {
 		return
@@ -44,7 +60,7 @@ func (fc *AfmFontCollection) Add(pattern string) (err error) {
 	return
 }
 
-func (fc *AfmFontCollection) Len() int {
+func (fc *AfmFonts) Len() int {
 	return len(fc.FontInfos)
 }
 
@@ -72,7 +88,7 @@ func makeFontSelectRegexp(family, weight, style string) (re *regexp.Regexp, err 
 	return
 }
 
-func (fc *AfmFontCollection) Select(family, weight, style string, ranges []string) (fontMetrics font.FontMetrics, err error) {
+func (fc *AfmFonts) Select(family, weight, style string, ranges []string) (fontMetrics font.FontMetrics, err error) {
 	if len(ranges) > 0 {
 		return nil, errors.New("Named ranges not supported for Type1 fonts.")
 	}
@@ -98,8 +114,8 @@ func (fc *AfmFontCollection) Select(family, weight, style string, ranges []strin
 	return
 }
 
-func (fc *AfmFontCollection) SubType() string {
+func (fc *AfmFonts) SubType() string {
 	return "Type1"
 }
 
-var _ font.FontSource = (*AfmFontCollection)(nil)
+var _ font.FontSource = (*AfmFonts)(nil)

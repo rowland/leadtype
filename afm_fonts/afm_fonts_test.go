@@ -1,7 +1,7 @@
 // Copyright 2011-2012 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package afm_fonts
 
 import (
 	"testing"
@@ -59,7 +59,7 @@ var testAfmSelectData = []afmFontSelection{
 }
 
 func testAfmFonts(families ...string) (fonts []*font.Font) {
-	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
+	fc, err := New("../afm/data/fonts/*.afm")
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func testAfmFonts(families ...string) (fonts []*font.Font) {
 }
 
 func TestAfmFontCollection(t *testing.T) {
-	var fc AfmFontCollection
+	var fc AfmFonts
 
 	if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
 		t.Fatal(err)
@@ -114,7 +114,7 @@ func TestAfmFontCollection(t *testing.T) {
 //  4,440,591 ns go1.7.3 mbp
 func BenchmarkAfmFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		var fc AfmFontCollection
+		var fc AfmFonts
 		if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
 			b.Fatal(err)
 		}
@@ -132,7 +132,7 @@ func BenchmarkAfmFontCollection_Add(b *testing.B) {
 // 31,638 ns go1.7.3 mbp
 func BenchmarkAfmFontCollection_Select(b *testing.B) {
 	b.StopTimer()
-	var fc AfmFontCollection
+	var fc AfmFonts
 	if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
 		b.Fatal(err)
 	}

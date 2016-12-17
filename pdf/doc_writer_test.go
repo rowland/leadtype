@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
@@ -200,7 +201,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 func TestDocWriter_SetFont_Type1(t *testing.T) {
 	dw := NewDocWriter()
 
-	fc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
+	fc, err := afm_fonts.New("../afm/data/fonts/*.afm")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/ttf_fonts"
@@ -173,7 +174,7 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	}
 	dw.AddFontSource(ttfc)
 
-	afmfc, err := NewAfmFontCollection("../afm/data/fonts/*.afm")
+	afmfc, err := afm_fonts.New("../afm/data/fonts/*.afm")
 	if err != nil {
 		t.Fatal(err)
 	}
