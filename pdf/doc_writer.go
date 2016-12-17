@@ -11,6 +11,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 )
 
 type DocWriter struct {
@@ -265,11 +266,11 @@ func (dw *DocWriter) Print(text string) (err error) {
 	return dw.CurPage().Print(text)
 }
 
-func (dw *DocWriter) PrintParagraph(para []*RichText) {
+func (dw *DocWriter) PrintParagraph(para []*rich_text.RichText) {
 	dw.CurPage().PrintParagraph(para)
 }
 
-func (dw *DocWriter) PrintRichText(text *RichText) {
+func (dw *DocWriter) PrintRichText(text *rich_text.RichText) {
 	dw.CurPage().PrintRichText(text)
 }
 

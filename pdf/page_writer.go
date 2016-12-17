@@ -14,6 +14,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -37,7 +38,7 @@ type PageWriter struct {
 	isClosed   bool
 	keepOrigin bool
 	last       drawState
-	line       *RichText
+	line       *rich_text.RichText
 	lineHeight float64
 	mw         *miscWriter
 	options    options.Options
@@ -290,7 +291,7 @@ func (pw *PageWriter) flushText() {
 	}
 	loc1 := pw.loc
 	var buf bytes.Buffer
-	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *RichText) {
+	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *rich_text.RichText) {
 		if p.Font == nil {
 			fmt.Println(cpi)
 			fmt.Println(text)
@@ -314,7 +315,7 @@ func (pw *PageWriter) flushText() {
 		pw.checkSetFont()
 		pw.tw.show(buf.Bytes())
 	})
-	pw.line.VisitAll(func(p *RichText) {
+	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
 			return
 		}
@@ -461,14 +462,14 @@ func (pw *PageWriter) print(text string) (err error) {
 	return
 }
 
-func (pw *PageWriter) PrintParagraph(para []*RichText) {
+func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText) {
 	for _, p := range para {
 		pw.PrintRichText(p)
 		pw.newLine()
 	}
 }
 
-func (pw *PageWriter) PrintRichText(text *RichText) {
+func (pw *PageWriter) PrintRichText(text *rich_text.RichText) {
 	if pw.line == nil {
 		if pw.keepOrigin {
 			pw.keepOrigin = false
@@ -482,7 +483,7 @@ func (pw *PageWriter) PrintRichText(text *RichText) {
 }
 
 func (pw *PageWriter) PrintWithOptions(text string, options options.Options) (err error) {
-	var para []*RichText
+	var para []*rich_text.RichText
 	rt, err := pw.richTextForString(text)
 	if err != nil {
 		return
@@ -492,7 +493,7 @@ func (pw *PageWriter) PrintWithOptions(text string, options options.Options) (er
 		wordbreaking.MarkRuneAttributes(rt.String(), flags)
 		para = rt.WrapToWidth(pw.units.toPts(width), flags, false)
 	} else {
-		para = []*RichText{rt}
+		para = []*rich_text.RichText{rt}
 	}
 	pw.PrintParagraph(para)
 	return nil
@@ -553,8 +554,8 @@ func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
 }
 
-func (pw *PageWriter) richTextForString(text string) (piece *RichText, err error) {
-	piece, err = NewRichText(text, pw.fonts, pw.fontSize, options.Options{
+func (pw *PageWriter) richTextForString(text string) (piece *rich_text.RichText, err error) {
+	piece, err = rich_text.New(text, pw.fonts, pw.fontSize, options.Options{
 		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
 	return
 }

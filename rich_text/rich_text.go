@@ -1,7 +1,7 @@
 // Copyright 2012-2014 Brent Rowland.
 // Use of this source code is governed by the Apache License, Version 2.0, as described in the LICENSE file.
 
-package pdf
+package rich_text
 
 import (
 	"bytes"
@@ -43,11 +43,11 @@ type RichText struct {
 
 var errNoFontSet = errors.New("No font set")
 
-// NewRichText returns a structure containing text with the specified attributes.
+// New returns a structure containing text with the specified attributes.
 //
 // Fonts in the list will be applied in order. That is, the first font will be used for every rune for which it has a glyph.
 // Successive fonts will only be used where they have glyphs lacking in previous fonts.
-// If NewRichText finds a nil in fonts before finding a font with a glyph for a rune, an error is returned.
+// If New finds a nil in fonts before finding a font with a glyph for a rune, an error is returned.
 // Otherwise, the runes are replaced with question marks in the first font in the list.
 //
 // Font size is in points.
@@ -63,7 +63,7 @@ var errNoFontSet = errors.New("No font set")
 //   word_spacing: Add extra space between words, expressed in points.
 //   nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
 //                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-func NewRichText(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
+func New(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
 	piece := &RichText{
 		Text:        s,
 		FontSize:    fontSize,
@@ -90,9 +90,9 @@ func NewRichText(s string, fonts []*font.Font, fontSize float64, options options
 }
 
 // Add appends text with specified attributes to existing structure, possibly returning a new root.
-// Options are the same as for NewRichText.
+// Options are the same as for New.
 func (piece *RichText) Add(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
-	p, err := NewRichText(s, fonts, fontSize, options)
+	p, err := New(s, fonts, fontSize, options)
 	if err != nil {
 		return piece, err
 	}
