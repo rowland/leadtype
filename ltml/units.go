@@ -4,6 +4,7 @@
 package ltml
 
 import (
+	"regexp"
 	"strconv"
 )
 
@@ -29,9 +30,16 @@ func FromUnits(measurement float64, units Units) float64 {
 	return measurement
 }
 
+var reMeasurement = regexp.MustCompile(`([+-]?\d+(\.\d+)?)([a-z]+)`)
+
+// ParseMeasurement parses units out of a measurement, if present, and multiplies by unit conversion.
 func ParseMeasurement(measurement string, units Units) float64 {
-	// TODO: Parse units out of value, if present, overriding units parameter.
-	// /([+-]?\d+(\.\d+)?)([a-z]+)/
+	if matches := reMeasurement.FindStringSubmatch(measurement); len(matches) >= 4 {
+		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
+			return FromUnits(v, Units(matches[3]))
+		}
+		return 0
+	}
 	if v, err := strconv.ParseFloat(measurement, 64); err == nil {
 		return FromUnits(v, units)
 	}
