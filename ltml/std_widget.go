@@ -178,6 +178,10 @@ func (widget *StdWidget) Width() float64 {
 	return widget.width
 }
 
+func init() {
+	registerTag(DefaultSpace, "widget", func() interface{} { return &StdWidget{} })
+}
+
 var _ HasAttrs = (*StdWidget)(nil)
 var _ Printer = (*StdWidget)(nil)
 var _ WantsContainer = (*StdWidget)(nil)
