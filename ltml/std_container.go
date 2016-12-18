@@ -10,7 +10,9 @@ import (
 type StdContainer struct {
 	StdWidget
 	Children
-	layout *LayoutStyle
+	layout          *LayoutStyle
+	preferredHeight float64
+	preferredWidth  float64
 }
 
 func (c *StdContainer) DrawContent(w Writer) error {
