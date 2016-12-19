@@ -33,7 +33,7 @@ func (a *Alias) SetAttrs(attrs map[string]string) {
 	if tag, ok := attrs["tag"]; ok {
 		a.Tag = tag
 	}
-	for k, v := range a.Attrs {
+	for k, v := range attrs {
 		a.Attrs[k] = v
 	}
 	delete(a.Attrs, "id")
@@ -60,3 +60,5 @@ var StdAliases = map[string]*Alias{
 func init() {
 	registerTag(DefaultSpace, "define", func() interface{} { return &Alias{} })
 }
+
+var _ HasAttrs = (*Alias)(nil)
