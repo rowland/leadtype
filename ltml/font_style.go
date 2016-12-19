@@ -6,6 +6,9 @@ package ltml
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/options"
 )
 
 type FontStyle struct {
@@ -24,7 +27,15 @@ type FontStyle struct {
 
 func (fs *FontStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", fs)
-	w.SetFont(fs.name, fs.size)
+	w.SetFont(fs.name, fs.size, options.Options{
+		"color":  colors.Color(fs.color),
+		"weight": fs.weight,
+		"style":  fs.style})
+}
+
+func (fs *FontStyle) Clone() *FontStyle {
+	clone := *fs
+	return &clone
 }
 
 func (fs *FontStyle) ID() string {
@@ -32,39 +43,39 @@ func (fs *FontStyle) ID() string {
 }
 
 const (
-	defaultFontName = "Courier New"
+	defaultFontName = "Helvetica"
 	defaultFontSize = 12
 )
 
 var defaultFont = &FontStyle{id: "default", name: defaultFontName, size: defaultFontSize}
 
-func (fs *FontStyle) SetAttrs(attrs map[string]string) {
-	if id, ok := attrs["id"]; ok {
+func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
+	if id, ok := attrs[prefix+"id"]; ok {
 		fs.id = id
 	}
-	if name, ok := attrs["name"]; ok {
+	if name, ok := attrs[prefix+"name"]; ok {
 		fs.name = name
 	}
-	if size, ok := attrs["size"]; ok {
+	if size, ok := attrs[prefix+"size"]; ok {
 		var err error
 		if fs.size, err = strconv.ParseFloat(size, 64); err != nil {
 			fs.size = defaultFontSize
 		}
 	}
-	fs.color.SetAttrs(attrs)
-	if strikeout, ok := attrs["strikeout"]; ok {
+	fs.color.SetAttrs(prefix, attrs)
+	if strikeout, ok := attrs[prefix+"strikeout"]; ok {
 		fs.strikeout = (strikeout == "true")
 	}
-	if style, ok := attrs["style"]; ok {
+	if style, ok := attrs[prefix+"style"]; ok {
 		fs.style = style
 	}
-	if underline, ok := attrs["underline"]; ok {
+	if underline, ok := attrs[prefix+"underline"]; ok {
 		fs.underline = (underline == "true")
 	}
-	if weight, ok := attrs["weight"]; ok {
+	if weight, ok := attrs[prefix+"weight"]; ok {
 		fs.weight = weight
 	}
-	if lineHeight, ok := attrs["line-height"]; ok {
+	if lineHeight, ok := attrs[prefix+"line-height"]; ok {
 		fs.lineHeight, _ = strconv.ParseFloat(lineHeight, 64)
 	}
 }
@@ -75,14 +86,14 @@ func (fs *FontStyle) String() string {
 }
 
 func FontStyleFor(id string, scope HasScope) *FontStyle {
-	if style, ok := scope.Style(id); ok {
+	if style, ok := scope.StyleFor(id); ok {
 		fs, _ := style.(*FontStyle)
 		return fs
 	}
 	return nil
 }
 
-var _ HasAttrs = (*FontStyle)(nil)
+var _ HasAttrsPrefix = (*FontStyle)(nil)
 var _ Styler = (*FontStyle)(nil)
 
 func init() {

@@ -8,18 +8,29 @@ import (
 )
 
 type StdSpan struct {
-	AParent
-	Identity
+	StdContainer
 }
 
-func (s *StdSpan) SetParent(value interface{}) error {
-	switch value.(type) {
+type AddTextWithFonter interface {
+	AddTextWithFont(text string, font *FontStyle)
+}
+
+func (s *StdSpan) AddText(text string) {
+	s.AddTextWithFont(text, s.Font())
+}
+
+func (s *StdSpan) AddTextWithFont(text string, font *FontStyle) {
+	s.container.(AddTextWithFonter).AddTextWithFont(text, font)
+}
+
+func (s *StdSpan) SetContainer(container Container) error {
+	switch container.(type) {
 	case *StdSpan:
 	case *StdParagraph:
 	default:
 		return fmt.Errorf("span must be child of p, pabel or another span.")
 	}
-	s.parent = value
+	s.container = container
 	return nil
 }
 

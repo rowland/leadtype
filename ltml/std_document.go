@@ -49,4 +49,5 @@ func init() {
 }
 
 var _ HasAttrs = (*StdDocument)(nil)
+var _ HasScope = (*StdDocument)(nil)
 var _ Identifier = (*StdDocument)(nil)

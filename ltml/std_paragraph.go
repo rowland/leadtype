@@ -76,17 +76,6 @@ func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 	for _, line := range para {
 		height += line.Height()
 	}
-
-	// @preferred_height = @height || begin
-	//   ph = if width.nil?
-	//     rich_text(writer).height(parent.content_width - bullet_width - non_content_width) * line_height
-	//   else
-	//     rich_text(writer).height(content_width - bullet_width) * line_height
-	//   end
-	//   @preferred_height = ph + non_content_height - rich_text(writer).height * (line_height - 1)
-	// end
-	// to_units(units, @preferred_height)
-
 	return height
 }
 

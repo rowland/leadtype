@@ -49,7 +49,7 @@ func (bs *BulletStyle) String() string {
 }
 
 func BulletStyleFor(id string, scope HasScope) *BulletStyle {
-	if style, ok := scope.Style(id); ok {
+	if style, ok := scope.StyleFor(id); ok {
 		bs, _ := style.(*BulletStyle)
 		return bs
 	}

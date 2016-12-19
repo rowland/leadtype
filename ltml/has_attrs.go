@@ -6,3 +6,7 @@ package ltml
 type HasAttrs interface {
 	SetAttrs(attrs map[string]string)
 }
+
+type HasAttrsPrefix interface {
+	SetAttrs(prefix string, attrs map[string]string)
+}

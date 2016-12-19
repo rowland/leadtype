@@ -45,3 +45,5 @@ func ParseMeasurement(measurement string, units Units) float64 {
 	}
 	return 0
 }
+
+var _ HasAttrs = (*Units)(nil)

@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"encoding/xml"
+	"strings"
 )
 
 func mapFromXmlAttrs(attrs []xml.Attr) map[string]string {
@@ -13,6 +14,15 @@ func mapFromXmlAttrs(attrs []xml.Attr) map[string]string {
 		result[attr.Name.Local] = attr.Value
 	}
 	return result
+}
+
+func MapHasKeyPrefix(attrs map[string]string, prefix string) bool {
+	for k, _ := range attrs {
+		if strings.HasPrefix(k, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // type stringSlice []string

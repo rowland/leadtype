@@ -76,9 +76,9 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	trueTag := elem.Name.Local
 	var defaultAttrs map[string]string
 	if elem.Name.Space == DefaultSpace {
-		if alias, ok := doc.scope().Alias(trueTag); ok {
+		if alias, ok := doc.scope().AliasFor(trueTag); ok {
 			trueTag, defaultAttrs = alias.Tag, alias.Attrs
-			fmt.Fprintf(os.Stderr, "Alias %s=%s\n", elem.Name.Local, trueTag)
+			fmt.Fprintf(os.Stderr, "Alias %s=%s %v\n", elem.Name.Local, trueTag, defaultAttrs)
 		}
 	}
 	e := makeElement(elem.Name.Space, trueTag)
@@ -122,13 +122,18 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		// apply rules
 		e.SetAttrs(attrs)
 	}
+	if e, ok := e.(HasAttrsPrefix); ok {
+		e.SetAttrs("", defaultAttrs)
+		// apply rules
+		e.SetAttrs("", attrs)
+	}
 	if style, ok := e.(Styler); ok {
 		if err := doc.scope().AddStyle(style); err != nil {
 			fmt.Fprintf(os.Stderr, "Adding style: %s\n", err)
 		}
 	}
 	if layout, ok := e.(*LayoutStyle); ok {
-		if layout0, ok := doc.scope().Layout(layout.ID()); ok {
+		if layout0, ok := doc.scope().LayoutFor(layout.ID()); ok {
 			layout = layout0.Clone()
 			layout.SetAttrs(attrs)
 		}

@@ -5,6 +5,8 @@ package ltml
 
 import (
 	"fmt"
+
+	"github.com/rowland/leadtype/colors"
 )
 
 type PenStyle struct {
@@ -16,7 +18,7 @@ type PenStyle struct {
 
 func (ps *PenStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", ps)
-	w.SetLineColor(string(ps.color))
+	w.SetLineColor(colors.Color(ps.color))
 	w.SetLineWidth(ps.width)
 	w.SetLineDashPattern(ps.pattern)
 }
@@ -25,40 +27,42 @@ func (ps *PenStyle) ID() string {
 	return ps.id
 }
 
-func (ps *PenStyle) SetAttrs(attrs map[string]string) {
-	if id, ok := attrs["id"]; ok {
+func (ps *PenStyle) SetAttrs(prefix string, attrs map[string]string) {
+	if id, ok := attrs[prefix+"id"]; ok {
 		ps.id = id
 	}
-	ps.color.SetAttrs(attrs)
-	if width, ok := attrs["width"]; ok {
+	fmt.Println("PenStyle.SetAttrs:", prefix, attrs)
+	ps.color.SetAttrs(prefix, attrs)
+	fmt.Println("color:", ps.color)
+	if width, ok := attrs[prefix+"width"]; ok {
 		ps.width = ParseMeasurement(width, "pt")
 	}
-	if pattern, ok := attrs["pattern"]; ok {
+	if pattern, ok := attrs[prefix+"pattern"]; ok {
 		ps.pattern = pattern
 	}
 }
 
 func (ps *PenStyle) String() string {
-	return fmt.Sprintf("PenStyle color=%s width=%f pattern=%s", ps.color, ps.width, ps.pattern)
+	return fmt.Sprintf("PenStyle id=%s color=%s width=%f pattern=%s", ps.id, ps.color, ps.width, ps.pattern)
 }
 
 const defaultPenPattern = "solid"
 
 func PenStyleFor(id string, scope HasScope) *PenStyle {
-	style, ok := scope.Style(id)
+	style, ok := scope.StyleFor(id)
 	if !ok {
-		style, ok = scope.Style("pen_" + id)
+		style, ok = scope.StyleFor("pen_" + id)
 	}
 	if ok {
 		ps, _ := style.(*PenStyle)
 		return ps
 	}
-	ps := &PenStyle{id: "pen_" + id, color: Color(id), pattern: defaultPenPattern}
+	ps := &PenStyle{id: "pen_" + id, color: NamedColor(id), pattern: defaultPenPattern}
 	scope.AddStyle(ps)
 	return ps
 }
 
-var _ HasAttrs = (*PenStyle)(nil)
+var _ HasAttrsPrefix = (*PenStyle)(nil)
 var _ Styler = (*PenStyle)(nil)
 
 func init() {

@@ -8,9 +8,9 @@ type HasScope interface {
 	AddLayout(layout *LayoutStyle) error
 	AddPageStyle(style *PageStyle) error
 	AddStyle(style Styler) error
-	Alias(name string) (alias *Alias, ok bool)
-	Layout(id string) (layout *LayoutStyle, ok bool)
-	PageStyle(id string) (style *PageStyle, ok bool)
+	AliasFor(name string) (alias *Alias, ok bool)
+	LayoutFor(id string) (layout *LayoutStyle, ok bool)
+	PageStyleFor(id string) (style *PageStyle, ok bool)
 	SetParentScope(parent HasScope)
-	Style(id string) (style Styler, ok bool)
+	StyleFor(id string) (style Styler, ok bool)
 }

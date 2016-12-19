@@ -68,7 +68,7 @@ func (ls *LayoutStyle) VPadding() float64 {
 
 func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
 	fmt.Println("In LayoutStyleFor", id)
-	if ls, ok := scope.Layout(id); ok {
+	if ls, ok := scope.LayoutFor(id); ok {
 		fmt.Println("Found LayoutStyle", ls)
 		return ls
 	}

@@ -639,9 +639,8 @@ func (pw *PageWriter) SetFontColor(value interface{}) (prev colors.Color) {
 
 	switch value := value.(type) {
 	case string:
-		if c, err := colors.NamedColor(value); err == nil {
-			pw.fontColor = c
-		}
+		c, _ := colors.NamedColor(value)
+		pw.fontColor = c
 	case int:
 		pw.fontColor = colors.Color(value)
 	case int32:

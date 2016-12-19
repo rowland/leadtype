@@ -11,8 +11,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/rowland/leadtype/colors"
-	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
@@ -59,19 +58,6 @@ func (dw *DocWriter) NewPage() {
 	dw.DocWriter.NewPage()
 }
 
-func (dw *DocWriter) SetFont(name string, size float64) error {
-	_, err := dw.DocWriter.SetFont(name, size, options.Options{})
-	return err
-}
-
-func (dw *DocWriter) SetLineColor(value string) {
-	c, err := colors.NamedColor(value)
-	if err != nil {
-		c = colors.Black
-	}
-	dw.DocWriter.SetLineColor(c)
-}
-
 func (dw *DocWriter) SetLineDashPattern(pattern string) {
 	dw.DocWriter.SetLineDashPattern(pattern)
 }
@@ -82,11 +68,18 @@ func (dw *DocWriter) SetLineWidth(width float64) {
 
 func NewDocWriter() *DocWriter {
 	dw := pdf.NewDocWriter()
-	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
 	}
-	dw.AddFontSource(ttfc)
+	dw.AddFontSource(ttFonts)
+
+	afmFonts, err := afm_fonts.New("../afm/data/fonts/*.afm")
+	if err != nil {
+		panic(err)
+	}
+	dw.AddFontSource(afmFonts)
+
 	return &DocWriter{dw}
 }
 

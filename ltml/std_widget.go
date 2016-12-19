@@ -109,6 +109,13 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.borders[i] = PenStyleFor(border, widget.scope)
 		}
 	}
+	if font, ok := attrs["font"]; ok {
+		widget.font = FontStyleFor(font, widget.scope)
+	}
+	if MapHasKeyPrefix(attrs, "font.") {
+		widget.font = widget.Font().Clone()
+		widget.font.SetAttrs("font.", attrs)
+	}
 }
 
 func (widget *StdWidget) SetContainer(container Container) error {

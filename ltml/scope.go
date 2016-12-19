@@ -60,26 +60,26 @@ func (scope *Scope) AddStyle(style Styler) error {
 	return nil
 }
 
-func (scope *Scope) Alias(name string) (alias *Alias, ok bool) {
+func (scope *Scope) AliasFor(name string) (alias *Alias, ok bool) {
 	alias, ok = scope.aliases[name]
 	if !ok && scope.parent != nil {
-		alias, ok = scope.parent.Alias(name)
+		alias, ok = scope.parent.AliasFor(name)
 	}
 	return
 }
 
-func (scope *Scope) Layout(id string) (style *LayoutStyle, ok bool) {
+func (scope *Scope) LayoutFor(id string) (style *LayoutStyle, ok bool) {
 	style, ok = scope.layouts[id]
 	if !ok && scope.parent != nil {
-		style, ok = scope.parent.Layout(id)
+		style, ok = scope.parent.LayoutFor(id)
 	}
 	return
 }
 
-func (scope *Scope) PageStyle(id string) (style *PageStyle, ok bool) {
+func (scope *Scope) PageStyleFor(id string) (style *PageStyle, ok bool) {
 	style, ok = scope.pageStyles[id]
 	if !ok && scope.parent != nil {
-		style, ok = scope.parent.PageStyle(id)
+		style, ok = scope.parent.PageStyleFor(id)
 	}
 	return
 }
@@ -99,18 +99,18 @@ func (scope *Scope) String() string {
 	return buf.String()
 }
 
-func (scope *Scope) Style(id string) (style Styler, ok bool) {
+func (scope *Scope) StyleFor(id string) (style Styler, ok bool) {
 	style, ok = scope.styles[id]
 	if !ok && scope.parent != nil {
-		style, ok = scope.parent.Style(id)
+		style, ok = scope.parent.StyleFor(id)
 	}
 	return
 }
 
 var defaultStyles = map[string]Styler{
-	"solid":  &PenStyle{id: "solid", color: "000000", width: 0.001, pattern: "solid"},
-	"dotted": &PenStyle{id: "dotted", color: "000000", width: 0.001, pattern: "dotted"},
-	"dashed": &PenStyle{id: "dashed", color: "000000", width: 0.001, pattern: "dashed"},
+	"solid":  &PenStyle{id: "solid", color: NamedColor("black"), width: 0.001, pattern: "solid"},
+	"dotted": &PenStyle{id: "dotted", color: NamedColor("black"), width: 0.001, pattern: "dotted"},
+	"dashed": &PenStyle{id: "dashed", color: NamedColor("black"), width: 0.001, pattern: "dashed"},
 	"fixed":  &FontStyle{id: "fixed", name: "Courier New", size: 12},
 }
 

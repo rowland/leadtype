@@ -18,9 +18,9 @@ func (ps *ParagraphStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", ps)
 }
 
-func (ps *ParagraphStyle) SetAttrs(attrs map[string]string) {
-	ps.TextStyle.SetAttrs(attrs)
-	if bullet, ok := attrs["bullet"]; ok {
+func (ps *ParagraphStyle) SetAttrs(prefix string, attrs map[string]string) {
+	ps.TextStyle.SetAttrs(prefix, attrs)
+	if bullet, ok := attrs[prefix+"bullet"]; ok {
 		ps.bullet = BulletStyleFor(bullet, ps.scope)
 	}
 }
@@ -34,14 +34,14 @@ func (ps *ParagraphStyle) String() string {
 }
 
 func ParagraphStyleFor(id string, scope HasScope) *ParagraphStyle {
-	if style, ok := scope.Style(id); ok {
+	if style, ok := scope.StyleFor(id); ok {
 		ps, _ := style.(*ParagraphStyle)
 		return ps
 	}
 	return nil
 }
 
-var _ HasAttrs = (*ParagraphStyle)(nil)
+var _ HasAttrsPrefix = (*ParagraphStyle)(nil)
 var _ Styler = (*ParagraphStyle)(nil)
 var _ WantsScope = (*ParagraphStyle)(nil)
 

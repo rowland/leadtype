@@ -69,7 +69,7 @@ func (ps *PageStyle) Width() float64 {
 }
 
 func PageStyleFor(id string, scope HasScope) *PageStyle {
-	ps, _ := scope.PageStyle(id)
+	ps, _ := scope.PageStyleFor(id)
 	return ps
 }
 
