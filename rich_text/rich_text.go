@@ -377,6 +377,9 @@ func (piece *RichText) measure() *RichText {
 	}
 	piece.chars, piece.width = 0, 0.0
 	metrics := piece.Font
+	if metrics.UnitsPerEm() == 0 {
+		return piece
+	}
 	fsize := piece.FontSize / float64(metrics.UnitsPerEm())
 	piece.ascent = float64(metrics.Ascent()) * fsize
 	piece.descent = float64(metrics.Descent()) * fsize
