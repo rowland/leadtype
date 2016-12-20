@@ -365,6 +365,10 @@ func (pw *PageWriter) LineDashPattern() string {
 	return pw.lineDashPattern
 }
 
+func (pw *PageWriter) LineSpacing() float64 {
+	return pw.lineSpacing
+}
+
 func (pw *PageWriter) LineThrough() bool {
 	return pw.lineThrough
 }

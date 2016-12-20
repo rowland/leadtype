@@ -188,6 +188,10 @@ func (dw *DocWriter) LineDashPattern() string {
 	return dw.CurPage().LineDashPattern()
 }
 
+func (dw *DocWriter) LineSpacing() float64 {
+	return dw.CurPage().LineSpacing()
+}
+
 func (dw *DocWriter) LineThrough() bool {
 	return dw.CurPage().LineThrough()
 }
