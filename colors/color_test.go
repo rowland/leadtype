@@ -37,6 +37,18 @@ func TestNamedColor(t *testing.T) {
 	check(t, err3.Error() == "Expected name of color or numeric value in hex format.", "Unexpected error message looking up color.")
 }
 
+func TestColor_String(t *testing.T) {
+	if AliceBlue.String() != "aliceblue" {
+		t.Errorf("Expecting <%s>, got <%s>.", "aliceblue", AliceBlue.String())
+	}
+	if YellowGreen.String() != "yellowgreen" {
+		t.Errorf("Expecting <%s>, got <%s>.", "yellowgreen", YellowGreen.String())
+	}
+	if Color(0xABCDEF).String() != "ABCDEF" {
+		t.Errorf("Expecting <%s>, got <%s>.", "ABCDEF", Color(0xABCDEF).String())
+	}
+}
+
 func expectNI(t *testing.T, name string, expected, actual int) {
 	if expected != actual {
 		t.Errorf("%s: expected %d, got %d", name, expected, actual)

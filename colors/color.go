@@ -5,6 +5,7 @@ package colors
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -22,6 +23,13 @@ func (this Color) RGB64() (r, g, b float64) {
 	ri, gi, bi := this.RGB()
 	r, g, b = float64(ri)/255, float64(gi)/255, float64(bi)/255
 	return
+}
+
+func (this Color) String() string {
+	if s, ok := ColorNames[this]; ok {
+		return s
+	}
+	return fmt.Sprintf("%06X", int32(this))
 }
 
 const (
@@ -334,4 +342,13 @@ func NamedColor(name string) (Color, error) {
 		}
 	}
 	return Black, errors.New("Expected name of color or numeric value in hex format.")
+}
+
+var ColorNames map[Color]string
+
+func init() {
+	ColorNames = make(map[Color]string, len(NamedColors))
+	for s, c := range NamedColors {
+		ColorNames[c] = s
+	}
 }
