@@ -16,7 +16,7 @@ type FontStyle struct {
 	name string
 	size float64
 
-	color     Color
+	color     colors.Color
 	strikeout bool
 	style     string
 	underline bool
@@ -62,7 +62,9 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 			fs.size = defaultFontSize
 		}
 	}
-	fs.color.SetAttrs(prefix, attrs)
+	if color, ok := attrs[prefix+"color"]; ok {
+		fs.color = NamedColor(color)
+	}
 	if strikeout, ok := attrs[prefix+"strikeout"]; ok {
 		fs.strikeout = (strikeout == "true")
 	}

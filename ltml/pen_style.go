@@ -11,7 +11,7 @@ import (
 
 type PenStyle struct {
 	id      string
-	color   Color
+	color   colors.Color
 	width   float64
 	pattern string
 }
@@ -32,7 +32,9 @@ func (ps *PenStyle) SetAttrs(prefix string, attrs map[string]string) {
 		ps.id = id
 	}
 	fmt.Println("PenStyle.SetAttrs:", prefix, attrs)
-	ps.color.SetAttrs(prefix, attrs)
+	if color, ok := attrs[prefix+"color"]; ok {
+		ps.color = NamedColor(color)
+	}
 	fmt.Println("color:", ps.color)
 	if width, ok := attrs[prefix+"width"]; ok {
 		ps.width = ParseMeasurement(width, "pt")

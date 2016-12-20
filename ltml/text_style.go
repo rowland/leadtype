@@ -5,11 +5,13 @@ package ltml
 
 import (
 	"fmt"
+
+	"github.com/rowland/leadtype/colors"
 )
 
 type TextStyle struct {
 	id        string
-	color     Color
+	color     colors.Color
 	textAlign HAlign
 	vAlign    VAlign
 }
@@ -26,7 +28,9 @@ func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if id, ok := attrs[prefix+"id"]; ok {
 		ts.id = id
 	}
-	ts.color.SetAttrs(prefix, attrs)
+	if color, ok := attrs[prefix+"color"]; ok {
+		ts.color = NamedColor(color)
+	}
 	if textAlign, ok := attrs[prefix+"text-align"]; ok {
 		switch textAlign {
 		case "left":
