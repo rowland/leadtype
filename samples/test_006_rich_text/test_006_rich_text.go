@@ -9,6 +9,8 @@ import (
 
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/rich_text"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const name = "test_006_rich_text.pdf"
@@ -53,8 +55,8 @@ var line6 = []RT{
 	{". This text is normal.", options.Options{}},
 }
 
-func makeRtLine(doc *pdf.DocWriter, pieces []RT) *pdf.RichText {
-	rt := &pdf.RichText{}
+func makeRtLine(doc *pdf.DocWriter, pieces []RT) *rich_text.RichText {
+	rt := &rich_text.RichText{}
 	for _, p := range pieces {
 		fonts, err := doc.SetFont("Arial", 12, p.options)
 		if err != nil {
@@ -74,7 +76,7 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +91,7 @@ func main() {
 	doc.SetUnderline(false)
 	doc.SetLineSpacing(1.2)
 
-	lines := []*pdf.RichText{
+	lines := []*rich_text.RichText{
 		makeRtLine(doc, line1),
 		makeRtLine(doc, line2),
 		makeRtLine(doc, line3),

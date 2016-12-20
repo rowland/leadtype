@@ -10,6 +10,7 @@ import (
 
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const name = "test_005_ttf_fonts.pdf"
@@ -20,7 +21,7 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +38,8 @@ func main() {
 		}
 		_, err = doc.SetFont(info.Family(), 12, options.Options{"style": info.Style()})
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "Setting font to %s/%s: %v\n", info.Family(), info.Style(), err)
+			continue
 		}
 		fmt.Fprintln(doc, info.FullName())
 	}

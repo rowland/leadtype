@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const name = "test_003_hello_world.pdf"
@@ -19,12 +21,12 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	afmfc, err := pdf.NewAfmFontCollection("../../afm/data/fonts/*.afm")
+	afmfc, err := afm_fonts.New("../../afm/data/fonts/*.afm")
 	if err != nil {
 		panic(err)
 	}
 	doc.AddFontSource(afmfc)
-	ttfc, err := pdf.NewTtfFontCollection("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		panic(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/rowland/leadtype/color"
+	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/pdf"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	doc := pdf.NewDocWriter()
 	doc.NewPage()
 
-	doc.SetLineColor(color.Blue)
+	doc.SetLineColor(colors.Blue)
 	doc.SetLineWidth(3, "pt")
 	doc.SetLineDashPattern("dashed")
 

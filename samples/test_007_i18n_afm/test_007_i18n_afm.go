@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 )
@@ -17,7 +18,7 @@ const name = "test_007_i18n_afm.pdf"
 
 func main() {
 	doc := pdf.NewDocWriter()
-	afmfc, err := pdf.NewAfmFontCollection("../../afm/data/fonts/*.afm")
+	afmfc, err := afm_fonts.New("../../afm/data/fonts/*.afm")
 	if err != nil {
 		panic(err)
 	}
