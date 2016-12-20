@@ -236,6 +236,9 @@ func (rec *format2EncodingRecord) init(file io.Reader) (err error) {
 		}
 	}
 	l := int(rec.length) - (2 + 2 + 2 + (256 * 2)) - len(rec.subHeaders)*(2+2+2+2)
+	if l <= 0 {
+		return fmt.Errorf("Invalid glyph index array size: %d", l)
+	}
 	rec.glyphIndexArray = make([]uint16, l)
 	if err = readValues(file, &rec.glyphIndexArray); err != nil {
 		return
