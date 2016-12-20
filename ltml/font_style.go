@@ -31,6 +31,10 @@ func (fs *FontStyle) Apply(w Writer) {
 		"color":  colors.Color(fs.color),
 		"weight": fs.weight,
 		"style":  fs.style})
+	if fs.lineHeight == 0 {
+		fs.lineHeight = 1.0
+	}
+	w.SetLineSpacing(fs.lineHeight)
 }
 
 func (fs *FontStyle) Clone() *FontStyle {

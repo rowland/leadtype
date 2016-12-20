@@ -14,6 +14,7 @@ type Writer interface {
 	FontColor() colors.Color
 	Fonts() []*font.Font
 	FontSize() float64
+	LineSpacing() float64
 	LineThrough() bool
 	LineTo(x, y float64)
 	MoveTo(x, y float64)
@@ -26,6 +27,7 @@ type Writer interface {
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
 	SetLineColor(value colors.Color) (prev colors.Color)
 	SetLineDashPattern(pattern string)
+	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
 	Underline() bool
 }

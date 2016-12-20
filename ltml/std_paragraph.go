@@ -43,7 +43,7 @@ func (p *StdParagraph) bulletWidth() float64 {
 
 func (p *StdParagraph) DrawContent(w Writer) error {
 	fmt.Println(p.RichText(w))
-	para := p.Lines(w, p.Width())
+	para := p.Lines(w, ContentWidth(p)-p.bulletWidth())
 	if len(para) == 0 {
 		return nil
 	}
@@ -72,9 +72,13 @@ func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 
 	para := p.Lines(w, width)
 
-	height := 0.0
+	height := NonContentHeight(p)
 	for _, line := range para {
-		height += line.Height()
+		height += line.Leading() * w.LineSpacing()
+	}
+	if len(para) > 0 {
+		height -= para[len(para)-1].Height() * (w.LineSpacing() - 1)
+		height -= para[len(para)-1].LineGap()
 	}
 	return height
 }
