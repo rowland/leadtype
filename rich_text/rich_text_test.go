@@ -959,6 +959,20 @@ func TestRichText_WrapToWidth_zero(t *testing.T) {
 	}
 }
 
+func TestRichText_Zapf(t *testing.T) {
+	st := SuperTest{t}
+	fonts := afm_fonts.Families("ZapfDingbats")
+	st.Must(len(fonts) == 1, "ZapfDingbats must be available.")
+	st.Must(fonts[0].HasRune('N'), "Font must have rune.")
+	rt, err := New("N", fonts, 10, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Equal("N", rt.Text)
+	st.Equal(10.0, rt.FontSize)
+	st.Equal(fonts[0], rt.Font, "Should be tagged with ZapfDingbats font.")
+}
+
 // 14,930 ns go1.1.2
 // 14,685 ns go1.2.1
 // 10,873 ns go1.4.2
