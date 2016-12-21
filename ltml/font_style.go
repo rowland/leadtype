@@ -87,7 +87,7 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 }
 
 func (fs *FontStyle) String() string {
-	return fmt.Sprintf("FontStyle id=%s name=%s size=%f color=%s strikeout=%t style=%s underline=%t weight=%s line-height=%f",
+	return fmt.Sprintf("FontStyle id=%s name=%s size=%f color=%v strikeout=%t style=%s underline=%t weight=%s line-height=%f",
 		fs.id, fs.name, fs.size, fs.color, fs.strikeout, fs.style, fs.underline, fs.weight, fs.lineHeight)
 }
 

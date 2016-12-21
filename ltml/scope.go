@@ -40,7 +40,7 @@ func (scope *Scope) AddLayout(layout *LayoutStyle) error {
 
 func (scope *Scope) AddPageStyle(style *PageStyle) error {
 	if style.ID() == "" {
-		return fmt.Errorf("id required for page style: %s", style)
+		return fmt.Errorf("id required for page style: %v", style)
 	}
 	if scope.pageStyles == nil {
 		scope.pageStyles = make(map[string]*PageStyle)

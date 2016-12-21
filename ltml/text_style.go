@@ -58,7 +58,7 @@ func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 }
 
 func (ts *TextStyle) String() string {
-	return fmt.Sprintf("id=%s color=%s text-align=%s valign=%s", ts.id, ts.color, ts.textAlign, ts.vAlign)
+	return fmt.Sprintf("id=%s color=%v text-align=%s valign=%s", ts.id, ts.color, ts.textAlign, ts.vAlign)
 }
 
 var _ HasAttrsPrefix = (*TextStyle)(nil)

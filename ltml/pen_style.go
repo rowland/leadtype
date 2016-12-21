@@ -45,7 +45,7 @@ func (ps *PenStyle) SetAttrs(prefix string, attrs map[string]string) {
 }
 
 func (ps *PenStyle) String() string {
-	return fmt.Sprintf("PenStyle id=%s color=%s width=%f pattern=%s", ps.id, ps.color, ps.width, ps.pattern)
+	return fmt.Sprintf("PenStyle id=%s color=%v width=%f pattern=%s", ps.id, ps.color, ps.width, ps.pattern)
 }
 
 const defaultPenPattern = "solid"
