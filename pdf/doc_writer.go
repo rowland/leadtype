@@ -81,6 +81,15 @@ func (dw *DocWriter) FontColor() colors.Color {
 	return dw.CurPage().FontColor()
 }
 
+func useStandardEncoding(family string) bool {
+	switch family {
+	case "Symbol", "ZapfDingbats":
+		return true
+	default:
+		return false
+	}
+}
+
 func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	if f == nil {
 		panic("fontKey: No font specified.")
@@ -115,18 +124,26 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	var font *simpleFont
 	switch f.SubType() {
 	case "Type1":
-		encoding, ok := dw.fontEncodings[cpi.String()]
-		if !ok {
-			differences := glyphDiffs(codepage.Idx_CP1252, cpi, 32, 255)
-			encoding = newFontEncoding(dw.nextSeq(), 0, "WinAnsiEncoding", differences)
-			dw.file.body.add(encoding)
-			dw.fontEncodings[cpi.String()] = encoding
+		if useStandardEncoding(f.Family()) {
+			font = newType1Font(
+				dw.nextSeq(), 0,
+				f.PostScriptName(),
+				32, 255, widths,
+				descriptor, nil)
+		} else {
+			encoding, ok := dw.fontEncodings[cpi.String()]
+			if !ok {
+				differences := glyphDiffs(codepage.Idx_CP1252, cpi, 32, 255)
+				encoding = newFontEncoding(dw.nextSeq(), 0, "WinAnsiEncoding", differences)
+				dw.file.body.add(encoding)
+				dw.fontEncodings[cpi.String()] = encoding
+			}
+			font = newType1Font(
+				dw.nextSeq(), 0,
+				f.PostScriptName(),
+				32, 255, widths,
+				descriptor, &indirectObjectRef{encoding})
 		}
-		font = newType1Font(
-			dw.nextSeq(), 0,
-			f.PostScriptName(),
-			32, 255, widths,
-			descriptor, &indirectObjectRef{encoding})
 	case "TrueType":
 		font = newTrueTypeFont(
 			dw.nextSeq(), 0,
@@ -204,7 +221,7 @@ func (dw *DocWriter) LineWidth(units string) float64 {
 	return dw.CurPage().LineWidth(units)
 }
 
-func (dw *DocWriter) Loc() Location {
+func (dw *DocWriter) Loc() (x, y float64) {
 	return dw.CurPage().Loc()
 }
 

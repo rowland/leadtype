@@ -403,8 +403,8 @@ func (pw *PageWriter) LineWidth(units string) float64 {
 	return unitsFromPts(units, pw.lineWidth)
 }
 
-func (pw *PageWriter) Loc() Location {
-	return Location{pw.X(), pw.Y()}
+func (pw *PageWriter) Loc() (x, y float64) {
+	return pw.X(), pw.Y()
 }
 
 func (pw *PageWriter) MoveTo(x, y float64) {
