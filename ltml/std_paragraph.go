@@ -21,6 +21,7 @@ type StdParagraph struct {
 	StdContainer
 	textPieces []textPiece
 	richText   *rich_text.RichText
+	bullet     *BulletStyle
 }
 
 func (p *StdParagraph) AddText(text string) {
@@ -48,6 +49,12 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		return nil
 	}
 	w.MoveTo(ContentLeft(p), ContentTop(p)+para[0].Ascent())
+	if p.bullet != nil {
+		x, y := w.Loc()
+		p.bullet.Apply(w)
+		w.Print(p.bullet.Text())
+		w.MoveTo(x+p.bullet.Width(), y)
+	}
 	w.PrintParagraph(para)
 	return nil
 }
@@ -114,6 +121,9 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
+	if bullet, ok := attrs["bullet"]; ok {
+		p.bullet = BulletStyleFor(bullet, p.scope)
+	}
 }
 
 func (p *StdParagraph) String() string {

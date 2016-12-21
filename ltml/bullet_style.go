@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"strings"
 )
 
 type BulletStyle struct {
@@ -16,8 +17,13 @@ type BulletStyle struct {
 	units Units
 }
 
+func (bs *BulletStyle) AddText(text string) {
+	bs.text = strings.TrimSpace(text)
+}
+
 func (bs *BulletStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", bs)
+	bs.font.Apply(w)
 }
 
 func (bs *BulletStyle) ID() string {
@@ -37,6 +43,9 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	if font, ok := attrs["font"]; ok {
 		bs.font = FontStyleFor(font, bs.scope)
 	}
+	if text, ok := attrs["text"]; ok {
+		bs.text = strings.TrimSpace(text)
+	}
 }
 
 func (bs *BulletStyle) SetScope(scope HasScope) {
@@ -46,6 +55,14 @@ func (bs *BulletStyle) SetScope(scope HasScope) {
 func (bs *BulletStyle) String() string {
 	return fmt.Sprintf("BulletStyle id=%s text=%s width=%f units=%s font=%s",
 		bs.id, bs.text, bs.width, bs.units, bs.font)
+}
+
+func (bs *BulletStyle) Text() string {
+	return bs.text
+}
+
+func (bs *BulletStyle) Width() float64 {
+	return bs.width
 }
 
 func BulletStyleFor(id string, scope HasScope) *BulletStyle {
@@ -61,5 +78,5 @@ var _ Styler = (*BulletStyle)(nil)
 var _ WantsScope = (*BulletStyle)(nil)
 
 func init() {
-	registerTag(DefaultSpace, "bullet", func() interface{} { return &BulletStyle{} })
+	registerTag(DefaultSpace, "bullet", func() interface{} { return &BulletStyle{width: 36} })
 }

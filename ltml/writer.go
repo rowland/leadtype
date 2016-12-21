@@ -17,6 +17,7 @@ type Writer interface {
 	LineSpacing() float64
 	LineThrough() bool
 	LineTo(x, y float64)
+	Loc() (x, y float64)
 	MoveTo(x, y float64)
 	NewPage()
 	Print(text string) (err error)
