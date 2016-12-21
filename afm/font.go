@@ -58,10 +58,12 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 			break
 		}
 		cm := &font.CharMetrics[i]
-		if m := reCharMetrics.FindSubmatch(line); m != nil {
-			w, _ := strconv.Atoi(string(m[2]))
+		if m := reCharMetrics.FindStringSubmatch(string(line)); m != nil {
+			code, _ := strconv.Atoi(m[1])
+			cm.Code = rune(code)
+			w, _ := strconv.Atoi((m[2]))
 			cm.Width = int32(w)
-			cm.Name = string(m[3])
+			cm.Name = (m[3])
 		} else {
 			fields := strings.Split(string(line), ";")
 			for _, f := range fields {
@@ -82,7 +84,9 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 				}
 			}
 		}
-		cm.Code = GlyphCodepoints[cm.Name]
+		if code, ok := GlyphCodepoints[cm.Name]; ok {
+			cm.Code = code
+		}
 		line, err = file.ReadSlice('\n')
 	}
 	sort.Sort(font.CharMetrics)
@@ -137,6 +141,11 @@ func (font *Font) Flags() (flags uint32) {
 	}
 	if font.serif {
 		flags |= 1 << flagSerif
+	}
+	if font.familyName == "Symbol" || font.familyName == "ZapfDingbats" {
+		flags |= 1 << flagSymbolic
+	} else {
+		flags |= 1 << flagNonsymbolic
 	}
 	if font.italicAngle != 0 {
 		flags |= 1 << flagItalic

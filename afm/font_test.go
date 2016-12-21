@@ -6,10 +6,13 @@ package afm
 import "testing"
 
 func aw(width int, err bool) int {
+	if err {
+		panic("aw: err is true")
+	}
 	return width
 }
 
-func TestLoadFont(t *testing.T) {
+func TestLoadFont_Helvetica(t *testing.T) {
 	f, err := LoadFont("data/fonts/Helvetica.afm")
 	if err != nil {
 		t.Fatalf("Error loading font: %s", err)
@@ -21,7 +24,7 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "UnitsPerEm", 1000, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 315, f.NumGlyphs())
 	expect(t, "Serif", !f.Serif())
-	expectUI32(t, "Flags", 0, f.Flags())
+	expectUI32(t, "Flags", 32, f.Flags())
 	expectI(t, "registered", 737, aw(f.AdvanceWidth(0xAE)))
 	expectI(t, "copyright", 737, aw(f.AdvanceWidth(0xA9)))
 	// expectI(t, "epsilon", 913, f.AdvanceWidth(0x03B5))
@@ -32,6 +35,26 @@ func TestLoadFont(t *testing.T) {
 	// expectI(t, "t-with-comma", 1251, f.AdvanceWidth(0x021A))
 	//
 	// // Could not find MissingWidth in TTF.
+	// expectI(t, "MaxWidth", 4096, f.MaxWidth())
+
+}
+
+func TestLoadFont_Zapf(t *testing.T) {
+	f, err := LoadFont("data/fonts/ZapfDingbats.afm")
+	if err != nil {
+		t.Fatalf("Error loading font: %s", err)
+	}
+	if f == nil {
+		t.Fatal("Font not loaded")
+	}
+
+	expectI(t, "UnitsPerEm", 1000, f.UnitsPerEm())
+	expectI(t, "NumGlyphs", 202, f.NumGlyphs())
+	expect(t, "Serif", !f.Serif())
+	expectUI32(t, "Flags", 4, f.Flags())
+	expectI(t, "a1", 974, aw(f.AdvanceWidth(33)))
+	expectI(t, "a41", 816, aw(f.AdvanceWidth(78)))
+	expectI(t, "a191", 918, aw(f.AdvanceWidth(254)))
 	// expectI(t, "MaxWidth", 4096, f.MaxWidth())
 
 }
