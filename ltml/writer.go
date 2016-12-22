@@ -26,6 +26,7 @@ type Writer interface {
 	Rectangle(x, y, width, height float64, border bool, fill bool)
 	Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool)
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
+	SetFillColor(value interface{}) (prev colors.Color)
 	SetLineColor(value colors.Color) (prev colors.Color)
 	SetLineDashPattern(pattern string)
 	SetLineSpacing(lineSpacing float64) (prev float64)

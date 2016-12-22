@@ -15,6 +15,7 @@ type StdWidget struct {
 	Dimensions
 	border  *PenStyle
 	borders [4]*PenStyle
+	fill    *BrushStyle
 	font    *FontStyle
 }
 
@@ -81,6 +82,15 @@ func (widget *StdWidget) LayoutWidget(Writer) {
 }
 
 func (widget *StdWidget) PaintBackground(w Writer) error {
+	if widget.fill != nil {
+		widget.fill.Apply(w)
+		w.Rectangle2(
+			widget.Left()+widget.MarginLeft(),
+			widget.Top()+widget.MarginTop(),
+			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
+			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
+			false, true, widget.corners, false, false)
+	}
 	return nil
 }
 
@@ -108,6 +118,9 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		if border, ok := attrs["border-"+side]; ok {
 			widget.borders[i] = PenStyleFor(border, widget.scope)
 		}
+	}
+	if fill, ok := attrs["fill"]; ok {
+		widget.fill = BrushStyleFor(fill, widget.scope)
 	}
 	if font, ok := attrs["font"]; ok {
 		widget.font = FontStyleFor(font, widget.scope)

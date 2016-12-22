@@ -2,7 +2,7 @@
   <pen id="blue_dash" color="blue" width="4pt" pattern="dashed" />
   <layout id="vbox" padding="10" />
   <page units="in" margin="1">
-    <rect width="100%" height="2" border="blue_dash" corners="0.5" />
+    <rect width="100%" height="2" border="blue_dash" fill="LightYellow" corners="0.5" />
     <rect width="100%" height="2" border="red" corners="0.25" />
     <rect width="3" height="3" border="green" corners="1.5" />
   </page>
