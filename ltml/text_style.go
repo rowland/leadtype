@@ -5,13 +5,10 @@ package ltml
 
 import (
 	"fmt"
-
-	"github.com/rowland/leadtype/colors"
 )
 
 type TextStyle struct {
 	id        string
-	color     colors.Color
 	textAlign HAlign
 	vAlign    VAlign
 }
@@ -27,9 +24,6 @@ func (ts *TextStyle) ID() string {
 func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if id, ok := attrs[prefix+"id"]; ok {
 		ts.id = id
-	}
-	if color, ok := attrs[prefix+"color"]; ok {
-		ts.color = NamedColor(color)
 	}
 	if textAlign, ok := attrs[prefix+"text-align"]; ok {
 		switch textAlign {
@@ -58,7 +52,7 @@ func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 }
 
 func (ts *TextStyle) String() string {
-	return fmt.Sprintf("id=%s color=%v text-align=%s valign=%s", ts.id, ts.color, ts.textAlign, ts.vAlign)
+	return fmt.Sprintf("id=%s text-align=%s valign=%s", ts.id, ts.textAlign, ts.vAlign)
 }
 
 var _ HasAttrsPrefix = (*TextStyle)(nil)
