@@ -49,7 +49,7 @@ var StdAliases = map[string]*Alias{
 	"h":     {"h", "p", map[string]string{"font.weight": "Bold", "text_align": "center", "width": "100%"}},
 	"b":     {"b", "span", map[string]string{"font.weight": "Bold"}},
 	"i":     {"i", "span", map[string]string{"font.style": "Italic"}},
-	"u":     {"u", "span", map[string]string{"underline": "true"}},
+	"u":     {"u", "span", map[string]string{"font.underline": "true"}},
 	"hbox":  {"hbox", "div", map[string]string{"layout": "hbox"}},
 	"vbox":  {"vbox", "div", map[string]string{"layout": "vbox"}},
 	"table": {"table", "div", map[string]string{"layout": "table"}},

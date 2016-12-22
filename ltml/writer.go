@@ -31,5 +31,6 @@ type Writer interface {
 	SetLineDashPattern(pattern string)
 	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
+	SetUnderline(underline bool) (prev bool)
 	Underline() bool
 }

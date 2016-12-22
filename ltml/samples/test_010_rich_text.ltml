@@ -6,7 +6,7 @@
   <define id="bi" tag="span" font.weight="Bold" font.style="Italic" />
   <define id="red" tag="span" font.color="red" />
   <page units="in" margin="1">
-    <p underline="true">Rich Text</p>
+    <p font.underline="true">Rich Text</p>
     <p text_align="justify">Lorem <b>ipsum</b> dolor sit amet, <i>consectetur</i> adipisicing elit, <b>sed do <i>eiusmod</i> tempor</b> incididunt ut labore et dolore magna aliqua. <red>Ut enim ad minim veniam</red>, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
     <p text_align="justify"><u>Lorem ipsum dolor sit amet</u>, consectetur adipisicing elit, sed do eiusmod <bi>tempor incididunt</bi> ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
   </page>
