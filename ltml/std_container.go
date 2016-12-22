@@ -11,6 +11,7 @@ type StdContainer struct {
 	StdWidget
 	Children
 	layout          *LayoutStyle
+	paragraphStyle  *ParagraphStyle
 	preferredHeight float64
 	preferredWidth  float64
 }
@@ -32,10 +33,24 @@ func (c *StdContainer) LayoutStyle() *LayoutStyle {
 	return c.layout
 }
 
+func (c *StdContainer) ParagraphStyle() *ParagraphStyle {
+	if c.paragraphStyle == nil {
+		return c.container.ParagraphStyle()
+	}
+	return c.paragraphStyle
+}
+
 func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	c.StdWidget.SetAttrs(attrs)
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
+	}
+	if ps, ok := attrs["paragraph-style"]; ok {
+		c.paragraphStyle = ParagraphStyleFor(ps, c.scope)
+	}
+	if MapHasKeyPrefix(attrs, "paragraph-style.") {
+		c.paragraphStyle = c.ParagraphStyle().Clone()
+		c.paragraphStyle.SetAttrs("paragraph-style.", attrs)
 	}
 }
 

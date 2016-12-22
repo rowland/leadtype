@@ -18,6 +18,15 @@ func (ps *ParagraphStyle) Apply(w Writer) {
 	fmt.Printf("Applying %s\n", ps)
 }
 
+func (ps *ParagraphStyle) Bullet() *BulletStyle {
+	return ps.bullet
+}
+
+func (ps *ParagraphStyle) Clone() *ParagraphStyle {
+	clone := *ps
+	return &clone
+}
+
 func (ps *ParagraphStyle) SetAttrs(prefix string, attrs map[string]string) {
 	ps.TextStyle.SetAttrs(prefix, attrs)
 	if bullet, ok := attrs[prefix+"bullet"]; ok {
@@ -34,12 +43,17 @@ func (ps *ParagraphStyle) String() string {
 }
 
 func ParagraphStyleFor(id string, scope HasScope) *ParagraphStyle {
+	if id == "" {
+		return defaultParagraphStyle
+	}
 	if style, ok := scope.StyleFor(id); ok {
 		ps, _ := style.(*ParagraphStyle)
 		return ps
 	}
 	return nil
 }
+
+var defaultParagraphStyle = &ParagraphStyle{}
 
 var _ HasAttrsPrefix = (*ParagraphStyle)(nil)
 var _ Styler = (*ParagraphStyle)(nil)

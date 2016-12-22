@@ -9,6 +9,7 @@ type Container interface {
 
 	AddChild(value Widget)
 	LayoutStyle() *LayoutStyle
+	ParagraphStyle() *ParagraphStyle
 	Query(f func(value Widget) bool) []Widget
 	Units() Units
 	Widgets() []Widget

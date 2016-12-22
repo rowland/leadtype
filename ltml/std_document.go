@@ -36,6 +36,13 @@ func (d *StdDocument) PageStyle() *PageStyle {
 	return d.pageStyle
 }
 
+func (d *StdDocument) ParagraphStyle() *ParagraphStyle {
+	if d.paragraphStyle == nil {
+		return defaultParagraphStyle
+	}
+	return d.paragraphStyle
+}
+
 func (d *StdDocument) Print(w Writer) error {
 	return d.DrawContent(w)
 }

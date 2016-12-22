@@ -38,8 +38,21 @@ func (p *StdParagraph) BeforePrint(w Writer) error {
 	return nil
 }
 
+func (p *StdParagraph) Bullet() *BulletStyle {
+	if p.bullet != nil {
+		return p.bullet
+	}
+	if ps := p.ParagraphStyle(); ps != nil {
+		return ps.Bullet()
+	}
+	return nil
+}
+
 func (p *StdParagraph) bulletWidth() float64 {
-	return 0 // TODO
+	if b := p.Bullet(); b != nil {
+		return b.Width()
+	}
+	return 0
 }
 
 func (p *StdParagraph) DrawContent(w Writer) error {
@@ -49,11 +62,11 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		return nil
 	}
 	w.MoveTo(ContentLeft(p), ContentTop(p)+para[0].Ascent())
-	if p.bullet != nil {
+	if b := p.Bullet(); b != nil {
 		x, y := w.Loc()
-		p.bullet.Apply(w)
-		w.Print(p.bullet.Text())
-		w.MoveTo(x+p.bullet.Width(), y)
+		b.Apply(w)
+		w.Print(b.Text())
+		w.MoveTo(x+b.Width(), y)
 	}
 	w.PrintParagraph(para)
 	return nil
@@ -121,6 +134,13 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
+	if style, ok := attrs["style"]; ok {
+		p.paragraphStyle = ParagraphStyleFor(style, p.scope)
+	}
+	if MapHasKeyPrefix(attrs, "style.") {
+		p.paragraphStyle = p.ParagraphStyle().Clone()
+		p.paragraphStyle.SetAttrs("style.", attrs)
+	}
 	if bullet, ok := attrs["bullet"]; ok {
 		p.bullet = BulletStyleFor(bullet, p.scope)
 	}
