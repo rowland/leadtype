@@ -19,6 +19,11 @@ func (bs *BrushStyle) Apply(w Writer) {
 	w.SetFillColor(bs.color)
 }
 
+func (bs *BrushStyle) Clone() *BrushStyle {
+	clone := *bs
+	return &clone
+}
+
 func (bs *BrushStyle) ID() string {
 	return bs.id
 }
