@@ -31,11 +31,9 @@ func (ps *PenStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if id, ok := attrs[prefix+"id"]; ok {
 		ps.id = id
 	}
-	fmt.Println("PenStyle.SetAttrs:", prefix, attrs)
 	if color, ok := attrs[prefix+"color"]; ok {
 		ps.color = NamedColor(color)
 	}
-	fmt.Println("color:", ps.color)
 	if width, ok := attrs[prefix+"width"]; ok {
 		ps.width = ParseMeasurement(width, "pt")
 	}
