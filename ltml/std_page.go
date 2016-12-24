@@ -28,6 +28,10 @@ func (p *StdPage) Bottom() float64 {
 	return p.Height()
 }
 
+func (p *StdPage) BottomIsSet() bool {
+	return true
+}
+
 func (p *StdPage) root() *StdPage {
 	if p.container == nil {
 		return p
@@ -48,6 +52,10 @@ func (p *StdPage) Height() float64 {
 
 func (p *StdPage) Left() float64 {
 	return 0
+}
+
+func (p *StdPage) LeftIsSet() bool {
+	return true
 }
 
 func (p *StdPage) MarginTop() float64 {
@@ -101,6 +109,10 @@ func (p *StdPage) Right() float64 {
 	return p.Width()
 }
 
+func (p *StdPage) RightIsSet() bool {
+	return true
+}
+
 var reMargin = regexp.MustCompile(`^margin(-top|-right|-bottom|-left)?$`)
 
 func (p *StdPage) SetAttrs(attrs map[string]string) {
@@ -132,6 +144,10 @@ func (p *StdPage) String() string {
 
 func (p *StdPage) Top() float64 {
 	return 0
+}
+
+func (p *StdPage) TopIsSet() bool {
+	return true
 }
 
 func (p *StdPage) Width() float64 {

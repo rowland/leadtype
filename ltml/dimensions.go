@@ -28,35 +28,35 @@ var (
 )
 
 func (d *Dimensions) MarginTop() float64 {
-	return d.margin[topSide]
+	return d.margin[topSide].Value
 }
 
 func (d *Dimensions) MarginRight() float64 {
-	return d.margin[rightSide]
+	return d.margin[rightSide].Value
 }
 
 func (d *Dimensions) MarginBottom() float64 {
-	return d.margin[bottomSide]
+	return d.margin[bottomSide].Value
 }
 
 func (d *Dimensions) MarginLeft() float64 {
-	return d.margin[leftSide]
+	return d.margin[leftSide].Value
 }
 
 func (d *Dimensions) PaddingTop() float64 {
-	return d.padding[topSide]
+	return d.padding[topSide].Value
 }
 
 func (d *Dimensions) PaddingRight() float64 {
-	return d.padding[rightSide]
+	return d.padding[rightSide].Value
 }
 
 func (d *Dimensions) PaddingBottom() float64 {
-	return d.padding[bottomSide]
+	return d.padding[bottomSide].Value
 }
 
 func (d *Dimensions) PaddingLeft() float64 {
-	return d.padding[leftSide]
+	return d.padding[leftSide].Value
 }
 
 func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
@@ -102,19 +102,19 @@ func (d *Dimensions) SetHeight(value float64) {
 }
 
 func (d *Dimensions) SetTop(value float64) {
-	d.sides[topSide] = value
+	d.sides[topSide].Set(value)
 }
 
 func (d *Dimensions) SetRight(value float64) {
-	d.sides[rightSide] = value
+	d.sides[rightSide].Set(value)
 }
 
 func (d *Dimensions) SetBottom(value float64) {
-	d.sides[bottomSide] = value
+	d.sides[bottomSide].Set(value)
 }
 
 func (d *Dimensions) SetLeft(value float64) {
-	d.sides[leftSide] = value
+	d.sides[leftSide].Set(value)
 }
 
 func (d *Dimensions) SetWidth(value float64) {

@@ -16,25 +16,35 @@ const (
 	leftSide
 )
 
-type Sides [4]float64
+type Side struct {
+	Value float64
+	IsSet bool
+}
+
+func (side *Side) Set(value float64) {
+	side.Value = value
+	side.IsSet = true
+}
+
+type Sides [4]Side
 
 func (sides *Sides) SetAll(value string, units Units) {
 	values := strings.SplitN(value, " ", len(sides))
 	switch len(values) {
 	case 4, 3:
 		for i := 0; i < len(values); i++ {
-			sides[i] = ParseMeasurement(values[i], units)
+			sides[i].Set(ParseMeasurement(values[i], units))
 		}
 	case 2:
 		topBottom, rightLeft := ParseMeasurement(values[0], units), ParseMeasurement(values[1], units)
-		sides[topSide] = topBottom
-		sides[rightSide] = rightLeft
-		sides[bottomSide] = topBottom
-		sides[leftSide] = rightLeft
+		sides[topSide].Set(topBottom)
+		sides[rightSide].Set(rightLeft)
+		sides[bottomSide].Set(topBottom)
+		sides[leftSide].Set(rightLeft)
 	case 1:
 		all := ParseMeasurement(values[0], units)
 		for i := 0; i < 4; i++ {
-			sides[i] = all
+			sides[i].Set(all)
 		}
 	}
 }
@@ -44,7 +54,7 @@ var sideNames = [4]string{"top", "right", "bottom", "left"}
 func (sides *Sides) SetAttrs(prefix string, attrs map[string]string, units Units) {
 	for i, name := range sideNames {
 		if value, ok := attrs[prefix+name]; ok {
-			sides[i] = ParseMeasurement(value, units)
+			sides[i].Set(ParseMeasurement(value, units))
 		}
 	}
 }
@@ -56,7 +66,7 @@ func (sides *Sides) String() string {
 		if i > 0 {
 			buf.WriteString(" ")
 		}
-		fmt.Fprintf(&buf, "%s=%f", sideNames[i], sides[i])
+		fmt.Fprintf(&buf, "%s=%f/%v", sideNames[i], sides[i].Value, sides[i].IsSet)
 	}
 	buf.WriteString("]")
 	return buf.String()

@@ -8,6 +8,7 @@ type Container interface {
 	HasFont
 
 	AddChild(value Widget)
+	Container() Container
 	LayoutStyle() *LayoutStyle
 	ParagraphStyle() *ParagraphStyle
 	Query(f func(value Widget) bool) []Widget
@@ -17,4 +18,21 @@ type Container interface {
 
 func LayoutContainer(c Container, w Writer) {
 	c.LayoutStyle().Layout(c, w)
+}
+
+func MaxContentHeight(c Container) float64 {
+	return MaxHeightAvail(c) - NonContentHeight(c)
+}
+
+func MaxHeightAvail(c Container) float64 {
+	if h := c.Height(); h != 0 {
+		return h
+	}
+	var top float64
+	if c.TopIsSet() {
+		top = c.Top()
+	} else {
+		top = ContentTop(c.Container())
+	}
+	return MaxContentHeight(c.Container()) - top - ContentTop(c.Container())
 }

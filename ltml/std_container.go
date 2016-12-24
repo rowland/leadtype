@@ -16,6 +16,10 @@ type StdContainer struct {
 	preferredWidth  float64
 }
 
+func (c *StdContainer) Container() Container {
+	return c.container
+}
+
 func (c *StdContainer) DrawContent(w Writer) error {
 	fmt.Printf("DrawContent %s\n", c)
 	for _, child := range c.children {
