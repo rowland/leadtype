@@ -3,6 +3,25 @@
 
 package ltml
 
+type Align int
+
+const (
+	AlignDefault = Align(iota)
+	AlignLeft
+	AlignRight
+	AlignTop
+	AlignBottom
+)
+
+var alignStrings = []string{"default", "left", "right", "top", "bottom"}
+
+func (a Align) String() string {
+	if int(a) < len(alignStrings) {
+		return alignStrings[a]
+	}
+	return "unknown"
+}
+
 type HAlign int
 
 const (

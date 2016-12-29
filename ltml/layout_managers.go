@@ -98,10 +98,30 @@ func LayoutRelative(container Container, style *LayoutStyle, writer Writer) {
 
 func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	fmt.Println("In LayoutVBox")
+	containerFull := false
+	static, remaining := printableWidgets(container, Static)
+	for _, widget := range remaining {
+		if widget.Printed() {
+			widget.SetVisible(false)
+		}
+	}
+	var headers, footers, unaligned []Widget
+	for _, widget := range static {
+		switch widget.Align() {
+		case AlignTop:
+			headers = append(headers, widget)
+		case AlignBottom:
+			footers = append(footers, widget)
+		default:
+			unaligned = append(unaligned, widget)
+		}
+	}
 	left := ContentLeft(container)
 	fmt.Println("left:", left)
-	for _, widget := range container.Widgets() {
-		// TODO: skip calculations if width has already been set.
+	for _, widget := range static {
+		if widget.WidthSet() {
+			continue
+		}
 		pw := widget.PreferredWidth(writer)
 		fmt.Println("pw:", pw, widget)
 		cw := ContentWidth(container)
@@ -115,15 +135,63 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		widget.SetWidth(w)
 		widget.SetLeft(left)
 	}
-	top := ContentTop(container)
+	top, dy := ContentTop(container), 0.0
 	fmt.Println("top:", top)
-	for _, widget := range container.Widgets() {
+	bottom := ContentTop(container) + MaxContentHeight(container)
+
+	for i, widget := range headers {
 		widget.SetTop(top)
 		widget.LayoutWidget(writer)
-		if widget.Height() == 0 {
+		if !widget.HeightSet() {
+			widget.SetHeight(widget.PreferredHeight(writer))
+		}
+		top += widget.Height() + style.VPadding()
+		dy += widget.Height()
+		if i > 0 {
+			dy += style.VPadding()
+		}
+		widget.SetVisible(widget.Bottom() <= bottom)
+	}
+
+	if len(footers) > 0 {
+		if !container.HeightSet() {
+			container.SetHeightPct(100)
+		}
+		for i := len(footers) - 1; i >= 0; i-- {
+			widget := footers[i]
+			widget.SetBottom(bottom)
+			widget.LayoutWidget(writer)
+			if !widget.HeightSet() {
+				widget.SetHeight(widget.PreferredHeight(writer))
+			}
+			widget.SetVisible(widget.Top() >= top)
+		}
+	}
+
+	widgetsVisible := 0
+	for i, widget := range unaligned {
+		widget.SetVisible(!containerFull)
+		if containerFull {
+			continue
+		}
+		widget.SetTop(top)
+		widget.LayoutWidget(writer)
+		if !widget.HeightSet() {
 			widget.SetHeight(widget.PreferredHeight(writer))
 		}
 		top += widget.Height()
+		dy += widget.Height()
+		if i > 0 {
+			dy += style.VPadding()
+		}
+		if top > bottom {
+			containerFull = true
+			widget.SetVisible(widgetsVisible == 0)
+			// widget.visible = widget.leaves > 0 and container.root_page.positioned_widgets[:static] == 0
+		}
+		if widget.Visible() {
+			widgetsVisible += 1
+		}
 		top += style.VPadding()
 	}
 }

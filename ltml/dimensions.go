@@ -17,9 +17,11 @@ type Dimensions struct {
 	width     float64
 	widthPct  float64
 	widthRel  float64
+	widthSet  bool
 	height    float64
 	heightPct float64
 	heightRel float64
+	heightSet bool
 }
 
 var (
@@ -87,18 +89,32 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 	}
 	if height, ok := attrs["height"]; ok {
 		if rePct.MatchString(height) {
-			d.heightPct, _ = strconv.ParseFloat(height, 64)
+			heightPct, _ := strconv.ParseFloat(height, 64)
+			d.SetHeightPct(heightPct)
 		} else if reRel.MatchString(height) {
-			d.heightRel, _ = strconv.ParseFloat(height, 64)
+			heightRel, _ := strconv.ParseFloat(height, 64)
+			d.SetHeightRel(heightRel)
 		} else {
-			d.height = ParseMeasurement(height, units)
+			height := ParseMeasurement(height, units)
+			d.SetHeight(height)
 		}
 	}
 }
 
 func (d *Dimensions) SetHeight(value float64) {
-	d.height = value
-	d.heightPct = 0
+	d.height, d.heightPct, d.heightRel, d.heightSet = value, 0, 0, true
+}
+
+func (d *Dimensions) SetHeightPct(value float64) {
+	d.heightPct, d.height, d.heightRel, d.heightSet = value, 0, 0, true
+}
+
+func (d *Dimensions) SetHeightRel(value float64) {
+	d.heightRel, d.height, d.heightPct, d.heightSet = value, 0, 0, true
+}
+
+func (d *Dimensions) HeightSet() bool {
+	return d.heightSet
 }
 
 func (d *Dimensions) SetTop(value float64) {
@@ -118,11 +134,22 @@ func (d *Dimensions) SetLeft(value float64) {
 }
 
 func (d *Dimensions) SetWidth(value float64) {
-	d.width = value
-	d.widthPct = 0
+	d.width, d.widthPct, d.widthRel, d.widthSet = value, 0, 0, true
+}
+
+func (d *Dimensions) SetWidthPct(value float64) {
+	d.widthPct, d.widthRel, d.widthPct, d.widthSet = value, 0, 0, true
+}
+
+func (d *Dimensions) SetWidthRel(value float64) {
+	d.widthRel, d.widthPct, d.width, d.widthSet = value, 0, 0, true
 }
 
 func (d *Dimensions) String() string {
 	return fmt.Sprintf("Dimensions width=%f height=%f margin=%s padding=%s corners=%s",
 		d.width, d.height, &d.margin, &d.padding, &d.corners)
+}
+
+func (d *Dimensions) WidthSet() bool {
+	return d.widthSet
 }

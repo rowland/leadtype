@@ -18,8 +18,13 @@ type StdWidget struct {
 	fill      *BrushStyle
 	font      *FontStyle
 	position  Position
+	align     Align
 	printed   bool
 	invisible bool
+}
+
+func (widget *StdWidget) Align() Align {
+	return widget.align
 }
 
 func (widget *StdWidget) BeforePrint(Writer) error {
@@ -75,7 +80,10 @@ func (widget *StdWidget) Font() *FontStyle {
 
 func (widget *StdWidget) Height() float64 {
 	if widget.heightPct > 0 {
-		return widget.heightPct * ContentHeight(widget.container)
+		return widget.heightPct / 100.0 * ContentHeight(widget.container)
+	}
+	if widget.heightRel != 0 {
+		return ContentHeight(widget.container) + widget.heightRel
 	}
 	return widget.height
 }
@@ -122,6 +130,18 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	widget.units.SetAttrs(attrs)
 	widget.Dimensions.SetAttrs(attrs, widget.Units())
 
+	if align, ok := attrs["align"]; ok {
+		switch align {
+		case "left":
+			widget.align = AlignLeft
+		case "right":
+			widget.align = AlignRight
+		case "top":
+			widget.align = AlignTop
+		case "bottom":
+			widget.align = AlignBottom
+		}
+	}
 	if border, ok := attrs["border"]; ok {
 		widget.border = PenStyleFor(border, widget.scope)
 	}
@@ -236,7 +256,10 @@ func (widget *StdWidget) Units() Units {
 
 func (widget *StdWidget) Width() float64 {
 	if widget.widthPct > 0 {
-		return widget.widthPct * ContentWidth(widget.container)
+		return widget.widthPct / 100.0 * ContentWidth(widget.container)
+	}
+	if widget.widthRel != 0 {
+		return ContentWidth(widget.container) + widget.widthRel
 	}
 	return widget.width
 }

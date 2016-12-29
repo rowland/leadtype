@@ -32,10 +32,16 @@ type Widget interface {
 	LeftIsSet() bool
 
 	SetHeight(value float64)
+	SetHeightPct(value float64)
+	SetHeightRel(value float64)
 	SetWidth(value float64)
+	SetWidthPct(value float64)
+	SetWidthRel(value float64)
 
 	Height() float64
+	HeightSet() bool
 	Width() float64
+	WidthSet() bool
 
 	LayoutWidget(writer Writer)
 
@@ -45,6 +51,7 @@ type Widget interface {
 	PaintBackground(writer Writer) error
 	Position() Position
 
+	Align() Align
 	Printed() bool
 	Visible() bool
 	SetPrinted(value bool)
