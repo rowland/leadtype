@@ -11,7 +11,7 @@ func TestSides_SetAll_default(t *testing.T) {
 	var sides Sides
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != 0.0 {
-			t.Errorf("Expected %f, got %f", 0.0, sides[i])
+			t.Errorf("Expected %f, got %f", 0.0, sides[i].Value)
 		}
 	}
 }
@@ -21,7 +21,7 @@ func TestSides_SetAll_1(t *testing.T) {
 	sides.SetAll("3", "")
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != 3.0 {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], 3.0, sides[i])
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], 3.0, sides[i].Value)
 		}
 	}
 }
@@ -32,7 +32,7 @@ func TestSides_SetAll_2(t *testing.T) {
 	sides.SetAll("4 5", "")
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != expected[i] {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i])
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i].Value)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func TestSides_SetAll_3(t *testing.T) {
 	sides.SetAll("4 5 6", "")
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != expected[i] {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i])
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i].Value)
 		}
 	}
 }
@@ -54,7 +54,7 @@ func TestSides_SetAll_4(t *testing.T) {
 	sides.SetAll("6 7 8 9", "")
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != expected[i] {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i])
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i].Value)
 		}
 	}
 }
@@ -66,7 +66,7 @@ func TestSides_SetAttrs(t *testing.T) {
 	sides.SetAttrs("", attrs, "")
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != expected[i] {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i])
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i].Value)
 		}
 	}
 }
@@ -78,7 +78,7 @@ func TestSides_SetAttrs_prefix(t *testing.T) {
 	sides.SetAttrs("margin-", attrs, "")
 	for i := 0; i < len(sides); i++ {
 		if sides[i].Value != expected[i] {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i])
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i].Value)
 		}
 	}
 }
