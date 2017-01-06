@@ -39,9 +39,11 @@ type Widget interface {
 	SetWidthRel(value float64)
 
 	Height() float64
-	HeightSet() bool
+	HeightIsSet() bool
 	Width() float64
-	WidthSet() bool
+	WidthPctIsSet() bool
+	WidthRelIsSet() bool
+	WidthIsSet() bool
 
 	LayoutWidget(writer Writer)
 
@@ -52,8 +54,10 @@ type Widget interface {
 	Position() Position
 
 	Align() Align
+	Disabled() bool
 	Printed() bool
 	Visible() bool
+	SetDisabled(value bool)
 	SetPrinted(value bool)
 	SetVisible(value bool)
 }

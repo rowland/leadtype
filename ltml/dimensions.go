@@ -113,7 +113,7 @@ func (d *Dimensions) SetHeightRel(value float64) {
 	d.heightRel, d.height, d.heightPct, d.heightSet = value, 0, 0, true
 }
 
-func (d *Dimensions) HeightSet() bool {
+func (d *Dimensions) HeightIsSet() bool {
 	return d.heightSet
 }
 
@@ -150,6 +150,14 @@ func (d *Dimensions) String() string {
 		d.width, d.height, &d.margin, &d.padding, &d.corners)
 }
 
-func (d *Dimensions) WidthSet() bool {
+func (d *Dimensions) WidthPctIsSet() bool {
+	return d.widthPct > 0
+}
+
+func (d *Dimensions) WidthRelIsSet() bool {
+	return d.widthRel != 0
+}
+
+func (d *Dimensions) WidthIsSet() bool {
 	return d.widthSet
 }

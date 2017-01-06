@@ -37,6 +37,10 @@ func (c *StdContainer) LayoutStyle() *LayoutStyle {
 	return c.layout
 }
 
+func (c *StdContainer) LayoutWidget(w Writer) {
+	LayoutContainer(c, w)
+}
+
 func (c *StdContainer) ParagraphStyle() *ParagraphStyle {
 	if c.paragraphStyle == nil {
 		return c.container.ParagraphStyle()

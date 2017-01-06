@@ -21,6 +21,7 @@ type StdWidget struct {
 	align     Align
 	printed   bool
 	invisible bool
+	disabled  bool
 }
 
 func (widget *StdWidget) Align() Align {
@@ -30,6 +31,10 @@ func (widget *StdWidget) Align() Align {
 func (widget *StdWidget) BeforePrint(Writer) error {
 	// to be overridden
 	return nil
+}
+
+func (widget *StdWidget) Disabled() bool {
+	return widget.disabled
 }
 
 func (widget *StdWidget) DrawContent(w Writer) error {
@@ -88,7 +93,7 @@ func (widget *StdWidget) Height() float64 {
 	return widget.height
 }
 
-func (widget *StdWidget) LayoutWidget(Writer) {
+func (widget *StdWidget) LayoutWidget(w Writer) {
 	// to be overridden
 }
 
@@ -173,6 +178,10 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 func (widget *StdWidget) SetContainer(container Container) error {
 	widget.container = container
 	return nil
+}
+
+func (widget *StdWidget) SetDisabled(value bool) {
+	widget.disabled = value
 }
 
 func (widget *StdWidget) SetPrinted(value bool) {

@@ -89,7 +89,137 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 }
 
 func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
+	fmt.Println("In LayoutHBox")
+	containerFull := false
 
+	static, remaining := printableWidgets(container, Static)
+	for _, widget := range remaining {
+		if widget.Printed() {
+			widget.SetVisible(false)
+		}
+	}
+
+	var lpanels, rpanels, unaligned []Widget
+	for _, widget := range static {
+		switch widget.Align() {
+		case AlignLeft:
+			lpanels = append(lpanels, widget)
+		case AlignRight:
+			rpanels = append(rpanels, widget)
+		default:
+			unaligned = append(unaligned, widget)
+		}
+	}
+
+	var percents, specified, others []Widget
+	for _, widget := range static {
+		if widget.WidthPctIsSet() {
+			percents = append(percents, widget)
+		} else if widget.WidthIsSet() {
+			specified = append(specified, widget)
+		} else {
+			others = append(others, widget)
+		}
+	}
+
+	widthAvail := ContentWidth(container)
+
+	// allocate specified widths first
+	for _, widget := range specified {
+		widthAvail -= widget.Width()
+		containerFull = widthAvail < 0
+		widget.SetDisabled(containerFull)
+		widthAvail -= style.HPadding()
+	}
+
+	if widthAvail-float64(len(percents)-1)*style.HPadding() >= float64(len(percents)) {
+		widthAvail -= float64(len(percents)-1) * style.HPadding()
+		totalPercents := 0.0
+		for _, widget := range percents {
+			totalPercents += widget.Width()
+		}
+		ratio := widthAvail / totalPercents
+		for _, widget := range percents {
+			if ratio < 1.0 {
+				widget.SetWidth(widget.Width() * ratio)
+			}
+			widthAvail -= widget.Width()
+		}
+	} else {
+		containerFull = true
+		for _, widget := range percents {
+			widget.SetDisabled(true)
+		}
+	}
+	widthAvail -= style.HPadding()
+
+	if widthAvail-float64(len(others)-1)*style.HPadding() >= float64(len(others)) {
+		widthAvail -= float64(len(others)-1) * style.HPadding()
+		othersWidth := widthAvail / float64(len(others))
+		for _, widget := range others {
+			widget.SetWidth(othersWidth)
+		}
+	} else {
+		containerFull = true
+		for _, widget := range others {
+			widget.SetDisabled(true)
+		}
+	}
+
+	for _, widget := range static {
+		if container.Align() == AlignBottom {
+			widget.SetBottom(ContentBottom(container))
+		} else {
+			containerFull = true
+			widget.SetTop(ContentTop(container))
+		}
+		if !widget.HeightIsSet() {
+			widget.SetHeight(widget.PreferredHeight(writer))
+		}
+	}
+
+	left := ContentLeft(container)
+	right := ContentRight(container)
+	fmt.Println("left:", left, "right:", right)
+
+	for _, widget := range lpanels {
+		if widget.Disabled() {
+			continue
+		}
+		widget.SetLeft(left)
+		left += (widget.Width() + style.HPadding())
+	}
+	for i := len(rpanels) - 1; i >= 0; i-- {
+		widget := rpanels[i]
+		if widget.Disabled() {
+			continue
+		}
+		widget.SetRight(right)
+		right -= (widget.Width() + style.HPadding())
+	}
+	for _, widget := range unaligned {
+		if widget.Disabled() {
+			continue
+		}
+		widget.SetLeft(left)
+		left += (widget.Width() + style.HPadding())
+	}
+
+	if !container.HeightIsSet() {
+		contentHeight := 0.0
+		for _, widget := range static {
+			if widget.Height() > contentHeight {
+				contentHeight = widget.Height()
+			}
+		}
+		container.SetHeight(contentHeight + NonContentHeight(container))
+	}
+	for _, widget := range static {
+		if widget.Visible() && !widget.Disabled() {
+			widget.LayoutWidget(writer)
+		}
+	}
+	// super(container, writer)
 }
 
 func LayoutRelative(container Container, style *LayoutStyle, writer Writer) {
@@ -119,7 +249,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	left := ContentLeft(container)
 	fmt.Println("left:", left)
 	for _, widget := range static {
-		if widget.WidthSet() {
+		if widget.WidthIsSet() {
 			continue
 		}
 		pw := widget.PreferredWidth(writer)
@@ -142,7 +272,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	for i, widget := range headers {
 		widget.SetTop(top)
 		widget.LayoutWidget(writer)
-		if !widget.HeightSet() {
+		if !widget.HeightIsSet() {
 			widget.SetHeight(widget.PreferredHeight(writer))
 		}
 		top += widget.Height() + style.VPadding()
@@ -154,14 +284,14 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 
 	if len(footers) > 0 {
-		if !container.HeightSet() {
+		if !container.HeightIsSet() {
 			container.SetHeightPct(100)
 		}
 		for i := len(footers) - 1; i >= 0; i-- {
 			widget := footers[i]
 			widget.SetBottom(bottom)
 			widget.LayoutWidget(writer)
-			if !widget.HeightSet() {
+			if !widget.HeightIsSet() {
 				widget.SetHeight(widget.PreferredHeight(writer))
 			}
 			widget.SetVisible(widget.Top() >= top)
@@ -176,7 +306,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 		widget.SetTop(top)
 		widget.LayoutWidget(writer)
-		if !widget.HeightSet() {
+		if !widget.HeightIsSet() {
 			widget.SetHeight(widget.PreferredHeight(writer))
 		}
 		top += widget.Height()
