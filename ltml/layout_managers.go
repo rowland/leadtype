@@ -132,6 +132,7 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 		widthAvail -= style.HPadding()
 	}
 
+	// allocate percent widths next, with a minimum width of 1 point
 	if widthAvail-float64(len(percents)-1)*style.HPadding() >= float64(len(percents)) {
 		widthAvail -= float64(len(percents)-1) * style.HPadding()
 		totalPercents := 0.0
@@ -153,6 +154,7 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 	widthAvail -= style.HPadding()
 
+	// divide remaining width equally among widgets with unspecified widths
 	if widthAvail-float64(len(others)-1)*style.HPadding() >= float64(len(others)) {
 		widthAvail -= float64(len(others)-1) * style.HPadding()
 		othersWidth := widthAvail / float64(len(others))
