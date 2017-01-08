@@ -251,20 +251,19 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	left := ContentLeft(container)
 	fmt.Println("left:", left)
 	for _, widget := range static {
-		if widget.WidthIsSet() {
-			continue
+		if !widget.WidthIsSet() {
+			pw := widget.PreferredWidth(writer)
+			// fmt.Println("pw:", pw, widget)
+			cw := ContentWidth(container)
+			// fmt.Println("cw:", cw, container)
+			if pw == 0 {
+				pw = cw
+			}
+			w := math.Min(pw, cw)
+			// fmt.Println("w:", w)
+			// panic("foo")
+			widget.SetWidth(w)
 		}
-		pw := widget.PreferredWidth(writer)
-		fmt.Println("pw:", pw, widget)
-		cw := ContentWidth(container)
-		fmt.Println("cw:", cw, container)
-		if pw == 0 {
-			pw = cw
-		}
-		w := math.Min(pw, cw)
-		fmt.Println("w:", w)
-		// panic("foo")
-		widget.SetWidth(w)
 		widget.SetLeft(left)
 	}
 	top, dy := ContentTop(container), 0.0

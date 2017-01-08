@@ -80,16 +80,19 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 
 	if width, ok := attrs["width"]; ok {
 		if rePct.MatchString(width) {
-			d.widthPct, _ = strconv.ParseFloat(width, 64)
+			widthPct, _ := strconv.ParseFloat(width[:len(width)-1], 64)
+			d.SetWidthPct(widthPct)
 		} else if reRel.MatchString(width) {
-			d.widthRel, _ = strconv.ParseFloat(width, 64)
+			widthRel, _ := strconv.ParseFloat(width, 64)
+			d.SetWidthRel(widthRel)
 		} else {
-			d.width = ParseMeasurement(width, units)
+			width := ParseMeasurement(width, units)
+			d.SetWidth(width)
 		}
 	}
 	if height, ok := attrs["height"]; ok {
 		if rePct.MatchString(height) {
-			heightPct, _ := strconv.ParseFloat(height, 64)
+			heightPct, _ := strconv.ParseFloat(height[:len(height)-1], 64)
 			d.SetHeightPct(heightPct)
 		} else if reRel.MatchString(height) {
 			heightRel, _ := strconv.ParseFloat(height, 64)
@@ -138,7 +141,7 @@ func (d *Dimensions) SetWidth(value float64) {
 }
 
 func (d *Dimensions) SetWidthPct(value float64) {
-	d.widthPct, d.widthRel, d.widthPct, d.widthSet = value, 0, 0, true
+	d.widthPct, d.widthRel, d.width, d.widthSet = value, 0, 0, true
 }
 
 func (d *Dimensions) SetWidthRel(value float64) {
