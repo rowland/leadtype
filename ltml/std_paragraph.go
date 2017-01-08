@@ -68,7 +68,10 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		w.Print(b.Text())
 		w.MoveTo(x+b.Width(), y)
 	}
-	w.PrintParagraph(para)
+	w.PrintParagraph(para, options.Options{
+		"text-align": p.ParagraphStyle().textAlign.String(),
+		"width":      ContentWidth(p),
+	})
 	return nil
 }
 

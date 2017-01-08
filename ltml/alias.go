@@ -46,7 +46,7 @@ func (a *Alias) String() string {
 }
 
 var StdAliases = map[string]*Alias{
-	"h":     {"h", "p", map[string]string{"font.weight": "Bold", "text_align": "center", "width": "100%"}},
+	"h":     {"h", "p", map[string]string{"font.weight": "Bold", "style.text-align": "center", "width": "100%"}},
 	"b":     {"b", "span", map[string]string{"font.weight": "Bold"}},
 	"i":     {"i", "span", map[string]string{"font.style": "Italic"}},
 	"u":     {"u", "span", map[string]string{"font.underline": "true"}},

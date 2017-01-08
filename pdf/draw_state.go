@@ -6,6 +6,7 @@ package pdf
 import "github.com/rowland/leadtype/colors"
 
 type drawState struct {
+	charSpacing     float64
 	fillColor       colors.Color
 	fontColor       colors.Color
 	fontKey         string
@@ -18,4 +19,5 @@ type drawState struct {
 	lineWidth       float64
 	loc             Location
 	underline       bool
+	wordSpacing     float64
 }

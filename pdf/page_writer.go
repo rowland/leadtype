@@ -199,6 +199,17 @@ func (pw *PageWriter) checkSetLineWidth() {
 	pw.last.lineWidth = pw.lineWidth
 }
 
+func (pw *PageWriter) checkSetSpacing() {
+	if pw.charSpacing != pw.last.charSpacing {
+		pw.tw.setCharSpacing(pw.charSpacing)
+		pw.last.charSpacing = pw.charSpacing
+	}
+	if pw.wordSpacing != pw.last.wordSpacing {
+		pw.tw.setWordSpacing(pw.wordSpacing)
+		pw.last.wordSpacing = pw.wordSpacing
+	}
+}
+
 func (pw *PageWriter) close() {
 	if pw.isClosed {
 		return
@@ -313,6 +324,9 @@ func (pw *PageWriter) flushText() {
 		pw.fontKey = pw.dw.fontKey(p.Font, cpi)
 		pw.SetFontSize(p.FontSize)
 		pw.checkSetFont()
+		pw.charSpacing = p.CharSpacing
+		pw.wordSpacing = p.WordSpacing
+		pw.checkSetSpacing()
 		pw.tw.show(buf.Bytes())
 	})
 	pw.line.VisitAll(func(p *rich_text.RichText) {
@@ -466,8 +480,16 @@ func (pw *PageWriter) print(text string) (err error) {
 	return
 }
 
-func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText) {
+func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
+	pw.flushText()
+	width := options.FloatDefault("width", pw.PageWidth()-pw.loc.X)
 	for _, p := range para {
+		pw.origin = pw.loc
+		switch options.StringDefault("text-align", "left") {
+		case "right":
+			pw.keepOrigin = true
+			pw.loc = Location{pw.loc.X + width - p.Width(), pw.loc.Y}
+		}
 		pw.PrintRichText(p)
 		pw.newLine()
 	}
@@ -499,7 +521,7 @@ func (pw *PageWriter) PrintWithOptions(text string, options options.Options) (er
 	} else {
 		para = []*rich_text.RichText{rt}
 	}
-	pw.PrintParagraph(para)
+	pw.PrintParagraph(para, options)
 	return nil
 }
 

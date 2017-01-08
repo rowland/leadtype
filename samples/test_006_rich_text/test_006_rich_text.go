@@ -99,7 +99,7 @@ func main() {
 		makeRtLine(doc, line5),
 		makeRtLine(doc, line6),
 	}
-	doc.PrintParagraph(lines)
+	doc.PrintParagraph(lines, options.Options{})
 	doc.WriteTo(f)
 	f.Close()
 	exec.Command("open", name).Start()

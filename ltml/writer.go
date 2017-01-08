@@ -21,7 +21,7 @@ type Writer interface {
 	MoveTo(x, y float64)
 	NewPage()
 	Print(text string) (err error)
-	PrintParagraph(para []*rich_text.RichText)
+	PrintParagraph(para []*rich_text.RichText, options options.Options)
 	PrintRichText(text *rich_text.RichText)
 	Rectangle(x, y, width, height float64, border bool, fill bool)
 	Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool)

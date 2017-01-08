@@ -287,8 +287,8 @@ func (dw *DocWriter) Print(text string) (err error) {
 	return dw.CurPage().Print(text)
 }
 
-func (dw *DocWriter) PrintParagraph(para []*rich_text.RichText) {
-	dw.CurPage().PrintParagraph(para)
+func (dw *DocWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
+	dw.CurPage().PrintParagraph(para, options)
 }
 
 func (dw *DocWriter) PrintRichText(text *rich_text.RichText) {

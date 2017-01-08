@@ -63,7 +63,7 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 }
 
 func (c *StdContainer) String() string {
-	return fmt.Sprintf("StdContainer %s", &c.StdWidget)
+	return fmt.Sprintf("StdContainer layout=%v paragraphStyle=%v %s", c.layout, c.paragraphStyle, &c.StdWidget)
 }
 
 func init() {
