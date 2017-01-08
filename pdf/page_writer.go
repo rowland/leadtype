@@ -494,7 +494,6 @@ func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options
 			pw.keepOrigin = true
 			pw.loc = Location{pw.loc.X + width - p.Width(), pw.loc.Y}
 		case "justify":
-			p = p.DeepClone()
 			delta := width - p.Width()
 			spaces := 0
 			for _, r := range p.String() {
@@ -516,6 +515,7 @@ func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options
 					wordSpacing = delta / float64(words-1)
 					charSpacing = 0
 				}
+				p = p.DeepClone()
 				p.VisitAll(func(p *rich_text.RichText) {
 					p.CharSpacing = charSpacing
 					p.WordSpacing = wordSpacing
