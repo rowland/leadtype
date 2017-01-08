@@ -156,6 +156,15 @@ func (piece *RichText) Count() int {
 	return result
 }
 
+func (piece *RichText) DeepClone() *RichText {
+	p := piece.Clone()
+	p.pieces = make([]*RichText, len(piece.pieces))
+	for i := 0; i < len(piece.pieces); i++ {
+		p.pieces[i] = piece.pieces[i].DeepClone()
+	}
+	return p
+}
+
 // Descent calculates, caches and returns the maximum descent from the text, expressed in points.
 func (piece *RichText) Descent() float64 {
 	if piece.descent == 0.0 {

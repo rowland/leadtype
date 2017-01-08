@@ -493,6 +493,34 @@ func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options
 		case "right":
 			pw.keepOrigin = true
 			pw.loc = Location{pw.loc.X + width - p.Width(), pw.loc.Y}
+		case "justify":
+			p = p.DeepClone()
+			delta := width - p.Width()
+			spaces := 0
+			for _, r := range p.String() {
+				if r == rune(32) {
+					spaces++
+				}
+			}
+			words := spaces + 1
+			if math.Abs(delta)/width < 0.4 {
+				var charSpacing, wordSpacing float64
+				if words == 1 {
+					wordSpacing = 0
+					charSpacing = delta / float64(p.Chars()-1)
+				} else if math.Abs(delta)/float64(words) > 3 {
+					wordSpacing = 3
+					delta -= float64(words-1) * wordSpacing
+					charSpacing = delta / float64(p.Chars()-1)
+				} else {
+					wordSpacing = delta / float64(words-1)
+					charSpacing = 0
+				}
+				p.VisitAll(func(p *rich_text.RichText) {
+					p.CharSpacing = charSpacing
+					p.WordSpacing = wordSpacing
+				})
+			}
 		}
 		pw.PrintRichText(p)
 		pw.newLine()
