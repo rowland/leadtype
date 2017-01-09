@@ -407,7 +407,7 @@ func (piece *RichText) measure() *RichText {
 		piece.chars += 1
 		runeWidth, _ := metrics.AdvanceWidth(rune)
 		piece.width += (fsize * float64(runeWidth)) + piece.CharSpacing
-		if unicode.IsSpace(rune) {
+		if rune == ' ' {
 			piece.width += piece.WordSpacing
 		}
 	}
