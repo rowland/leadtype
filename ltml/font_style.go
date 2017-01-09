@@ -34,6 +34,7 @@ func (fs *FontStyle) Apply(w Writer) {
 	if fs.lineHeight == 0 {
 		fs.lineHeight = 1.0
 	}
+	w.SetStrikeout(fs.strikeout)
 	w.SetUnderline(fs.underline)
 	w.SetLineSpacing(fs.lineHeight)
 }

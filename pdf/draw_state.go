@@ -15,9 +15,9 @@ type drawState struct {
 	lineColor       colors.Color
 	lineDashPattern string
 	lineSpacing     float64
-	lineThrough     bool
 	lineWidth       float64
 	loc             Location
+	strikeout       bool
 	underline       bool
 	wordSpacing     float64
 }

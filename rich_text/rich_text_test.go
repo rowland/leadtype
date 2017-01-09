@@ -23,7 +23,7 @@ import (
 func TestNewRichText_English(t *testing.T) {
 	st := SuperTest{t}
 	fonts := ttf_fonts.Families("Arial")
-	rt, err := New("abc", fonts, 10, options.Options{"color": colors.Green, "underline": true, "line_through": true, "nobreak": true})
+	rt, err := New("abc", fonts, 10, options.Options{"color": colors.Green, "underline": true, "strikeout": true, "nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestNewRichText_English(t *testing.T) {
 	st.Equal(10.0, rt.FontSize)
 	st.Equal(colors.Green, rt.Color)
 	st.True(rt.Underline)
-	st.True(rt.LineThrough)
+	st.True(rt.Strikeout)
 	st.True(rt.NoBreak)
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
 }
@@ -65,19 +65,19 @@ func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 	st.Equal(10.0, rt.pieces[0].FontSize)
 	st.Equal(colors.Black, rt.pieces[0].Color, "Color should be (default) black.")
 	st.False(rt.pieces[0].Underline, "Underline should be (default) false.")
-	st.False(rt.pieces[0].LineThrough, "LineThrough should be (default) false.")
+	st.False(rt.pieces[0].Strikeout, "Strikeout should be (default) false.")
 
 	st.Equal("所有测", rt.pieces[1].Text)
 	st.Equal(10.0, rt.pieces[1].FontSize)
 	st.Equal(colors.Black, rt.pieces[1].Color, "Color should be (default) black.")
 	st.False(rt.pieces[1].Underline, "Underline should be (default) false.")
-	st.False(rt.pieces[1].LineThrough, "LineThrough should be (default) false.")
+	st.False(rt.pieces[1].Strikeout, "Strikeout should be (default) false.")
 
 	st.Equal("def", rt.pieces[2].Text)
 	st.Equal(10.0, rt.pieces[2].FontSize)
 	st.Equal(colors.Black, rt.pieces[2].Color, "Color should be (default) black.")
 	st.False(rt.pieces[2].Underline, "Underline should be (default) false.")
-	st.False(rt.pieces[2].LineThrough, "LineThrough should be (default) false.")
+	st.False(rt.pieces[2].Strikeout, "Strikeout should be (default) false.")
 
 	st.Equal(fonts[0], rt.pieces[0].Font, "abc should be tagged with Arial font.")
 	st.Equal(fonts[1], rt.pieces[1].Font, "Chinese should be tagged with STFangsong font.")
@@ -490,7 +490,7 @@ func TestRichText_MatchesAttributes(t *testing.T) {
 	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1
-	p2.LineThrough = true
+	p2.Strikeout = true
 	st.False(p1.MatchesAttributes(&p2), "Attributes should not match.")
 
 	p2 = p1

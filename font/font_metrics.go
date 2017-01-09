@@ -26,6 +26,8 @@ type FontMetrics interface {
 	PostScriptName() string
 	// Serif() bool TODO
 	StemV() int
+	StrikeoutPosition() int
+	StrikeoutThickness() int
 	Style() string
 	// Trademark() string
 	UnderlinePosition() int

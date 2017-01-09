@@ -254,14 +254,14 @@ func TestPageWriter_LineDashPattern(t *testing.T) {
 	check(t, last == "solid", "Previous pattern was solid")
 }
 
-func TestPageWriter_LineThrough(t *testing.T) {
+func TestPageWriter_Strikeout(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	check(t, pw.LineThrough() == false, "Should default to false")
+	check(t, pw.Strikeout() == false, "Should default to false")
 
-	last := pw.SetLineThrough(true)
-	check(t, pw.LineThrough() == true, "Should have changed to true")
+	last := pw.SetStrikeout(true)
+	check(t, pw.Strikeout() == true, "Should have changed to true")
 	check(t, last == false, "Previous setting was false")
 }
 

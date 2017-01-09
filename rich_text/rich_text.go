@@ -26,11 +26,13 @@ type RichText struct {
 	FontSize           float64
 	Color              colors.Color
 	Underline          bool
-	LineThrough        bool
+	Strikeout          bool
 	ascent             float64
 	descent            float64
 	height             float64
 	lineGap            float64
+	StrikeoutPosition  float64
+	StrikeoutThickness float64
 	UnderlinePosition  float64
 	UnderlineThickness float64
 	width              float64
@@ -57,7 +59,7 @@ var errNoFontSet = errors.New("No font set")
 //                 A value of type Color, a string with a color name from NamedColors map, or an RGB color as int, int32 or hexadecimal string.
 //   underline:    Draw a line under text.
 //                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-//   line_through: Draw a line through (or strikethrough) text.
+//   strikeout:    Draw a line through text.
 //                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
 //   char_spacing: Add extra space between characters, expressed in points.
 //   word_spacing: Add extra space between words, expressed in points.
@@ -69,7 +71,7 @@ func New(s string, fonts []*font.Font, fontSize float64, options options.Options
 		FontSize:    fontSize,
 		Color:       options.ColorDefault("color", colors.Black),
 		Underline:   options.BoolDefault("underline", false),
-		LineThrough: options.BoolDefault("line_through", false),
+		Strikeout:   options.BoolDefault("strikeout", false),
 		CharSpacing: options.FloatDefault("char_spacing", 0),
 		WordSpacing: options.FloatDefault("word_spacing", 0),
 		NoBreak:     options.BoolDefault("nobreak", false),
@@ -375,7 +377,7 @@ func (piece *RichText) MatchesAttributes(other *RichText) bool {
 		piece.FontSize == other.FontSize &&
 		piece.Color == other.Color &&
 		piece.Underline == other.Underline &&
-		piece.LineThrough == other.LineThrough &&
+		piece.Strikeout == other.Strikeout &&
 		piece.CharSpacing == other.CharSpacing &&
 		piece.WordSpacing == other.WordSpacing
 }
@@ -394,6 +396,8 @@ func (piece *RichText) measure() *RichText {
 	piece.descent = float64(metrics.Descent()) * fsize
 	piece.height = float64(piece.Font.Height()) * fsize
 	piece.lineGap = float64(metrics.LineGap()) * fsize
+	piece.StrikeoutPosition = float64(metrics.StrikeoutPosition()) * fsize
+	piece.StrikeoutThickness = float64(metrics.StrikeoutThickness()) * fsize
 	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
 	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
 	for _, rune := range piece.Text {

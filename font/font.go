@@ -131,6 +131,14 @@ func (font *Font) StemV() int {
 	return font.metrics.StemV()
 }
 
+func (font *Font) StrikeoutPosition() int {
+	return font.metrics.StrikeoutPosition()
+}
+
+func (font *Font) StrikeoutThickness() int {
+	return font.metrics.StrikeoutThickness()
+}
+
 func (font *Font) Style() string {
 	return font.style
 }

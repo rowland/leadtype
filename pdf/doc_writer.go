@@ -209,10 +209,6 @@ func (dw *DocWriter) LineSpacing() float64 {
 	return dw.CurPage().LineSpacing()
 }
 
-func (dw *DocWriter) LineThrough() bool {
-	return dw.CurPage().LineThrough()
-}
-
 func (dw *DocWriter) LineTo(x, y float64) {
 	dw.CurPage().LineTo(x, y)
 }
@@ -343,8 +339,8 @@ func (dw *DocWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
 	return dw.CurPage().SetLineSpacing(lineSpacing)
 }
 
-func (dw *DocWriter) SetLineThrough(lineThrough bool) (prev bool) {
-	return dw.CurPage().SetLineThrough(lineThrough)
+func (dw *DocWriter) SetStrikeout(strikeout bool) (prev bool) {
+	return dw.CurPage().SetStrikeout(strikeout)
 }
 
 func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
@@ -364,6 +360,10 @@ func (dw *DocWriter) SetUnits(units string) {
 	if dw.curPage != nil {
 		dw.curPage.SetUnits(units)
 	}
+}
+
+func (dw *DocWriter) Strikeout() bool {
+	return dw.CurPage().Strikeout()
 }
 
 func (dw *DocWriter) Underline() bool {

@@ -188,6 +188,14 @@ func (entry *tableDirEntry) read(file io.Reader) (err error) {
 	return
 }
 
+func (font *Font) StrikeoutPosition() int {
+	return int(font.os2Table.yStrikeoutPosition)
+}
+
+func (font *Font) StrikeoutThickness() int {
+	return int(font.os2Table.yStrikeoutSize)
+}
+
 func (entry *tableDirEntry) String() string {
 	var buf bytes.Buffer
 	entry.write(&buf)

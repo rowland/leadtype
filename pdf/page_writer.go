@@ -337,6 +337,9 @@ func (pw *PageWriter) flushText() {
 		if p.Underline {
 			pw.drawUnderline(loc1, loc2, p.UnderlinePosition, p.UnderlineThickness)
 		}
+		if p.Strikeout {
+			pw.drawUnderline(loc1, loc2, p.StrikeoutPosition, p.StrikeoutThickness)
+		}
 		loc1 = loc2
 	})
 	pw.last.loc = pw.loc
@@ -381,10 +384,6 @@ func (pw *PageWriter) LineDashPattern() string {
 
 func (pw *PageWriter) LineSpacing() float64 {
 	return pw.lineSpacing
-}
-
-func (pw *PageWriter) LineThrough() bool {
-	return pw.lineThrough
 }
 
 func (pw *PageWriter) LineTo(x, y float64) {
@@ -614,7 +613,7 @@ func (pw *PageWriter) ResetFonts() {
 
 func (pw *PageWriter) richTextForString(text string) (piece *rich_text.RichText, err error) {
 	piece, err = rich_text.New(text, pw.fonts, pw.fontSize, options.Options{
-		"color": pw.fontColor, "line_through": pw.lineThrough, "underline": pw.underline})
+		"color": pw.fontColor, "strikeout": pw.strikeout, "underline": pw.underline})
 	return
 }
 
@@ -765,9 +764,9 @@ func (pw *PageWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
 	return
 }
 
-func (pw *PageWriter) SetLineThrough(lineThrough bool) (prev bool) {
-	prev = pw.lineThrough
-	pw.lineThrough = lineThrough
+func (pw *PageWriter) SetStrikeout(strikeout bool) (prev bool) {
+	prev = pw.strikeout
+	pw.strikeout = strikeout
 	return
 }
 
@@ -813,6 +812,10 @@ func (pw *PageWriter) startText() {
 	pw.last.loc = Location{0, 0}
 	pw.tw.open()
 	pw.inText = true
+}
+
+func (pw *PageWriter) Strikeout() bool {
+	return pw.strikeout
 }
 
 func (pw *PageWriter) tab() {

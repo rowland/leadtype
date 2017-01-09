@@ -170,6 +170,14 @@ func (fi *FontInfo) StemV() int {
 	return fi.stdVW
 }
 
+func (fi *FontInfo) StrikeoutPosition() int {
+	return fi.xHeight / 2
+}
+
+func (fi *FontInfo) StrikeoutThickness() int {
+	return fi.underlineThickness
+}
+
 func (fi *FontInfo) Style() string {
 	return fi.weight
 }

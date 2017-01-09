@@ -15,7 +15,6 @@ type Writer interface {
 	Fonts() []*font.Font
 	FontSize() float64
 	LineSpacing() float64
-	LineThrough() bool
 	LineTo(x, y float64)
 	Loc() (x, y float64)
 	MoveTo(x, y float64)
@@ -31,6 +30,8 @@ type Writer interface {
 	SetLineDashPattern(pattern string)
 	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
+	SetStrikeout(strikeout bool) (prev bool)
 	SetUnderline(underline bool) (prev bool)
+	Strikeout() bool
 	Underline() bool
 }
