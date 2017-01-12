@@ -25,6 +25,17 @@ func MapHasKeyPrefix(attrs map[string]string, prefix string) bool {
 	return false
 }
 
+func split2(s, sep string) (s1, s2 string) {
+	a := strings.SplitN(s, sep, 2)
+	if len(a) > 0 {
+		s1 = a[0]
+	}
+	if len(a) > 1 {
+		s2 = a[1]
+	}
+	return
+}
+
 // type stringSlice []string
 
 // func (ss stringSlice) index(value string) int {
