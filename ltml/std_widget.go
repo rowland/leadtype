@@ -22,6 +22,7 @@ type StdWidget struct {
 	printed   bool
 	invisible bool
 	disabled  bool
+	path      string
 }
 
 func (widget *StdWidget) Align() Align {
@@ -108,6 +109,16 @@ func (widget *StdWidget) PaintBackground(w Writer) error {
 			false, true, widget.corners, false, false)
 	}
 	return nil
+}
+
+func (widget *StdWidget) Path() string {
+	if widget.path == "" {
+		if widget.container != nil {
+			widget.path = widget.container.Path() + "/"
+		}
+		widget.path += widget.SelectorTag()
+	}
+	return widget.path
 }
 
 func (widget *StdWidget) Position() Position {
@@ -285,3 +296,4 @@ var _ HasAttrs = (*StdWidget)(nil)
 var _ Printer = (*StdWidget)(nil)
 var _ WantsContainer = (*StdWidget)(nil)
 var _ WantsScope = (*StdWidget)(nil)
+var _ Widget = (*StdWidget)(nil)

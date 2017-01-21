@@ -60,6 +60,8 @@ type Widget interface {
 	SetDisabled(value bool)
 	SetPrinted(value bool)
 	SetVisible(value bool)
+
+	Path() string
 }
 
 func ContentHeight(widget Widget) float64 {
