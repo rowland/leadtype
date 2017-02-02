@@ -119,12 +119,20 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	}
 	if e, ok := e.(HasAttrs); ok {
 		e.SetAttrs(defaultAttrs)
-		// apply rules
+		if p, ok := e.(HasPath); ok {
+			doc.scope().EachRuleFor(p.Path(), func(rule *Rule) {
+				e.SetAttrs(rule.Attrs)
+			})
+		}
 		e.SetAttrs(attrs)
 	}
 	if e, ok := e.(HasAttrsPrefix); ok {
 		e.SetAttrs("", defaultAttrs)
-		// apply rules
+		if p, ok := e.(HasPath); ok {
+			doc.scope().EachRuleFor(p.Path(), func(rule *Rule) {
+				e.SetAttrs("", rule.Attrs)
+			})
+		}
 		e.SetAttrs("", attrs)
 	}
 	if style, ok := e.(Styler); ok {
@@ -146,6 +154,11 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			fmt.Fprintf(os.Stderr, "Adding alias: %s\n", err)
 		}
 	}
+	if rules, ok := e.(*Rules); ok {
+		if err := doc.scope().AddRules(rules); err != nil {
+			fmt.Fprintf(os.Stderr, "Adding rules: %s\n", err)
+		}
+	}
 }
 
 func (doc *Doc) endElement(elem xml.EndElement) {
@@ -159,6 +172,9 @@ func (doc *Doc) charData(data xml.CharData) {
 }
 
 func (doc *Doc) comment(comment xml.Comment) {
+	if widget, ok := doc.current().(HasComment); ok {
+		widget.AddComment(string(comment))
+	}
 }
 
 func (doc *Doc) push(value interface{}) {

@@ -7,8 +7,10 @@ type HasScope interface {
 	AddAlias(alias *Alias) error
 	AddLayout(layout *LayoutStyle) error
 	AddPageStyle(style *PageStyle) error
+	AddRules(rules *Rules) error
 	AddStyle(style Styler) error
 	AliasFor(name string) (alias *Alias, ok bool)
+	EachRuleFor(path string, f func(rule *Rule))
 	LayoutFor(id string) (layout *LayoutStyle, ok bool)
 	PageStyleFor(id string) (style *PageStyle, ok bool)
 	SetParentScope(parent HasScope)

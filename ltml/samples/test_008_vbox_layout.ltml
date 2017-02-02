@@ -4,7 +4,7 @@
   <pen id="red_dash" color="Red" width="2" pattern="dashed" />
   <rules>
     <!--
-      rect { width: 100%; }
+      rect { width: 95%; }
     -->
   </rules>
   <page units="in" margin="1" layout="vbox">

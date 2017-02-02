@@ -1,5 +1,5 @@
-// Copyright 2016 Brent Rowland.
-// Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
+// Copyright 2016, 2017 Brent Rowland.
+// Use of this source code is governed by the Apache License, Version 2.0, as described in the LICENSE file.
 
 package ltml
 
@@ -14,6 +14,7 @@ type Scope struct {
 	styles     map[string]Styler
 	layouts    map[string]*LayoutStyle
 	pageStyles map[string]*PageStyle
+	rules      []*Rules
 }
 
 func (scope *Scope) AddAlias(alias *Alias) error {
@@ -49,6 +50,11 @@ func (scope *Scope) AddPageStyle(style *PageStyle) error {
 	return nil
 }
 
+func (scope *Scope) AddRules(rules *Rules) error {
+	scope.rules = append(scope.rules, rules)
+	return nil
+}
+
 func (scope *Scope) AddStyle(style Styler) error {
 	if style.ID() == "" {
 		return fmt.Errorf("id required for style: %s", style)
@@ -66,6 +72,19 @@ func (scope *Scope) AliasFor(name string) (alias *Alias, ok bool) {
 		alias, ok = scope.parent.AliasFor(name)
 	}
 	return
+}
+
+func (scope *Scope) EachRuleFor(path string, f func(rule *Rule)) {
+	if scope.parent != nil {
+		scope.parent.EachRuleFor(path, f)
+	}
+	for _, rz := range scope.rules {
+		for _, rule := range rz.rules {
+			if rule.SelectorRegexp.MatchString(path) {
+				f(rule)
+			}
+		}
+	}
 }
 
 func (scope *Scope) LayoutFor(id string) (style *LayoutStyle, ok bool) {
