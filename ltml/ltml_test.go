@@ -58,10 +58,6 @@ func (dw *DocWriter) NewPage() {
 	dw.DocWriter.NewPage()
 }
 
-func (dw *DocWriter) SetLineDashPattern(pattern string) {
-	dw.DocWriter.SetLineDashPattern(pattern)
-}
-
 func (dw *DocWriter) SetLineWidth(width float64) {
 	dw.DocWriter.SetLineWidth(width, "pt")
 }

@@ -27,7 +27,7 @@ type Writer interface {
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
 	SetFillColor(value interface{}) (prev colors.Color)
 	SetLineColor(value colors.Color) (prev colors.Color)
-	SetLineDashPattern(pattern string)
+	SetLineDashPattern(pattern string) (prev string)
 	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
 	SetStrikeout(strikeout bool) (prev bool)
