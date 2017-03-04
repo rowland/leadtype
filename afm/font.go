@@ -31,6 +31,7 @@ func LoadFont(filename string) (font *Font, err error) {
 	defer file.Close()
 	reader := bufio.NewReader(file)
 	font = new(Font)
+	font.filename = filename
 	if err = font.init(reader); err != nil {
 		return
 	}

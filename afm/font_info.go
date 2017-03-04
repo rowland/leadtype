@@ -12,7 +12,7 @@ import (
 )
 
 type FontInfo struct {
-	Filename           string
+	filename           string
 	ascender           int
 	capHeight          int
 	copyright          string
@@ -41,7 +41,7 @@ func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	defer file.Close()
 	reader := bufio.NewReader(file)
 	fi = new(FontInfo)
-	fi.Filename = filename
+	fi.filename = filename
 	err = fi.init(reader)
 	return
 }
@@ -140,6 +140,10 @@ func (fi *FontInfo) Descent() int {
 
 func (fi *FontInfo) Family() string {
 	return fi.familyName
+}
+
+func (fi *FontInfo) Filename() string {
+	return fi.filename
 }
 
 func (fi *FontInfo) FullName() string {

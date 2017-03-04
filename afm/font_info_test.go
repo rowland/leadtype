@@ -11,6 +11,7 @@ func TestLoadFontInfo(t *testing.T) {
 		t.Fatalf("Error loading font info: %v", err)
 	}
 
+	expectS(t, "Filename", "data/fonts/Helvetica.afm", fi.Filename())
 	expectS(t, "Family", "Helvetica", fi.Family())
 	expectS(t, "Style", "Medium", fi.Style())
 

@@ -21,6 +21,7 @@ func TestLoadFont_Helvetica(t *testing.T) {
 		t.Fatal("Font not loaded")
 	}
 
+	expectS(t, "Filename", "data/fonts/Helvetica.afm", f.Filename())
 	expectI(t, "UnitsPerEm", 1000, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 315, f.NumGlyphs())
 	expect(t, "Serif", !f.Serif())
