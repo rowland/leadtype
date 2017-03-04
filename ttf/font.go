@@ -31,6 +31,7 @@ func LoadFont(filename string) (font *Font, err error) {
 	}
 	defer file.Close()
 	font = new(Font)
+	font.filename = filename
 	err = font.init(file)
 	return
 }

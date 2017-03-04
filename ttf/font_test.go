@@ -18,6 +18,7 @@ func TestLoadFont(t *testing.T) {
 		t.Fatal("Font not loaded")
 	}
 
+	expectS(t, "Filename", "/Library/Fonts/Arial.ttf", f.Filename())
 	expectI(t, "UnitsPerEm", 2048, f.UnitsPerEm())
 	expectI(t, "NumGlyphs", 3381, f.NumGlyphs())
 	expectI(t, "BoundingBox[0]", -1361, f.BoundingBox()[0])

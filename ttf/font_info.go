@@ -12,7 +12,7 @@ import (
 )
 
 type FontInfo struct {
-	Filename      string
+	filename      string
 	scalar        uint32
 	nTables       uint16
 	searchRange   uint16
@@ -31,7 +31,7 @@ func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	}
 	defer file.Close()
 	fi = new(FontInfo)
-	fi.Filename = filename
+	fi.filename = filename
 	err = fi.init(file)
 	return
 }
@@ -91,6 +91,10 @@ func (fi *FontInfo) Embeddable() bool {
 
 func (fi *FontInfo) Family() string {
 	return fi.nameTable.fontFamily
+}
+
+func (fi *FontInfo) Filename() string {
+	return fi.filename
 }
 
 func (fi *FontInfo) FullName() string {

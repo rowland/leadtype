@@ -10,6 +10,7 @@ func TestLoadFontInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error loading font info: %v", err)
 	}
+	expectS(t, "Filename", "/Library/Fonts/Arial.ttf", fi.Filename())
 	expectUI32(t, "scalar", 0x00010000, fi.scalar)
 	expectUI16(t, "nTables", 0x0018, fi.nTables)
 	expectUI16(t, "searchRange", 0x0100, fi.searchRange)
