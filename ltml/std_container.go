@@ -21,7 +21,7 @@ func (c *StdContainer) Container() Container {
 }
 
 func (c *StdContainer) DrawContent(w Writer) error {
-	fmt.Printf("DrawContent %s\n", c)
+	// fmt.Printf("DrawContent %s\n", c)
 	for _, child := range c.children {
 		if err := Print(child, w); err != nil {
 			return err

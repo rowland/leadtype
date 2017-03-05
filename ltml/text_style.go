@@ -14,7 +14,7 @@ type TextStyle struct {
 }
 
 func (ts *TextStyle) Apply(w Writer) {
-	fmt.Printf("Applying %s\n", ts)
+	// fmt.Printf("Applying %s\n", ts)
 }
 
 func (ts *TextStyle) ID() string {

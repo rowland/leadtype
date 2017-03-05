@@ -17,8 +17,8 @@ type StdPage struct {
 }
 
 func (p *StdPage) BeforePrint(w Writer) error {
-	fmt.Printf("Printing %s\n", p)
-	fmt.Print(&p.Scope)
+	// fmt.Printf("Printing %s\n", p)
+	// fmt.Print(&p.Scope)
 	w.NewPage()
 	LayoutContainer(p, w)
 	return nil

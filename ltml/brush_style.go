@@ -15,7 +15,7 @@ type BrushStyle struct {
 }
 
 func (bs *BrushStyle) Apply(w Writer) {
-	fmt.Printf("Applying %s\n", bs)
+	// fmt.Printf("Applying %s\n", bs)
 	w.SetFillColor(bs.color)
 }
 

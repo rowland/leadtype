@@ -26,7 +26,7 @@ type FontStyle struct {
 }
 
 func (fs *FontStyle) Apply(w Writer) {
-	fmt.Printf("Applying %s\n", fs)
+	// fmt.Printf("Applying %s\n", fs)
 	w.SetFont(fs.name, fs.size, options.Options{
 		"color":  colors.Color(fs.color),
 		"weight": fs.weight,

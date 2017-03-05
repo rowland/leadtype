@@ -14,7 +14,7 @@ func RegisterLayoutManager(name string, f LayoutFunc) {
 }
 
 func LayoutManagerFor(name string) LayoutFunc {
-	fmt.Println("In LayoutManagerFor")
+	// fmt.Println("In LayoutManagerFor")
 	if f, ok := layoutManagers[name]; ok {
 		// fmt.Printf("%#v", f)
 		return f
@@ -89,7 +89,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 }
 
 func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
-	fmt.Println("In LayoutHBox")
+	// fmt.Println("In LayoutHBox")
 	containerFull := false
 
 	static, remaining := printableWidgets(container, Static)
@@ -182,7 +182,7 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 
 	left := ContentLeft(container)
 	right := ContentRight(container)
-	fmt.Println("left:", left, "right:", right)
+	// fmt.Println("left:", left, "right:", right)
 
 	for _, widget := range lpanels {
 		if widget.Disabled() {
@@ -229,7 +229,7 @@ func LayoutRelative(container Container, style *LayoutStyle, writer Writer) {
 }
 
 func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
-	fmt.Println("In LayoutVBox")
+	// fmt.Println("In LayoutVBox")
 	containerFull := false
 	static, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {
@@ -249,7 +249,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 	left := ContentLeft(container)
-	fmt.Println("left:", left)
+	// fmt.Println("left:", left)
 	for _, widget := range static {
 		if !widget.WidthIsSet() {
 			pw := widget.PreferredWidth(writer)
@@ -267,7 +267,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		widget.SetLeft(left)
 	}
 	top, dy := ContentTop(container), 0.0
-	fmt.Println("top:", top)
+	// fmt.Println("top:", top)
 	bottom := ContentTop(container) + MaxContentHeight(container)
 
 	for i, widget := range headers {

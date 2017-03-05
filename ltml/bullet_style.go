@@ -22,7 +22,7 @@ func (bs *BulletStyle) AddText(text string) {
 }
 
 func (bs *BulletStyle) Apply(w Writer) {
-	fmt.Printf("Applying %s\n", bs)
+	// fmt.Printf("Applying %s\n", bs)
 	bs.font.Apply(w)
 }
 

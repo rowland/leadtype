@@ -17,7 +17,7 @@ type PenStyle struct {
 }
 
 func (ps *PenStyle) Apply(w Writer) {
-	fmt.Printf("Applying %s\n", ps)
+	// fmt.Printf("Applying %s\n", ps)
 	w.SetLineColor(colors.Color(ps.color))
 	w.SetLineWidth(ps.width)
 	w.SetLineDashPattern(ps.pattern)

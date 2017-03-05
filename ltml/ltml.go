@@ -225,22 +225,22 @@ func ParseReader(r io.Reader) (*Doc, error) {
 }
 
 func traceStartElement(elem xml.StartElement) {
-	fmt.Printf("StartElement %s:%s\n", elem.Name.Space, elem.Name.Local)
+	// fmt.Printf("StartElement %s:%s\n", elem.Name.Space, elem.Name.Local)
 	for _, attr := range elem.Attr {
 		fmt.Printf("%s=%s\n", attr.Name.Local, attr.Value)
 	}
 }
 
 func traceEndElement(elem xml.EndElement) {
-	fmt.Printf("EndElement %s:%s\n", elem.Name.Space, elem.Name.Local)
+	// fmt.Printf("EndElement %s:%s\n", elem.Name.Space, elem.Name.Local)
 }
 
 func traceCharData(data xml.CharData) {
-	fmt.Println("CharData")
+	// fmt.Println("CharData")
 	fmt.Println(strings.TrimSpace(string(data)))
 }
 
 func traceComment(comment xml.Comment) {
-	fmt.Println("Comment")
+	// fmt.Println("Comment")
 	fmt.Println(string(comment))
 }

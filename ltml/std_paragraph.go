@@ -34,7 +34,7 @@ func (p *StdParagraph) AddTextWithFont(text string, font *FontStyle) {
 }
 
 func (p *StdParagraph) BeforePrint(w Writer) error {
-	fmt.Printf("Printing %s\n", p)
+	// fmt.Printf("Printing %s\n", p)
 	return nil
 }
 

@@ -15,7 +15,7 @@ type ParagraphStyle struct {
 
 func (ps *ParagraphStyle) Apply(w Writer) {
 	ps.TextStyle.Apply(w)
-	fmt.Printf("Applying %s\n", ps)
+	// fmt.Printf("Applying %s\n", ps)
 }
 
 func (ps *ParagraphStyle) Bullet() *BulletStyle {

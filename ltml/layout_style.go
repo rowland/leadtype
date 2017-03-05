@@ -29,7 +29,7 @@ func (ls *LayoutStyle) HPadding() float64 {
 }
 
 func (ls *LayoutStyle) Layout(c Container, w Writer) {
-	fmt.Println("In Layout")
+	// fmt.Println("In Layout")
 	f := LayoutManagerFor(ls.manager)
 	f(c, ls, w)
 }
@@ -67,9 +67,9 @@ func (ls *LayoutStyle) VPadding() float64 {
 }
 
 func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
-	fmt.Println("In LayoutStyleFor", id)
+	// fmt.Println("In LayoutStyleFor", id)
 	if ls, ok := scope.LayoutFor(id); ok {
-		fmt.Println("Found LayoutStyle", ls)
+		// fmt.Println("Found LayoutStyle", ls)
 		return ls
 	}
 	return nil
