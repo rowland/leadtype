@@ -14,6 +14,7 @@ type FontMetrics interface {
 	// Designer() string
 	// Embeddable() bool
 	Family() string
+	Filename() string
 	Flags() (flags uint32)
 	FullName() string
 	ItalicAngle() float64

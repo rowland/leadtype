@@ -69,6 +69,10 @@ func (font *Font) Family() string {
 	return font.metrics.Family()
 }
 
+func (font *Font) Filename() string {
+	return font.metrics.Filename()
+}
+
 func (font *Font) Flags() (flags uint32) {
 	return font.metrics.Flags()
 }

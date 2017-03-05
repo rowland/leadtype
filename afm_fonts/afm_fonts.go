@@ -101,10 +101,10 @@ func (fc *AfmFonts) Select(family, weight, style string, ranges []string) (fontM
 	}
 	for _, f := range fc.FontInfos {
 		if re.MatchString(f.PostScriptName()) {
-			font := fc.Fonts[f.Filename]
+			font := fc.Fonts[f.Filename()]
 			if font == nil {
-				font, err = afm.LoadFont(f.Filename)
-				fc.Fonts[f.Filename] = font
+				font, err = afm.LoadFont(f.Filename())
+				fc.Fonts[f.Filename()] = font
 			}
 			fontMetrics = font
 			return

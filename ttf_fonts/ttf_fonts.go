@@ -88,10 +88,10 @@ search:
 					continue search
 				}
 			}
-			font := fc.fonts[f.Filename]
+			font := fc.fonts[f.Filename()]
 			if font == nil {
-				font, err = ttf.LoadFont(f.Filename)
-				fc.fonts[f.Filename] = font
+				font, err = ttf.LoadFont(f.Filename())
+				fc.fonts[f.Filename()] = font
 			}
 			fontMetrics = font
 			return
