@@ -81,7 +81,6 @@ func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
 	pw.pageHeight = ps.pageSize.y2
 	pw.pageWidth = ps.pageSize.x2
 	// pw.page = newPage(pw.dw.nextSeq(), 0, pw.dw.catalog.pages)
-	// pw.page.setMediaBox(ps.pageSize)
 	pw.page.SetWidth(float32(pw.pageWidth))
 	pw.page.SetHeight(float32(pw.pageHeight))
 
@@ -115,14 +114,11 @@ func (pw *PageWriter) autoStrokeAndFill(stroke bool, fill bool) {
 		return
 	}
 	if stroke && fill {
-		fmt.Println("PageWriter.fillAndStroke")
-		// pw.gw.fillAndStroke()
+		pw.page.FillStroke()
 	} else if stroke {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 	} else if fill {
-		fmt.Println("PageWriter.fill")
-		// pw.gw.fill()
+		pw.page.Fill()
 	} else {
 		fmt.Println("PageWriter.newPath")
 		// pw.gw.newPath()
@@ -139,12 +135,10 @@ func (pw *PageWriter) checkSetFillColor() {
 		return
 	}
 	if pw.inPath && pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 		pw.inPath = false
 	}
-	fmt.Println("PageWriter.setRgbColorFill")
-	// pw.mw.setRgbColorFill(pw.fillColor.RGB64())
+	pw.page.SetRGBFill(pw.fillColor.RGB32())
 	pw.last.fillColor = pw.fillColor
 }
 
@@ -153,9 +147,7 @@ func (pw *PageWriter) checkSetFont() {
 		pw.setDefaultFont()
 	}
 	if pw.last.fontHandle != pw.fontHandle {
-		fmt.Println("PageWriter.setFontAndSize")
 		pw.page.SetFontAndSize(pw.fontHandle, float32(pw.fontSize))
-		// pw.tw.setFontAndSize(pw.fontHandle, pw.fontSize)
 		// TODO: check_set_v_text_align(true)
 		pw.last.fontHandle = pw.fontHandle
 	}
@@ -166,12 +158,10 @@ func (pw *PageWriter) checkSetFontColor() {
 		return
 	}
 	if pw.inPath && pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 		pw.inPath = false
 	}
-	fmt.Println("PageWriter.setRgbColorFill")
-	// pw.mw.setRgbColorFill(pw.fontColor.RGB64())
+	pw.page.SetRGBFill(pw.fontColor.RGB32())
 	pw.last.fillColor = pw.fontColor
 }
 
@@ -180,12 +170,10 @@ func (pw *PageWriter) checkSetLineColor() {
 		return
 	}
 	if pw.inPath && pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 		pw.inPath = false
 	}
-	fmt.Println("PageWriter.setRgbColorStroke")
-	// pw.mw.setRgbColorStroke(pw.lineColor.RGB64())
+	pw.page.SetRGBStroke(pw.lineColor.RGB32())
 	pw.last.lineColor = pw.lineColor
 }
 
@@ -195,8 +183,7 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 	}
 	pw.startGraph()
 	if pw.inPath && pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 		pw.inPath = false
 	}
 	pat := LinePatterns[pw.lineDashPattern]
@@ -219,12 +206,10 @@ func (pw *PageWriter) checkSetLineWidth() {
 	}
 	pw.startGraph()
 	if pw.inPath && pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 		pw.inPath = false
 	}
-	fmt.Println("PageWriter.setLineWidth")
-	// pw.gw.setLineWidth(pw.lineWidth)
+	pw.page.SetLineWidth(float32(pw.lineWidth))
 	pw.last.lineWidth = pw.lineWidth
 }
 
@@ -268,8 +253,7 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	pw.MoveTo(points[0].X, points[0].Y)
 	if !pw.last.loc.equal(pw.loc) {
 		if pw.inPath && pw.autoPath {
-			fmt.Println("PageWriter.stroke")
-			// pw.gw.stroke()
+			pw.page.Stroke()
 			pw.inPath = false
 		}
 	}
@@ -279,16 +263,14 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	pw.checkSetLineDashPattern()
 
 	if !(pw.loc.equal(pw.last.loc) && pw.inPath) {
-		fmt.Println("PageWriter.moveTo")
-		// pw.gw.moveTo(pw.units.toPts(pw.loc.X), pw.units.toPts(pw.loc.Y))
+		pw.page.MoveTo(float32(pw.units.toPts(pw.loc.X)), float32(pw.units.toPts(pw.loc.Y)))
 	}
 	i := 1
 	for i+2 < len(points) {
-		fmt.Println("PageWriter.curveTo")
-		// pw.gw.curveTo(
-		// 	pw.units.toPts(points[i].X), pw.pageHeight-pw.units.toPts(points[i].Y),
-		// 	pw.units.toPts(points[i+1].X), pw.pageHeight-pw.units.toPts(points[i+1].Y),
-		// 	pw.units.toPts(points[i+2].X), pw.pageHeight-pw.units.toPts(points[i+2].Y))
+		pw.page.CurveTo(
+			float32(pw.units.toPts(points[i].X)), float32(pw.pageHeight-pw.units.toPts(points[i].Y)),
+			float32(pw.units.toPts(points[i+1].X)), float32(pw.pageHeight-pw.units.toPts(points[i+1].Y)),
+			float32(pw.units.toPts(points[i+2].X)), float32(pw.pageHeight-pw.units.toPts(points[i+2].Y)))
 		pw.MoveTo(points[i+2].X, points[i+2].Y)
 		pw.last.loc = pw.loc
 		i += 3
@@ -314,17 +296,14 @@ func (pw *PageWriter) endGraph() {
 
 func (pw *PageWriter) endPath() {
 	if pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 	}
 	pw.inPath = false
 }
 
 func (pw *PageWriter) endText() {
 	pw.flushText()
-	fmt.Println("PageWriter.tw.close")
 	pw.page.EndText()
-	// pw.tw.close()
 	pw.inText = false
 }
 
@@ -366,9 +345,7 @@ func (pw *PageWriter) flushText() {
 		pw.charSpacing = p.CharSpacing
 		pw.wordSpacing = p.WordSpacing
 		pw.checkSetSpacing()
-		fmt.Println("PageWriter.tw.show")
 		pw.page.ShowText(buf.String())
-		// pw.tw.show(buf.Bytes())
 	})
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
@@ -436,8 +413,7 @@ func (pw *PageWriter) lineTo(x, y float64) {
 	pw.startGraph()
 	if !pw.last.loc.equal(pw.loc) {
 		if pw.inPath && pw.autoPath {
-			fmt.Println("PageWriter.stroke")
-			// pw.gw.stroke()
+			pw.page.Stroke()
 		}
 		pw.inPath = false
 	}
@@ -446,12 +422,10 @@ func (pw *PageWriter) lineTo(x, y float64) {
 	pw.checkSetLineDashPattern()
 
 	if !pw.inPath {
-		fmt.Println("PageWriter.moveTo")
-		// pw.gw.moveTo(pw.loc.X, pw.loc.Y)
+		pw.page.MoveTo(float32(pw.loc.X), float32(pw.loc.Y))
 	}
 	pw.moveTo(x, y)
-	fmt.Println("PageWriter.lineTo")
-	// pw.gw.lineTo(pw.loc.X, pw.loc.Y)
+	pw.page.LineTo(float32(pw.loc.X), float32(pw.loc.Y))
 	pw.inPath = true
 	pw.last.loc = pw.loc
 }
@@ -466,8 +440,7 @@ func (pw *PageWriter) Loc() (x, y float64) {
 
 func (pw *PageWriter) MoveTo(x, y float64) {
 	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y))
-	// xpts, ypts := pw.units.toPts(x), pw.units.toPts(y)
-	fmt.Println("MoveTo:", x, y, "->", xpts, ypts)
+	// fmt.Println("MoveTo:", x, y, "->", xpts, ypts)
 	pw.moveTo(xpts, ypts)
 }
 
@@ -534,7 +507,7 @@ func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options
 		case "center":
 			pw.keepOrigin = true
 			pw.loc = Location{pw.loc.X + (width-p.Width())/2, pw.loc.Y}
-			fmt.Println("center", pw.loc)
+			// fmt.Println("center", pw.loc)
 		case "right":
 			pw.keepOrigin = true
 			pw.loc = Location{pw.loc.X + width - p.Width(), pw.loc.Y}
@@ -611,13 +584,12 @@ func (pw *PageWriter) Rectangle2(x, y, width, height float64, border bool, fill 
 }
 
 func (pw *PageWriter) rectangle(x, y, width, height float64, border, fill bool, corners []float64, path, reverse bool) {
-	// xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y+height))
-	// wpts, hpts := pw.units.toPts(width), pw.units.toPts(height)
+	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y+height))
+	wpts, hpts := pw.units.toPts(width), pw.units.toPts(height)
 
 	pw.startGraph()
 	if pw.inPath && pw.autoPath {
-		fmt.Println("PageWriter.stroke")
-		// pw.gw.stroke()
+		pw.page.Stroke()
 		pw.inPath = false
 	}
 	if border {
@@ -634,8 +606,7 @@ func (pw *PageWriter) rectangle(x, y, width, height float64, border, fill bool, 
 	} else if path || reverse {
 		pw.rectanglePath(x, y, width, height, reverse)
 	} else {
-		fmt.Println("PageWriter.rectangle")
-		// pw.gw.rectangle(xpts, ypts, wpts, hpts)
+		pw.page.Rectangle(float32(xpts), float32(ypts), float32(wpts), float32(hpts))
 	}
 	pw.autoStrokeAndFill(border, fill)
 	pw.MoveTo(x+width, y)
@@ -858,10 +829,7 @@ func (pw *PageWriter) startText() {
 		pw.endGraph()
 	}
 	pw.last.loc = Location{0, 0}
-	// pw.last.loc = Location{0, pw.pageHeight}
-	fmt.Println("PageWriter.tw.open")
 	pw.page.BeginText()
-	// pw.tw.open()
 	pw.inText = true
 }
 
