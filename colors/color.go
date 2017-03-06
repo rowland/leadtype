@@ -19,6 +19,12 @@ func (this Color) RGB() (r, g, b uint8) {
 	return
 }
 
+func (this Color) RGB32() (r, g, b float32) {
+	ri, gi, bi := this.RGB()
+	r, g, b = float32(ri)/255, float32(gi)/255, float32(bi)/255
+	return
+}
+
 func (this Color) RGB64() (r, g, b float64) {
 	ri, gi, bi := this.RGB()
 	r, g, b = float64(ri)/255, float64(gi)/255, float64(bi)/255
