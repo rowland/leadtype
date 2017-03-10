@@ -188,12 +188,13 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 	}
 	pat := LinePatterns[pw.lineDashPattern]
 	if pat == nil {
-		fmt.Println("PageWriter.setLineDashPattern")
-		// pw.gw.setLineDashPattern(pw.lineDashPattern)
-	} else {
-		fmt.Println("PageWriter.setLineDashPattern")
-		// pw.gw.setLineDashPattern(pat.String())
+		pat = newLinePatternFromString(pw.lineDashPattern)
 	}
+	var dashPtn = []uint16{}
+	for _, i := range pat.pattern {
+		dashPtn = append(dashPtn, uint16(i))
+	}
+	pw.page.SetDash(dashPtn, uint(pat.phase))
 	pw.last.lineDashPattern = pw.lineDashPattern
 	fmt.Println("PageWriter.setLineCapStyle")
 	// pw.gw.setLineCapStyle(int(pw.lineCapStyle))
