@@ -105,12 +105,20 @@ func (dw *DocWriter) fontHandle(f *font.Font, cpi codepage.CodepageIndex) *hpdf.
 		var err error
 		if standardEncodedFonts[f.PostScriptName()] {
 			fontName = f.PostScriptName()
-		} else {
+		} else if f.SubType() == "Type1" {
 			// fmt.Printf("dw.pdf.LoadType1FontFromFile(%s)\n", f.Filename())
 			fontName, err = dw.pdf.LoadType1FontFromFile(f.Filename())
 			if err != nil {
 				panic("fontHandle: " + err.Error())
 			}
+		} else if f.SubType() == "TrueType" {
+			// fmt.Printf("dw.pdf.LoadTTFontFromFile(%s)\n", f.Filename())
+			fontName, err = dw.pdf.LoadTTFontFromFile(f.Filename(), false)
+			if err != nil {
+				panic("fontHandle: " + err.Error())
+			}
+		} else {
+			panic("fontHandle: unknown SubType")
 		}
 		dw.fontNames[f.Filename()] = fontName
 	}
