@@ -215,13 +215,11 @@ func (pw *PageWriter) checkSetLineWidth() {
 
 func (pw *PageWriter) checkSetSpacing() {
 	if pw.charSpacing != pw.last.charSpacing {
-		fmt.Println("PageWriter.setCharSpacing")
-		// pw.tw.setCharSpacing(pw.charSpacing)
+		pw.page.SetCharSpace(float32(pw.charSpacing))
 		pw.last.charSpacing = pw.charSpacing
 	}
 	if pw.wordSpacing != pw.last.wordSpacing {
-		fmt.Println("PageWriter.setWordSpacing")
-		// pw.tw.setWordSpacing(pw.wordSpacing)
+		pw.page.SetWordSpace(float32(pw.wordSpacing))
 		pw.last.wordSpacing = pw.wordSpacing
 	}
 }
