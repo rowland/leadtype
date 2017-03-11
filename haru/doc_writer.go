@@ -20,11 +20,7 @@ import (
 type DocWriter struct {
 	pdf *hpdf.PDF
 
-	pages []*PageWriter
-	// nextSeq func() int
-	// file          *file
-	// catalog       *catalog
-	// resources     *resources
+	pages       []*PageWriter
 	pagesAcross int
 	pagesDown   int
 	curPage     *PageWriter
@@ -38,27 +34,12 @@ type DocWriter struct {
 func NewDocWriter() *DocWriter {
 	pdf, _ := hpdf.New()
 
-	// nextSeq := nextSeqFunc()
-	// file := newFile()
-	// pages := newPages(nextSeq(), 0)
-	// outlines := newOutlines(nextSeq(), 0)
-	// catalog := newCatalog(nextSeq(), 0, "UseNone", pages, outlines)
-	// file.body.add(pages, outlines, catalog)
-	// file.trailer.setRoot(catalog)
-	// resources := newResources(nextSeq(), 0)
-	// resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
-	// file.body.add(resources)
 	fontSources := make(font.FontSources, 0, 2)
 	fontHandles := make(map[string]*hpdf.Font)
 	fontNames := make(map[string]string)
 	// fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
-		pdf: pdf,
-
-		// nextSeq: nextSeq,
-		// file:          file,
-		// catalog:       catalog,
-		// resources:     resources,
+		pdf:         pdf,
 		options:     options.Options{},
 		fontSources: fontSources,
 		fontHandles: fontHandles,
@@ -94,15 +75,6 @@ func (dw *DocWriter) FontColor() colors.Color {
 	return dw.CurPage().FontColor()
 }
 
-func useStandardEncoding(family string) bool {
-	switch family {
-	case "Symbol", "ZapfDingbats":
-		return true
-	default:
-		return false
-	}
-}
-
 func toHaruEncoding(encoding string) string {
 	// These encodings do not match exactly, but libharu does not include ISO-8859-1.
 	if encoding == "ISO-8859-1" {
@@ -112,83 +84,50 @@ func toHaruEncoding(encoding string) string {
 	return strings.Replace(encoding, "ISO-8859", "ISO8859", 1)
 }
 
+var standardEncodedFonts = map[string]bool{
+	"Symbol":       true,
+	"ZapfDingbats": true,
+}
+
 func (dw *DocWriter) fontHandle(f *font.Font, cpi codepage.CodepageIndex) *hpdf.Font {
 	if f == nil {
-		panic("fontKey: No font specified.")
+		panic("fontHandle: no font specified.")
 	}
 	if !f.HasMetrics() {
-		panic("fontKey: font missing metrics.")
+		panic("fontHandle: font missing metrics.")
 	}
 	name := fmt.Sprintf("%s/%s-%s", f.PostScriptName(), cpi, f.SubType())
 	if handle, ok := dw.fontHandles[name]; ok {
 		return handle
 	}
-	// descriptor := newFontDescriptor(
-	// 	dw.nextSeq(), 0,
-	// 	f.PostScriptName(), f.Family(),
-	// 	f.Flags(),
-	// 	f.BoundingBox(),
-	// 	0, // missingWidth
-	// 	f.StemV(),
-	// 	0, // stemH
-	// 	f.ItalicAngle(),
-	// 	f.CapHeight(),
-	// 	f.XHeight(),
-	// 	f.Ascent(),
-	// 	f.Descent(),
-	// 	f.Leading(),
-	// 	0, 0) // maxWidth, avgWidth
-	// dw.file.body.add(descriptor)
 	fontName, ok := dw.fontNames[f.Filename()]
 	if !ok {
 		var err error
-		fontName, err = dw.pdf.LoadType1FontFromFile(f.Filename())
-		if err != nil {
-			panic("fontHandle: " + err.Error())
+		if standardEncodedFonts[f.PostScriptName()] {
+			fontName = f.PostScriptName()
+		} else {
+			// fmt.Printf("dw.pdf.LoadType1FontFromFile(%s)\n", f.Filename())
+			fontName, err = dw.pdf.LoadType1FontFromFile(f.Filename())
+			if err != nil {
+				panic("fontHandle: " + err.Error())
+			}
 		}
 		dw.fontNames[f.Filename()] = fontName
 	}
-	fmt.Println("fontHandle:", fontName, cpi.String())
-	handle, err := dw.pdf.GetFont(fontName, toHaruEncoding(cpi.String()))
+	var err error
+	var handle *hpdf.Font
+	if standardEncodedFonts[f.PostScriptName()] {
+		// fmt.Printf("dw.pdf.GetFont(%s)\n", fontName)
+		handle, err = dw.pdf.GetFont(fontName)
+	} else {
+		encoding := toHaruEncoding(cpi.String())
+		// fmt.Printf("dw.pdf.GetFont(%s, %s)\n", fontName, encoding)
+		handle, err = dw.pdf.GetFont(fontName, encoding)
+	}
 	if err != nil {
 		panic("fontHandle: " + err.Error())
 	}
-	// key := fmt.Sprintf("F%d", len(dw.fontKeys))
 	dw.fontHandles[name] = handle
-	// widths := dw.widthsForFontCodepage(f, cpi)
-	// dw.file.body.add(widths)
-	// var font *simpleFont
-	switch f.SubType() {
-	case "Type1":
-		if useStandardEncoding(f.Family()) {
-			// font = newType1Font(
-			// 	dw.nextSeq(), 0,
-			// 	f.PostScriptName(),
-			// 	32, 255, widths,
-			// 	descriptor, nil)
-		} else {
-			// encoding, ok := dw.fontEncodings[cpi.String()]
-			// if !ok {
-			// 	differences := glyphDiffs(codepage.Idx_CP1252, cpi, 32, 255)
-			// 	// encoding = newFontEncoding(dw.nextSeq(), 0, "WinAnsiEncoding", differences)
-			// 	// dw.file.body.add(encoding)
-			// 	dw.fontEncodings[cpi.String()] = encoding
-			// }
-			// font = newType1Font(
-			// 	dw.nextSeq(), 0,
-			// 	f.PostScriptName(),
-			// 	32, 255, widths,
-			// 	descriptor, &indirectObjectRef{encoding})
-		}
-	case "TrueType":
-		// font = newTrueTypeFont(
-		// 	dw.nextSeq(), 0,
-		// 	f.PostScriptName(),
-		// 	32, 255, widths,
-		// 	descriptor)
-	}
-	// dw.file.body.add(font)
-	// dw.resources.fonts[key] = &indirectObjectRef{font}
 	return handle
 }
 
@@ -406,21 +345,6 @@ func (dw *DocWriter) Underline() bool {
 	return dw.CurPage().Underline()
 }
 
-// func (dw *DocWriter) widthsForFontCodepage(f *font.Font, cpi codepage.CodepageIndex) *indirectObject {
-// 	var widths [256]int
-// 	upm := f.UnitsPerEm()
-// 	// Avoid divide by zero error for unusual fonts.
-// 	if upm > 0 {
-// 		for i, r := range cpi.Map() {
-// 			designWidth, _ := f.AdvanceWidth(r)
-// 			widths[i] = designWidth * 1000 / upm
-// 		}
-// 	}
-// 	pdfWidths := arrayFromInts(widths[32:])
-// 	ioWidths := &indirectObject{dw.nextSeq(), 0, &pdfWidths}
-// 	return ioWidths
-// }
-
 func (dw *DocWriter) Write(text []byte) (n int, err error) {
 	return dw.CurPage().Write(text)
 }
@@ -434,7 +358,6 @@ func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
 		pw.close()
 	}
 	dw.curPage = nil
-	// dw.file.write(wr)
 	err := dw.pdf.SaveToStream(wr)
 	return 0, err
 }

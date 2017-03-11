@@ -11,7 +11,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/rowland/leadtype/ltml/ltpdf"
+	"github.com/rowland/leadtype/ltml/harupdf"
+	// "github.com/rowland/leadtype/ltml/ltpdf"
 )
 
 func TestParse(t *testing.T) {
@@ -66,7 +67,8 @@ func writeSample(name string, t *testing.T) {
 		t.Fatal(err)
 	}
 
-	w := ltpdf.NewDocWriter()
+	// w := ltpdf.NewDocWriter()
+	w := harupdf.NewDocWriter()
 
 	if err := doc.Print(w); err != nil {
 		t.Errorf("Printing sample: %v", err)

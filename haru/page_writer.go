@@ -315,9 +315,7 @@ func (pw *PageWriter) flushText() {
 	pw.flushing = true
 	pw.startText()
 	if pw.loc != pw.last.loc {
-		fmt.Printf("PageWriter.tw.moveBy(%f - %f, %f - %f)\n", pw.loc.X, pw.last.loc.X, pw.loc.Y, pw.last.loc.Y)
 		pw.page.MoveTextPos(float32(pw.loc.X-pw.last.loc.X), float32(pw.loc.Y-pw.last.loc.Y))
-		// pw.tw.moveBy(pw.loc.X-pw.last.loc.X, pw.loc.Y-pw.last.loc.Y)
 	}
 	loc1 := pw.loc
 	var buf bytes.Buffer
@@ -346,7 +344,10 @@ func (pw *PageWriter) flushText() {
 		pw.charSpacing = p.CharSpacing
 		pw.wordSpacing = p.WordSpacing
 		pw.checkSetSpacing()
-		pw.page.ShowText(buf.String())
+		// fmt.Printf("pw.page.ShowText(%s)\n", buf.String())
+		if err := pw.page.ShowText(buf.String()); err != nil {
+			fmt.Println(err)
+		}
 	})
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
