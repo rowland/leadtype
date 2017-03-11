@@ -196,8 +196,7 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 	}
 	pw.page.SetDash(dashPtn, uint(pat.phase))
 	pw.last.lineDashPattern = pw.lineDashPattern
-	fmt.Println("PageWriter.setLineCapStyle")
-	// pw.gw.setLineCapStyle(int(pw.lineCapStyle))
+	pw.page.SetLineCap(hpdf.LineCap(pw.lineCapStyle))
 	pw.last.lineCapStyle = pw.lineCapStyle
 }
 
