@@ -9,12 +9,6 @@ type BoolGrid struct {
 }
 
 func NewBoolGrid(cols, rows int) *BoolGrid {
-	if cols < 1 {
-		cols = 1
-	}
-	if rows < 1 {
-		rows = 1
-	}
 	return &BoolGrid{cols: cols, rows: rows, cells: make([]bool, cols*rows)}
 }
 
@@ -41,19 +35,15 @@ func (bg *BoolGrid) Cols() int {
 
 func (bg *BoolGrid) Col(col int) []bool {
 	values := make([]bool, bg.rows)
-	if col >= bg.cols {
-		return values
-	}
-	for row := 0; row < bg.rows; row++ {
-		values[row] = bg.Cell(col, row)
+	if col < bg.cols {
+		for row := 0; row < bg.rows; row++ {
+			values[row] = bg.Cell(col, row)
+		}
 	}
 	return values
 }
 
 func (bg *BoolGrid) SetCols(cols int) {
-	if cols < 1 {
-		cols = 1
-	}
 	newCells := make([]bool, cols*bg.rows)
 	for row := 0; row < bg.rows; row++ {
 		for col := 0; col < cols && col < bg.cols; col++ {
@@ -66,10 +56,9 @@ func (bg *BoolGrid) SetCols(cols int) {
 
 func (bg *BoolGrid) Row(row int) []bool {
 	values := make([]bool, bg.cols)
-	if row >= bg.rows {
-		return values
+	if row < bg.rows {
+		copy(values, bg.cells[row*bg.cols:])
 	}
-	copy(values, bg.cells[row*bg.cols:])
 	return values
 }
 
@@ -78,9 +67,6 @@ func (bg *BoolGrid) Rows() int {
 }
 
 func (bg *BoolGrid) SetRows(rows int) {
-	if rows < 1 {
-		rows = 1
-	}
 	newCells := make([]bool, bg.cols*rows)
 	for row := 0; row < rows && row < bg.rows; row++ {
 		for col := 0; col < bg.cols; col++ {
