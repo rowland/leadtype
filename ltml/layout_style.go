@@ -82,6 +82,7 @@ var defaultLayouts = map[string]*LayoutStyle{
 	"flow":     {id: "flow", manager: "flow"},
 	"hbox":     {id: "hbox", manager: "hbox"},
 	"relative": {id: "relative", manager: "relative"},
+	"table":    {id: "table", manager: "table"},
 	"vbox":     {id: "vbox", manager: "vbox"},
 }
 

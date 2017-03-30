@@ -136,6 +136,26 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		e.SetAttrs("", attrs)
 	}
 	if style, ok := e.(Styler); ok {
+		if st, ok := doc.scope().StyleFor(style.ID()); ok {
+			switch st := st.(type) {
+			case *BrushStyle:
+				bs := st.Clone()
+				bs.SetAttrs("", attrs)
+				style = bs
+			case *FontStyle:
+				fs := st.Clone()
+				fs.SetAttrs("", attrs)
+				style = fs
+			case *ParagraphStyle:
+				ps := st.Clone()
+				ps.SetAttrs("", attrs)
+				style = ps
+			case *PenStyle:
+				ps := st.Clone()
+				ps.SetAttrs("", attrs)
+				style = ps
+			}
+		}
 		if err := doc.scope().AddStyle(style); err != nil {
 			fmt.Fprintf(os.Stderr, "Adding style: %s\n", err)
 		}

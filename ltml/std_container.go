@@ -5,15 +5,23 @@ package ltml
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type StdContainer struct {
 	StdWidget
 	Children
+	cols            int
 	layout          *LayoutStyle
+	order           TableOrder
 	paragraphStyle  *ParagraphStyle
 	preferredHeight float64
 	preferredWidth  float64
+	rows            int
+}
+
+func (c *StdContainer) Cols() int {
+	return c.cols
 }
 
 func (c *StdContainer) Container() Container {
@@ -41,6 +49,10 @@ func (c *StdContainer) LayoutWidget(w Writer) {
 	LayoutContainer(c, w)
 }
 
+func (c *StdContainer) Order() TableOrder {
+	return c.order
+}
+
 func (c *StdContainer) ParagraphStyle() *ParagraphStyle {
 	if c.paragraphStyle == nil {
 		return c.container.ParagraphStyle()
@@ -48,10 +60,31 @@ func (c *StdContainer) ParagraphStyle() *ParagraphStyle {
 	return c.paragraphStyle
 }
 
+func (c *StdContainer) Rows() int {
+	return c.rows
+}
+
 func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	c.StdWidget.SetAttrs(attrs)
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
+	}
+	if order, ok := attrs["order"]; ok {
+		if order == "rows" {
+			c.order = TableOrderRows
+		} else if order == "cols" {
+			c.order = TableOrderCols
+		}
+	}
+	if rows, ok := attrs["rows"]; ok {
+		if value, err := strconv.Atoi(rows); err == nil {
+			c.rows = value
+		}
+	}
+	if cols, ok := attrs["cols"]; ok {
+		if value, err := strconv.Atoi(cols); err == nil {
+			c.cols = value
+		}
 	}
 	if ps, ok := attrs["paragraph-style"]; ok {
 		c.paragraphStyle = ParagraphStyleFor(ps, c.scope)

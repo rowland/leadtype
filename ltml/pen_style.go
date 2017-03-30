@@ -23,6 +23,11 @@ func (ps *PenStyle) Apply(w Writer) {
 	w.SetLineDashPattern(ps.pattern)
 }
 
+func (ps *PenStyle) Clone() *PenStyle {
+	clone := *ps
+	return &clone
+}
+
 func (ps *PenStyle) ID() string {
 	return ps.id
 }

@@ -61,6 +61,9 @@ type Widget interface {
 	SetPrinted(value bool)
 	SetVisible(value bool)
 
+	ColSpan() int
+	RowSpan() int
+
 	Path() string
 }
 

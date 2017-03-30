@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type StdWidget struct {
@@ -15,9 +16,11 @@ type StdWidget struct {
 	Dimensions
 	border    *PenStyle
 	borders   [4]*PenStyle
+	colSpan   int
 	fill      *BrushStyle
 	font      *FontStyle
 	position  Position
+	rowSpan   int
 	align     Align
 	printed   bool
 	invisible bool
@@ -32,6 +35,20 @@ func (widget *StdWidget) Align() Align {
 func (widget *StdWidget) BeforePrint(Writer) error {
 	// to be overridden
 	return nil
+}
+
+func (widget *StdWidget) ColSpan() int {
+	if widget.colSpan < 1 {
+		return 1
+	}
+	return widget.colSpan
+}
+
+func (widget *StdWidget) RowSpan() int {
+	if widget.rowSpan < 1 {
+		return 1
+	}
+	return widget.rowSpan
 }
 
 func (widget *StdWidget) Disabled() bool {
@@ -183,6 +200,12 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if MapHasKeyPrefix(attrs, "font.") {
 		widget.font = widget.Font().Clone()
 		widget.font.SetAttrs("font.", attrs)
+	}
+	if colSpan, ok := attrs["colspan"]; ok {
+		widget.colSpan, _ = strconv.Atoi(colSpan)
+	}
+	if rowSpan, ok := attrs["rowspan"]; ok {
+		widget.rowSpan, _ = strconv.Atoi(rowSpan)
 	}
 }
 

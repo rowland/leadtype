@@ -3,15 +3,25 @@
 
 package ltml
 
+type TableOrder int
+
+const (
+	TableOrderRows = TableOrder(iota)
+	TableOrderCols
+)
+
 type Container interface {
 	Widget
 	HasFont
 
 	AddChild(value Widget)
+	Cols() int
 	Container() Container
 	LayoutStyle() *LayoutStyle
+	Order() TableOrder
 	ParagraphStyle() *ParagraphStyle
 	Query(f func(value Widget) bool) []Widget
+	Rows() int
 	Units() Units
 	Widgets() []Widget
 }
