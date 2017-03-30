@@ -1,0 +1,25 @@
+<ltml>
+  <pen id="dotted" color="Red" />
+  <layout id="vbox" padding="5" />
+  <define id="td" tag="p" border="solid" padding="3pt" />
+  <page margin="1in">
+    <table order="rows" cols="3" border="dotted" padding="5pt">
+      <td>Lorem ipsum dolor sit amet,</td>
+      <td>consectetur adipisicing elit,</td>
+      <td>sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</td>
+      <td>Ut enim ad minim veniam,</td>
+      <td>quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</td>
+      <td>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</td>
+      <td>Excepteur sint occaecat cupidatat non proident,</td>
+      <td colspan="2">sunt in culpa qui officia deserunt mollit anim id est laborum.</td>
+    </table>
+    <table order="rows" cols="3" border="dotted" padding="5pt">
+      <td width="40%">Lorem ipsum dolor sit amet, consectetur adipisicing elit,</td>
+      <td width="140pt">sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</td>
+      <td rowspan="2">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</td>
+      <td>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</td>
+      <td>Excepteur sint occaecat cupidatat non proident,</td>
+      <td colspan="2">sunt in culpa qui officia deserunt mollit anim id est laborum.</td>
+    </table>
+  </page>
+</ltml>
