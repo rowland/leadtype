@@ -145,11 +145,18 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 				descriptor, &indirectObjectRef{encoding})
 		}
 	case "TrueType":
+		encoding, ok := dw.fontEncodings[cpi.String()]
+		if !ok {
+			differences := glyphDiffs(codepage.Idx_CP1252, cpi, 32, 255)
+			encoding = newFontEncoding(dw.nextSeq(), 0, "WinAnsiEncoding", differences)
+			dw.file.body.add(encoding)
+			dw.fontEncodings[cpi.String()] = encoding
+		}
 		font = newTrueTypeFont(
 			dw.nextSeq(), 0,
 			f.PostScriptName(),
 			32, 255, widths,
-			descriptor)
+			descriptor, &indirectObjectRef{encoding})
 	}
 	dw.file.body.add(font)
 	dw.resources.fonts[key] = &indirectObjectRef{font}

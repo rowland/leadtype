@@ -564,8 +564,9 @@ func newTrueTypeFont(seq, gen int,
 	baseFont string,
 	firstChar, lastChar int,
 	widths *indirectObject,
-	fontDescriptor *fontDescriptor) *simpleFont {
-	return new(simpleFont).init(seq, gen, "TrueType", baseFont, firstChar, lastChar, widths, fontDescriptor, nil)
+	fontDescriptor *fontDescriptor,
+	fontEncoding writer) *simpleFont {
+	return new(simpleFont).init(seq, gen, "TrueType", baseFont, firstChar, lastChar, widths, fontDescriptor, fontEncoding)
 }
 
 func newType1Font(seq, gen int,
