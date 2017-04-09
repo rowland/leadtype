@@ -12,7 +12,8 @@ import (
 	"testing"
 
 	"github.com/rowland/leadtype/ltml/harupdf"
-	// "github.com/rowland/leadtype/ltml/ltpdf"
+	"github.com/rowland/leadtype/ltml/ltpdf"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 func TestParse(t *testing.T) {
@@ -56,7 +57,7 @@ func sampleFile(filename string) string {
 	return sample
 }
 
-func writeSample(name string, t *testing.T) {
+func writeSamplePDF(name string, t *testing.T) {
 	doc, err := ParseFile(sampleFile(name + ".ltml"))
 	if err != nil {
 		t.Fatal(err)
@@ -67,8 +68,12 @@ func writeSample(name string, t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// w := ltpdf.NewDocWriter()
-	w := harupdf.NewDocWriter()
+	w := ltpdf.NewDocWriter()
+	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	if err != nil {
+		panic(err)
+	}
+	w.AddFontSource(ttFonts)
 
 	if err := doc.Print(w); err != nil {
 		t.Errorf("Printing sample: %v", err)
@@ -79,42 +84,79 @@ func writeSample(name string, t *testing.T) {
 	exec.Command("open", sampleFile(name+".pdf")).Start()
 }
 
+func writeSampleHaru(name string, t *testing.T) {
+	const suffix = "-haru"
+	doc, err := ParseFile(sampleFile(name + ".ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	f, err := os.Create(sampleFile(name + suffix + ".pdf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := harupdf.NewDocWriter()
+	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	if err != nil {
+		panic(err)
+	}
+	w.AddFontSource(ttFonts)
+
+	if err := doc.Print(w); err != nil {
+		t.Errorf("Printing sample: %v", err)
+	}
+
+	w.WriteTo(f)
+	f.Close()
+	exec.Command("open", sampleFile(name+suffix+".pdf")).Start()
+}
+
 func TestSample001(t *testing.T) {
-	writeSample("test_001_empty_doc", t)
+	writeSamplePDF("test_001_empty_doc", t)
 }
 
 func TestSample002(t *testing.T) {
-	writeSample("test_002_empty_page", t)
+	writeSamplePDF("test_002_empty_page", t)
 }
 
 func TestSample003(t *testing.T) {
-	writeSample("test_003_hello_world", t)
+	writeSamplePDF("test_003_hello_world", t)
 }
 
 func TestSample004(t *testing.T) {
-	writeSample("test_004_two_pages", t)
+	writeSamplePDF("test_004_two_pages", t)
 }
 
 func TestSample005(t *testing.T) {
-	writeSample("test_005_rounded_rect", t)
+	writeSamplePDF("test_005_rounded_rect", t)
 }
 
 func TestSample006(t *testing.T) {
-	writeSample("test_006_bullets", t)
+	writeSamplePDF("test_006_bullets", t)
 }
 
 func TestSample007(t *testing.T) {
-	writeSample("test_007_flow_layout", t)
+	writeSamplePDF("test_007_flow_layout", t)
 }
 
 func TestSample008(t *testing.T) {
-	writeSample("test_008_vbox_layout", t)
+	writeSamplePDF("test_008_vbox_layout", t)
 }
 
 func TestSample009(t *testing.T) {
-	writeSample("test_009_hbox_layout", t)
+	writeSamplePDF("test_009_hbox_layout", t)
 }
 
 func TestSample010(t *testing.T) {
-	writeSample("test_010_rich_text", t)
+	writeSamplePDF("test_010_rich_text", t)
+}
+
+func TestSample011(t *testing.T) {
+	writeSamplePDF("test_011_table_layout", t)
+}
+
+func TestSample030(t *testing.T) {
+	writeSamplePDF("test_030_encodings", t)
+	writeSampleHaru("test_030_encodings", t)
 }

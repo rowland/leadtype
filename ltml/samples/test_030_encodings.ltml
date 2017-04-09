@@ -1,5 +1,5 @@
 <ltml>
-  <font id="body" name="Helvetica" size="12" />
+  <font id="body" name="Arial Unicode MS" size="12" />
   <layout id="vbox" padding="6pt" />
   <rules>
     p { font: body }
@@ -10,11 +10,16 @@
     .tr {
     }
   </rules>
-  <page units='in' margin="0.5" layout='vbox'>
+  <page units='in' margin="0.5" layout='vbox' font="body">
     <p><u>Encodings</u></p>
     <br/>
     <p class="en"><b>English:</b> The information listed on this page reflects the assessments that have been assigned and what has been completed.</p>
+    <!--<p class="az"><b>Azerbaijani:</b> Bu səhifədə verilmiş məlumat təhkim edilmiş və artıq başa çatdırılmış qiymətləndirmələri əks etdirir.</p>-->
+    <p class="bg"><b>Bulgarian:</b> Информацията на тази страница отразява оценките, които са възложени и завършени.</p>
+    <p class="cs"><b>Czech:</b> Informace uvedené na této stránce popisují hodnotící testy, které byly přiděleny a vyplněny.</p>
     <p class="da"><b>Danish:</b> Oplysningerne på denne side afspejler de vurderinger, der er blevet tildelt, og hvad der er blevet gennemført.</p>
+    <p class="de"><b>German:</b> Die Information auf dieser Seite zeigt Ihnen den Status Ihrer Analyse an.</p>
+    <p class="el"><b>Greek:</b> Οι πληροφορίες που αναφέρονται σε αυτή τη σελίδα αφορούν αξιολογήσεις που έχουν ανατεθεί και έχουν ολοκληρωθεί.</p>
     <p class="es"><b>Spanish:</b> La información mencionada en esta página refleja las evaluaciones que le han sido asignadas y las que usted ya ha terminado.</p>
     <p class="fr"><b>French:</b> Les informations listées sur cette page sont le reflet des évaluations qui ont été affectées et réalisées.</p>
     <p class="hr"><b>Croatian:</b> Informacija na ovoj stranici Vam pokazuje status vaše analize.</p>
@@ -29,5 +34,6 @@
     <p class="sv"><b>Swedish:</b> Informationen på den här sidan visar vilka moment som är aktiva och vilka som är slutförda.</p>
     <p class="tr"><b>Turkish:</b> Bu sayfada sıralanan bilgiler sizin için seçilmiş ölçme ve değerlendirme araçlarını ve bunlardan doldurup tamamladıklarınızı yansıtır.</p>
     <p class="cs"><b>Czech:</b> Informace uvedené na této stránce popisují hodnotící testy, které byly přiděleny a vyplněny.</p>
+    <p class="ru"><b>Russian:</b> На данной странице представлена информация о доступных для заполнения опросниках и их статусе.</p>
   </page>
 </ltml>
