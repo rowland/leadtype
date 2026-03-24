@@ -24,3 +24,6 @@ vendor/
 *.swp
 *.swo
 *~
+
+# Claude Code memory
+.claude/
