@@ -135,10 +135,11 @@ func (pw *PageWriter) checkSetFont() {
 	if len(pw.fonts) == 0 {
 		pw.setDefaultFont()
 	}
-	if pw.last.fontKey != pw.fontKey {
+	if pw.last.fontKey != pw.fontKey || pw.last.fontSize != pw.fontSize {
 		pw.tw.setFontAndSize(pw.fontKey, pw.fontSize)
 		// TODO: check_set_v_text_align(true)
 		pw.last.fontKey = pw.fontKey
+		pw.last.fontSize = pw.fontSize
 	}
 }
 
@@ -310,50 +311,51 @@ func (pw *PageWriter) flushText() {
 			return
 		}
 		if p.Font.SubType() == "TrueType" {
-				fk := pw.dw.fontKeyUnicode(p.Font)
-				psName := p.Font.PostScriptName()
-				gr := pw.dw.glyphRecorders[psName]
-				buf.Reset()
-				for _, r := range p.Text {
-					gid := p.Font.GlyphIndex(r)
-					if gr != nil {
-						gr.record(gid, r)
-					}
-					buf.WriteByte(byte(gid >> 8))
-					buf.WriteByte(byte(gid & 0xFF))
+			fk := pw.dw.fontKeyUnicode(p.Font)
+			psName := p.Font.PostScriptName()
+			gr := pw.dw.glyphRecorders[psName]
+			buf.Reset()
+			for _, r := range p.Text {
+				gid := p.Font.GlyphIndex(r)
+				if gr != nil {
+					gr.record(gid, r)
 				}
-				pw.SetFontColor(p.Color)
+				buf.WriteByte(byte(gid >> 8))
+				buf.WriteByte(byte(gid & 0xFF))
+			}
+			pw.SetFontColor(p.Color)
+			pw.checkSetFontColor()
+			pw.fontKey = fk
+			pw.SetFontSize(p.FontSize)
+			pw.checkSetFont()
+			pw.charSpacing = p.CharSpacing
+			pw.wordSpacing = p.WordSpacing
+			pw.checkSetSpacing()
+			pw.tw.show(buf.Bytes())
+			// pw.tw.showHex(buf.Bytes())
+		} else {
+			// AFM/Type1: still needs codepage-based encoding.
+			p.EachCodepage(func(cpi codepage.CodepageIndex, text string, piece *rich_text.RichText) {
+				buf.Reset()
+				if cpi >= 0 {
+					cp := cpi.Codepage()
+					for _, r := range text {
+						ch, _ := cp.CharForCodepoint(r)
+						buf.WriteByte(byte(ch))
+					}
+				}
+				pw.SetFontColor(piece.Color)
 				pw.checkSetFontColor()
-				pw.fontKey = fk
-				pw.SetFontSize(p.FontSize)
+				pw.fontKey = pw.dw.fontKey(piece.Font, cpi)
+				pw.SetFontSize(piece.FontSize)
 				pw.checkSetFont()
-				pw.charSpacing = p.CharSpacing
-				pw.wordSpacing = p.WordSpacing
+				pw.charSpacing = piece.CharSpacing
+				pw.wordSpacing = piece.WordSpacing
 				pw.checkSetSpacing()
 				pw.tw.show(buf.Bytes())
-			} else {
-				// AFM/Type1: still needs codepage-based encoding.
-				p.EachCodepage(func(cpi codepage.CodepageIndex, text string, piece *rich_text.RichText) {
-					buf.Reset()
-					if cpi >= 0 {
-						cp := cpi.Codepage()
-						for _, r := range text {
-							ch, _ := cp.CharForCodepoint(r)
-							buf.WriteByte(byte(ch))
-						}
-					}
-					pw.SetFontColor(piece.Color)
-					pw.checkSetFontColor()
-					pw.fontKey = pw.dw.fontKey(piece.Font, cpi)
-					pw.SetFontSize(piece.FontSize)
-					pw.checkSetFont()
-					pw.charSpacing = piece.CharSpacing
-					pw.wordSpacing = piece.WordSpacing
-					pw.checkSetSpacing()
-					pw.tw.show(buf.Bytes())
-				})
-			}
-		})
+			})
+		}
+	})
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
 			return
@@ -691,6 +693,7 @@ func (pw *PageWriter) setDefaultFont() {
 }
 
 func (pw *PageWriter) SetFont(name string, size float64, options options.Options) ([]*font.Font, error) {
+	pw.flushText()
 	pw.ResetFonts()
 	pw.SetFontSize(size)
 	pw.SetFontColor(options["color"])
