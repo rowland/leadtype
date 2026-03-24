@@ -17,7 +17,7 @@ func TestMinimalTTF_Metrics(t *testing.T) {
 
 	expectS(t, "Family", "Minimal", font.Family())
 	expectI(t, "UnitsPerEm", 1000, font.UnitsPerEm())
-	expectI(t, "NumGlyphs", 187, font.NumGlyphs())
+	expectI(t, "NumGlyphs", 188, font.NumGlyphs())
 	expectI(t, "Ascent", 800, font.Ascent())
 	expectI(t, "Descent", -200, font.Descent())
 }
@@ -129,7 +129,7 @@ func TestMinimalTTC_LoadFontAtOffset(t *testing.T) {
 			continue
 		}
 		expectI(t, "UnitsPerEm", 1000, font.UnitsPerEm())
-		expectI(t, "NumGlyphs", 187, font.NumGlyphs())
+		expectI(t, "NumGlyphs", 188, font.NumGlyphs())
 
 		// Verify CJK codepoints are accessible.
 		for _, r := range []rune{0x4E2D, 0x6587} {

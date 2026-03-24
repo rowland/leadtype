@@ -165,7 +165,7 @@ See [development-process.md](development-process.md) for testing strategy and fi
 - [x] Replace full font stream with subset stream at `DocWriter.Close()`
 - [x] Write tests: subset font file is a valid TTF (parse it back with `ttf.LoadFont`)
 - [x] Write tests: subset contains exactly the expected glyph IDs
-- [ ] Write tests: composite glyph components are included in the closure
+- [x] Write tests: composite glyph components are included in the closure
 - [ ] Benchmark: measure embedded font stream size before and after subsetting for a Latin document
 - [ ] Benchmark: measure embedded font stream size before and after subsetting for a CJK document
 

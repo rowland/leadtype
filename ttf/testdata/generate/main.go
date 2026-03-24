@@ -60,6 +60,9 @@ func codepoints() []rune {
 	}
 	// Two CJK characters
 	cp = append(cp, 0x4E2D, 0x6587)
+	// One private-use codepoint used as a composite glyph in tests.
+	// It is always the last codepoint so its glyph ID = numGlyphs-1.
+	cp = append(cp, 0xE001)
 	return cp
 }
 
@@ -208,19 +211,44 @@ func buildCmapFormat4(cp []rune) []byte {
 }
 
 func buildGlyf(numGlyphs uint16) []byte {
-	// One simple square glyph repeated for every glyph slot.
-	// Format: numberOfContours=1, xMin, yMin, xMax, yMax, endPtsOfContours[0]=3,
-	// instructionLength=0, flags×4, xCoordinates×4, yCoordinates×4
-	glyph := simpleSquareGlyph()
+	// Simple square glyph for all slots except the last, which is a composite.
+	simple := simpleSquareGlyph()
+	composite := compositeGlyph(1, 2) // references glyphs 1 (space) and 2 (!)
 	var b bytes.Buffer
 	for i := uint16(0); i < numGlyphs; i++ {
+		var glyph []byte
+		if i == numGlyphs-1 {
+			glyph = composite
+		} else {
+			glyph = simple
+		}
 		b.Write(glyph)
-		// Pad to 4-byte boundary
 		if len(glyph)%4 != 0 {
-			pad := 4 - len(glyph)%4
-			b.Write(make([]byte, pad))
+			b.Write(make([]byte, 4-len(glyph)%4))
 		}
 	}
+	return b.Bytes()
+}
+
+// compositeGlyph builds a minimal composite glyph record that references two
+// component glyphs at small integer offsets. The args are int8 (not WORD-sized).
+func compositeGlyph(comp1, comp2 uint16) []byte {
+	var b bytes.Buffer
+	putI16(&b, -1)           // numberOfContours: composite
+	putI16(&b, 0)            // xMin
+	putI16(&b, 0)            // yMin
+	putI16(&b, glyphWidth*2) // xMax
+	putI16(&b, glyphHeight)  // yMax
+	// Component 1: MORE_COMPONENTS set, args are int8 offsets (0,0)
+	putU16(&b, 0x0020) // flags: MORE_COMPONENTS
+	putU16(&b, comp1)  // glyphIndex
+	b.WriteByte(0)     // arg1 (x offset, int8)
+	b.WriteByte(0)     // arg2 (y offset, int8)
+	// Component 2: no MORE_COMPONENTS, args are int8 offsets (50,0)
+	putU16(&b, 0x0000) // flags: none
+	putU16(&b, comp2)  // glyphIndex
+	b.WriteByte(50)    // arg1 (x offset, int8)
+	b.WriteByte(0)     // arg2 (y offset, int8)
 	return b.Bytes()
 }
 
@@ -305,15 +333,25 @@ func buildHmtx(numGlyphs uint16) []byte {
 }
 
 func buildLoca(numGlyphs uint16) []byte {
-	// Short loca: offsets in units of 2 bytes. Each glyph is the same size.
-	glyphBytes := uint16(len(simpleSquareGlyph()))
-	// Pad to 4 bytes
-	if glyphBytes%4 != 0 {
-		glyphBytes += uint16(4 - glyphBytes%4)
+	// Short loca: offsets in units of 2 bytes.
+	// All glyphs are the same size except the last, which is a composite.
+	simpleSize := uint16(len(simpleSquareGlyph()))
+	if simpleSize%4 != 0 {
+		simpleSize += uint16(4 - simpleSize%4)
+	}
+	compositeSize := uint16(len(compositeGlyph(1, 2)))
+	if compositeSize%4 != 0 {
+		compositeSize += uint16(4 - compositeSize%4)
 	}
 	var b bytes.Buffer
+	pos := uint16(0)
 	for i := uint16(0); i <= numGlyphs; i++ {
-		putU16(&b, (glyphBytes/2)*i) // offset / 2 for short loca
+		putU16(&b, pos/2) // short loca stores offset/2
+		if i < numGlyphs-1 {
+			pos += simpleSize
+		} else if i == numGlyphs-1 {
+			pos += compositeSize
+		}
 	}
 	return b.Bytes()
 }
@@ -324,8 +362,8 @@ func buildMaxp(numGlyphs uint16) []byte {
 	putU16(&b, numGlyphs)
 	putU16(&b, 4)  // maxPoints
 	putU16(&b, 1)  // maxContours
-	putU16(&b, 0)  // maxCompositePoints
-	putU16(&b, 0)  // maxCompositeContours
+	putU16(&b, 8)  // maxCompositePoints (4 pts × 2 components)
+	putU16(&b, 2)  // maxCompositeContours (1 per component)
 	putU16(&b, 2)  // maxZones
 	putU16(&b, 0)  // maxTwilightPoints
 	putU16(&b, 0)  // maxStorage
@@ -333,8 +371,8 @@ func buildMaxp(numGlyphs uint16) []byte {
 	putU16(&b, 0)  // maxInstructionDefs
 	putU16(&b, 0)  // maxStackElements
 	putU16(&b, 0)  // maxSizeOfInstructions
-	putU16(&b, 0)  // maxComponentElements
-	putU16(&b, 0)  // maxComponentDepth
+	putU16(&b, 2)  // maxComponentElements
+	putU16(&b, 1)  // maxComponentDepth
 	return b.Bytes()
 }
 

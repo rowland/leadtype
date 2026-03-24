@@ -4,6 +4,7 @@
 package ttf
 
 import (
+	"encoding/binary"
 	"os"
 	"testing"
 )
@@ -132,7 +133,79 @@ func TestSubset_EmptyGlyphIDs(t *testing.T) {
 	}
 }
 
+// TestSubset_CompositeGlyphClosure verifies that when a composite glyph is
+// requested, its component glyphs are transitively included in the subset.
+// minimal.ttf has a composite at U+E001 that references glyphs 1 and 2.
+func TestSubset_CompositeGlyphClosure(t *testing.T) {
+	orig, err := LoadFont(minimalTTF)
+	if err != nil {
+		t.Fatalf("LoadFont: %v", err)
+	}
+
+	compositeGID := orig.GlyphIndex(0xE001)
+	if compositeGID == 0 {
+		t.Fatal("U+E001 not mapped in minimal.ttf — was the fixture regenerated?")
+	}
+
+	data, err := orig.Subset([]uint16{compositeGID})
+	if err != nil {
+		t.Fatalf("Subset: %v", err)
+	}
+
+	// Glyph 0 (.notdef), 1 (space), 2 (!), and the composite must have data.
+	for _, gid := range []uint16{0, 1, 2, compositeGID} {
+		if !subsetGlyphHasData(data, gid) {
+			t.Errorf("glyph %d expected to have data in subset (closure), but is absent", gid)
+		}
+	}
+
+	// Glyph 3 was NOT requested and is not a component — it should be absent.
+	if subsetGlyphHasData(data, 3) {
+		t.Errorf("glyph 3 expected to be absent from subset, but has data")
+	}
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
+
+// subsetGlyphHasData returns true if the given glyph ID has non-zero-length
+// data in the supplied TTF binary (i.e., loca[id+1] > loca[id]).
+func subsetGlyphHasData(data []byte, glyphID uint16) bool {
+	if len(data) < 12 {
+		return false
+	}
+	nTables := int(binary.BigEndian.Uint16(data[4:]))
+	var locaOff, headOff, maxpOff uint32
+	for i := 0; i < nTables; i++ {
+		base := 12 + i*16
+		tag := string(data[base : base+4])
+		off := binary.BigEndian.Uint32(data[base+8:])
+		switch tag {
+		case "loca":
+			locaOff = off
+		case "head":
+			headOff = off
+		case "maxp":
+			maxpOff = off
+		}
+	}
+	if locaOff == 0 || headOff == 0 || maxpOff == 0 {
+		return false
+	}
+	numGlyphs := int(binary.BigEndian.Uint16(data[maxpOff+4:]))
+	if int(glyphID) >= numGlyphs {
+		return false
+	}
+	isLong := binary.BigEndian.Uint16(data[headOff+50:]) == 1
+	var off0, off1 uint32
+	if isLong {
+		off0 = binary.BigEndian.Uint32(data[locaOff+uint32(glyphID)*4:])
+		off1 = binary.BigEndian.Uint32(data[locaOff+uint32(glyphID+1)*4:])
+	} else {
+		off0 = uint32(binary.BigEndian.Uint16(data[locaOff+uint32(glyphID)*2:])) * 2
+		off1 = uint32(binary.BigEndian.Uint16(data[locaOff+uint32(glyphID+1)*2:])) * 2
+	}
+	return off1 > off0
+}
 
 func loadRawFont(t *testing.T, path string) []byte {
 	t.Helper()
