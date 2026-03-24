@@ -8,16 +8,22 @@ This document covers the development workflow, testing strategy, and test fixtur
 
 ### Branching
 
-Work in feature branches off `master`. Branch names should reflect the phase or component:
+`unicode-pdf-rendering` is the long-running integration branch for this feature. All phase work branches off it and merges back into it. Only when the full feature is complete and stable does `unicode-pdf-rendering` get merged to `master`.
 
 ```
-unicode/phase1-tounicode
-unicode/phase2-type0-font
-unicode/phase2-glyph-recorder
-unicode/phase4-subsetting
+master
+└── unicode-pdf-rendering          ← integration branch (base for all phase work)
+    ├── unicode/phase1-tounicode
+    ├── unicode/phase2-type0-font
+    ├── unicode/phase2-glyph-recorder
+    ├── unicode/phase3-remove-codepage-path
+    ├── unicode/phase4-subsetting
+    └── unicode/phase5-cff
 ```
 
-Each branch should be focused enough that its PR is reviewable in a single sitting. Phases 2 and 4 are large enough to warrant multiple PRs.
+Each phase branch should be focused enough that its PR is reviewable in a single sitting. Phases 2 and 4 are large enough to warrant multiple PRs, each merging into `unicode-pdf-rendering`.
+
+When rebasing or merging updates from `master` into `unicode-pdf-rendering`, do so deliberately — don't pull in unrelated changes mid-phase.
 
 ### Commits
 
@@ -27,9 +33,11 @@ Each branch should be focused enough that its PR is reviewable in a single sitti
 
 ### Pull Requests
 
+- Phase PRs target `unicode-pdf-rendering`, not `master`.
 - Reference the relevant phase from the design doc in the PR description.
 - Include a brief test plan: what was manually verified beyond the automated tests.
 - The CI workflow (`.github/workflows/ci.yml`) must be green before merging.
+- The final PR merging `unicode-pdf-rendering` → `master` should include a summary of all phases completed.
 
 ### CI
 
