@@ -158,6 +158,11 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 			32, 255, widths,
 			descriptor, &indirectObjectRef{encoding})
 	}
+	toUnicodeData := toUnicodeCMapData(cpi.Map())
+	toUnicodeStream := newStream(dw.nextSeq(), 0, toUnicodeData)
+	dw.file.body.add(toUnicodeStream)
+	font.setToUnicode(&indirectObjectRef{toUnicodeStream})
+
 	dw.file.body.add(font)
 	dw.resources.fonts[key] = &indirectObjectRef{font}
 	return key

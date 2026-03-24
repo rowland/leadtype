@@ -546,8 +546,11 @@ func (f *simpleFont) init(seq, gen int,
 	if fontEncoding != nil {
 		f.dict["Encoding"] = fontEncoding
 	}
-	// TODO: ToUnicode
 	return f
+}
+
+func (f *simpleFont) setToUnicode(ref *indirectObjectRef) {
+	f.dict["ToUnicode"] = ref
 }
 
 func newSimpleFont(seq, gen int,
