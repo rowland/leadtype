@@ -150,6 +150,9 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 	}
 	tables := make([]namedTable, 0, len(font.tableDir.entries))
 	for _, entry := range font.tableDir.entries {
+		if !subsetKeepTable(entry.tag) {
+			continue
+		}
 		var data []byte
 		switch entry.tag {
 		case "glyf":
@@ -259,6 +262,29 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 	}
 
 	return result, nil
+}
+
+var subsetRequiredTables = map[string]bool{
+	"cmap": true,
+	"glyf": true,
+	"head": true,
+	"hhea": true,
+	"hmtx": true,
+	"loca": true,
+	"maxp": true,
+	"name": true,
+	"OS/2": true,
+	"post": true,
+}
+
+var subsetConservativeTables = map[string]bool{
+	"cvt ": true,
+	"fpgm": true,
+	"prep": true,
+}
+
+func subsetKeepTable(tag string) bool {
+	return subsetRequiredTables[tag] || subsetConservativeTables[tag]
 }
 
 func subsetMaxpTable(raw []byte, entry *tableDirEntry, numGlyphs uint16) ([]byte, error) {

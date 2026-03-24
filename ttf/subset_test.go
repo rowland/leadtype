@@ -250,6 +250,27 @@ func TestBuildSubsetPostFormat2(t *testing.T) {
 	}
 }
 
+func TestSubsetKeepTable(t *testing.T) {
+	tests := []struct {
+		tag  string
+		want bool
+	}{
+		{tag: "cmap", want: true},
+		{tag: "glyf", want: true},
+		{tag: "name", want: true},
+		{tag: "prep", want: true},
+		{tag: "GPOS", want: false},
+		{tag: "GSUB", want: false},
+		{tag: "BASE", want: false},
+		{tag: "kern", want: false},
+	}
+	for _, tc := range tests {
+		if got := subsetKeepTable(tc.tag); got != tc.want {
+			t.Errorf("subsetKeepTable(%q) = %v, want %v", tc.tag, got, tc.want)
+		}
+	}
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 // subsetGlyphHasData returns true if the given glyph ID has non-zero-length
