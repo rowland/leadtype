@@ -28,18 +28,41 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	file := bufio.NewReaderSize(rs, int(entry.length))
-	if err = readValues(file, &table.version, &table.numberSubtables); err != nil {
+	hdrBuf := bufio.NewReaderSize(rs, int(4+table.numberSubtables*8+64))
+	if err = readValues(hdrBuf, &table.version, &table.numberSubtables); err != nil {
 		return
 	}
 	table.encodingRecords = make([]cmapEncodingRecord, table.numberSubtables)
 	for i := uint16(0); i < table.numberSubtables; i++ {
-		if err = table.encodingRecords[i].read(file); err != nil {
+		if err = table.encodingRecords[i].read(hdrBuf); err != nil {
 			return
 		}
 	}
+	// Seek to and read each subtable using its recorded offset (relative to
+	// the start of the cmap table). Multiple encoding records may share the
+	// same subtable offset; skip duplicates.
+	seen := make(map[uint32]bool, table.numberSubtables)
 	for i := uint16(0); i < table.numberSubtables; i++ {
-		if err = table.encodingRecords[i].readMapping(file); err != nil {
+		rec := &table.encodingRecords[i]
+		if seen[rec.offset] {
+			// Share the already-loaded glyphIndexer from the first record with
+			// this identical offset.
+			for j := uint16(0); j < i; j++ {
+				if table.encodingRecords[j].offset == rec.offset {
+					rec.format = table.encodingRecords[j].format
+					rec.glyphIndexer = table.encodingRecords[j].glyphIndexer
+					break
+				}
+			}
+			continue
+		}
+		seen[rec.offset] = true
+		absOffset := int64(entry.offset) + int64(rec.offset)
+		if _, err = rs.Seek(absOffset, os.SEEK_SET); err != nil {
+			return
+		}
+		subBuf := bufio.NewReaderSize(rs, int(entry.length))
+		if err = rec.readMapping(subBuf); err != nil {
 			return
 		}
 	}
