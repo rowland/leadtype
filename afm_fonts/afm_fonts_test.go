@@ -4,6 +4,7 @@
 package afm_fonts
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rowland/leadtype/font"
@@ -53,13 +54,10 @@ var testAfmSelectData = []afmFontSelection{
 	{"zapfdingbats", "", "", nil, "ZapfDingbats"},
 	{"Symbol", "", "", nil, "Symbol"},
 	{"symbol", "", "", nil, "Symbol"},
-
-	{"Zapf Chancery", "Medium", "Italic", nil, "ZapfChancery-MediumItalic"},
-	{"zapf chancery", "medium", "italic", nil, "ZapfChancery-MediumItalic"},
 }
 
 func testAfmFonts(families ...string) (fonts []*font.Font) {
-	fc, err := New("../afm/data/fonts/*.afm")
+	fc, err := Default()
 	if err != nil {
 		panic(err)
 	}
@@ -73,17 +71,8 @@ func testAfmFonts(families ...string) (fonts []*font.Font) {
 	return
 }
 
-func TestAfmFontCollection(t *testing.T) {
-	var fc AfmFonts
-
-	if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
-		t.Fatal(err)
-	}
-
-	expected, actual := 77, fc.Len()
-	if actual != expected {
-		t.Errorf("%s: expected %d, got %d", "Len", expected, actual)
-	}
+func assertSelectCases(t *testing.T, fc *AfmFonts) {
+	t.Helper()
 	for _, fs := range testAfmSelectData {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
@@ -94,6 +83,11 @@ func TestAfmFontCollection(t *testing.T) {
 			t.Error(err)
 		}
 	}
+}
+
+func assertBogusSelect(t *testing.T, fc *AfmFonts) {
+	t.Helper()
+
 	bogusFont, err2 := fc.Select("Bogus", "Medium", "", nil)
 	if bogusFont != nil {
 		t.Errorf("bogusFont: expected nil, got %v", bogusFont)
@@ -104,6 +98,65 @@ func TestAfmFontCollection(t *testing.T) {
 	}
 }
 
+func TestDefault(t *testing.T) {
+	fc, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fc == nil {
+		t.Fatal("Default returned nil collection")
+	}
+	if fc.Len() != 14 {
+		t.Fatalf("Len: expected %d, got %d", 14, fc.Len())
+	}
+	for _, fi := range fc.FontInfos {
+		if !strings.HasPrefix(fi.Filename(), "data/fonts/") {
+			t.Fatalf("embedded filename should be rooted at data/fonts/, got %q", fi.Filename())
+		}
+	}
+	assertSelectCases(t, fc)
+	assertBogusSelect(t, fc)
+}
+
+func TestAfmFontCollection_Add(t *testing.T) {
+	var fc AfmFonts
+
+	if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
+		t.Fatal(err)
+	}
+
+	expected, actual := 77, fc.Len()
+	expected = 14
+	if actual != expected {
+		t.Errorf("%s: expected %d, got %d", "Len", expected, actual)
+	}
+	assertSelectCases(t, &fc)
+	assertBogusSelect(t, &fc)
+}
+
+func TestAfmFonts_AddDefault(t *testing.T) {
+	var fc AfmFonts
+	if err := fc.AddDefault(); err != nil {
+		t.Fatal(err)
+	}
+	if fc.Len() != 14 {
+		t.Fatalf("Len: expected %d, got %d", 14, fc.Len())
+	}
+}
+
+func TestFamilies(t *testing.T) {
+	fonts := Families("Helvetica", "Times")
+	if len(fonts) != 2 {
+		t.Fatalf("Families length: expected %d, got %d", 2, len(fonts))
+	}
+	if fonts[0].PostScriptName() != "Helvetica" {
+		t.Fatalf("Families[0]: expected %q, got %q", "Helvetica", fonts[0].PostScriptName())
+	}
+	if fonts[1].PostScriptName() != "Times-Roman" {
+		t.Fatalf("Families[1]: expected %q, got %q", "Times-Roman", fonts[1].PostScriptName())
+	}
+}
+
 // 81,980,000 ns
 // 45,763,220 ns
 // 13,754,000 ns
@@ -111,14 +164,16 @@ func TestAfmFontCollection(t *testing.T) {
 // 11,984,518 ns go1.1.2
 // 10,951,804 ns go1.2.1
 // 13,275,334 ns go1.4.2
-//  4,440,591 ns go1.7.3 mbp
+//	4,440,591 ns go1.7.3 mbp
+//  1,460,074 ns go1.25.5 M1
+
 func BenchmarkAfmFontCollection_Add(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var fc AfmFonts
-		if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
+		if err := fc.AddDefault(); err != nil {
 			b.Fatal(err)
 		}
-		if fc.Len() != 77 {
+		if fc.Len() != 14 {
 			b.Fatalf("Unexpected number of fonts found: %d.", fc.Len())
 		}
 	}
@@ -130,10 +185,12 @@ func BenchmarkAfmFontCollection_Add(b *testing.B) {
 // 39,918 ns go1.2.1
 // 99,394 ns go1.4.2
 // 31,638 ns go1.7.3 mbp
+//  7,312 ns go1.25.5 M1
+
 func BenchmarkAfmFontCollection_Select(b *testing.B) {
 	b.StopTimer()
-	var fc AfmFonts
-	if err := fc.Add("../afm/data/fonts/*.afm"); err != nil {
+	fc, err := Default()
+	if err != nil {
 		b.Fatal(err)
 	}
 	b.StartTimer()

@@ -140,7 +140,7 @@ func TestClonePageWriter(t *testing.T) {
 
 func TestPageWriter_flushText(t *testing.T) {
 	skipIfNoTTFFonts(t)
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,13 +170,13 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
-	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
 	dw.AddFontSource(ttfc)
 
-	afmfc, err := afm_fonts.New("../afm/data/fonts/*.afm")
+	afmfc, err := afm_fonts.Default()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -349,7 +349,7 @@ func TestPageWriter_Print(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,7 +368,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -464,7 +464,7 @@ func TestPageWriter_Write(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}

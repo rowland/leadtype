@@ -68,7 +68,7 @@ func writeSamplePDF(name string, t *testing.T) {
 	}
 
 	w := ltpdf.NewDocWriter()
-	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttFonts, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}

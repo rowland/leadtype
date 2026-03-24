@@ -6,7 +6,6 @@ package afm
 import (
 	"bufio"
 	"io"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -24,8 +23,8 @@ type Font struct {
 // 2,284,165 ns/2.284 ms
 // 2,294,880 ns/2.294 ms go1
 func LoadFont(filename string) (font *Font, err error) {
-	var file *os.File
-	if file, err = os.Open(filename); err != nil {
+	var file io.ReadCloser
+	if file, err = openResource(filename); err != nil {
 		return
 	}
 	defer file.Close()
@@ -43,7 +42,7 @@ func LoadFont(filename string) (font *Font, err error) {
 var (
 	reEndCharMetrics = regexp.MustCompile("^EndCharMetrics")
 	reSerif          = regexp.MustCompile("^Serif[ ]+([A-Za-z]+)")
-	reAfmExt         = regexp.MustCompile("\\.afm$")
+	reAfmExt         = regexp.MustCompile(`\.afm$`)
 	reCharMetrics    = regexp.MustCompile("^C[ ]+(-?[0-9]+)[ ]*;[ ]*WX[ ]+([0-9]+)[ ]*;[ ]*N[ ]+([A-Za-z0-9]+)")
 )
 
@@ -95,8 +94,8 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 }
 
 func (font *Font) initInf(filename string) (err error) {
-	var file *os.File
-	if file, err = os.Open(filename); err != nil {
+	var file io.ReadCloser
+	if file, err = openResource(filename); err != nil {
 		return
 	}
 	defer file.Close()

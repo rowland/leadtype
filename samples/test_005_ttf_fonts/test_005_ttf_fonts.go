@@ -21,7 +21,7 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}

@@ -145,7 +145,7 @@ func TestSimpleFont_ToUnicodeEntry_Fixture(t *testing.T) {
 func TestSimpleFont_ToUnicodeEntry_SystemFont(t *testing.T) {
 	skipIfNoTTFFonts(t)
 
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}

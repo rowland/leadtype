@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
@@ -59,12 +60,7 @@ func makeRtLine(doc *pdf.DocWriter, pieces []RT) *rich_text.RichText {
 	rt := &rich_text.RichText{}
 	for _, p := range pieces {
 		fonts, err := doc.SetFont("Arial", 12, p.options)
-		if err != nil {
-			panic(err)
-		}
-		if len(fonts) == 0 {
-			panic("No fonts returned.")
-		}
+		orElse(fonts, err)
 		rt, err = rt.Add(p.s, fonts, 12, p.options)
 	}
 	return rt
@@ -76,7 +72,7 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +81,7 @@ func main() {
 
 	doc.NewPage()
 	doc.MoveTo(1, 1)
-	doc.SetFont("Courier New", 12, options.Options{})
+	orElse(doc.SetFont("Courier New", 12, options.Options{}))
 	doc.SetUnderline(true)
 	doc.Print("Rich Text\n\n")
 	doc.SetUnderline(false)
@@ -103,4 +99,14 @@ func main() {
 	doc.WriteTo(f)
 	f.Close()
 	exec.Command("open", name).Start()
+}
+
+func orElse(fonts []*font.Font, err error) {
+	if err != nil {
+		panic(err)
+	}
+	if len(fonts) == 0 {
+		panic("No fonts returned.")
+	}
+
 }

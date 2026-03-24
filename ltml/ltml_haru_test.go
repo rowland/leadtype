@@ -28,7 +28,7 @@ func writeSampleHaru(name string, t *testing.T) {
 	}
 
 	w := harupdf.NewDocWriter()
-	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttFonts, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}

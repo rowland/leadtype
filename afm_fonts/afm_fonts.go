@@ -28,8 +28,16 @@ func New(pattern string) (*AfmFonts, error) {
 	return &fc, nil
 }
 
+func Default() (*AfmFonts, error) {
+	var fc AfmFonts
+	if err := fc.AddDefault(); err != nil {
+		return nil, err
+	}
+	return &fc, nil
+}
+
 func Families(families ...string) (fonts []*font.Font) {
-	fc, err := New("../afm/data/fonts/*.afm")
+	fc, err := Default()
 	if err != nil {
 		panic(err)
 	}
@@ -39,6 +47,22 @@ func Families(families ...string) (fonts []*font.Font) {
 			panic(err)
 		}
 		fonts = append(fonts, f)
+	}
+	return
+}
+
+func (fc *AfmFonts) AddDefault() (err error) {
+	var pathnames []string
+	if pathnames, err = afm.DefaultFontPaths(); err != nil {
+		return
+	}
+	for _, pathname := range pathnames {
+		fi, err2 := afm.LoadFontInfo(pathname)
+		if err2 != nil {
+			err = fmt.Errorf("Error loading %s: %s", pathname, err2)
+			continue
+		}
+		fc.FontInfos = append(fc.FontInfos, fi)
 	}
 	return
 }

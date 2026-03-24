@@ -113,7 +113,7 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1016,7 +1016,8 @@ func TestRichText_Zapf(t *testing.T) {
 // 14,930 ns go1.1.2
 // 14,685 ns go1.2.1
 // 10,873 ns go1.4.2
-//  5,664 ns go1.7.3 mbp
+//	5,664 ns go1.7.3 mbp
+
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := afm_fonts.Families("Helvetica")

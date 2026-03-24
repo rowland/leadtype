@@ -95,7 +95,11 @@ func (table *postTable) readFormat2Names(file io.Reader) (err error) {
 	}
 	for i := uint16(0); i < numberOfGlyphs; i++ {
 		if glyphNameIndex[i] >= 258 {
-			table.names[i] = newNames[glyphNameIndex[i]-258]
+			idx := int(glyphNameIndex[i] - 258)
+			if idx < 0 || idx >= len(newNames) {
+				return fmt.Errorf("invalid post format 2 glyph name index %d (newNames len=%d)", glyphNameIndex[i], len(newNames))
+			}
+			table.names[i] = newNames[idx]
 		}
 	}
 	return

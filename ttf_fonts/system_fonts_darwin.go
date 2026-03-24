@@ -10,12 +10,14 @@ import (
 
 // SystemFontDirs returns the standard font directories on macOS.
 func SystemFontDirs() []string {
-	dirs := []string{
-		"/System/Library/Fonts",
-		"/Library/Fonts",
-	}
+	dirs := []string{}
 	if home, err := os.UserHomeDir(); err == nil {
 		dirs = append(dirs, filepath.Join(home, "Library", "Fonts"))
 	}
+	dirs = append(dirs,
+		"/Library/Fonts",
+		"/System/Library/Fonts/Supplemental",
+		"/System/Library/Fonts",
+	)
 	return dirs
 }

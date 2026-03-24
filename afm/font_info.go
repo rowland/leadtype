@@ -5,6 +5,7 @@ package afm
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -34,8 +35,8 @@ type FontInfo struct {
 
 // 165,638 ns go1
 func LoadFontInfo(filename string) (fi *FontInfo, err error) {
-	var file *os.File
-	if file, err = os.Open(filename); err != nil {
+	var file io.ReadCloser
+	if file, err = openResource(filename); err != nil {
 		return
 	}
 	defer file.Close()
@@ -44,6 +45,13 @@ func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	fi.filename = filename
 	err = fi.init(reader)
 	return
+}
+
+func openResource(name string) (io.ReadCloser, error) {
+	if f, err := os.Open(name); err == nil {
+		return f, nil
+	}
+	return defaultData.Open(defaultResourcePath(name))
 }
 
 var (
@@ -56,7 +64,7 @@ var (
 	reFontName           = regexp.MustCompile("^FontName[ ]+(.*)")
 	reFullName           = regexp.MustCompile("^FullName[ ]+(.*)")
 	reIsFixedPitch       = regexp.MustCompile("^IsFixedPitch[ ]+(.)")
-	reItalicAngle        = regexp.MustCompile("^ItalicAngle[ ]+(-?[0-9]+(\\.[0-9]+)?)")
+	reItalicAngle        = regexp.MustCompile(`^ItalicAngle[ ]+(-?[0-9]+(\.[0-9]+)?)`)
 	reStartCharMetrics   = regexp.MustCompile("^StartCharMetrics[ ]+([0-9]+)")
 	reStdVW              = regexp.MustCompile("^StdVW[ ]+([0-9]+)")
 	reVersion            = regexp.MustCompile("^Version[ ]+(.*)")

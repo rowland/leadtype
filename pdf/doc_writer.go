@@ -16,18 +16,18 @@ import (
 )
 
 type DocWriter struct {
-	pages          []*PageWriter
-	nextSeq        func() int
-	file           *file
-	catalog        *catalog
-	resources      *resources
-	pagesAcross    int
-	pagesDown      int
-	curPage        *PageWriter
-	options        options.Options
-	fontSources    font.FontSources
-	fontKeys       map[string]string
-	fontEncodings  map[string]*fontEncoding
+	pages           []*PageWriter
+	nextSeq         func() int
+	file            *file
+	catalog         *catalog
+	resources       *resources
+	pagesAcross     int
+	pagesDown       int
+	curPage         *PageWriter
+	options         options.Options
+	fontSources     font.FontSources
+	fontKeys        map[string]string
+	fontEncodings   map[string]*fontEncoding
 	glyphRecorders  map[string]*glyphRecorder  // keyed by font PostScript name
 	unicodeFonts    map[string]*font.Font      // PostScript name → font, for width lookup at Close
 	cidFonts        map[string]*cidFont        // PostScript name → CID font, for /W update at Close
@@ -50,14 +50,14 @@ func NewDocWriter() *DocWriter {
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
-		nextSeq:        nextSeq,
-		file:           file,
-		catalog:        catalog,
-		resources:      resources,
-		options:        options.Options{},
-		fontSources:    fontSources,
-		fontKeys:       fontKeys,
-		fontEncodings:  fontEncodings,
+		nextSeq:         nextSeq,
+		file:            file,
+		catalog:         catalog,
+		resources:       resources,
+		options:         options.Options{},
+		fontSources:     fontSources,
+		fontKeys:        fontKeys,
+		fontEncodings:   fontEncodings,
 		glyphRecorders:  make(map[string]*glyphRecorder),
 		unicodeFonts:    make(map[string]*font.Font),
 		cidFonts:        make(map[string]*cidFont),
@@ -65,7 +65,6 @@ func NewDocWriter() *DocWriter {
 		fontDescriptors: make(map[string]*fontDescriptor),
 	}
 }
-
 
 func nextSeqFunc() func() int {
 	var nextValue = 0
