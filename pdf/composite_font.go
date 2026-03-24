@@ -19,21 +19,44 @@ func (c *cidSystemInfo) write(w io.Writer) {
 
 // ── /W sparse width array ─────────────────────────────────────────────────────
 
+// mostCommonWidth returns the most frequently occurring width value in
+// glyphWidths. It is used to pick /DW so that /W only needs to list
+// exceptions. Returns 0 if the map is empty.
+func mostCommonWidth(glyphWidths map[uint16]int) int {
+	counts := make(map[int]int, len(glyphWidths))
+	for _, w := range glyphWidths {
+		counts[w]++
+	}
+	best, bestCount := 0, 0
+	for w, c := range counts {
+		if c > bestCount {
+			best, bestCount = w, c
+		}
+	}
+	return best
+}
+
 // buildCIDWidthArray constructs a /W array in the sparse PDF format:
 //
 //	[firstGlyph [w0 w1 …] nextGlyph [w …] …]
 //
 // Consecutive glyph IDs with widths are grouped into a single sub-array.
-// glyphWidths maps glyphID → advance width in glyph-space units (not yet
-// scaled to 1000-unit PDF space; pass pre-scaled values).
-func buildCIDWidthArray(glyphWidths map[uint16]int) writer {
+// Entries whose width equals defaultWidth are omitted (they are covered by
+// the /DW entry). Pass 0 for defaultWidth to include all entries.
+// glyphWidths maps glyphID → advance width scaled to 1000-unit PDF space.
+func buildCIDWidthArray(glyphWidths map[uint16]int, defaultWidth int) writer {
 	if len(glyphWidths) == 0 {
 		return array{}
 	}
-	// Sort glyph IDs.
+	// Sort glyph IDs, skipping those that match the default width.
 	ids := make([]int, 0, len(glyphWidths))
-	for id := range glyphWidths {
-		ids = append(ids, int(id))
+	for id, w := range glyphWidths {
+		if w != defaultWidth {
+			ids = append(ids, int(id))
+		}
+	}
+	if len(ids) == 0 {
+		return array{}
 	}
 	sort.Ints(ids)
 
@@ -102,6 +125,12 @@ func newCIDFont(seq, gen int,
 // glyph usage is not known until document close.
 func (f *cidFont) setWidths(w writer) {
 	f.dict["W"] = w
+}
+
+// setDefaultWidth updates the /DW entry with the most-common glyph width,
+// called at document close once all glyph usage is known.
+func (f *cidFont) setDefaultWidth(w int) {
+	f.dict["DW"] = integer(w)
 }
 
 // setBaseFont updates /BaseFont, used to apply the subset tag at close.

@@ -102,7 +102,7 @@ See [development-process.md](development-process.md) for testing strategy and fi
 
 - [x] Build `/W` array from `hmtxTable` for all recorded glyph IDs at document close
 - [x] Use the font's `unitsPerEm` to scale widths to 1000-unit PDF space
-- [ ] Emit `/DW` (default width) as most-common glyph width to minimise `/W` entries
+- [x] Emit `/DW` (default width) as most-common glyph width to minimise `/W` entries
 
 ### DocWriter integration
 

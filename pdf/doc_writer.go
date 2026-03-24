@@ -274,7 +274,9 @@ func (dw *DocWriter) flushUnicodeFonts() {
 			}
 			glyphWidths[gid] = w
 		}
-		dw.cidFonts[psName].setWidths(buildCIDWidthArray(glyphWidths))
+		defWidth := mostCommonWidth(glyphWidths)
+		dw.cidFonts[psName].setDefaultWidth(defWidth)
+		dw.cidFonts[psName].setWidths(buildCIDWidthArray(glyphWidths, defWidth))
 
 		// Build ToUnicode CMap stream.
 		tuData := toUnicodeCMapDataComposite(mapping)

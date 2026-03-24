@@ -14,7 +14,7 @@ import (
 // ── buildCIDWidthArray ────────────────────────────────────────────────────────
 
 func TestBuildCIDWidthArray_Empty(t *testing.T) {
-	w := buildCIDWidthArray(nil)
+	w := buildCIDWidthArray(nil, 0)
 	var buf bytes.Buffer
 	w.write(&buf)
 	got := strings.TrimSpace(buf.String())
@@ -24,7 +24,7 @@ func TestBuildCIDWidthArray_Empty(t *testing.T) {
 }
 
 func TestBuildCIDWidthArray_SingleGlyph(t *testing.T) {
-	w := buildCIDWidthArray(map[uint16]int{5: 600})
+	w := buildCIDWidthArray(map[uint16]int{5: 600}, 0)
 	var buf bytes.Buffer
 	w.write(&buf)
 	got := buf.String()
@@ -38,7 +38,7 @@ func TestBuildCIDWidthArray_SingleGlyph(t *testing.T) {
 }
 
 func TestBuildCIDWidthArray_ConsecutiveRun(t *testing.T) {
-	w := buildCIDWidthArray(map[uint16]int{3: 500, 4: 600, 5: 700})
+	w := buildCIDWidthArray(map[uint16]int{3: 500, 4: 600, 5: 700}, 0)
 	var buf bytes.Buffer
 	w.write(&buf)
 	got := buf.String()
@@ -54,7 +54,7 @@ func TestBuildCIDWidthArray_ConsecutiveRun(t *testing.T) {
 }
 
 func TestBuildCIDWidthArray_TwoRuns(t *testing.T) {
-	w := buildCIDWidthArray(map[uint16]int{1: 500, 2: 500, 10: 700, 11: 700})
+	w := buildCIDWidthArray(map[uint16]int{1: 500, 2: 500, 10: 700, 11: 700}, 0)
 	var buf bytes.Buffer
 	w.write(&buf)
 	got := buf.String()
@@ -64,6 +64,46 @@ func TestBuildCIDWidthArray_TwoRuns(t *testing.T) {
 	}
 	if strings.Count(got, "[700") != 1 {
 		t.Errorf("expected one [700 sub-array, got %q", got)
+	}
+}
+
+func TestBuildCIDWidthArray_OmitsDefaultWidth(t *testing.T) {
+	// Glyphs 1,2,3 all have width 500 (the default); glyph 4 has width 700.
+	// With defaultWidth=500, only glyph 4 should appear in /W.
+	w := buildCIDWidthArray(map[uint16]int{1: 500, 2: 500, 3: 500, 4: 700}, 500)
+	var buf bytes.Buffer
+	w.write(&buf)
+	got := buf.String()
+	if strings.Contains(got, "500") {
+		t.Errorf("expected default width 500 to be omitted from /W, got %q", got)
+	}
+	if !strings.Contains(got, "700") {
+		t.Errorf("expected non-default width 700 in /W, got %q", got)
+	}
+}
+
+func TestBuildCIDWidthArray_AllDefault_Empty(t *testing.T) {
+	// When every glyph has the default width, /W should be empty.
+	w := buildCIDWidthArray(map[uint16]int{1: 500, 2: 500}, 500)
+	var buf bytes.Buffer
+	w.write(&buf)
+	got := strings.TrimSpace(buf.String())
+	if got != "[]" {
+		t.Errorf("expected empty /W when all widths match default, got %q", got)
+	}
+}
+
+func TestMostCommonWidth(t *testing.T) {
+	w := mostCommonWidth(map[uint16]int{1: 500, 2: 500, 3: 700, 4: 500})
+	if w != 500 {
+		t.Errorf("expected most common width 500, got %d", w)
+	}
+}
+
+func TestMostCommonWidth_Empty(t *testing.T) {
+	w := mostCommonWidth(nil)
+	if w != 0 {
+		t.Errorf("expected 0 for empty map, got %d", w)
 	}
 }
 
