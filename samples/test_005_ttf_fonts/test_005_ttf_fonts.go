@@ -8,12 +8,25 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const name = "test_005_ttf_fonts.pdf"
+
+func canRender(text string, fonts ...*font.Font) bool {
+	if len(fonts) == 0 || fonts[0] == nil {
+		return false
+	}
+	for _, r := range text {
+		if !fonts[0].HasRune(r) {
+			return false
+		}
+	}
+	return true
+}
 
 func main() {
 	f, err := os.Create(name)
@@ -41,7 +54,16 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Setting font to %s/%s: %v\n", info.Family(), info.Style(), err)
 			continue
 		}
-		fmt.Fprintln(doc, info.FullName())
+		label := info.FullName()
+		fonts, err := doc.SetFont(info.Family(), 12, options.Options{"style": info.Style()})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Setting font to %s/%s: %v\n", info.Family(), info.Style(), err)
+			continue
+		}
+		if !canRender(label, fonts...) {
+			continue
+		}
+		fmt.Fprintln(doc, label)
 	}
 	doc.WriteTo(f)
 	f.Close()
