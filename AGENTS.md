@@ -20,7 +20,6 @@ This file gives coding agents a fast, project-specific map of the `leadtype` rep
 - `rich_text/`: rich-text segmentation and rendering helpers
 - `ltml/`: XML-based document/layout layer built on top of the PDF stack
 - `colors/`, `options/`, `wordbreaking/`: supporting utilities
-- `haru/`: alternate PDF-related implementation pieces and tests
 - `samples/`: runnable examples that generate PDFs
 - `ttdump/`: small CLI for TTF inspection
 - `docs/`: design and workflow notes, especially for Unicode PDF work
