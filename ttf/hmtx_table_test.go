@@ -8,7 +8,7 @@ import "testing"
 func TestHmtxTable_lookup_Arial(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatalf("Error loading font: %s", err)
+		t.Skipf("Error loading font: %s", err)
 	}
 	// 1st glyph
 	hmtx0 := f.hmtxTable.lookup(0)
@@ -43,7 +43,7 @@ func TestHmtxTable_lookup_Arial(t *testing.T) {
 func TestHmtxTable_lookup_Courier(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Courier New.ttf")
 	if err != nil {
-		t.Fatalf("Error loading font: %s", err)
+		t.Skipf("Error loading font: %s", err)
 	}
 	// 1st glyph
 	hmtx0 := f.hmtxTable.lookup(0)

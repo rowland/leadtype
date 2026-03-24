@@ -88,7 +88,7 @@ func TestAfmFontCollection(t *testing.T) {
 		f, err := fc.Select(fs.family, fs.weight, fs.style, fs.ranges)
 		if err == nil {
 			if f.PostScriptName() != fs.postscriptName {
-				t.Errorf("%s: expected %d, got %d", "PostScriptName", fs.postscriptName, f.PostScriptName())
+				t.Errorf("%s: expected %s, got %s", "PostScriptName", fs.postscriptName, f.PostScriptName())
 			}
 		} else {
 			t.Error(err)

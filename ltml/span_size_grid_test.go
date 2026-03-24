@@ -128,7 +128,7 @@ func TestSpanSizeGrid_Cell(t *testing.T) {
 		for col := 0; col < 3; col++ {
 			expected = altSpanSizeValue(expected, ss0, ss1)
 			if actual := bg.Cell(col, row); actual != expected {
-				t.Errorf("Expected %t, got %t", expected, actual)
+				t.Errorf("Expected %v, got %v", expected, actual)
 			}
 		}
 	}
@@ -143,7 +143,7 @@ func TestSpanSizeGrid_SetCell(t *testing.T) {
 			expected = altSpanSizeValue(expected, ss0, ss1)
 			bg.SetCell(col, row, expected)
 			if actual := bg.Cell(col, row); actual != expected {
-				t.Errorf("Expected %t, got %t", expected, actual)
+				t.Errorf("Expected %v, got %v", expected, actual)
 			}
 		}
 	}
@@ -160,6 +160,6 @@ func TestSpanSizeGrid_SetCell_larger(t *testing.T) {
 		t.Errorf("Expected %d, got %d", 2, bg.Rows())
 	}
 	if actual := bg.Cell(1, 1); actual != ss1 {
-		t.Errorf("Expected %t, got %t", ss1, bg.Cell(1, 1))
+		t.Errorf("Expected %v, got %v", ss1, bg.Cell(1, 1))
 	}
 }

@@ -2,6 +2,7 @@ package rich_text
 
 import (
 	"math"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -72,5 +73,12 @@ func (st *SuperTest) fail(expected, actual interface{}, must bool, msg ...string
 		st.Fatalf("\t%s:%d: %s: Expected <%v>, got <%v>. %v\n", file, line, name, expected, actual, msg)
 	} else {
 		st.Errorf("\t%s:%d: %s: Expected <%v>, got <%v>. %v\n", file, line, name, expected, actual, msg)
+	}
+}
+
+func skipIfNoTTFFonts(t *testing.T) {
+	t.Helper()
+	if _, err := os.Stat("/Library/Fonts/Arial.ttf"); err != nil {
+		t.Skip("macOS TTF fonts not available")
 	}
 }

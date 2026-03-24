@@ -1,3 +1,5 @@
+//go:build haru
+
 package haru
 
 type rectangle struct {

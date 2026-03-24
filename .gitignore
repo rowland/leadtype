@@ -1,6 +1,29 @@
-**/_go_.6
-**/_obj
-**/_test
-**/_testmain.*
-**/6.out
-**/_gotest_.6
+# Binaries and build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/dist/
+
+# Test output
+*.test
+*.out
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code memory
+.claude/

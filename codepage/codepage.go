@@ -1,6 +1,8 @@
 // Copyright 2011-2014 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
+//go:generate go run generate.go
+
 package codepage
 
 type CharRange struct {

@@ -26,6 +26,28 @@ func New(pattern string) (*TtfFonts, error) {
 	return &fc, nil
 }
 
+// NewFromSystemFonts creates a TtfFonts collection loaded from all standard
+// font directories for the current platform.
+func NewFromSystemFonts() (*TtfFonts, error) {
+	var fc TtfFonts
+	if err := fc.AddSystemFonts(); err != nil {
+		return nil, err
+	}
+	return &fc, nil
+}
+
+// AddSystemFonts adds all TTF and TTC fonts found in the platform's standard
+// font directories.
+func (fc *TtfFonts) AddSystemFonts() error {
+	for _, dir := range SystemFontDirs() {
+		for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC"} {
+			// Ignore errors from individual patterns (directory may not exist).
+			fc.Add(filepath.Join(dir, ext))
+		}
+	}
+	return nil
+}
+
 func Families(families ...string) (fonts []*font.Font) {
 	fc, err := New("/Library/Fonts/*.ttf")
 	if err != nil {
@@ -51,12 +73,21 @@ func (fc *TtfFonts) Add(pattern string) (err error) {
 		return
 	}
 	for _, pathname := range pathnames {
-		fi, err2 := ttf.LoadFontInfo(pathname)
-		if err2 != nil {
-			err = fmt.Errorf("Error loading %s: %s", pathname, err2)
-			continue
+		if strings.EqualFold(filepath.Ext(pathname), ".ttc") {
+			infos, err2 := ttf.LoadFontInfosFromTTC(pathname)
+			if err2 != nil {
+				err = fmt.Errorf("Error loading %s: %s", pathname, err2)
+				continue
+			}
+			fc.FontInfos = append(fc.FontInfos, infos...)
+		} else {
+			fi, err2 := ttf.LoadFontInfo(pathname)
+			if err2 != nil {
+				err = fmt.Errorf("Error loading %s: %s", pathname, err2)
+				continue
+			}
+			fc.FontInfos = append(fc.FontInfos, fi)
 		}
-		fc.FontInfos = append(fc.FontInfos, fi)
 	}
 	return
 }
@@ -88,10 +119,11 @@ search:
 					continue search
 				}
 			}
-			font := fc.fonts[f.Filename()]
+			cacheKey := fmt.Sprintf("%s@%d", f.Filename(), f.TTCOffset())
+			font := fc.fonts[cacheKey]
 			if font == nil {
-				font, err = ttf.LoadFont(f.Filename())
-				fc.fonts[f.Filename()] = font
+				font, err = ttf.LoadFontAtOffset(f.Filename(), f.TTCOffset())
+				fc.fonts[cacheKey] = font
 			}
 			fontMetrics = font
 			return

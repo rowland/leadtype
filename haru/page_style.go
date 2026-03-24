@@ -1,6 +1,8 @@
 // Copyright 2017 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
+//go:build haru
+
 package haru
 
 import "github.com/rowland/leadtype/options"

@@ -51,6 +51,7 @@ func TestDocWriter_Close(t *testing.T) {
 }
 
 func TestDocWriter_fontKey(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
@@ -174,6 +175,7 @@ func TestDocWriter_PageWidth(t *testing.T) {
 }
 
 func TestDocWriter_SetFont_TrueType(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
 	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")

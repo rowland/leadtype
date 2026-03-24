@@ -130,7 +130,7 @@ func TestWidgetGrid_Cell(t *testing.T) {
 		for col := 0; col < 3; col++ {
 			expected = altWidgetValue(expected, nil, w)
 			if actual := bg.Cell(col, row); actual != expected {
-				t.Errorf("Expected %t, got %t", expected, actual)
+				t.Errorf("Expected %v, got %v", expected, actual)
 			}
 		}
 	}
@@ -146,7 +146,7 @@ func TestWidgetGrid_SetCell(t *testing.T) {
 			expected = altWidgetValue(expected, nil, w)
 			bg.SetCell(col, row, expected)
 			if actual := bg.Cell(col, row); actual != expected {
-				t.Errorf("Expected %t, got %t", expected, actual)
+				t.Errorf("Expected %v, got %v", expected, actual)
 			}
 		}
 	}
@@ -164,6 +164,6 @@ func TestWidgetGrid_SetCell_larger(t *testing.T) {
 		t.Errorf("Expected %d, got %d", 2, bg.Rows())
 	}
 	if actual := bg.Cell(1, 1); actual != w {
-		t.Errorf("Expected %t, got %t", w, bg.Cell(1, 1))
+		t.Errorf("Expected %v, got %v", w, bg.Cell(1, 1))
 	}
 }

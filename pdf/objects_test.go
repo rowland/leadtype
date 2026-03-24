@@ -403,7 +403,8 @@ func TestSimpleFont_TrueType(t *testing.T) {
 		"ArialMT", // baseFont
 		0, 255,    // firstChar, lastChar
 		&indirectObject{50, 0, &widths}, // widths
-		fd) // fontDescriptor
+		fd,  // fontDescriptor
+		nil) // fontEncoding
 
 	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /TrueType \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
 	expectS(t, expected, stringFromWriter(f))
