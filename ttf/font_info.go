@@ -13,6 +13,7 @@ import (
 
 type FontInfo struct {
 	filename      string
+	ttcOffset     int64
 	scalar        uint32
 	nTables       uint16
 	searchRange   uint16
@@ -25,6 +26,10 @@ type FontInfo struct {
 
 // 1,077,216 ns
 func LoadFontInfo(filename string) (fi *FontInfo, err error) {
+	return LoadFontInfoAtOffset(filename, 0)
+}
+
+func LoadFontInfoAtOffset(filename string, offset int64) (fi *FontInfo, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -32,11 +37,21 @@ func LoadFontInfo(filename string) (fi *FontInfo, err error) {
 	defer file.Close()
 	fi = new(FontInfo)
 	fi.filename = filename
-	err = fi.init(file)
+	fi.ttcOffset = offset
+	err = fi.init(file, offset)
 	return
 }
 
-func (fi *FontInfo) init(file io.ReadSeeker) (err error) {
+func (fi *FontInfo) TTCOffset() int64 {
+	return fi.ttcOffset
+}
+
+func (fi *FontInfo) init(file io.ReadSeeker, offset int64) (err error) {
+	if offset != 0 {
+		if _, err = file.Seek(offset, io.SeekStart); err != nil {
+			return
+		}
+	}
 	if err = readValues(file,
 		&fi.scalar,
 		&fi.nTables,

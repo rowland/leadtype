@@ -25,6 +25,10 @@ type Font struct {
 
 // 9,151,820 ns
 func LoadFont(filename string) (font *Font, err error) {
+	return LoadFontAtOffset(filename, 0)
+}
+
+func LoadFontAtOffset(filename string, offset int64) (font *Font, err error) {
 	var file *os.File
 	if file, err = os.Open(filename); err != nil {
 		return
@@ -32,12 +36,13 @@ func LoadFont(filename string) (font *Font, err error) {
 	defer file.Close()
 	font = new(Font)
 	font.filename = filename
-	err = font.init(file)
+	font.ttcOffset = offset
+	err = font.init(file, offset)
 	return
 }
 
-func (font *Font) init(file io.ReadSeeker) (err error) {
-	if err = font.FontInfo.init(file); err != nil {
+func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
+	if err = font.FontInfo.init(file, offset); err != nil {
 		return
 	}
 
