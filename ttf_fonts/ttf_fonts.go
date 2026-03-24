@@ -49,7 +49,7 @@ func (fc *TtfFonts) AddSystemFonts() error {
 }
 
 func Families(families ...string) (fonts []*font.Font) {
-	fc, err := New("/Library/Fonts/*.ttf")
+	fc, err := NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}

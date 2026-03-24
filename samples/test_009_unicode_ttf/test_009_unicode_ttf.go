@@ -40,9 +40,9 @@ var scripts = []struct {
 }
 
 func main() {
-	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil || ttfc.Len() == 0 {
-		fmt.Fprintln(os.Stderr, "No TTF fonts found in /Library/Fonts — try installing system fonts.")
+		fmt.Fprintln(os.Stderr, "No TTF fonts found in system font directories.")
 		os.Exit(1)
 	}
 
