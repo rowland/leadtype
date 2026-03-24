@@ -22,10 +22,10 @@ const (
 
 // Subset returns a valid TTF binary containing only the glyphs in glyphIDs
 // plus any component glyphs they reference transitively through composite
-// glyph records. Glyph 0 (.notdef) is always included. All non-glyph tables
-// (head, hhea, hmtx, name, OS/2, post, etc.) are preserved verbatim.
-// The output uses long (format 1) loca offsets and is suitable for
-// embedding in a PDF as a FontFile2 stream.
+// glyph records. Glyph 0 (.notdef) is always included. The output uses long
+// (format 1) loca offsets and trims maxp, hmtx, cmap, and post alongside
+// glyf/loca so the embedded subset is materially smaller while preserving
+// glyph IDs up to the highest included glyph.
 func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 	raw, err := os.ReadFile(font.filename)
 	if err != nil {
@@ -93,10 +93,17 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 		expand(id)
 	}
 
+	subsetGlyphCount := 1
+	for id := range closure {
+		if int(id)+1 > subsetGlyphCount {
+			subsetGlyphCount = int(id) + 1
+		}
+	}
+
 	// Build new glyf table and corresponding long-format loca.
 	var glyfBuf bytes.Buffer
-	newLoca := make([]uint32, numGlyphs+1)
-	for i := 0; i < numGlyphs; i++ {
+	newLoca := make([]uint32, subsetGlyphCount+1)
+	for i := 0; i < subsetGlyphCount; i++ {
 		newLoca[i] = uint32(glyfBuf.Len())
 		if closure[uint16(i)] && glyfLen[i] > 0 {
 			absOff := int(glyfEntry.offset) + int(glyfOff[i])
@@ -107,12 +114,33 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 			}
 		}
 	}
-	newLoca[numGlyphs] = uint32(glyfBuf.Len())
+	newLoca[subsetGlyphCount] = uint32(glyfBuf.Len())
 
 	// Encode loca as big-endian uint32 values (long / format 1).
-	locaBuf := make([]byte, (numGlyphs+1)*4)
+	locaBuf := make([]byte, (subsetGlyphCount+1)*4)
 	for i, off := range newLoca {
 		binary.BigEndian.PutUint32(locaBuf[i*4:], off)
+	}
+
+	maxpBuf, err := subsetMaxpTable(raw, font.tableDir.table("maxp"), uint16(subsetGlyphCount))
+	if err != nil {
+		return nil, err
+	}
+	hheaBuf, err := subsetHheaTable(raw, font.tableDir.table("hhea"), uint16(subsetGlyphCount))
+	if err != nil {
+		return nil, err
+	}
+	hmtxBuf, err := font.subsetHmtxTable(uint16(subsetGlyphCount))
+	if err != nil {
+		return nil, err
+	}
+	cmapBuf, err := font.subsetCmapTable(closure)
+	if err != nil {
+		return nil, err
+	}
+	postBuf, err := font.subsetPostTable(raw, font.tableDir.table("post"), uint16(subsetGlyphCount))
+	if err != nil {
+		return nil, err
 	}
 
 	// Collect all tables from the original font, replacing glyf and loca.
@@ -128,6 +156,16 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 			data = glyfBuf.Bytes()
 		case "loca":
 			data = locaBuf
+		case "maxp":
+			data = maxpBuf
+		case "hhea":
+			data = hheaBuf
+		case "hmtx":
+			data = hmtxBuf
+		case "cmap":
+			data = cmapBuf
+		case "post":
+			data = postBuf
 		default:
 			data = make([]byte, entry.length)
 			copy(data, raw[entry.offset:uint32(entry.offset)+entry.length])
@@ -223,6 +261,359 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 	return result, nil
 }
 
+func subsetMaxpTable(raw []byte, entry *tableDirEntry, numGlyphs uint16) ([]byte, error) {
+	if entry == nil {
+		return nil, fmt.Errorf("subset: font has no maxp table")
+	}
+	if entry.length < 6 {
+		return nil, fmt.Errorf("subset: malformed maxp table")
+	}
+	data := make([]byte, entry.length)
+	copy(data, raw[entry.offset:entry.offset+entry.length])
+	binary.BigEndian.PutUint16(data[4:], numGlyphs)
+	return data, nil
+}
+
+func subsetHheaTable(raw []byte, entry *tableDirEntry, numGlyphs uint16) ([]byte, error) {
+	if entry == nil {
+		return nil, fmt.Errorf("subset: font has no hhea table")
+	}
+	if entry.length < 36 {
+		return nil, fmt.Errorf("subset: malformed hhea table")
+	}
+	data := make([]byte, entry.length)
+	copy(data, raw[entry.offset:entry.offset+entry.length])
+	binary.BigEndian.PutUint16(data[34:], numGlyphs)
+	return data, nil
+}
+
+func (font *Font) subsetHmtxTable(numGlyphs uint16) ([]byte, error) {
+	var buf bytes.Buffer
+	for gid := uint16(0); gid < numGlyphs; gid++ {
+		metric := font.hmtxTable.lookup(int(gid))
+		writeUint16(&buf, metric.advanceWidth)
+		writeInt16(&buf, metric.leftSideBearing)
+	}
+	return buf.Bytes(), nil
+}
+
+func (font *Font) subsetCmapTable(closure map[uint16]bool) ([]byte, error) {
+	mappings, err := font.subsetCodepointMappings(closure)
+	if err != nil {
+		return nil, err
+	}
+	allBMP := true
+	for codepoint := range mappings {
+		if codepoint > 0xFFFF {
+			allBMP = false
+			break
+		}
+	}
+	if allBMP {
+		return buildSubsetFormat4Cmap(mappings), nil
+	}
+	return buildSubsetFormat12Cmap(mappings), nil
+}
+
+func (font *Font) subsetCodepointMappings(closure map[uint16]bool) (map[int]uint16, error) {
+	rec := font.cmapTable.preferredRecord()
+	if rec == nil || rec.glyphIndexer == nil {
+		return nil, fmt.Errorf("subset: font has no preferred cmap")
+	}
+
+	mappings := make(map[int]uint16)
+	switch enc := rec.glyphIndexer.(type) {
+	case *format0EncodingRecord:
+		for codepoint, glyphID := range enc.glyphIndexArray {
+			if glyphID != 0 && closure[glyphID] {
+				mappings[codepoint] = glyphID
+			}
+		}
+	case *format4EncodingRecord:
+		for _, codepoint := range enc.codepoints() {
+			glyphID := uint16(enc.glyphIndex(codepoint))
+			if glyphID != 0 && closure[glyphID] {
+				mappings[codepoint] = glyphID
+			}
+		}
+	case *format6EncodingRecord:
+		for i, glyphID := range enc.glyphIndexArray {
+			if glyphID != 0 && closure[glyphID] {
+				mappings[int(enc.firstCode)+i] = glyphID
+			}
+		}
+	case *format12EncodingRecord:
+		for _, group := range enc.groups {
+			glyphID := group.startGlyphCode
+			for codepoint := group.startCharCode; codepoint <= group.endCharCode; codepoint++ {
+				if glyphID != 0 && closure[uint16(glyphID)] {
+					mappings[int(codepoint)] = uint16(glyphID)
+				}
+				glyphID++
+			}
+		}
+	default:
+		return nil, fmt.Errorf("subset: unsupported preferred cmap format %d", rec.format)
+	}
+	return mappings, nil
+}
+
+func buildSubsetFormat4Cmap(mappings map[int]uint16) []byte {
+	type segment struct {
+		start  uint16
+		end    uint16
+		glyphs []uint16
+	}
+
+	codepoints := sortedSubsetCodepoints(mappings, 0xFFFF)
+	segments := make([]segment, 0, len(codepoints)+1)
+	for i := 0; i < len(codepoints); {
+		start := uint16(codepoints[i])
+		end := start
+		glyphs := []uint16{mappings[codepoints[i]]}
+		i++
+		for i < len(codepoints) && codepoints[i] == int(end)+1 {
+			end = uint16(codepoints[i])
+			glyphs = append(glyphs, mappings[codepoints[i]])
+			i++
+		}
+		segments = append(segments, segment{start: start, end: end, glyphs: glyphs})
+	}
+	segments = append(segments, segment{start: 0xFFFF, end: 0xFFFF})
+
+	segCount := uint16(len(segments))
+	segCountX2 := segCount * 2
+	searchRange, entrySelector, rangeShift := format4SearchFields(segCount)
+	glyphArrayCount := 0
+	for _, seg := range segments[:len(segments)-1] {
+		glyphArrayCount += len(seg.glyphs)
+	}
+	length := uint16(16 + 8*int(segCount) + 2*glyphArrayCount)
+
+	var subtable bytes.Buffer
+	writeUint16(&subtable, 4)
+	writeUint16(&subtable, length)
+	writeUint16(&subtable, 0)
+	writeUint16(&subtable, segCountX2)
+	writeUint16(&subtable, searchRange)
+	writeUint16(&subtable, entrySelector)
+	writeUint16(&subtable, rangeShift)
+
+	for _, seg := range segments {
+		writeUint16(&subtable, seg.end)
+	}
+	writeUint16(&subtable, 0)
+	for _, seg := range segments {
+		writeUint16(&subtable, seg.start)
+	}
+	for range segments {
+		writeUint16(&subtable, 0)
+	}
+
+	glyphArrayIndex := 0
+	for i, seg := range segments {
+		if i == len(segments)-1 {
+			writeUint16(&subtable, 0)
+			continue
+		}
+		offsetWords := len(segments) - i + glyphArrayIndex
+		writeUint16(&subtable, uint16(offsetWords*2))
+		glyphArrayIndex += len(seg.glyphs)
+	}
+	for _, seg := range segments[:len(segments)-1] {
+		for _, glyphID := range seg.glyphs {
+			writeUint16(&subtable, glyphID)
+		}
+	}
+
+	var cmap bytes.Buffer
+	writeUint16(&cmap, 0)
+	writeUint16(&cmap, 2)
+	writeUint16(&cmap, UnicodePlatformID)
+	writeUint16(&cmap, Unicode2PlatformSpecificID)
+	writeUint32(&cmap, 20)
+	writeUint16(&cmap, MicrosoftPlatformID)
+	writeUint16(&cmap, UCS2PlatformSpecificID)
+	writeUint32(&cmap, 20)
+	cmap.Write(subtable.Bytes())
+	return cmap.Bytes()
+}
+
+func buildSubsetFormat12Cmap(mappings map[int]uint16) []byte {
+	type group struct {
+		startCodepoint int
+		endCodepoint   int
+		startGlyphID   uint16
+	}
+
+	codepoints := sortedSubsetCodepoints(mappings, int(^uint32(0)>>1))
+	groups := make([]group, 0, len(codepoints))
+	for i := 0; i < len(codepoints); {
+		start := codepoints[i]
+		end := start
+		startGlyph := mappings[start]
+		nextGlyph := startGlyph + 1
+		i++
+		for i < len(codepoints) && codepoints[i] == end+1 && mappings[codepoints[i]] == nextGlyph {
+			end = codepoints[i]
+			nextGlyph++
+			i++
+		}
+		groups = append(groups, group{
+			startCodepoint: start,
+			endCodepoint:   end,
+			startGlyphID:   startGlyph,
+		})
+	}
+
+	length := uint32(16 + len(groups)*12)
+	var subtable bytes.Buffer
+	writeUint16(&subtable, 12)
+	writeUint16(&subtable, 0)
+	writeUint32(&subtable, length)
+	writeUint32(&subtable, 0)
+	writeUint32(&subtable, uint32(len(groups)))
+	for _, group := range groups {
+		writeUint32(&subtable, uint32(group.startCodepoint))
+		writeUint32(&subtable, uint32(group.endCodepoint))
+		writeUint32(&subtable, uint32(group.startGlyphID))
+	}
+
+	var cmap bytes.Buffer
+	writeUint16(&cmap, 0)
+	writeUint16(&cmap, 1)
+	writeUint16(&cmap, UnicodePlatformID)
+	writeUint16(&cmap, Unicode2FullPlatformSpecificID)
+	writeUint32(&cmap, 12)
+	cmap.Write(subtable.Bytes())
+	return cmap.Bytes()
+}
+
+func sortedSubsetCodepoints(mappings map[int]uint16, maxCodepoint int) []int {
+	codepoints := make([]int, 0, len(mappings))
+	for codepoint := range mappings {
+		if codepoint >= 0 && codepoint <= maxCodepoint {
+			codepoints = append(codepoints, codepoint)
+		}
+	}
+	sort.Ints(codepoints)
+	return codepoints
+}
+
+func format4SearchFields(segCount uint16) (searchRange, entrySelector, rangeShift uint16) {
+	power := uint16(1)
+	for power<<1 <= segCount {
+		power <<= 1
+		entrySelector++
+	}
+	searchRange = power * 2
+	rangeShift = segCount*2 - searchRange
+	return
+}
+
+func (font *Font) subsetPostTable(raw []byte, entry *tableDirEntry, numGlyphs uint16) ([]byte, error) {
+	if entry == nil {
+		return nil, fmt.Errorf("subset: font has no post table")
+	}
+	if font.postTable.format.Tof64() != 2.0 {
+		data := make([]byte, entry.length)
+		copy(data, raw[entry.offset:entry.offset+entry.length])
+		return data, nil
+	}
+	return font.buildSubsetPostFormat2(numGlyphs)
+}
+
+func (font *Font) buildSubsetPostFormat2(numGlyphs uint16) ([]byte, error) {
+	standardNames := make(map[string]uint16, len(MacRomanPostNames))
+	for i, name := range MacRomanPostNames {
+		standardNames[name] = uint16(i)
+	}
+
+	var names []string
+	if len(font.postTable.names) >= int(numGlyphs) {
+		names = font.postTable.names[:numGlyphs]
+	} else {
+		names = make([]string, numGlyphs)
+		copy(names, font.postTable.names)
+	}
+
+	var buf bytes.Buffer
+	writeFixed(&buf, font.postTable.format)
+	writeFixed(&buf, font.postTable.italicAngle)
+	writeInt16(&buf, font.postTable.underlinePosition)
+	writeInt16(&buf, font.postTable.underlineThickness)
+	writeUint32(&buf, font.postTable.isFixedPitch)
+	writeUint32(&buf, font.postTable.minMemType42)
+	writeUint32(&buf, font.postTable.maxMemType42)
+	writeUint32(&buf, font.postTable.minMemType1)
+	writeUint32(&buf, font.postTable.maxMemType1)
+	writeUint16(&buf, numGlyphs)
+
+	newNames := make([]string, 0)
+	newNameIndexes := make(map[string]uint16)
+	for _, name := range names {
+		if idx, ok := standardNames[name]; ok {
+			writeUint16(&buf, idx)
+			continue
+		}
+		idx, ok := newNameIndexes[name]
+		if !ok {
+			idx = uint16(258 + len(newNames))
+			newNameIndexes[name] = idx
+			newNames = append(newNames, name)
+		}
+		writeUint16(&buf, idx)
+	}
+	for _, name := range newNames {
+		if len(name) > 255 {
+			return nil, fmt.Errorf("subset: post glyph name too long: %q", name)
+		}
+		buf.WriteByte(byte(len(name)))
+		buf.WriteString(name)
+	}
+	return buf.Bytes(), nil
+}
+
+func (table *cmapTable) preferredRecord() *cmapEncodingRecord {
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.platformID == UnicodePlatformID &&
+			(enc.platformSpecificID == Unicode2PlatformSpecificID || enc.platformSpecificID == Unicode2FullPlatformSpecificID) {
+			return enc
+		}
+	}
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.platformID == MicrosoftPlatformID && enc.platformSpecificID == UCS2PlatformSpecificID {
+			return enc
+		}
+	}
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.platformID == MacintoshPlatformID {
+			return enc
+		}
+	}
+	return nil
+}
+
+func (enc *format4EncodingRecord) codepoints() []int {
+	var codepoints []int
+	for i := range enc.startCode {
+		start := enc.startCode[i]
+		end := enc.endCode[i]
+		if start == 0xFFFF && end == 0xFFFF {
+			continue
+		}
+		for codepoint := start; codepoint <= end; codepoint++ {
+			if glyphID := enc.glyphIndex(int(codepoint)); glyphID > 0 {
+				codepoints = append(codepoints, int(codepoint))
+			}
+		}
+	}
+	return codepoints
+}
+
 // parseLocaOffsets returns per-glyph (offset, length) pairs within the glyf
 // table. Offsets are relative to the start of the glyf table data.
 // There are numGlyphs+1 entries in loca; the last gives the end of the final glyph.
@@ -291,4 +682,15 @@ func writeUint32(w *bytes.Buffer, v uint32) {
 	var b [4]byte
 	binary.BigEndian.PutUint32(b[:], v)
 	w.Write(b[:])
+}
+
+func writeInt16(w *bytes.Buffer, v int16) {
+	var b [2]byte
+	binary.BigEndian.PutUint16(b[:], uint16(v))
+	w.Write(b[:])
+}
+
+func writeFixed(w *bytes.Buffer, v Fixed) {
+	writeInt16(w, v.base)
+	writeUint16(w, v.frac)
 }

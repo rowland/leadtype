@@ -165,6 +165,91 @@ func TestSubset_CompositeGlyphClosure(t *testing.T) {
 	}
 }
 
+func TestSubset_UpdatesNumGlyphsAndHmtx(t *testing.T) {
+	orig, err := LoadFont(minimalTTF)
+	if err != nil {
+		t.Fatalf("LoadFont: %v", err)
+	}
+
+	gA := orig.GlyphIndex('A')
+	data, err := orig.Subset([]uint16{gA})
+	if err != nil {
+		t.Fatalf("Subset: %v", err)
+	}
+
+	maxp := mustFindTable(t, data, "maxp")
+	if got, want := binary.BigEndian.Uint16(data[maxp.offset+4:]), gA+1; got != want {
+		t.Fatalf("subset maxp.numGlyphs = %d, want %d", got, want)
+	}
+
+	hhea := mustFindTable(t, data, "hhea")
+	if got, want := binary.BigEndian.Uint16(data[hhea.offset+34:]), gA+1; got != want {
+		t.Fatalf("subset hhea.numOfLongHorMetrics = %d, want %d", got, want)
+	}
+
+	hmtx := mustFindTable(t, data, "hmtx")
+	if got, want := hmtx.length, uint32(gA+1)*4; got != want {
+		t.Fatalf("subset hmtx length = %d, want %d", got, want)
+	}
+}
+
+func TestSubset_CmapRemovesUnusedMappings(t *testing.T) {
+	orig, err := LoadFont(minimalTTF)
+	if err != nil {
+		t.Fatalf("LoadFont: %v", err)
+	}
+
+	gA := orig.GlyphIndex('A')
+	data, err := orig.Subset([]uint16{gA})
+	if err != nil {
+		t.Fatalf("Subset: %v", err)
+	}
+
+	sub, err := LoadFontFromBytes(data)
+	if err != nil {
+		t.Fatalf("LoadFontFromBytes: %v", err)
+	}
+	if got := sub.GlyphIndex('A'); got != gA {
+		t.Fatalf("subset GlyphIndex('A') = %d, want %d", got, gA)
+	}
+	if got := sub.GlyphIndex('B'); got != 0 {
+		t.Fatalf("subset GlyphIndex('B') = %d, want 0", got)
+	}
+}
+
+func TestBuildSubsetPostFormat2(t *testing.T) {
+	font := &Font{
+		postTable: postTable{
+			format:             Fixed{base: 2},
+			italicAngle:        Fixed{},
+			underlinePosition:  -100,
+			underlineThickness: 50,
+			names:              []string{".notdef", "A", "custom.alt", "A"},
+		},
+	}
+
+	data, err := font.buildSubsetPostFormat2(3)
+	if err != nil {
+		t.Fatalf("buildSubsetPostFormat2: %v", err)
+	}
+
+	if got := binary.BigEndian.Uint16(data[32:]); got != 3 {
+		t.Fatalf("numberOfGlyphs = %d, want 3", got)
+	}
+	if got := binary.BigEndian.Uint16(data[34:]); got != 0 {
+		t.Fatalf("glyph 0 name index = %d, want 0 (.notdef)", got)
+	}
+	if got := binary.BigEndian.Uint16(data[36:]); got != 36 {
+		t.Fatalf("glyph 1 name index = %d, want 36 (A)", got)
+	}
+	if got := binary.BigEndian.Uint16(data[38:]); got != 258 {
+		t.Fatalf("glyph 2 name index = %d, want 258 (first custom name)", got)
+	}
+	if got := data[40:]; string(got) != "\ncustom.alt" {
+		t.Fatalf("custom names payload = %q, want %q", string(got), "\ncustom.alt")
+	}
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 // subsetGlyphHasData returns true if the given glyph ID has non-zero-length
@@ -214,4 +299,25 @@ func loadRawFont(t *testing.T, path string) []byte {
 		t.Skipf("cannot read %s: %v", path, err)
 	}
 	return data
+}
+
+func mustFindTable(t *testing.T, data []byte, tag string) *tableDirEntry {
+	t.Helper()
+	if len(data) < 12 {
+		t.Fatalf("font too short")
+	}
+	nTables := int(binary.BigEndian.Uint16(data[4:]))
+	for i := 0; i < nTables; i++ {
+		base := 12 + i*16
+		if string(data[base:base+4]) == tag {
+			return &tableDirEntry{
+				tag:      tag,
+				checkSum: binary.BigEndian.Uint32(data[base+4:]),
+				offset:   binary.BigEndian.Uint32(data[base+8:]),
+				length:   binary.BigEndian.Uint32(data[base+12:]),
+			}
+		}
+	}
+	t.Fatalf("table %q not found", tag)
+	return nil
 }

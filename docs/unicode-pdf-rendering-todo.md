@@ -151,10 +151,10 @@ See [development-process.md](development-process.md) for testing strategy and fi
 - [x] Add `ttf.Subset(glyphIDs []uint16) ([]byte, error)` function
 - [x] Rewrite `glyf` table: include only subset glyphs, pad/zero unused slots or use short loca
 - [x] Rewrite `loca` table to match subset `glyf`
-- [ ] Update `maxp.numGlyphs` to subset count
-- [ ] Subset `hmtx` table to subset glyph IDs
-- [ ] Subset `cmap` table: remove mappings for glyphs not in subset
-- [ ] Subset `post` table glyph names (if format 2.0)
+- [x] Update `maxp.numGlyphs` to subset count
+- [x] Subset `hmtx` table to subset glyph IDs
+- [x] Subset `cmap` table: remove mappings for glyphs not in subset
+- [x] Subset `post` table glyph names (if format 2.0)
 - [x] Preserve all non-glyph tables (`head`, `hhea`, `name`, `OS/2`, `kern`, etc.) unchanged
 - [x] Recalculate `head.checkSumAdjustment` for the new file
 
