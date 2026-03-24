@@ -309,25 +309,50 @@ func (pw *PageWriter) flushText() {
 			panic("EachCodepage calling back with nil p")
 		}
 		buf.Reset()
-		// fmt.Println(cpi)
-		if cpi < 0 {
-			// buf.WriteString(text)
-		} else {
-			cp := cpi.Codepage()
+		if pw.dw.unicodeMode && p.Font.SubType() == "TrueType" {
+			// Unicode composite path: encode each rune as a big-endian uint16 glyph ID.
+			// Call fontKeyUnicode first so the glyph recorder is guaranteed to exist.
+			fk := pw.dw.fontKeyUnicode(p.Font)
+			psName := p.Font.PostScriptName()
+			gr := pw.dw.glyphRecorders[psName]
 			for _, r := range text {
-				ch, _ := cp.CharForCodepoint(r)
-				buf.WriteByte(byte(ch))
+				gid := p.Font.GlyphIndex(r)
+				if gr != nil {
+					gr.record(gid, r)
+				}
+				buf.WriteByte(byte(gid >> 8))
+				buf.WriteByte(byte(gid & 0xFF))
 			}
+			pw.SetFontColor(p.Color)
+			pw.checkSetFontColor()
+			pw.fontKey = fk
+			pw.SetFontSize(p.FontSize)
+			pw.checkSetFont()
+			pw.charSpacing = p.CharSpacing
+			pw.wordSpacing = p.WordSpacing
+			pw.checkSetSpacing()
+			pw.tw.show(buf.Bytes())
+		} else {
+			// fmt.Println(cpi)
+			if cpi < 0 {
+				// buf.WriteString(text)
+			} else {
+				cp := cpi.Codepage()
+				for _, r := range text {
+					ch, _ := cp.CharForCodepoint(r)
+					buf.WriteByte(byte(ch))
+				}
+			}
+			pw.SetFontColor(p.Color)
+			pw.checkSetFontColor()
+			pw.fontKey = pw.dw.fontKey(p.Font, cpi)
+			pw.SetFontSize(p.FontSize)
+			pw.checkSetFont()
+			pw.charSpacing = p.CharSpacing
+			pw.wordSpacing = p.WordSpacing
+			pw.checkSetSpacing()
+			pw.tw.show(buf.Bytes())
 		}
-		pw.SetFontColor(p.Color)
-		pw.checkSetFontColor()
-		pw.fontKey = pw.dw.fontKey(p.Font, cpi)
-		pw.SetFontSize(p.FontSize)
-		pw.checkSetFont()
-		pw.charSpacing = p.CharSpacing
-		pw.wordSpacing = p.WordSpacing
-		pw.checkSetSpacing()
-		pw.tw.show(buf.Bytes())
 	})
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {

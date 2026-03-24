@@ -169,3 +169,9 @@ func (font *Font) Serif() bool {
 func (font *Font) UnitsPerEm() int {
 	return 1000
 }
+
+// GlyphIndex is not meaningful for AFM/Type1 fonts; always returns 0.
+func (font *Font) GlyphIndex(r rune) uint16 { return 0 }
+
+// AdvanceWidthForGlyph is not meaningful for AFM/Type1 fonts; always returns 0.
+func (font *Font) AdvanceWidthForGlyph(glyphID uint16) int { return 0 }

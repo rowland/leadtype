@@ -98,6 +98,22 @@ func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
 	return int(font.hmtxTable.lookupAdvanceWidth(index)), false
 }
 
+// GlyphIndex returns the glyph ID for the given Unicode codepoint, or 0 if the
+// codepoint is not present in the font's cmap.
+func (font *Font) GlyphIndex(r rune) uint16 {
+	idx := font.cmapTable.glyphIndex(int(r))
+	if idx < 0 {
+		return 0
+	}
+	return uint16(idx)
+}
+
+// AdvanceWidthForGlyph returns the advance width for the given glyph ID in
+// glyph-space units (unscaled by unitsPerEm).
+func (font *Font) AdvanceWidthForGlyph(glyphID uint16) int {
+	return int(font.hmtxTable.lookupAdvanceWidth(int(glyphID)))
+}
+
 func (font *Font) Ascent() int {
 	return int(font.hheaTable.ascent)
 }

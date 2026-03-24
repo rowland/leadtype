@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -48,6 +49,53 @@ func toUnicodeCMapData(encoding []rune) []byte {
 		fmt.Fprintf(&sb, "%d beginbfchar\n", len(block))
 		for _, e := range block {
 			fmt.Fprintf(&sb, "<%02X> <%04X>\n", e.b, e.u)
+		}
+		sb.WriteString("endbfchar\n")
+	}
+
+	sb.WriteString("endcmap\n")
+	sb.WriteString("CMap end\n")
+	sb.WriteString("end\n")
+	return []byte(sb.String())
+}
+
+// toUnicodeCMapDataComposite builds the ToUnicode CMap stream for a composite
+// (Type0 / CIDFontType2) font. glyphToRune maps each glyph ID used in the
+// document back to its Unicode codepoint. The codespace range is <0000>–<FFFF>.
+//
+// The PDF spec limits each beginbfchar/endbfchar block to 100 entries.
+func toUnicodeCMapDataComposite(glyphToRune map[uint16]rune) []byte {
+	type entry struct {
+		glyphID uint16
+		r       rune
+	}
+	entries := make([]entry, 0, len(glyphToRune))
+	for gid, r := range glyphToRune {
+		entries = append(entries, entry{gid, r})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].glyphID < entries[j].glyphID })
+
+	var sb strings.Builder
+	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
+	sb.WriteString("12 dict begin\n")
+	sb.WriteString("begincmap\n")
+	sb.WriteString("/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n")
+	sb.WriteString("/CMapName /Adobe-Identity-UCS def\n")
+	sb.WriteString("/CMapType 2 def\n")
+	sb.WriteString("1 begincodespacerange\n")
+	sb.WriteString("<0000> <FFFF>\n")
+	sb.WriteString("endcodespacerange\n")
+
+	const blockSize = 100
+	for i := 0; i < len(entries); i += blockSize {
+		end := i + blockSize
+		if end > len(entries) {
+			end = len(entries)
+		}
+		block := entries[i:end]
+		fmt.Fprintf(&sb, "%d beginbfchar\n", len(block))
+		for _, e := range block {
+			fmt.Fprintf(&sb, "<%04X> <%04X>\n", e.glyphID, e.r)
 		}
 		sb.WriteString("endbfchar\n")
 	}

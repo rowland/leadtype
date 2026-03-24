@@ -45,6 +45,14 @@ func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
 	return font.metrics.AdvanceWidth(codepoint)
 }
 
+func (font *Font) AdvanceWidthForGlyph(glyphID uint16) int {
+	return font.metrics.AdvanceWidthForGlyph(glyphID)
+}
+
+func (font *Font) GlyphIndex(r rune) uint16 {
+	return font.metrics.GlyphIndex(r)
+}
+
 func (font *Font) Ascent() int {
 	return font.metrics.Ascent()
 }

@@ -5,6 +5,9 @@ package font
 
 type FontMetrics interface {
 	AdvanceWidth(codepoint rune) (width int, err bool)
+	// AdvanceWidthForGlyph returns the advance width for the given glyph ID in
+	// glyph-space units. Returns 0 for font types that do not support glyph IDs.
+	AdvanceWidthForGlyph(glyphID uint16) int
 	Ascent() int
 	// AvgWidth() int
 	BoundingBox() [4]int
@@ -17,6 +20,10 @@ type FontMetrics interface {
 	Filename() string
 	Flags() (flags uint32)
 	FullName() string
+	// GlyphIndex returns the glyph ID for the given Unicode codepoint, or 0 if
+	// the codepoint is not present. Returns 0 for font types that do not use
+	// glyph IDs (e.g. AFM/Type1).
+	GlyphIndex(r rune) uint16
 	ItalicAngle() float64
 	Leading() int
 	// License() string
