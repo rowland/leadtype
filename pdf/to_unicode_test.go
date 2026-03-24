@@ -82,6 +82,38 @@ func TestToUnicodeCMapData_OmitsZero(t *testing.T) {
 	}
 }
 
+// TestToUnicodeCMapData_ISO88592 verifies the CMap stream for ISO-8859-2
+// correctly round-trips the positions that differ from ISO-8859-1.
+func TestToUnicodeCMapData_ISO88592(t *testing.T) {
+	data := toUnicodeCMapData(codepage.Idx_ISO_8859_2.Map())
+	s := string(data)
+
+	// 0xA1 → U+0104 (Ą, Latin capital A with ogonek) — differs from ISO-8859-1 (¡)
+	if !strings.Contains(s, "<A1> <0104>") {
+		t.Error("missing ISO-8859-2 mapping for 0xA1 → U+0104 (Ą)")
+	}
+	// 0xA3 → U+0141 (Ł, Latin capital L with stroke) — differs from ISO-8859-1 (£)
+	if !strings.Contains(s, "<A3> <0141>") {
+		t.Error("missing ISO-8859-2 mapping for 0xA3 → U+0141 (Ł)")
+	}
+	// 0xB1 → U+0105 (ą, Latin small a with ogonek) — differs from ISO-8859-1 (±)
+	if !strings.Contains(s, "<B1> <0105>") {
+		t.Error("missing ISO-8859-2 mapping for 0xB1 → U+0105 (ą)")
+	}
+	// 0xFE → U+0163 (ţ, Latin small t with cedilla) — differs from ISO-8859-1 (þ)
+	if !strings.Contains(s, "<FE> <0163>") {
+		t.Error("missing ISO-8859-2 mapping for 0xFE → U+0163 (ţ)")
+	}
+	// 0xFF → U+02D9 (dot above) — differs from ISO-8859-1 (ÿ)
+	if !strings.Contains(s, "<FF> <02D9>") {
+		t.Error("missing ISO-8859-2 mapping for 0xFF → U+02D9 (dot above)")
+	}
+	// Shared position: 0x41 ('A') should still be U+0041
+	if !strings.Contains(s, "<41> <0041>") {
+		t.Error("missing mapping for 0x41 → U+0041")
+	}
+}
+
 // TestSimpleFont_ToUnicodeEntry_Fixture verifies that a generated PDF
 // containing the minimal fixture font includes a /ToUnicode entry.
 func TestSimpleFont_ToUnicodeEntry_Fixture(t *testing.T) {

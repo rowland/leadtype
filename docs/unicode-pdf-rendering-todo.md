@@ -69,8 +69,8 @@ See [development-process.md](development-process.md) for testing strategy and fi
 - [x] Wire `toUnicodeCMap` into `DocWriter.fontKey()` for both font types
 - [x] Write tests: generated PDF contains `/ToUnicode` entry for each embedded font
 - [x] Write tests: ToUnicode CMap correctly round-trips all 256 positions of CP1252
-- [ ] Write tests: ToUnicode CMap correctly round-trips ISO-8859-2 differences
-- [ ] Manual verification: copy-paste text from a generated PDF works in a viewer
+- [x] Write tests: ToUnicode CMap correctly round-trips ISO-8859-2 differences
+- [x] Manual verification: copy-paste text from a generated PDF works in a viewer
 
 ---
 
