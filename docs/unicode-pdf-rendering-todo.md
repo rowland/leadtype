@@ -187,6 +187,6 @@ See [development-process.md](development-process.md) for testing strategy and fi
 - [ ] Decide on public API surface for Unicode mode (option struct vs separate constructor)
 - [x] Update `font.FontMetrics` interface if new methods are needed (e.g. `GlyphIndex(rune)`)
 - [ ] Ensure `haru/` backend either gains equivalent composite font support or documents the gap
-- [ ] Add a sample program in `samples/` demonstrating multi-script Unicode output
+- [x] Add a sample program in `samples/` demonstrating multi-script Unicode output
 - [ ] Update package-level doc comments to describe Unicode vs codepage paths
 - [ ] Profile Phase 2 rendering path vs Phase 0 baseline for a Latin-only document
