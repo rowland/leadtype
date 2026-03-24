@@ -177,6 +177,34 @@ func TestUnicodeMode_FontFile2(t *testing.T) {
 	}
 }
 
+// TestUnicodeMode_SubsetTag verifies that the embedded font uses the
+// "XXXXXX+FontName" subset tag format in all three name locations:
+// FontDescriptor/FontName, CIDFont/BaseFont, and Type0/BaseFont.
+func TestUnicodeMode_SubsetTag(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriterUnicode()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("A")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	// The tag must match /[A-Z]{6}\+Minimal/.
+	// We check by counting occurrences of "+Minimal" — should appear 3 times
+	// (FontDescriptor FontName, CIDFont BaseFont, Type0 BaseFont).
+	count := strings.Count(pdf, "+Minimal")
+	if count != 3 {
+		t.Errorf("expected 3 occurrences of '+Minimal' subset tag, got %d\npdf excerpt:\n%s",
+			count, extractSection(pdf, "/FontDescriptor", 600))
+	}
+}
+
 // TestUnicodeMode_SimpleMode verifies that non-unicode mode still works
 // correctly with the same fixture font.
 func TestUnicodeMode_SimpleMode(t *testing.T) {

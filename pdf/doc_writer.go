@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
 
@@ -239,6 +240,18 @@ func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
 	return key
 }
 
+// subsetTag generates a 6-character random uppercase tag for a font subset,
+// per PDF spec §9.6.4: the tag is prefixed to the PostScript name as
+// "ABCDEF+FontName" to signal an embedded subset.
+func subsetTag() string {
+	b := make([]byte, 6)
+	rand.Read(b)
+	for i := range b {
+		b[i] = 'A' + b[i]%26
+	}
+	return string(b)
+}
+
 // flushUnicodeFonts is called from WriteTo before serialising the PDF.
 // It fills in the /W width arrays, ToUnicode CMap streams, and embedded
 // subset font streams for every Type0 composite font that was used during
@@ -279,6 +292,13 @@ func (dw *DocWriter) flushUnicodeFonts() {
 			fontStream.setLength1(len(subsetData))
 			dw.file.body.add(fontStream)
 			dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
+
+			// Apply the 6-char subset tag to all three name occurrences:
+			// FontDescriptor/FontName, CIDFont/BaseFont, Type0/BaseFont.
+			taggedName := subsetTag() + "+" + psName
+			dw.fontDescriptors[psName].dict["FontName"] = name(taggedName)
+			dw.cidFonts[psName].setBaseFont(taggedName)
+			dw.type0Fonts[psName].setBaseFont(taggedName)
 		}
 	}
 }

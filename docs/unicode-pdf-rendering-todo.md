@@ -160,8 +160,8 @@ See [development-process.md](development-process.md) for testing strategy and fi
 
 ### PDF integration
 
-- [ ] Generate a 6-character random uppercase tag for each subset font
-- [ ] Prefix PostScript name with tag (`ABCDEF+FontName`) per PDF spec §5.5.3
+- [x] Generate a 6-character random uppercase tag for each subset font
+- [x] Prefix PostScript name with tag (`ABCDEF+FontName`) per PDF spec §5.5.3
 - [x] Replace full font stream with subset stream at `DocWriter.Close()`
 - [x] Write tests: subset font file is a valid TTF (parse it back with `ttf.LoadFont`)
 - [x] Write tests: subset contains exactly the expected glyph IDs

@@ -104,6 +104,11 @@ func (f *cidFont) setWidths(w writer) {
 	f.dict["W"] = w
 }
 
+// setBaseFont updates /BaseFont, used to apply the subset tag at close.
+func (f *cidFont) setBaseFont(n string) {
+	f.dict["BaseFont"] = name(n)
+}
+
 // ── Type0 (composite) font ────────────────────────────────────────────────────
 
 type type0Font struct {
@@ -124,6 +129,11 @@ func (f *type0Font) init(seq, gen int,
 
 func newType0Font(seq, gen int, baseFont string, descendant *cidFont) *type0Font {
 	return new(type0Font).init(seq, gen, baseFont, descendant)
+}
+
+// setBaseFont updates /BaseFont, used to apply the subset tag at close.
+func (f *type0Font) setBaseFont(n string) {
+	f.dict["BaseFont"] = name(n)
 }
 
 func (f *type0Font) setToUnicode(ref *indirectObjectRef) {
