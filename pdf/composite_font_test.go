@@ -114,7 +114,7 @@ func TestMostCommonWidth_Empty(t *testing.T) {
 func TestUnicodeMode_Type0FontInOutput(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -142,7 +142,7 @@ func TestUnicodeMode_Type0FontInOutput(t *testing.T) {
 func TestUnicodeMode_ToUnicodeCMap(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -172,7 +172,7 @@ func TestUnicodeMode_ToUnicodeCMap(t *testing.T) {
 func TestUnicodeMode_WidthArray(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -196,7 +196,7 @@ func TestUnicodeMode_WidthArray(t *testing.T) {
 func TestUnicodeMode_FontFile2(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -223,7 +223,7 @@ func TestUnicodeMode_FontFile2(t *testing.T) {
 func TestUnicodeMode_SubsetTag(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -245,32 +245,6 @@ func TestUnicodeMode_SubsetTag(t *testing.T) {
 	}
 }
 
-// TestUnicodeMode_SimpleMode verifies that non-unicode mode still works
-// correctly with the same fixture font.
-func TestUnicodeMode_SimpleMode(t *testing.T) {
-	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
-
-	dw := NewDocWriter()
-	dw.AddFontSource(fc)
-
-	pw := dw.NewPage()
-	pw.SetFont("Minimal", 12, options.Options{})
-	pw.MoveTo(72, 720)
-	pw.Print("Hello")
-
-	var buf bytes.Buffer
-	dw.WriteTo(&buf)
-	pdf := buf.String()
-
-	// In simple mode, should use TrueType (not Type0).
-	if strings.Contains(pdf, "/Type0") {
-		t.Error("simple mode should not emit /Type0 font")
-	}
-	if !strings.Contains(pdf, "/TrueType") {
-		t.Error("simple mode should emit /TrueType font")
-	}
-}
-
 // ── Phase 3: no codepage splitting in unicode mode ────────────────────────────
 
 // TestUnicodeMode_MultiScriptSingleTj verifies that a string containing both
@@ -279,7 +253,7 @@ func TestUnicodeMode_SimpleMode(t *testing.T) {
 func TestUnicodeMode_MultiScriptSingleTj(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -307,7 +281,7 @@ func TestUnicodeMode_MultiScriptSingleTj(t *testing.T) {
 func TestUnicodeMode_MultiScriptTwoFonts(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
 
-	dw := NewDocWriterUnicode()
+	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 
 	// Use two fonts: same fixture for both (acts as primary and fallback).
@@ -328,31 +302,6 @@ func TestUnicodeMode_MultiScriptTwoFonts(t *testing.T) {
 	tjCount := strings.Count(pdf, " Tj\n")
 	if tjCount != 2 {
 		t.Errorf("expected 2 Tj operators for two Print calls, got %d", tjCount)
-	}
-}
-
-// TestNonUnicodeMode_MultiScriptSplitsByCodepage verifies that in non-unicode
-// mode a Latin+Greek string is still split into two Tj operators by EachCodepage,
-// confirming the legacy path is untouched.
-func TestNonUnicodeMode_MultiScriptSplitsByCodepage(t *testing.T) {
-	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
-
-	dw := NewDocWriter() // non-unicode mode
-	dw.AddFontSource(fc)
-
-	pw := dw.NewPage()
-	pw.SetFont("Minimal", 12, options.Options{})
-	pw.MoveTo(72, 720)
-	pw.Print("Hello ΑΒΓΔ")
-
-	var buf bytes.Buffer
-	dw.WriteTo(&buf)
-	pdf := buf.String()
-
-	// EachCodepage splits "Hello " (CP1252) and "ΑΒΓΔ" (ISO-8859-7) → 2 Tj.
-	tjCount := strings.Count(pdf, " Tj\n")
-	if tjCount != 2 {
-		t.Errorf("expected 2 Tj operators in non-unicode mode for Latin+Greek, got %d", tjCount)
 	}
 }
 

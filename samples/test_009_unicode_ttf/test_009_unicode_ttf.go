@@ -63,7 +63,7 @@ func main() {
 	}
 	fmt.Printf("Using font: %s\n", family)
 
-	dw := pdf.NewDocWriterUnicode()
+	dw := pdf.NewDocWriter()
 	dw.AddFontSource(ttfc)
 	dw.SetUnits("in")
 

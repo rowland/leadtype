@@ -28,7 +28,6 @@ type DocWriter struct {
 	fontSources    font.FontSources
 	fontKeys       map[string]string
 	fontEncodings  map[string]*fontEncoding
-	unicodeMode    bool
 	glyphRecorders  map[string]*glyphRecorder  // keyed by font PostScript name
 	unicodeFonts    map[string]*font.Font      // PostScript name → font, for width lookup at Close
 	cidFonts        map[string]*cidFont        // PostScript name → CID font, for /W update at Close
@@ -67,16 +66,6 @@ func NewDocWriter() *DocWriter {
 	}
 }
 
-// NewDocWriterUnicode creates a DocWriter in Unicode mode. In Unicode mode,
-// TTF fonts are embedded as Type0/CIDFontType2 composite fonts, allowing the
-// full Unicode range to be addressed. Each text segment is written as
-// big-endian uint16 glyph ID pairs. AFM/Type1 fonts continue to use the
-// simple-font (codepage) path unchanged.
-func NewDocWriterUnicode() *DocWriter {
-	dw := NewDocWriter()
-	dw.unicodeMode = true
-	return dw
-}
 
 func nextSeqFunc() func() int {
 	var nextValue = 0
@@ -121,7 +110,7 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	if !f.HasMetrics() {
 		panic("fontKey: font missing metrics.")
 	}
-	if dw.unicodeMode && f.SubType() == "TrueType" {
+	if f.SubType() == "TrueType" {
 		return dw.fontKeyUnicode(f)
 	}
 	name := fmt.Sprintf("%s/%s-%s", f.PostScriptName(), cpi, f.SubType())
