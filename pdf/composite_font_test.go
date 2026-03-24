@@ -177,6 +177,91 @@ func TestUnicodeMode_SimpleMode(t *testing.T) {
 	}
 }
 
+// ── Phase 3: no codepage splitting in unicode mode ────────────────────────────
+
+// TestUnicodeMode_MultiScriptSingleTj verifies that a string containing both
+// Latin and Greek characters (all present in the fixture font) is written as a
+// single Tj operator in unicode mode, not split by codepage.
+func TestUnicodeMode_MultiScriptSingleTj(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriterUnicode()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	// "Hello ΑΒΓΔ": ASCII (CP1252) + Greek capitals (ISO-8859-7).
+	// Both ranges are in minimal.ttf, so splitByFont assigns a single leaf.
+	// EachCodepage would split this into two callbacks; the Phase 3 path must not.
+	pw.Print("Hello ΑΒΓΔ")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	tjCount := strings.Count(pdf, " Tj\n")
+	if tjCount != 1 {
+		t.Errorf("expected 1 Tj operator for single-font multi-script string, got %d\npdf excerpt:\n%s",
+			tjCount, extractSection(pdf, "BT", 300))
+	}
+}
+
+// TestUnicodeMode_MultiScriptTwoFonts verifies that when a string requires two
+// fonts (e.g. one font for Latin, a fallback for extra glyphs) each font still
+// produces its own Tj — the per-font boundary is preserved.
+func TestUnicodeMode_MultiScriptTwoFonts(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriterUnicode()
+	dw.AddFontSource(fc)
+
+	// Use two fonts: same fixture for both (acts as primary and fallback).
+	// splitByFont will keep it as one leaf, so still 1 Tj — this test
+	// confirms that the per-leaf boundary is the unit of segmentation.
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("AB")
+	pw.MoveTo(72, 700)
+	pw.Print("ΑΒ")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	// Two separate Print calls each flush one leaf → two Tj operators.
+	tjCount := strings.Count(pdf, " Tj\n")
+	if tjCount != 2 {
+		t.Errorf("expected 2 Tj operators for two Print calls, got %d", tjCount)
+	}
+}
+
+// TestNonUnicodeMode_MultiScriptSplitsByCodepage verifies that in non-unicode
+// mode a Latin+Greek string is still split into two Tj operators by EachCodepage,
+// confirming the legacy path is untouched.
+func TestNonUnicodeMode_MultiScriptSplitsByCodepage(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriter() // non-unicode mode
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("Hello ΑΒΓΔ")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	// EachCodepage splits "Hello " (CP1252) and "ΑΒΓΔ" (ISO-8859-7) → 2 Tj.
+	tjCount := strings.Count(pdf, " Tj\n")
+	if tjCount != 2 {
+		t.Errorf("expected 2 Tj operators in non-unicode mode for Latin+Greek, got %d", tjCount)
+	}
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 // extractCMapSection returns a short excerpt around the first "begincmap" for

@@ -302,41 +302,70 @@ func (pw *PageWriter) flushText() {
 	}
 	loc1 := pw.loc
 	var buf bytes.Buffer
-	pw.line.Merge().EachCodepage(func(cpi codepage.CodepageIndex, text string, p *rich_text.RichText) {
-		if p.Font == nil {
-			fmt.Println(cpi)
-			fmt.Println(text)
-			panic("EachCodepage calling back with nil p")
-		}
-		buf.Reset()
-		if pw.dw.unicodeMode && p.Font.SubType() == "TrueType" {
-			// Unicode composite path: encode each rune as a big-endian uint16 glyph ID.
-			// Call fontKeyUnicode first so the glyph recorder is guaranteed to exist.
-			fk := pw.dw.fontKeyUnicode(p.Font)
-			psName := p.Font.PostScriptName()
-			gr := pw.dw.glyphRecorders[psName]
-			for _, r := range text {
-				gid := p.Font.GlyphIndex(r)
-				if gr != nil {
-					gr.record(gid, r)
-				}
-				buf.WriteByte(byte(gid >> 8))
-				buf.WriteByte(byte(gid & 0xFF))
+	merged := pw.line.Merge()
+	if pw.dw.unicodeMode {
+		// Unicode path: iterate leaf pieces directly without codepage segmentation.
+		// TrueType leaves are encoded as big-endian uint16 glyph ID pairs.
+		// AFM/Type1 leaves fall back to EachCodepage on that individual piece.
+		merged.VisitAll(func(p *rich_text.RichText) {
+			if !p.IsLeaf() || p.Text == "" || p.Font == nil {
+				return
 			}
-			pw.SetFontColor(p.Color)
-			pw.checkSetFontColor()
-			pw.fontKey = fk
-			pw.SetFontSize(p.FontSize)
-			pw.checkSetFont()
-			pw.charSpacing = p.CharSpacing
-			pw.wordSpacing = p.WordSpacing
-			pw.checkSetSpacing()
-			pw.tw.show(buf.Bytes())
-		} else {
-			// fmt.Println(cpi)
-			if cpi < 0 {
-				// buf.WriteString(text)
+			if p.Font.SubType() == "TrueType" {
+				fk := pw.dw.fontKeyUnicode(p.Font)
+				psName := p.Font.PostScriptName()
+				gr := pw.dw.glyphRecorders[psName]
+				buf.Reset()
+				for _, r := range p.Text {
+					gid := p.Font.GlyphIndex(r)
+					if gr != nil {
+						gr.record(gid, r)
+					}
+					buf.WriteByte(byte(gid >> 8))
+					buf.WriteByte(byte(gid & 0xFF))
+				}
+				pw.SetFontColor(p.Color)
+				pw.checkSetFontColor()
+				pw.fontKey = fk
+				pw.SetFontSize(p.FontSize)
+				pw.checkSetFont()
+				pw.charSpacing = p.CharSpacing
+				pw.wordSpacing = p.WordSpacing
+				pw.checkSetSpacing()
+				pw.tw.show(buf.Bytes())
 			} else {
+				// AFM/Type1: still needs codepage-based encoding.
+				p.EachCodepage(func(cpi codepage.CodepageIndex, text string, piece *rich_text.RichText) {
+					buf.Reset()
+					if cpi >= 0 {
+						cp := cpi.Codepage()
+						for _, r := range text {
+							ch, _ := cp.CharForCodepoint(r)
+							buf.WriteByte(byte(ch))
+						}
+					}
+					pw.SetFontColor(piece.Color)
+					pw.checkSetFontColor()
+					pw.fontKey = pw.dw.fontKey(piece.Font, cpi)
+					pw.SetFontSize(piece.FontSize)
+					pw.checkSetFont()
+					pw.charSpacing = piece.CharSpacing
+					pw.wordSpacing = piece.WordSpacing
+					pw.checkSetSpacing()
+					pw.tw.show(buf.Bytes())
+				})
+			}
+		})
+	} else {
+		// Legacy codepage path: split each leaf by codepage before encoding.
+		merged.EachCodepage(func(cpi codepage.CodepageIndex, text string, p *rich_text.RichText) {
+			if p.Font == nil {
+				fmt.Println(cpi)
+				fmt.Println(text)
+				panic("EachCodepage calling back with nil p")
+			}
+			buf.Reset()
+			if cpi >= 0 {
 				cp := cpi.Codepage()
 				for _, r := range text {
 					ch, _ := cp.CharForCodepoint(r)
@@ -352,8 +381,8 @@ func (pw *PageWriter) flushText() {
 			pw.wordSpacing = p.WordSpacing
 			pw.checkSetSpacing()
 			pw.tw.show(buf.Bytes())
-		}
-	})
+		})
+	}
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
 			return
