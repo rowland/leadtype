@@ -41,6 +41,15 @@ func LoadFontAtOffset(filename string, offset int64) (font *Font, err error) {
 	return
 }
 
+// LoadFontFromBytes parses a TTF from an in-memory byte slice.
+// Useful for validating generated or subset font data in tests.
+func LoadFontFromBytes(data []byte) (*Font, error) {
+	font := new(Font)
+	font.filename = "<bytes>"
+	err := font.init(bytes.NewReader(data), 0)
+	return font, err
+}
+
 func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
 	if err = font.FontInfo.init(file, offset); err != nil {
 		return

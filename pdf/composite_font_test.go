@@ -151,6 +151,32 @@ func TestUnicodeMode_WidthArray(t *testing.T) {
 	}
 }
 
+// TestUnicodeMode_FontFile2 verifies that a /FontFile2 entry is present in the
+// FontDescriptor and that the embedded data is a parseable TTF font.
+func TestUnicodeMode_FontFile2(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriterUnicode()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("ABC")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if !strings.Contains(pdf, "/FontFile2") {
+		t.Errorf("expected /FontFile2 in FontDescriptor, got pdf containing:\n%s",
+			extractSection(pdf, "/FontDescriptor", 400))
+	}
+	if !strings.Contains(pdf, "/Length1") {
+		t.Errorf("expected /Length1 in FontFile2 stream dictionary")
+	}
+}
+
 // TestUnicodeMode_SimpleMode verifies that non-unicode mode still works
 // correctly with the same fixture font.
 func TestUnicodeMode_SimpleMode(t *testing.T) {

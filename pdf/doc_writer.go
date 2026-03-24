@@ -28,10 +28,11 @@ type DocWriter struct {
 	fontKeys       map[string]string
 	fontEncodings  map[string]*fontEncoding
 	unicodeMode    bool
-	glyphRecorders map[string]*glyphRecorder // keyed by font PostScript name
-	unicodeFonts   map[string]*font.Font     // PostScript name → font, for width lookup at Close
-	cidFonts       map[string]*cidFont       // PostScript name → CID font, for /W update at Close
-	type0Fonts     map[string]*type0Font     // PostScript name → Type0 font, for ToUnicode at Close
+	glyphRecorders  map[string]*glyphRecorder  // keyed by font PostScript name
+	unicodeFonts    map[string]*font.Font      // PostScript name → font, for width lookup at Close
+	cidFonts        map[string]*cidFont        // PostScript name → CID font, for /W update at Close
+	type0Fonts      map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
+	fontDescriptors map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 }
 
 func NewDocWriter() *DocWriter {
@@ -57,10 +58,11 @@ func NewDocWriter() *DocWriter {
 		fontSources:    fontSources,
 		fontKeys:       fontKeys,
 		fontEncodings:  fontEncodings,
-		glyphRecorders: make(map[string]*glyphRecorder),
-		unicodeFonts:   make(map[string]*font.Font),
-		cidFonts:       make(map[string]*cidFont),
-		type0Fonts:     make(map[string]*type0Font),
+		glyphRecorders:  make(map[string]*glyphRecorder),
+		unicodeFonts:    make(map[string]*font.Font),
+		cidFonts:        make(map[string]*cidFont),
+		type0Fonts:      make(map[string]*type0Font),
+		fontDescriptors: make(map[string]*fontDescriptor),
 	}
 }
 
@@ -233,12 +235,14 @@ func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
 	dw.unicodeFonts[psName] = f
 	dw.cidFonts[psName] = cid
 	dw.type0Fonts[psName] = t0
+	dw.fontDescriptors[psName] = descriptor
 	return key
 }
 
 // flushUnicodeFonts is called from WriteTo before serialising the PDF.
-// It fills in the /W width arrays and ToUnicode CMap streams for every
-// Type0 composite font that was used during rendering.
+// It fills in the /W width arrays, ToUnicode CMap streams, and embedded
+// subset font streams for every Type0 composite font that was used during
+// rendering.
 func (dw *DocWriter) flushUnicodeFonts() {
 	for psName, gr := range dw.glyphRecorders {
 		mapping := gr.mapping()
@@ -247,6 +251,8 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		}
 		f := dw.unicodeFonts[psName]
 		upm := f.UnitsPerEm()
+
+		// Build /W width array from recorded glyph IDs.
 		glyphWidths := make(map[uint16]int, len(mapping))
 		for gid := range mapping {
 			w := f.AdvanceWidthForGlyph(gid)
@@ -257,10 +263,23 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		}
 		dw.cidFonts[psName].setWidths(buildCIDWidthArray(glyphWidths))
 
+		// Build ToUnicode CMap stream.
 		tuData := toUnicodeCMapDataComposite(mapping)
 		tuStream := newStream(dw.nextSeq(), 0, tuData)
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
+
+		// Embed a font subset as /FontFile2 in the descriptor.
+		glyphIDs := make([]uint16, 0, len(mapping))
+		for gid := range mapping {
+			glyphIDs = append(glyphIDs, gid)
+		}
+		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
+			fontStream := newStream(dw.nextSeq(), 0, subsetData)
+			fontStream.setLength1(len(subsetData))
+			dw.file.body.add(fontStream)
+			dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
+		}
 	}
 }
 

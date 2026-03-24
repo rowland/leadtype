@@ -3,7 +3,11 @@
 
 package font
 
-import "github.com/rowland/leadtype/options"
+import (
+	"fmt"
+
+	"github.com/rowland/leadtype/options"
+)
 
 type Font struct {
 	family       string
@@ -177,6 +181,22 @@ func (font *Font) Version() string {
 
 func (font *Font) XHeight() int {
 	return font.metrics.XHeight()
+}
+
+// Subsetter is an optional interface implemented by FontMetrics backends that
+// support font subsetting (currently only TTF). When implemented, SubsetBytes
+// returns a self-consistent TTF binary containing only the requested glyphs.
+type Subsetter interface {
+	Subset(glyphIDs []uint16) ([]byte, error)
+}
+
+// SubsetBytes returns a TTF binary containing only the supplied glyph IDs, or
+// an error if the underlying font type does not support subsetting.
+func (font *Font) SubsetBytes(glyphIDs []uint16) ([]byte, error) {
+	if s, ok := font.metrics.(Subsetter); ok {
+		return s.Subset(glyphIDs)
+	}
+	return nil, fmt.Errorf("SubsetBytes: font type %T does not support subsetting", font.metrics)
 }
 
 func stringSlicesEqual(sl1, sl2 []string) bool {

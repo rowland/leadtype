@@ -142,29 +142,29 @@ See [development-process.md](development-process.md) for testing strategy and fi
 
 ### TTF table parsing (prerequisites)
 
-- [ ] Parse `loca` table (glyph offset index) in `ttf/`
-- [ ] Parse `glyf` table headers (enough to find composite glyph component references)
-- [ ] Identify composite glyph component IDs recursively (closure expansion)
+- [x] Parse `loca` table (glyph offset index) in `ttf/`
+- [x] Parse `glyf` table headers (enough to find composite glyph component references)
+- [x] Identify composite glyph component IDs recursively (closure expansion)
 
 ### Subset builder
 
-- [ ] Add `ttf.Subset(glyphIDs []uint16) ([]byte, error)` function
-- [ ] Rewrite `glyf` table: include only subset glyphs, pad/zero unused slots or use short loca
-- [ ] Rewrite `loca` table to match subset `glyf`
+- [x] Add `ttf.Subset(glyphIDs []uint16) ([]byte, error)` function
+- [x] Rewrite `glyf` table: include only subset glyphs, pad/zero unused slots or use short loca
+- [x] Rewrite `loca` table to match subset `glyf`
 - [ ] Update `maxp.numGlyphs` to subset count
 - [ ] Subset `hmtx` table to subset glyph IDs
 - [ ] Subset `cmap` table: remove mappings for glyphs not in subset
 - [ ] Subset `post` table glyph names (if format 2.0)
-- [ ] Preserve all non-glyph tables (`head`, `hhea`, `name`, `OS/2`, `kern`, etc.) unchanged
-- [ ] Recalculate `head.checkSumAdjustment` for the new file
+- [x] Preserve all non-glyph tables (`head`, `hhea`, `name`, `OS/2`, `kern`, etc.) unchanged
+- [x] Recalculate `head.checkSumAdjustment` for the new file
 
 ### PDF integration
 
 - [ ] Generate a 6-character random uppercase tag for each subset font
 - [ ] Prefix PostScript name with tag (`ABCDEF+FontName`) per PDF spec §5.5.3
-- [ ] Replace full font stream with subset stream at `DocWriter.Close()`
-- [ ] Write tests: subset font file is a valid TTF (parse it back with `ttf.LoadFont`)
-- [ ] Write tests: subset contains exactly the expected glyph IDs
+- [x] Replace full font stream with subset stream at `DocWriter.Close()`
+- [x] Write tests: subset font file is a valid TTF (parse it back with `ttf.LoadFont`)
+- [x] Write tests: subset contains exactly the expected glyph IDs
 - [ ] Write tests: composite glyph components are included in the closure
 - [ ] Benchmark: measure embedded font stream size before and after subsetting for a Latin document
 - [ ] Benchmark: measure embedded font stream size before and after subsetting for a CJK document
