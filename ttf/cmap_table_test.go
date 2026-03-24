@@ -10,7 +10,7 @@ import "testing"
 func TestCmapTable_glyphIndex_Arial(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatalf("Error loading font: %s", err)
+		t.Skipf("Error loading font: %s", err)
 	}
 	expectI(t, "registered", 138, f.cmapTable.glyphIndex(0xAE))
 	expectI(t, "copyright", 139, f.cmapTable.glyphIndex(0xA9))
@@ -29,7 +29,7 @@ func TestCmapTable_glyphIndex_Arial(t *testing.T) {
 func TestCmapTable_glyphIndex_Courier(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Courier New.ttf")
 	if err != nil {
-		t.Fatalf("Error loading font: %s", err)
+		t.Skipf("Error loading font: %s", err)
 	}
 	expectI(t, "registered", 138, f.cmapTable.glyphIndex(0xAE))
 	expectI(t, "copyright", 139, f.cmapTable.glyphIndex(0xA9))

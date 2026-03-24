@@ -139,6 +139,7 @@ func TestClonePageWriter(t *testing.T) {
 }
 
 func TestPageWriter_flushText(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
 	if err != nil {
 		t.Fatal(err)
@@ -166,6 +167,7 @@ func TestPageWriter_FontSize(t *testing.T) {
 }
 
 func TestPageWriter_FontStyle(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
 	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
@@ -343,6 +345,7 @@ func TestPageWriter_PageWidth(t *testing.T) {
 }
 
 func TestPageWriter_Print(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
@@ -362,6 +365,7 @@ func TestPageWriter_Print(t *testing.T) {
 }
 
 func TestPageWriter_SetFont(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
 	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
@@ -456,6 +460,7 @@ func TestPageWriter_units(t *testing.T) {
 }
 
 func TestPageWriter_Write(t *testing.T) {
+	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 

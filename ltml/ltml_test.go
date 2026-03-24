@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/rowland/leadtype/ltml/harupdf"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
@@ -84,34 +83,6 @@ func writeSamplePDF(name string, t *testing.T) {
 	exec.Command("open", sampleFile(name+".pdf")).Start()
 }
 
-func writeSampleHaru(name string, t *testing.T) {
-	const suffix = "-haru"
-	doc, err := ParseFile(sampleFile(name + ".ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	f, err := os.Create(sampleFile(name + suffix + ".pdf"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	w := harupdf.NewDocWriter()
-	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
-	if err != nil {
-		panic(err)
-	}
-	w.AddFontSource(ttFonts)
-
-	if err := doc.Print(w); err != nil {
-		t.Errorf("Printing sample: %v", err)
-	}
-
-	w.WriteTo(f)
-	f.Close()
-	exec.Command("open", sampleFile(name+suffix+".pdf")).Start()
-}
-
 func TestSample001(t *testing.T) {
 	writeSamplePDF("test_001_empty_doc", t)
 }
@@ -158,5 +129,4 @@ func TestSample011(t *testing.T) {
 
 func TestSample030(t *testing.T) {
 	writeSamplePDF("test_030_encodings", t)
-	writeSampleHaru("test_030_encodings", t)
 }

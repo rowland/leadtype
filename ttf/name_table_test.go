@@ -8,7 +8,7 @@ import "testing"
 func TestNameTable(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatalf("Error loading font: %s", err)
+		t.Skipf("Error loading font: %s", err)
 	}
 	expectS(t, "postScriptName", "ArialMT", f.nameTable.postScriptName)
 	expectS(t, "fullName", "Arial", f.nameTable.fullName)

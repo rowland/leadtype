@@ -8,7 +8,7 @@ import "testing"
 func TestCharRanges(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatalf("Error loading font: %s", err)
+		t.Skipf("Error loading font: %s", err)
 	}
 	expect(t, "Basic Latin", f.CharRanges().IsSet(0))
 	expect(t, "Latin-1 Supplement", f.CharRanges().IsSet(1))

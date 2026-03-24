@@ -11,7 +11,7 @@ import (
 func TestFont_HasRune(t *testing.T) {
 	arial, err := ttf.LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 	f := &Font{metrics: arial}
 	check(t, f.HasRune('A'), "Arial should have 'A'.")
@@ -21,13 +21,13 @@ func TestFont_HasRune(t *testing.T) {
 func TestFont_Matches(t *testing.T) {
 	arial1, err := ttf.LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 	f1 := &Font{metrics: arial1}
 
 	arial2, err := ttf.LoadFont("/Library/Fonts/Arial.ttf")
 	if err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 	f2 := &Font{metrics: arial2}
 
