@@ -9,66 +9,66 @@ See [development-process.md](development-process.md) for testing strategy and fi
 
 ### Minimal synthetic TTF fixture
 
-- [ ] Create `ttf/testdata/generate/main.go` (build-tagged `//go:build ignore`)
-- [ ] Generator: write valid `head` table (magic number, unitsPerEm=1000, bbox)
-- [ ] Generator: write valid `hhea` table (ascent, descent, lineGap, numOfLongHorMetrics)
-- [ ] Generator: write valid `maxp` table (version, numGlyphs)
-- [ ] Generator: write valid `name` table (family="Minimal", subfamily="Regular", PostScript name)
-- [ ] Generator: write valid `OS/2` table (weightClass, fsType, ulCharRange, version)
-- [ ] Generator: write valid `post` table (format 3.0 — no glyph names, simplest form)
-- [ ] Generator: write cmap format 4 covering U+0020–U+007E (ASCII printable)
-- [ ] Generator: extend cmap to include U+00C0–U+00FF (Latin supplement)
-- [ ] Generator: extend cmap to include U+0391–U+03A9 (Greek capitals)
-- [ ] Generator: extend cmap to include two CJK codepoints (U+4E2D, U+6587)
-- [ ] Generator: write `glyf` table — identical square contour for each glyph
-- [ ] Generator: write `loca` table matching `glyf` offsets
-- [ ] Generator: write `hmtx` table — advanceWidth=512 for all glyphs
-- [ ] Generator: assemble tables in spec-required order and compute `head.checkSumAdjustment`
-- [ ] Run generator and commit `ttf/testdata/minimal.ttf`
-- [ ] Self-verification test: parse `minimal.ttf` with `LoadFont`, assert expected metric values
-- [ ] Add `ttf/testdata/README.md` documenting the fixture and how to regenerate
+- [x] Create `ttf/testdata/generate/main.go` (build-tagged `//go:build ignore`)
+- [x] Generator: write valid `head` table (magic number, unitsPerEm=1000, bbox)
+- [x] Generator: write valid `hhea` table (ascent, descent, lineGap, numOfLongHorMetrics)
+- [x] Generator: write valid `maxp` table (version, numGlyphs)
+- [x] Generator: write valid `name` table (family="Minimal", subfamily="Regular", PostScript name)
+- [x] Generator: write valid `OS/2` table (weightClass, fsType, ulCharRange, version)
+- [x] Generator: write valid `post` table (format 3.0 — no glyph names, simplest form)
+- [x] Generator: write cmap format 4 covering U+0020–U+007E (ASCII printable)
+- [x] Generator: extend cmap to include U+00C0–U+00FF (Latin supplement)
+- [x] Generator: extend cmap to include U+0391–U+03A9 (Greek capitals)
+- [x] Generator: extend cmap to include two CJK codepoints (U+4E2D, U+6587)
+- [x] Generator: write `glyf` table — identical square contour for each glyph
+- [x] Generator: write `loca` table matching `glyf` offsets
+- [x] Generator: write `hmtx` table — advanceWidth=512 for all glyphs
+- [x] Generator: assemble tables in spec-required order and compute `head.checkSumAdjustment`
+- [x] Run generator and commit `ttf/testdata/minimal.ttf`
+- [x] Self-verification test: parse `minimal.ttf` with `LoadFont`, assert expected metric values
+- [x] Add `ttf/testdata/README.md` documenting the fixture and how to regenerate
 
 ### Minimal TTC fixture
 
-- [ ] Extend generator to produce `ttf/testdata/minimal.ttc`
-- [ ] TTC contains two sub-fonts: "Minimal Regular" and "Minimal Bold"
-- [ ] "Minimal Bold" differs only in `name` table and OS/2 `usWeightClass`
-- [ ] Commit `ttf/testdata/minimal.ttc`
-- [ ] Test: `LoadFontInfosFromTTC("testdata/minimal.ttc")` returns exactly 2 entries with correct family/style
+- [x] Extend generator to produce `ttf/testdata/minimal.ttc`
+- [x] TTC contains two sub-fonts: "Minimal Regular" and "Minimal Bold"
+- [x] "Minimal Bold" differs only in `name` table and OS/2 `usWeightClass`
+- [x] Commit `ttf/testdata/minimal.ttc`
+- [x] Test: `LoadFontInfosFromTTC("testdata/minimal.ttc")` returns exactly 2 entries with correct family/style
 
 ### CJK sample fixture
 
-- [ ] Choose a source font under SIL OFL or Apache 2 licence (e.g. Noto Sans CJK subset)
-- [ ] Use `pyftsubset` (fonttools) to extract ~50–100 CJK codepoints + U+0020–U+007E
-- [ ] Commit the subset to `ttf/testdata/cjk-sample.ttf`
-- [ ] Document source font, version, licence, and subsetting command in `ttf/testdata/README.md`
-- [ ] Test: parse `cjk-sample.ttf`, verify cmap returns valid glyph IDs for selected CJK codepoints
+- [x] Choose a source font under SIL OFL or Apache 2 licence (e.g. Noto Sans CJK subset)
+- [x] Use `pyftsubset` (fonttools) to extract ~50–100 CJK codepoints + U+0020–U+007E
+- [x] Commit the subset to `ttf/testdata/cjk-sample.ttf`
+- [x] Document source font, version, licence, and subsetting command in `ttf/testdata/README.md`
+- [x] Test: parse `cjk-sample.ttf`, verify cmap returns valid glyph IDs for selected CJK codepoints
 
 ### Golden file infrastructure
 
-- [ ] Add `-update` flag to `pdf` package tests (`var update = flag.Bool("update", false, "regenerate golden files")`)
-- [ ] Add `compareGolden(t, got []byte, path string)` helper to `pdf/super_test.go`
-- [ ] Add `normaliseDate(data []byte) []byte` helper that replaces the `CreationDate` value with a fixed string
-- [ ] Create `pdf/testdata/golden/` directory (add a `.gitkeep` until first golden file is committed)
+- [x] Add `-update` flag to `pdf` package tests (`var update = flag.Bool("update", false, "regenerate golden files")`)
+- [x] Add `compareGolden(t, got []byte, path string)` helper to `pdf/super_test.go`
+- [x] Add `normaliseDate(data []byte) []byte` helper that replaces the `CreationDate` value with a fixed string
+- [x] Create `pdf/testdata/golden/` directory (add a `.gitkeep` until first golden file is committed)
 - [ ] Document golden file update procedure in `development-process.md` (already described — link from test helper)
 
 ### Shared test utilities
 
 - [ ] Evaluate whether `expect*` helpers in `ttf/support_test.go` and `SuperTest` in `pdf/super_test.go` should be consolidated into `internal/testutil`
 - [ ] If consolidated: migrate existing callers in `ttf/`, `pdf/`, `rich_text/`
-- [ ] Add `testFontSource(t, path string) font.FontSource` helper that loads a fixture TTF and skips on error
+- [x] Add `testFontSource(t, path string) font.FontSource` helper that loads a fixture TTF and skips on error
 
 ---
 
 ## Phase 1 — ToUnicode CMaps for existing simple fonts
 
-- [ ] Add `Map() []rune` accessor to `codepage.Codepage` (byte index → rune, for CMap generation)
-- [ ] Add `toUnicodeCMap(encoding []rune) []byte` helper in `pdf/` that writes a CMap stream
-- [ ] Add `ToUnicode` stream field to the simple `TrueTypeFont` PDF object
-- [ ] Add `ToUnicode` stream field to the `Type1Font` PDF object
-- [ ] Wire `toUnicodeCMap` into `DocWriter.fontKey()` for both font types
-- [ ] Write tests: generated PDF contains `/ToUnicode` entry for each embedded font
-- [ ] Write tests: ToUnicode CMap correctly round-trips all 256 positions of CP1252
+- [x] Add `Map() []rune` accessor to `codepage.Codepage` (byte index → rune, for CMap generation)
+- [x] Add `toUnicodeCMap(encoding []rune) []byte` helper in `pdf/` that writes a CMap stream
+- [x] Add `ToUnicode` stream field to the simple `TrueTypeFont` PDF object
+- [x] Add `ToUnicode` stream field to the `Type1Font` PDF object
+- [x] Wire `toUnicodeCMap` into `DocWriter.fontKey()` for both font types
+- [x] Write tests: generated PDF contains `/ToUnicode` entry for each embedded font
+- [x] Write tests: ToUnicode CMap correctly round-trips all 256 positions of CP1252
 - [ ] Write tests: ToUnicode CMap correctly round-trips ISO-8859-2 differences
 - [ ] Manual verification: copy-paste text from a generated PDF works in a viewer
 
@@ -78,49 +78,49 @@ See [development-process.md](development-process.md) for testing strategy and fi
 
 ### PDF object model
 
-- [ ] Add `CIDSystemInfo` struct (Registry, Ordering, Supplement)
-- [ ] Add `CIDFont` PDF object (`/Subtype /CIDFontType2`, descendant of Type0)
-- [ ] Add `Type0Font` PDF object (`/Subtype /Type0`, `/Encoding /Identity-H`)
-- [ ] Add `/W` (glyph width array) builder — sparse format per PDF spec §5.6.3
-- [ ] Add `FontDescriptor` wiring for CIDFont (reuse existing descriptor fields where possible)
-- [ ] Add `CIDToGIDMap /Identity` entry to CIDFont object
+- [x] Add `CIDSystemInfo` struct (Registry, Ordering, Supplement)
+- [x] Add `CIDFont` PDF object (`/Subtype /CIDFontType2`, descendant of Type0)
+- [x] Add `Type0Font` PDF object (`/Subtype /Type0`, `/Encoding /Identity-H`)
+- [x] Add `/W` (glyph width array) builder — sparse format per PDF spec §5.6.3
+- [x] Add `FontDescriptor` wiring for CIDFont (reuse existing descriptor fields where possible)
+- [x] Add `CIDToGIDMap /Identity` entry to CIDFont object
 
 ### Glyph ID tracking
 
-- [ ] Add `GlyphRecorder` type: per-font map of `glyphID → rune` accumulated during rendering
-- [ ] Integrate `GlyphRecorder` into `DocWriter` (one recorder per font face)
-- [ ] Replace `CharForCodepoint` call in page writer with `cmapTable.glyphIndex(rune)` for TTF fonts
-- [ ] Write text as big-endian uint16 glyph ID pairs (update `tw.show()` for Unicode mode)
+- [x] Add `GlyphRecorder` type: per-font map of `glyphID → rune` accumulated during rendering
+- [x] Integrate `GlyphRecorder` into `DocWriter` (one recorder per font face)
+- [x] Replace `CharForCodepoint` call in page writer with `cmapTable.glyphIndex(rune)` for TTF fonts
+- [x] Write text as big-endian uint16 glyph ID pairs (update `tw.show()` for Unicode mode)
 
 ### ToUnicode CMap for composite fonts
 
-- [ ] Extend `toUnicodeCMap` to accept a `map[uint16]rune` (glyph ID → Unicode) input
-- [ ] Emit CMap using `beginbfchar` / `endbfchar` blocks (max 100 entries per block per spec)
-- [ ] Attach ToUnicode stream to `Type0Font` object at document close
+- [x] Extend `toUnicodeCMap` to accept a `map[uint16]rune` (glyph ID → Unicode) input
+- [x] Emit CMap using `beginbfchar` / `endbfchar` blocks (max 100 entries per block per spec)
+- [x] Attach ToUnicode stream to `Type0Font` object at document close
 
 ### Width array
 
-- [ ] Build `/W` array from `hmtxTable` for all recorded glyph IDs at document close
-- [ ] Use the font's `unitsPerEm` to scale widths to 1000-unit PDF space
+- [x] Build `/W` array from `hmtxTable` for all recorded glyph IDs at document close
+- [x] Use the font's `unitsPerEm` to scale widths to 1000-unit PDF space
 - [ ] Emit `/DW` (default width) as most-common glyph width to minimise `/W` entries
 
 ### DocWriter integration
 
-- [ ] Add `UnicodeMode bool` option (or constructor variant) to `DocWriter`
-- [ ] When `UnicodeMode` is set, select `Type0Font` path instead of `TrueTypeFont` path
-- [ ] `fontKey()` returns a key per font face (not per font+codepage) in Unicode mode
-- [ ] Accumulate all glyph recorders and flush CMap + width array at `DocWriter.Close()`
+- [x] Add `UnicodeMode bool` option (or constructor variant) to `DocWriter`
+- [x] When `UnicodeMode` is set, select `Type0Font` path instead of `TrueTypeFont` path
+- [x] `fontKey()` returns a key per font face (not per font+codepage) in Unicode mode
+- [x] Accumulate all glyph recorders and flush CMap + width array at `DocWriter.Close()`
 
 ### Testing
 
-- [ ] Unit test: `Type0Font` object serialises correctly to PDF syntax
-- [ ] Unit test: `/W` sparse width array is correctly formed
-- [ ] Unit test: ToUnicode CMap stream is valid and parseable
-- [ ] Integration test: render ASCII text in Unicode mode, verify output matches simple-font path
+- [x] Unit test: `Type0Font` object serialises correctly to PDF syntax
+- [x] Unit test: `/W` sparse width array is correctly formed
+- [x] Unit test: ToUnicode CMap stream is valid and parseable
+- [x] Integration test: render ASCII text in Unicode mode, verify output matches simple-font path
 - [ ] Integration test: render Greek + Cyrillic mixed string in a single font call
 - [ ] Integration test: render a sample of CJK characters (requires a CJK font on disk)
 - [ ] Integration test: render emoji (requires a color/emoji font — may be stretch goal)
-- [ ] Verify existing simple-font tests still pass unchanged
+- [x] Verify existing simple-font tests still pass unchanged
 
 ---
 
@@ -185,7 +185,7 @@ See [development-process.md](development-process.md) for testing strategy and fi
 ## Cross-cutting concerns
 
 - [ ] Decide on public API surface for Unicode mode (option struct vs separate constructor)
-- [ ] Update `font.FontMetrics` interface if new methods are needed (e.g. `GlyphIndex(rune)`)
+- [x] Update `font.FontMetrics` interface if new methods are needed (e.g. `GlyphIndex(rune)`)
 - [ ] Ensure `haru/` backend either gains equivalent composite font support or documents the gap
 - [ ] Add a sample program in `samples/` demonstrating multi-script Unicode output
 - [ ] Update package-level doc comments to describe Unicode vs codepage paths
