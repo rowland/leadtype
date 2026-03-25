@@ -8,6 +8,12 @@ List the available samples:
 go run ./samples -list
 ```
 
+Run every sample and write all PDFs into `samples/`:
+
+```bash
+go run ./samples -all
+```
+
 Run a sample and write its PDF into `samples/`:
 
 ```bash
