@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"bytes"
+	"flag"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,8 @@ import (
 	"github.com/rowland/leadtype/ltml/ltpdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
+
+var openSamplePDFs = flag.Bool("open-sample-pdfs", false, "open generated LTML sample PDFs after tests run")
 
 func TestParse(t *testing.T) {
 	doc, err := Parse([]byte("<ltml></ltml>"))
@@ -80,7 +83,9 @@ func writeSamplePDF(name string, t *testing.T) {
 
 	w.WriteTo(f)
 	f.Close()
-	exec.Command("open", sampleFile(name+".pdf")).Start()
+	if *openSamplePDFs {
+		exec.Command("open", sampleFile(name+".pdf")).Start()
+	}
 }
 
 func TestSample001(t *testing.T) {
