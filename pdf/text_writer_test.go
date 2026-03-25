@@ -106,6 +106,13 @@ func TestTextWriter_show(t *testing.T) {
 	expectS(t, "(Hello) Tj\n", buf.String())
 }
 
+func TestTextWriter_showHex(t *testing.T) {
+	var buf bytes.Buffer
+	tw := newTextWriter(&buf)
+	tw.showHex([]byte{0x00, 0x2A, 0x00, 0x52})
+	expectS(t, "<002a0052> Tj\n", buf.String())
+}
+
 func TestTextWriter_nextLineShow(t *testing.T) {
 	var buf bytes.Buffer
 	tw := newTextWriter(&buf)

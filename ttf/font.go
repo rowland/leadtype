@@ -41,6 +41,15 @@ func LoadFontAtOffset(filename string, offset int64) (font *Font, err error) {
 	return
 }
 
+// LoadFontFromBytes parses a TTF from an in-memory byte slice.
+// Useful for validating generated or subset font data in tests.
+func LoadFontFromBytes(data []byte) (*Font, error) {
+	font := new(Font)
+	font.filename = "<bytes>"
+	err := font.init(bytes.NewReader(data), 0)
+	return font, err
+}
+
 func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
 	if err = font.FontInfo.init(file, offset); err != nil {
 		return
@@ -96,6 +105,22 @@ func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
 		return 0, true
 	}
 	return int(font.hmtxTable.lookupAdvanceWidth(index)), false
+}
+
+// GlyphIndex returns the glyph ID for the given Unicode codepoint, or 0 if the
+// codepoint is not present in the font's cmap.
+func (font *Font) GlyphIndex(r rune) uint16 {
+	idx := font.cmapTable.glyphIndex(int(r))
+	if idx < 0 {
+		return 0
+	}
+	return uint16(idx)
+}
+
+// AdvanceWidthForGlyph returns the advance width for the given glyph ID in
+// glyph-space units (unscaled by unitsPerEm).
+func (font *Font) AdvanceWidthForGlyph(glyphID uint16) int {
+	return int(font.hmtxTable.lookupAdvanceWidth(int(glyphID)))
 }
 
 func (font *Font) Ascent() int {

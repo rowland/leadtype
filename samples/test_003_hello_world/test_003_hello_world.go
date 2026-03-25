@@ -21,12 +21,12 @@ func main() {
 		panic(err)
 	}
 	doc := pdf.NewDocWriter()
-	afmfc, err := afm_fonts.New("../../afm/data/fonts/*.afm")
+	afmfc, err := afm_fonts.Default()
 	if err != nil {
 		panic(err)
 	}
 	doc.AddFontSource(afmfc)
-	ttfc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttfc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}
@@ -51,5 +51,5 @@ func main() {
 
 	doc.WriteTo(f)
 	f.Close()
-	exec.Command("open", name).Start()
+	exec.Command("open", "-a", "Firefox", name).Start()
 }

@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
 
@@ -15,18 +16,23 @@ import (
 )
 
 type DocWriter struct {
-	pages         []*PageWriter
-	nextSeq       func() int
-	file          *file
-	catalog       *catalog
-	resources     *resources
-	pagesAcross   int
-	pagesDown     int
-	curPage       *PageWriter
-	options       options.Options
-	fontSources   font.FontSources
-	fontKeys      map[string]string
-	fontEncodings map[string]*fontEncoding
+	pages           []*PageWriter
+	nextSeq         func() int
+	file            *file
+	catalog         *catalog
+	resources       *resources
+	pagesAcross     int
+	pagesDown       int
+	curPage         *PageWriter
+	options         options.Options
+	fontSources     font.FontSources
+	fontKeys        map[string]string
+	fontEncodings   map[string]*fontEncoding
+	glyphRecorders  map[string]*glyphRecorder  // keyed by font PostScript name
+	unicodeFonts    map[string]*font.Font      // PostScript name → font, for width lookup at Close
+	cidFonts        map[string]*cidFont        // PostScript name → CID font, for /W update at Close
+	type0Fonts      map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
+	fontDescriptors map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 }
 
 func NewDocWriter() *DocWriter {
@@ -44,14 +50,20 @@ func NewDocWriter() *DocWriter {
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
-		nextSeq:       nextSeq,
-		file:          file,
-		catalog:       catalog,
-		resources:     resources,
-		options:       options.Options{},
-		fontSources:   fontSources,
-		fontKeys:      fontKeys,
-		fontEncodings: fontEncodings}
+		nextSeq:         nextSeq,
+		file:            file,
+		catalog:         catalog,
+		resources:       resources,
+		options:         options.Options{},
+		fontSources:     fontSources,
+		fontKeys:        fontKeys,
+		fontEncodings:   fontEncodings,
+		glyphRecorders:  make(map[string]*glyphRecorder),
+		unicodeFonts:    make(map[string]*font.Font),
+		cidFonts:        make(map[string]*cidFont),
+		type0Fonts:      make(map[string]*type0Font),
+		fontDescriptors: make(map[string]*fontDescriptor),
+	}
 }
 
 func nextSeqFunc() func() int {
@@ -96,6 +108,9 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	}
 	if !f.HasMetrics() {
 		panic("fontKey: font missing metrics.")
+	}
+	if f.SubType() == "TrueType" {
+		return dw.fontKeyUnicode(f)
 	}
 	name := fmt.Sprintf("%s/%s-%s", f.PostScriptName(), cpi, f.SubType())
 	if key, ok := dw.fontKeys[name]; ok {
@@ -158,9 +173,124 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 			32, 255, widths,
 			descriptor, &indirectObjectRef{encoding})
 	}
+	toUnicodeData := toUnicodeCMapData(cpi.Map())
+	toUnicodeStream := newStream(dw.nextSeq(), 0, toUnicodeData)
+	dw.file.body.add(toUnicodeStream)
+	font.setToUnicode(&indirectObjectRef{toUnicodeStream})
+
 	dw.file.body.add(font)
 	dw.resources.fonts[key] = &indirectObjectRef{font}
 	return key
+}
+
+// fontKeyUnicode registers a Type0/CIDFontType2 composite font for the given
+// TrueType font and returns the PDF resource key (e.g. "F0"). The /W and
+// ToUnicode entries are left empty and filled in by flushUnicodeFonts at
+// document close, once all glyph usages have been recorded.
+func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
+	psName := f.PostScriptName()
+	cacheName := psName + "/unicode-Type0"
+	if key, ok := dw.fontKeys[cacheName]; ok {
+		return key
+	}
+	descriptor := newFontDescriptor(
+		dw.nextSeq(), 0,
+		psName, f.Family(),
+		f.Flags(),
+		f.BoundingBox(),
+		0, // missingWidth
+		f.StemV(),
+		0, // stemH
+		f.ItalicAngle(),
+		f.CapHeight(),
+		f.XHeight(),
+		f.Ascent(),
+		f.Descent(),
+		f.Leading(),
+		0, 0) // maxWidth, avgWidth
+	dw.file.body.add(descriptor)
+
+	key := fmt.Sprintf("F%d", len(dw.fontKeys))
+	dw.fontKeys[cacheName] = key
+
+	cid := newCIDFont(dw.nextSeq(), 0, psName, descriptor, 1000, array{})
+	dw.file.body.add(cid)
+
+	t0 := newType0Font(dw.nextSeq(), 0, psName, cid)
+	dw.file.body.add(t0)
+
+	dw.resources.fonts[key] = &indirectObjectRef{t0}
+	dw.glyphRecorders[psName] = newGlyphRecorder()
+	dw.unicodeFonts[psName] = f
+	dw.cidFonts[psName] = cid
+	dw.type0Fonts[psName] = t0
+	dw.fontDescriptors[psName] = descriptor
+	return key
+}
+
+// subsetTag generates a 6-character random uppercase tag for a font subset,
+// per PDF spec §9.6.4: the tag is prefixed to the PostScript name as
+// "ABCDEF+FontName" to signal an embedded subset.
+func subsetTag() string {
+	b := make([]byte, 6)
+	rand.Read(b)
+	for i := range b {
+		b[i] = 'A' + b[i]%26
+	}
+	return string(b)
+}
+
+// flushUnicodeFonts is called from WriteTo before serialising the PDF.
+// It fills in the /W width arrays, ToUnicode CMap streams, and embedded
+// subset font streams for every Type0 composite font that was used during
+// rendering.
+func (dw *DocWriter) flushUnicodeFonts() {
+	for psName, gr := range dw.glyphRecorders {
+		mapping := gr.mapping()
+		if len(mapping) == 0 {
+			continue
+		}
+		f := dw.unicodeFonts[psName]
+		upm := f.UnitsPerEm()
+
+		// Build /W width array from recorded glyph IDs.
+		glyphWidths := make(map[uint16]int, len(mapping))
+		for gid := range mapping {
+			w := f.AdvanceWidthForGlyph(gid)
+			if upm > 0 {
+				w = w * 1000 / upm
+			}
+			glyphWidths[gid] = w
+		}
+		defWidth := mostCommonWidth(glyphWidths)
+		dw.cidFonts[psName].setDefaultWidth(defWidth)
+		dw.cidFonts[psName].setWidths(buildCIDWidthArray(glyphWidths, defWidth))
+
+		// Build ToUnicode CMap stream.
+		tuData := toUnicodeCMapDataComposite(mapping)
+		tuStream := newStream(dw.nextSeq(), 0, tuData)
+		dw.file.body.add(tuStream)
+		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
+
+		// Embed a font subset as /FontFile2 in the descriptor.
+		glyphIDs := make([]uint16, 0, len(mapping))
+		for gid := range mapping {
+			glyphIDs = append(glyphIDs, gid)
+		}
+		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
+			fontStream := newStream(dw.nextSeq(), 0, subsetData)
+			fontStream.setLength1(len(subsetData))
+			dw.file.body.add(fontStream)
+			dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
+
+			// Apply the 6-char subset tag to all three name occurrences:
+			// FontDescriptor/FontName, CIDFont/BaseFont, Type0/BaseFont.
+			taggedName := subsetTag() + "+" + psName
+			dw.fontDescriptors[psName].dict["FontName"] = name(taggedName)
+			dw.cidFonts[psName].setBaseFont(taggedName)
+			dw.type0Fonts[psName].setBaseFont(taggedName)
+		}
+	}
 }
 
 func (dw *DocWriter) Fonts() []*font.Font {
@@ -405,6 +535,7 @@ func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
 		pw.close()
 	}
 	dw.curPage = nil
+	dw.flushUnicodeFonts()
 	dw.file.write(wr)
 	return 0, nil
 }

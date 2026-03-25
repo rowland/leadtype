@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 )
@@ -70,6 +71,10 @@ func (tw *textWriter) nextLine() {
 
 func (tw *textWriter) show(s []byte) {
 	fmt.Fprintf(tw.wr, "(%s) Tj\n", str(s).escape())
+}
+
+func (tw *textWriter) showHex(s []byte) {
+	fmt.Fprintf(tw.wr, "<%s> Tj\n", hex.EncodeToString(s))
 }
 
 func (tw *textWriter) nextLineShow(s []byte) {

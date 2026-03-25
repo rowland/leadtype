@@ -7,18 +7,18 @@ import (
 	"os"
 	"os/exec"
 
+	"fmt"
+
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 )
 
-import "fmt"
-
 const name = "test_007_i18n_afm.pdf"
 
 func main() {
 	doc := pdf.NewDocWriter()
-	afmfc, err := afm_fonts.New("../../afm/data/fonts/*.afm")
+	afmfc, err := afm_fonts.Default()
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func main() {
 	}
 	doc.WriteTo(f)
 	f.Close()
-	exec.Command("open", name).Start()
+	exec.Command("open", "-a", "Firefox", name).Start()
 }
 
 var i18nKeys = []string{"cs", "da", "de", "en", "es", "es_US", "fi", "fr", "hr", "hu", "id", "it", "nl", "no", "pt", "pt_BR", "sl", "sv", "tr"}

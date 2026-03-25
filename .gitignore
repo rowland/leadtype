@@ -27,3 +27,30 @@ vendor/
 
 # Claude Code memory
 .claude/
+
+# Scratch directory
+/tmp/
+test_009_unicode_ttf
+test_009_unicode_ttf.pdf
+
+# Sample output files and binaries
+ltml/samples/*.pdf
+samples/test_001_empty_doc/test_001_empty_doc
+samples/test_001_empty_doc/test_001_empty_doc.pdf
+samples/test_002_draw_line/test_002_draw_line
+samples/test_002_draw_line/test_002_draw_line.pdf
+samples/test_003_hello_world/test_003_hello_world
+samples/test_003_hello_world/test_003_hello_world.pdf
+samples/test_004_afm_fonts/test_004_afm_fonts
+samples/test_004_afm_fonts/test_004_afm_fonts.pdf
+samples/test_005_ttf_fonts/test_005_ttf_fonts
+samples/test_005_ttf_fonts/test_005_ttf_fonts.pdf
+samples/test_006_rich_text/test_006_rich_text
+samples/test_006_rich_text/test_006_rich_text.pdf
+samples/test_007_i18n_afm/test_007_i18n_afm
+samples/test_007_i18n_afm/test_007_i18n_afm.pdf
+samples/test_008_rectangles/test_008_rectangles
+samples/test_008_rectangles/test_008_rectangles.pdf
+
+# ttdump binary
+ttdump/ttdump

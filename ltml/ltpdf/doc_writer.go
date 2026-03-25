@@ -23,13 +23,13 @@ func (dw *DocWriter) SetLineWidth(width float64) {
 
 func NewDocWriter() *DocWriter {
 	dw := pdf.NewDocWriter()
-	ttFonts, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	ttFonts, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		panic(err)
 	}
 	dw.AddFontSource(ttFonts)
 
-	afmFonts, err := afm_fonts.New("../afm/data/fonts/*.afm")
+	afmFonts, err := afm_fonts.Default()
 	if err != nil {
 		panic(err)
 	}

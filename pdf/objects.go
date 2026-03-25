@@ -190,6 +190,12 @@ func (fd *fontDescriptor) init(seq, gen int,
 	return fd
 }
 
+// setFontFile2 attaches a /FontFile2 stream reference to the descriptor.
+// Used for embedding TrueType (sfnt) font data per PDF spec §9.8.
+func (fd *fontDescriptor) setFontFile2(ref *indirectObjectRef) {
+	fd.dict["FontFile2"] = ref
+}
+
 type fontEncoding struct {
 	dictionaryObject
 }
@@ -546,8 +552,11 @@ func (f *simpleFont) init(seq, gen int,
 	if fontEncoding != nil {
 		f.dict["Encoding"] = fontEncoding
 	}
-	// TODO: ToUnicode
 	return f
+}
+
+func (f *simpleFont) setToUnicode(ref *indirectObjectRef) {
+	f.dict["ToUnicode"] = ref
 }
 
 func newSimpleFont(seq, gen int,
@@ -623,6 +632,12 @@ func (s *stream) len() int {
 
 func (s *stream) setFilter(filter string) {
 	s.dict["Filter"] = name(filter)
+}
+
+// setLength1 sets the /Length1 entry required for TTF FontFile2 streams.
+// Per PDF spec §9.9, /Length1 is the size of the uncompressed font data.
+func (s *stream) setLength1(n int) {
+	s.dict["Length1"] = integer(n)
 }
 
 func (s *stream) write(w io.Writer) {

@@ -52,7 +52,7 @@ func TestDocWriter_Close(t *testing.T) {
 
 func TestDocWriter_fontKey(t *testing.T) {
 	skipIfNoTTFFonts(t)
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
-	fc, err := ttf_fonts.New("/Library/Fonts/*.ttf")
+	fc, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +203,7 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 func TestDocWriter_SetFont_Type1(t *testing.T) {
 	dw := NewDocWriter()
 
-	fc, err := afm_fonts.New("../afm/data/fonts/*.afm")
+	fc, err := afm_fonts.Default()
 	if err != nil {
 		t.Fatal(err)
 	}
