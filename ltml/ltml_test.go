@@ -19,37 +19,36 @@ import (
 var openSamplePDFs = flag.Bool("open-sample-pdfs", false, "open generated LTML sample PDFs after tests run")
 
 func TestParse(t *testing.T) {
-	doc, err := Parse([]byte("<ltml></ltml>"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if doc == nil {
-		t.Error("doc is nil")
-	}
-}
+	t.Run("Bytes", func(t *testing.T) {
+		doc, err := Parse([]byte("<ltml></ltml>"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if doc == nil {
+			t.Error("doc is nil")
+		}
+	})
 
-func TestParseFile(t *testing.T) {
-	_, file, _, _ := runtime.Caller(0)
-	dir, _ := filepath.Abs(filepath.Dir(file))
-	sample := filepath.Join(dir, "samples", "test_001_empty_doc.ltml")
-	doc, err := ParseFile(sample)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if doc == nil {
-		t.Error("doc is nil")
-	}
-}
+	t.Run("File", func(t *testing.T) {
+		doc, err := ParseFile(sampleFile("test_001_empty_doc.ltml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if doc == nil {
+			t.Error("doc is nil")
+		}
+	})
 
-func TestParseReader(t *testing.T) {
-	r := bytes.NewReader([]byte("<ltml></ltml>"))
-	doc, err := ParseReader(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if doc == nil {
-		t.Error("doc is nil")
-	}
+	t.Run("Reader", func(t *testing.T) {
+		r := bytes.NewReader([]byte("<ltml></ltml>"))
+		doc, err := ParseReader(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if doc == nil {
+			t.Error("doc is nil")
+		}
+	})
 }
 
 func sampleFile(filename string) string {
@@ -60,6 +59,8 @@ func sampleFile(filename string) string {
 }
 
 func writeSamplePDF(name string, t *testing.T) {
+	t.Helper()
+
 	doc, err := ParseFile(sampleFile(name + ".ltml"))
 	if err != nil {
 		t.Fatal(err)
@@ -88,50 +89,26 @@ func writeSamplePDF(name string, t *testing.T) {
 	}
 }
 
-func TestSample001(t *testing.T) {
-	writeSamplePDF("test_001_empty_doc", t)
-}
+func TestSamples(t *testing.T) {
+	samples := []string{
+		"test_001_empty_doc",
+		"test_002_empty_page",
+		"test_003_hello_world",
+		"test_004_two_pages",
+		"test_005_rounded_rect",
+		"test_006_bullets",
+		"test_007_flow_layout",
+		"test_008_vbox_layout",
+		"test_009_hbox_layout",
+		"test_010_rich_text",
+		"test_011_table_layout",
+		"test_030_encodings",
+	}
 
-func TestSample002(t *testing.T) {
-	writeSamplePDF("test_002_empty_page", t)
-}
-
-func TestSample003(t *testing.T) {
-	writeSamplePDF("test_003_hello_world", t)
-}
-
-func TestSample004(t *testing.T) {
-	writeSamplePDF("test_004_two_pages", t)
-}
-
-func TestSample005(t *testing.T) {
-	writeSamplePDF("test_005_rounded_rect", t)
-}
-
-func TestSample006(t *testing.T) {
-	writeSamplePDF("test_006_bullets", t)
-}
-
-func TestSample007(t *testing.T) {
-	writeSamplePDF("test_007_flow_layout", t)
-}
-
-func TestSample008(t *testing.T) {
-	writeSamplePDF("test_008_vbox_layout", t)
-}
-
-func TestSample009(t *testing.T) {
-	writeSamplePDF("test_009_hbox_layout", t)
-}
-
-func TestSample010(t *testing.T) {
-	writeSamplePDF("test_010_rich_text", t)
-}
-
-func TestSample011(t *testing.T) {
-	writeSamplePDF("test_011_table_layout", t)
-}
-
-func TestSample030(t *testing.T) {
-	writeSamplePDF("test_030_encodings", t)
+	for _, sample := range samples {
+		sample := sample
+		t.Run(sample, func(t *testing.T) {
+			writeSamplePDF(sample, t)
+		})
+	}
 }
