@@ -177,3 +177,14 @@ func TestToUnicodeCMapDataComposite_LigatureSequence(t *testing.T) {
 		t.Fatalf("expected ligature glyph to map to both code points, got:\n%s", s)
 	}
 }
+
+func TestToUnicodeCMapDataComposite_NonBMPUsesSurrogatePair(t *testing.T) {
+	data := toUnicodeCMapDataComposite(map[uint16][]rune{
+		99: {'😀'},
+	})
+	s := string(data)
+
+	if !strings.Contains(s, "<0063> <D83DDE00>") {
+		t.Fatalf("expected non-BMP glyph to map via UTF-16 surrogate pair, got:\n%s", s)
+	}
+}

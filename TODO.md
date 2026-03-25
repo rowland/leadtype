@@ -20,7 +20,7 @@
   Suggested direction:
   Change the recording model so a glyph can map to a full Unicode sequence, not just a single rune. Then update composite ToUnicode generation to emit the full destination sequence for ligature glyphs. Add a test that shapes a known ligature and verifies extraction-oriented data preserves every code point in the original cluster.
 
-- [ ] Encode non-BMP Unicode correctly in composite ToUnicode CMaps
+- [x] Encode non-BMP Unicode correctly in composite ToUnicode CMaps
   The composite ToUnicode writer in [pdf/to_unicode.go](/Users/brent/src/leadtype/pdf/to_unicode.go) emits destination values with `<%04X>`, which only represents a single 16-bit unit. That is not sufficient for runes above `U+FFFF`, which must be written as UTF-16BE surrogate pairs in a ToUnicode CMap.
 
   Why this matters:

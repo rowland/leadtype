@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode/utf16"
 )
 
 // toUnicodeCMapData builds the byte content of a ToUnicode CMap stream for a
@@ -108,8 +109,8 @@ func toUnicodeCMapDataComposite(glyphToRunes map[uint16][]rune) []byte {
 
 func compositeDestinationHex(runes []rune) string {
 	var sb strings.Builder
-	for _, r := range runes {
-		fmt.Fprintf(&sb, "%04X", r)
+	for _, unit := range utf16.Encode(runes) {
+		fmt.Fprintf(&sb, "%04X", unit)
 	}
 	return sb.String()
 }
