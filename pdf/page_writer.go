@@ -332,10 +332,11 @@ func (pw *PageWriter) flushText() {
 			gr := pw.dw.glyphRecorders[psName]
 			buf.Reset()
 
-			runes := []rune(p.Text)
 			var shaped []shaping.GlyphPosition
+			var runes []rune // allocated only when shaping is attempted
 			if containsArabic(p.Text) {
 				if fontBytes := p.Font.Bytes(); fontBytes != nil {
+					runes = []rune(p.Text)
 					shaped, _ = textShaper.Shape(runes, fontBytes, float32(p.FontSize))
 				}
 			}
@@ -353,7 +354,7 @@ func (pw *PageWriter) flushText() {
 					buf.WriteByte(byte(gp.GlyphID & 0xFF))
 				}
 			} else {
-				for _, r := range runes {
+				for _, r := range p.Text {
 					gid := p.Font.GlyphIndex(r)
 					if gr != nil {
 						gr.record(gid, r)

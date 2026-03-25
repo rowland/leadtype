@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
 
 type Font struct {
@@ -21,13 +22,24 @@ type Font struct {
 	postTable postTable
 	vheaTable vheaTable
 	vmtxTable vmtxTable
-	rawBytes  []byte
+	rawBytes     []byte
+	rawBytesOnce sync.Once
 }
 
-// Bytes returns the raw bytes of the font file as loaded from disk or memory.
-// It returns nil if the font was loaded via LoadFontAtOffset with a non-zero
-// offset (TTC collection members), since the shaper requires the full file.
-func (font *Font) Bytes() []byte { return font.rawBytes }
+// Bytes returns the raw bytes of the font file. For fonts loaded from disk the
+// read is deferred until the first call (lazy), so non-Arabic documents pay no
+// I/O or memory cost. Returns nil for TTC members loaded at a non-zero offset.
+func (font *Font) Bytes() []byte {
+	if font.rawBytes != nil {
+		return font.rawBytes // already available (e.g. LoadFontFromBytes)
+	}
+	font.rawBytesOnce.Do(func() {
+		if font.ttcOffset == 0 && font.filename != "" && font.filename != "<bytes>" {
+			font.rawBytes, _ = os.ReadFile(font.filename)
+		}
+	})
+	return font.rawBytes
+}
 
 // 9,151,820 ns
 func LoadFont(filename string) (font *Font, err error) {
@@ -35,17 +47,15 @@ func LoadFont(filename string) (font *Font, err error) {
 }
 
 func LoadFontAtOffset(filename string, offset int64) (font *Font, err error) {
-	var data []byte
-	if data, err = os.ReadFile(filename); err != nil {
+	var file *os.File
+	if file, err = os.Open(filename); err != nil {
 		return
 	}
+	defer file.Close()
 	font = new(Font)
 	font.filename = filename
 	font.ttcOffset = offset
-	if offset == 0 {
-		font.rawBytes = data
-	}
-	err = font.init(bytes.NewReader(data), offset)
+	err = font.init(file, offset)
 	return
 }
 
