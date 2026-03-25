@@ -19,20 +19,6 @@ import (
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
-// textShaper is the package-level Arabic shaper, selected at build time via
-// build tags: default is a no-op stub; -tags arabic uses go-text/typesetting;
-// -tags harfbuzz uses CGO libharfbuzz.
-var textShaper = shaping.NewShaper()
-
-// containsArabic reports whether any rune in s falls in the Arabic Unicode block.
-func containsArabic(s string) bool {
-	for _, r := range s {
-		if r >= 0x0600 && r <= 0x06FF {
-			return true
-		}
-	}
-	return false
-}
 
 type LineCapStyle int
 
@@ -334,9 +320,9 @@ func (pw *PageWriter) flushText() {
 
 			var shaped []shaping.GlyphPosition
 			var runes []rune // allocated only when shaping is attempted
-			if containsArabic(p.Text) && p.Font.FontKey() != "" {
+			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
 				runes = []rune(p.Text)
-				shaped, _ = textShaper.Shape(runes, p.Font, float32(p.FontSize))
+				shaped, _ = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
 			}
 
 			if shaped != nil {

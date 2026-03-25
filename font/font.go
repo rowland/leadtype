@@ -7,7 +7,16 @@ import (
 	"fmt"
 
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/shaping"
 )
+
+// ShaperSource is an optional interface that FontSource implementations may
+// satisfy to provide an Arabic (complex-script) text shaper. When the font
+// source selected by New implements ShaperSource, the returned Font has its
+// Shaper field set automatically.
+type ShaperSource interface {
+	Shaper() shaping.Shaper
+}
 
 type Font struct {
 	family       string
@@ -18,6 +27,10 @@ type Font struct {
 	RuneSet      RuneSet
 	RelativeSize float64
 	metrics      FontMetrics
+	// Shaper is non-nil for fonts whose source supports complex-script shaping
+	// (e.g. Arabic). It is set automatically by New when the winning FontSource
+	// implements ShaperSource.
+	Shaper shaping.Shaper
 }
 
 func New(family string, options options.Options, fontSources FontSources) (*Font, error) {
@@ -39,6 +52,9 @@ func New(family string, options options.Options, fontSources FontSources) (*Font
 	for _, fontSource := range fontSources {
 		if font.metrics, err = fontSource.Select(font.family, font.Weight, font.style, font.Ranges); err == nil {
 			font.subType = fontSource.SubType()
+			if ss, ok := fontSource.(ShaperSource); ok {
+				font.Shaper = ss.Shaper()
+			}
 			return font, nil
 		}
 	}

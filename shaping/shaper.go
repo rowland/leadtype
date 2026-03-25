@@ -54,3 +54,15 @@ type GlyphPosition struct {
 type Shaper interface {
 	Shape(text []rune, font FontReader, ppem float32) ([]GlyphPosition, error)
 }
+
+// ContainsArabic reports whether s contains any rune in the Arabic Unicode
+// block (U+0600–U+06FF). It exits on the first match, so it is cheap for
+// typical Latin-only text.
+func ContainsArabic(s string) bool {
+	for _, r := range s {
+		if r >= 0x0600 && r <= 0x06FF {
+			return true
+		}
+	}
+	return false
+}
