@@ -54,3 +54,4 @@ samples/test_008_rectangles/test_008_rectangles.pdf
 
 # ttdump binary
 ttdump/ttdump
+.gocache/

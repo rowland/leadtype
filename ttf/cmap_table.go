@@ -308,7 +308,10 @@ func (rec *format2EncodingRecord) init(file io.Reader) (err error) {
 	if l <= 0 {
 		return fmt.Errorf("Invalid glyph index array size: %d", l)
 	}
-	rec.glyphIndexArray = make([]uint16, l)
+	if l%2 != 0 {
+		return fmt.Errorf("Invalid glyph index array byte size: %d", l)
+	}
+	rec.glyphIndexArray = make([]uint16, l/2)
 	if err = readValues(file, &rec.glyphIndexArray); err != nil {
 		return
 	}
