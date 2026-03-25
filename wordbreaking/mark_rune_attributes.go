@@ -36,7 +36,9 @@ func isHyphen(r rune) bool {
 }
 
 func classifyRune(r rune) runeClass {
-	if unicode.IsSpace(r) && r != NoBreakSpace {
+	if r == ZeroWidthSpace {
+		return rcWhiteSpace
+	} else if unicode.IsSpace(r) && r != NoBreakSpace {
 		return rcWhiteSpace
 	} else if isHyphen(r) {
 		return rcHyphen
