@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/shaping"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 // ── buildCIDWidthArray ────────────────────────────────────────────────────────
@@ -302,6 +304,55 @@ func TestUnicodeMode_MultiScriptTwoFonts(t *testing.T) {
 	tjCount := strings.Count(pdf, " Tj\n")
 	if tjCount != 2 {
 		t.Errorf("expected 2 Tj operators for two Print calls, got %d", tjCount)
+	}
+}
+
+type offsetShaper struct {
+	glyphs []shaping.GlyphPosition
+}
+
+func (s offsetShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping.GlyphPosition, error) {
+	return s.glyphs, nil
+}
+
+func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont: %v", err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("SetFont returned no fonts")
+	}
+	fonts[0].Shaper = offsetShaper{glyphs: []shaping.GlyphPosition{
+		{GlyphID: fonts[0].GlyphIndex('م'), XAdvance: 8 * 64, XOffset: 2 * 64, YOffset: 1 * 64, ClusterIndex: 0},
+		{GlyphID: fonts[0].GlyphIndex('ر'), XAdvance: 8 * 64, XOffset: 0, YOffset: 0, ClusterIndex: 1},
+	}}
+
+	pw.MoveTo(72, 720)
+	pw.Print("مر")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if got := strings.Count(pdf, " Tm\n"); got < 3 {
+		t.Fatalf("expected shaped text to emit per-glyph positioning matrices, got %d\npdf excerpt:\n%s", got, extractSection(pdf, "BT", 400))
+	}
+	if strings.Contains(pdf, "<0001><0002>") {
+		t.Fatalf("expected shaped glyphs to be emitted individually, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
+	}
+	if !strings.Contains(pdf, "<") || !strings.Contains(pdf, " Tj\n") {
+		t.Fatalf("expected individual shaped glyph hex output, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
 	}
 }
 

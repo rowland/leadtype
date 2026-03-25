@@ -2,7 +2,7 @@
 
 ## Review Follow-Ups
 
-- [ ] Preserve shaping offsets during PDF text emission
+- [x] Preserve shaping offsets during PDF text emission
   The shaped TrueType path in [pdf/page_writer.go](/Users/brent/src/leadtype/pdf/page_writer.go) currently serializes only glyph IDs and emits them with a plain `Tj` operator. That drops `XOffset` and `YOffset` from `shaping.GlyphPosition`, so any shaped glyph that depends on per-glyph positioning will render incorrectly even though shaping itself succeeded.
 
   Why this matters:

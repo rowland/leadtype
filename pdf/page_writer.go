@@ -19,7 +19,6 @@ import (
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
-
 type LineCapStyle int
 
 const (
@@ -304,6 +303,7 @@ func (pw *PageWriter) flushText() {
 		pw.tw.moveBy(pw.loc.X-pw.last.loc.X, pw.loc.Y-pw.last.loc.Y)
 	}
 	loc1 := pw.loc
+	textLoc := loc1
 	var buf bytes.Buffer
 	merged := pw.line.Merge()
 	// Iterate leaf pieces directly. TrueType leaves are encoded as big-endian
@@ -312,6 +312,8 @@ func (pw *PageWriter) flushText() {
 		if !p.IsLeaf() || p.Text == "" || p.Font == nil {
 			return
 		}
+		leafStart := textLoc
+		textLoc.X += p.Width()
 		if p.Font.SubType() == "TrueType" {
 			fk := pw.dw.fontKeyUnicode(p.Font)
 			psName := p.Font.PostScriptName()
@@ -326,6 +328,7 @@ func (pw *PageWriter) flushText() {
 			}
 
 			if shaped != nil {
+				penX := 0.0
 				// Emit shaped glyphs in reverse visual order so that the
 				// left-to-right PDF text stream matches the left-to-right
 				// visual layout of the pre-shaped Arabic glyphs.
@@ -336,7 +339,16 @@ func (pw *PageWriter) flushText() {
 					}
 					buf.WriteByte(byte(gp.GlyphID >> 8))
 					buf.WriteByte(byte(gp.GlyphID & 0xFF))
+					pw.tw.setMatrix(
+						1, 0, 0, 1,
+						leafStart.X+penX+(float64(gp.XOffset)/64.0),
+						leafStart.Y+(float64(gp.YOffset)/64.0),
+					)
+					pw.tw.showHex(buf.Bytes())
+					buf.Reset()
+					penX += float64(gp.XAdvance) / 64.0
 				}
+				pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+p.Width(), leafStart.Y)
 			} else {
 				for _, r := range p.Text {
 					gid := p.Font.GlyphIndex(r)
@@ -356,8 +368,10 @@ func (pw *PageWriter) flushText() {
 			pw.charSpacing = p.CharSpacing
 			pw.wordSpacing = p.WordSpacing
 			pw.checkSetSpacing()
-			pw.tw.show(buf.Bytes())
-			// pw.tw.showHex(buf.Bytes())
+			if shaped == nil {
+				pw.tw.show(buf.Bytes())
+				// pw.tw.showHex(buf.Bytes())
+			}
 		} else {
 			// AFM/Type1: still needs codepage-based encoding.
 			p.EachCodepage(func(cpi codepage.CodepageIndex, text string, piece *rich_text.RichText) {
