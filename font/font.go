@@ -183,6 +183,21 @@ func (font *Font) XHeight() int {
 	return font.metrics.XHeight()
 }
 
+// ByteReader is an optional interface implemented by FontMetrics backends that
+// can return their raw font file bytes for use by external shapers.
+type ByteReader interface {
+	Bytes() []byte
+}
+
+// Bytes returns the raw bytes of the underlying font file, or nil if the font
+// backend does not support it (e.g. AFM fonts or TTC collection members).
+func (font *Font) Bytes() []byte {
+	if br, ok := font.metrics.(ByteReader); ok {
+		return br.Bytes()
+	}
+	return nil
+}
+
 // Subsetter is an optional interface implemented by FontMetrics backends that
 // support font subsetting (currently only TTF). When implemented, SubsetBytes
 // returns a self-consistent TTF binary containing only the requested glyphs.

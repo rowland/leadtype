@@ -15,8 +15,24 @@ import (
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
+	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/wordbreaking"
 )
+
+// textShaper is the package-level Arabic shaper, selected at build time via
+// build tags: default is a no-op stub; -tags arabic uses go-text/typesetting;
+// -tags harfbuzz uses CGO libharfbuzz.
+var textShaper = shaping.NewShaper()
+
+// containsArabic reports whether any rune in s falls in the Arabic Unicode block.
+func containsArabic(s string) bool {
+	for _, r := range s {
+		if r >= 0x0600 && r <= 0x06FF {
+			return true
+		}
+	}
+	return false
+}
 
 type LineCapStyle int
 
@@ -315,14 +331,38 @@ func (pw *PageWriter) flushText() {
 			psName := p.Font.PostScriptName()
 			gr := pw.dw.glyphRecorders[psName]
 			buf.Reset()
-			for _, r := range p.Text {
-				gid := p.Font.GlyphIndex(r)
-				if gr != nil {
-					gr.record(gid, r)
+
+			runes := []rune(p.Text)
+			var shaped []shaping.GlyphPosition
+			if containsArabic(p.Text) {
+				if fontBytes := p.Font.Bytes(); fontBytes != nil {
+					shaped, _ = textShaper.Shape(runes, fontBytes, float32(p.FontSize))
 				}
-				buf.WriteByte(byte(gid >> 8))
-				buf.WriteByte(byte(gid & 0xFF))
 			}
+
+			if shaped != nil {
+				// Emit shaped glyphs in reverse visual order so that the
+				// left-to-right PDF text stream matches the left-to-right
+				// visual layout of the pre-shaped Arabic glyphs.
+				for i := len(shaped) - 1; i >= 0; i-- {
+					gp := shaped[i]
+					if gr != nil {
+						gr.record(gp.GlyphID, runes[gp.ClusterIndex])
+					}
+					buf.WriteByte(byte(gp.GlyphID >> 8))
+					buf.WriteByte(byte(gp.GlyphID & 0xFF))
+				}
+			} else {
+				for _, r := range runes {
+					gid := p.Font.GlyphIndex(r)
+					if gr != nil {
+						gr.record(gid, r)
+					}
+					buf.WriteByte(byte(gid >> 8))
+					buf.WriteByte(byte(gid & 0xFF))
+				}
+			}
+
 			pw.SetFontColor(p.Color)
 			pw.checkSetFontColor()
 			pw.fontKey = fk

@@ -87,11 +87,12 @@ func (s *goTextShaper) Shape(text []rune, fontBytes []byte, ppem float32) ([]Gly
 	glyphs := make([]GlyphPosition, len(output.Glyphs))
 	for i, g := range output.Glyphs {
 		glyphs[i] = GlyphPosition{
-			GlyphID:  uint16(g.GlyphID),
-			XAdvance: int32(g.XAdvance),
-			YAdvance: int32(g.YAdvance),
-			XOffset:  int32(g.XOffset),
-			YOffset:  int32(g.YOffset),
+			GlyphID:      uint16(g.GlyphID),
+			XAdvance:     int32(g.XAdvance),
+			YAdvance:     int32(g.YAdvance),
+			XOffset:      int32(g.XOffset),
+			YOffset:      int32(g.YOffset),
+			ClusterIndex: g.ClusterIndex,
 		}
 	}
 	return glyphs, nil

@@ -77,14 +77,25 @@ func (h *hbShaper) Shape(text []rune, fontBytes []byte, ppem float32) ([]GlyphPo
 	infos := unsafe.Slice(infoPtr, n)
 	positions := unsafe.Slice(posPtr, n)
 
+	// Build a byte-offset → rune-index mapping so ClusterIndex matches
+	// the []rune indices used by the rest of the shaping package.
+	// HarfBuzz sets cluster to the UTF-8 byte offset of the source character.
+	byteToRune := make(map[int]int, len(text))
+	ri := 0
+	for bi := range string(text) {
+		byteToRune[bi] = ri
+		ri++
+	}
+
 	glyphs := make([]GlyphPosition, n)
 	for i := range glyphs {
 		glyphs[i] = GlyphPosition{
-			GlyphID:  uint16(infos[i].codepoint),
-			XAdvance: int32(positions[i].x_advance),
-			YAdvance: int32(positions[i].y_advance),
-			XOffset:  int32(positions[i].x_offset),
-			YOffset:  int32(positions[i].y_offset),
+			GlyphID:      uint16(infos[i].codepoint),
+			XAdvance:     int32(positions[i].x_advance),
+			YAdvance:     int32(positions[i].y_advance),
+			XOffset:      int32(positions[i].x_offset),
+			YOffset:      int32(positions[i].y_offset),
+			ClusterIndex: byteToRune[int(infos[i].cluster)],
 		}
 	}
 	return glyphs, nil

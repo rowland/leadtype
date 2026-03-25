@@ -18,12 +18,17 @@ package shaping
 // XAdvance, YAdvance, XOffset, and YOffset are expressed in 26.6 fixed-point
 // scaled units (i.e. the raw int32 value divided by 64 gives the metric in the
 // same unit as the ppem argument passed to Shape).
+//
+// ClusterIndex is the index of the first source rune (in the []rune slice
+// passed to Shape) that was shaped into this glyph. For ligatures, multiple
+// consecutive runes map to one glyph; ClusterIndex identifies the first.
 type GlyphPosition struct {
-	GlyphID  uint16
-	XAdvance int32
-	YAdvance int32
-	XOffset  int32
-	YOffset  int32
+	GlyphID      uint16
+	XAdvance     int32
+	YAdvance     int32
+	XOffset      int32
+	YOffset      int32
+	ClusterIndex int
 }
 
 // Shaper shapes a run of Unicode text into positioned glyphs for a given font.
