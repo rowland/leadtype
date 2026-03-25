@@ -7,7 +7,16 @@ import (
 	"fmt"
 
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/shaping"
 )
+
+// ShaperSource is an optional interface that FontSource implementations may
+// satisfy to provide an Arabic (complex-script) text shaper. When the font
+// source selected by New implements ShaperSource, the returned Font has its
+// Shaper field set automatically.
+type ShaperSource interface {
+	Shaper() shaping.Shaper
+}
 
 type Font struct {
 	family       string
@@ -18,6 +27,10 @@ type Font struct {
 	RuneSet      RuneSet
 	RelativeSize float64
 	metrics      FontMetrics
+	// Shaper is non-nil for fonts whose source supports complex-script shaping
+	// (e.g. Arabic). It is set automatically by New when the winning FontSource
+	// implements ShaperSource.
+	Shaper shaping.Shaper
 }
 
 func New(family string, options options.Options, fontSources FontSources) (*Font, error) {
@@ -39,6 +52,9 @@ func New(family string, options options.Options, fontSources FontSources) (*Font
 	for _, fontSource := range fontSources {
 		if font.metrics, err = fontSource.Select(font.family, font.Weight, font.style, font.Ranges); err == nil {
 			font.subType = fontSource.SubType()
+			if ss, ok := fontSource.(ShaperSource); ok {
+				font.Shaper = ss.Shaper()
+			}
 			return font, nil
 		}
 	}
@@ -181,6 +197,33 @@ func (font *Font) Version() string {
 
 func (font *Font) XHeight() int {
 	return font.metrics.XHeight()
+}
+
+// ByteReader is an optional interface implemented by FontMetrics backends that
+// can return their raw font file bytes for use by external shapers.
+// FontKey must be cheap (no I/O); Bytes may perform I/O and should be called
+// only when the shaper's cache misses.
+type ByteReader interface {
+	FontKey() string
+	Bytes() []byte
+}
+
+// FontKey returns a stable string identifying the underlying font file,
+// or "" if the backend does not support it (e.g. AFM fonts).
+func (font *Font) FontKey() string {
+	if br, ok := font.metrics.(ByteReader); ok {
+		return br.FontKey()
+	}
+	return ""
+}
+
+// Bytes returns the raw bytes of the underlying font file, or nil if the font
+// backend does not support it (e.g. AFM fonts or TTC collection members).
+func (font *Font) Bytes() []byte {
+	if br, ok := font.metrics.(ByteReader); ok {
+		return br.Bytes()
+	}
+	return nil
 }
 
 // Subsetter is an optional interface implemented by FontMetrics backends that

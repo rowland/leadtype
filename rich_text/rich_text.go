@@ -16,6 +16,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -400,6 +401,25 @@ func (piece *RichText) measure() *RichText {
 	piece.StrikeoutThickness = float64(metrics.StrikeoutThickness()) * fsize
 	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
 	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
+	if piece.Font.Shaper != nil && shaping.ContainsArabic(piece.Text) {
+		runes := []rune(piece.Text)
+		if shaped, err := piece.Font.Shaper.Shape(runes, piece.Font, float32(piece.FontSize)); err == nil && shaped != nil {
+			for _, r := range runes {
+				if r == wordbreaking.SoftHyphen {
+					continue
+				}
+				piece.chars++
+				if r == ' ' {
+					piece.width += piece.WordSpacing
+				}
+			}
+			for _, g := range shaped {
+				piece.width += float64(g.XAdvance) / 64.0
+			}
+			piece.width += float64(piece.chars) * piece.CharSpacing
+			return piece
+		}
+	}
 	for _, rune := range piece.Text {
 		if rune == wordbreaking.SoftHyphen {
 			continue
@@ -650,8 +670,12 @@ func (piece *RichText) WordsToWidth(
 	var metrics font.FontMetrics
 	var fsize float64
 	var lastRune rune
+	// shapedAdv[i] holds the shaped advance (in points) attributable to rune i
+	// within the current Arabic leaf piece. nil for non-Arabic or unshaped leaves.
+	var shapedAdv []float64
+	var leafRuneIdx int
 
-	fn := func(rune rune, p *RichText, offset int) bool {
+	fn := func(r rune, p *RichText, offset int) bool {
 		if words > 0 && currentWidth+extra+wordWidth > width {
 			return true
 		} else if words == 0 && hardBreak && wordWidth > width {
@@ -680,15 +704,36 @@ func (piece *RichText) WordsToWidth(
 			metrics = p.Font
 			fsize = p.FontSize / float64(p.Font.UnitsPerEm())
 			lastPiece = p
+			leafRuneIdx = 0
+			// Pre-shape Arabic leaves so word widths reflect contextual forms
+			// and ligatures rather than individual unshaped glyph metrics.
+			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
+				leafRunes := []rune(p.Text)
+				if glyphs, err := p.Font.Shaper.Shape(leafRunes, p.Font, float32(p.FontSize)); err == nil && glyphs != nil {
+					shapedAdv = make([]float64, len(leafRunes))
+					for _, g := range glyphs {
+						shapedAdv[g.ClusterIndex] += float64(g.XAdvance) / 64.0
+					}
+				} else {
+					shapedAdv = nil
+				}
+			} else {
+				shapedAdv = nil
+			}
 		}
-		if rune != wordbreaking.SoftHyphen {
-			runeWidth, _ := metrics.AdvanceWidth(rune)
-			wordWidth += (fsize * float64(runeWidth)) + p.CharSpacing
-			if unicode.IsSpace(rune) {
+		if r != wordbreaking.SoftHyphen {
+			if shapedAdv != nil && leafRuneIdx < len(shapedAdv) {
+				wordWidth += shapedAdv[leafRuneIdx] + p.CharSpacing
+			} else {
+				runeWidth, _ := metrics.AdvanceWidth(r)
+				wordWidth += (fsize * float64(runeWidth)) + p.CharSpacing
+			}
+			if unicode.IsSpace(r) {
 				wordWidth += p.WordSpacing
 			}
 		}
-		lastRune = rune
+		leafRuneIdx++
+		lastRune = r
 		lastOffset = offset
 		return false
 	}

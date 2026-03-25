@@ -21,6 +21,28 @@ type Font struct {
 	postTable postTable
 	vheaTable vheaTable
 	vmtxTable vmtxTable
+	rawBytes []byte // non-nil only when loaded via LoadFontFromBytes
+}
+
+// FontKey returns a stable string identifying this font, used as a cache key
+// by the shaper. No I/O is performed.
+func (font *Font) FontKey() string {
+	return fmt.Sprintf("%s@%d", font.filename, font.ttcOffset)
+}
+
+// Bytes returns the raw font file contents. For fonts loaded from disk this
+// performs a file read on every call; callers that need repeated access should
+// cache the result (e.g. the shaper's size-1 LRU). Returns nil for TTC
+// members loaded at a non-zero offset.
+func (font *Font) Bytes() []byte {
+	if font.rawBytes != nil {
+		return font.rawBytes // LoadFontFromBytes path: already in memory
+	}
+	if font.ttcOffset != 0 || font.filename == "" || font.filename == "<bytes>" {
+		return nil
+	}
+	data, _ := os.ReadFile(font.filename)
+	return data
 }
 
 // 9,151,820 ns
@@ -46,6 +68,7 @@ func LoadFontAtOffset(filename string, offset int64) (font *Font, err error) {
 func LoadFontFromBytes(data []byte) (*Font, error) {
 	font := new(Font)
 	font.filename = "<bytes>"
+	font.rawBytes = data
 	err := font.init(bytes.NewReader(data), 0)
 	return font, err
 }
