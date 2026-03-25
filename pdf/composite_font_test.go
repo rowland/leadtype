@@ -356,6 +356,38 @@ func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_WordSpacingUsesPositioningOperators(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+
+	rt, err := pw.richTextForString("A A")
+	if err != nil {
+		t.Fatalf("richTextForString: %v", err)
+	}
+	rt.WordSpacing = 12
+	pw.PrintRichText(rt)
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if strings.Contains(pdf, "12 Tw\n") {
+		t.Fatalf("expected composite-font word spacing to use explicit positioning, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
+	}
+	if got := strings.Count(pdf, " Tm\n"); got < 4 {
+		t.Fatalf("expected positioned glyph output for word-spaced composite text, got %d matrices\npdf excerpt:\n%s", got, extractSection(pdf, "BT", 400))
+	}
+	if got := strings.Count(pdf, " Tj\n"); got < 3 {
+		t.Fatalf("expected each glyph to be emitted separately, got %d Tj operators\npdf excerpt:\n%s", got, extractSection(pdf, "BT", 400))
+	}
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 // extractCMapSection returns a short excerpt around the first "begincmap" for
