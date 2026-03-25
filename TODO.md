@@ -31,7 +31,7 @@
 
 ## Sample 005 Follow-Ups
 
-- [ ] Make cmap loading resilient to modern Unicode subtables and broaden preferred-subtable selection
+- [x] Make cmap loading resilient to modern Unicode subtables and broaden preferred-subtable selection
   Running `go run ./samples -all` surfaced multiple `test_005_ttf_fonts` failures that look like `cmap` support gaps rather than fundamentally unreadable fonts. The clearest symptoms were:
   `Unsupported mapping table format: 14`
   `Unable to select preferred cmap glyph indexer.`

@@ -63,10 +63,13 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 		}
 		subBuf := bufio.NewReaderSize(rs, int(entry.length))
 		if err = rec.readMapping(subBuf); err != nil {
+			if isSkippableCmapFormatError(err) {
+				err = nil
+				continue
+			}
 			return
 		}
 	}
-	preferredEncoding := -1
 	for i := 0; uint16(i) < table.numberSubtables; i++ {
 		enc := &table.encodingRecords[i]
 		switch enc.format {
@@ -81,24 +84,59 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 		case 12:
 			table.format12Indexer = enc.glyphIndexer
 		}
-		if enc.platformID == UnicodePlatformID &&
-			(enc.platformSpecificID == Unicode2PlatformSpecificID || enc.platformSpecificID == Unicode2FullPlatformSpecificID) {
-			preferredEncoding = i
-			break
-		}
-		if enc.platformID == MicrosoftPlatformID && enc.platformSpecificID == UCS2PlatformSpecificID {
-			preferredEncoding = i
-		}
-		if enc.platformID == MacintoshPlatformID && preferredEncoding < 0 {
-			preferredEncoding = i
-		}
 	}
-	if preferredEncoding >= 0 {
-		table.preferredIndexer = table.encodingRecords[preferredEncoding].glyphIndexer
+	if preferred := table.preferredRecord(); preferred != nil {
+		table.preferredIndexer = preferred.glyphIndexer
 	} else {
 		err = errors.New("Unable to select preferred cmap glyph indexer.")
 	}
 	return
+}
+
+func isSkippableCmapFormatError(err error) bool {
+	var unsupported unsupportedCmapFormatError
+	return errors.As(err, &unsupported)
+}
+
+func (table *cmapTable) preferredRecord() *cmapEncodingRecord {
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.glyphIndexer == nil {
+			continue
+		}
+		if enc.platformID == UnicodePlatformID &&
+			(enc.platformSpecificID == DefaultPlatformSpecificID ||
+				enc.platformSpecificID == Unicode2PlatformSpecificID ||
+				enc.platformSpecificID == Unicode2FullPlatformSpecificID) {
+			return enc
+		}
+	}
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.glyphIndexer == nil {
+			continue
+		}
+		if enc.platformID == MicrosoftPlatformID &&
+			(enc.platformSpecificID == UCS2PlatformSpecificID || enc.platformSpecificID == UCS4PlatformSpecificID) {
+			return enc
+		}
+	}
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.glyphIndexer == nil {
+			continue
+		}
+		if enc.platformID == MacintoshPlatformID {
+			return enc
+		}
+	}
+	for i := range table.encodingRecords {
+		enc := &table.encodingRecords[i]
+		if enc.glyphIndexer != nil {
+			return enc
+		}
+	}
+	return nil
 }
 
 // 41.9 ns
@@ -122,6 +160,14 @@ type cmapEncodingRecord struct {
 	offset             uint32
 	format             uint16
 	glyphIndexer       glyphIndexer
+}
+
+type unsupportedCmapFormatError struct {
+	format uint16
+}
+
+func (e unsupportedCmapFormatError) Error() string {
+	return fmt.Sprintf("Unsupported mapping table format: %d", e.format)
 }
 
 func (rec *cmapEncodingRecord) read(file io.Reader) (err error) {
@@ -149,7 +195,7 @@ func (rec *cmapEncodingRecord) readMapping(file io.Reader) (err error) {
 		rec.glyphIndexer = new(format12EncodingRecord)
 		err = rec.glyphIndexer.init(file)
 	default:
-		return fmt.Errorf("Unsupported mapping table format: %d", rec.format)
+		return unsupportedCmapFormatError{format: rec.format}
 	}
 	return
 }

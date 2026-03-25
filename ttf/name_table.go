@@ -29,6 +29,7 @@ const (
 // Microsoft Platform Specific ID's http://www.microsoft.com/typography/otspec/name.htm
 const (
 	UCS2PlatformSpecificID = 1
+	UCS4PlatformSpecificID = 10
 )
 
 const (

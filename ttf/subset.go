@@ -600,29 +600,6 @@ func (font *Font) buildSubsetPostFormat2(numGlyphs uint16) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (table *cmapTable) preferredRecord() *cmapEncodingRecord {
-	for i := range table.encodingRecords {
-		enc := &table.encodingRecords[i]
-		if enc.platformID == UnicodePlatformID &&
-			(enc.platformSpecificID == Unicode2PlatformSpecificID || enc.platformSpecificID == Unicode2FullPlatformSpecificID) {
-			return enc
-		}
-	}
-	for i := range table.encodingRecords {
-		enc := &table.encodingRecords[i]
-		if enc.platformID == MicrosoftPlatformID && enc.platformSpecificID == UCS2PlatformSpecificID {
-			return enc
-		}
-	}
-	for i := range table.encodingRecords {
-		enc := &table.encodingRecords[i]
-		if enc.platformID == MacintoshPlatformID {
-			return enc
-		}
-	}
-	return nil
-}
-
 func (enc *format4EncodingRecord) codepoints() []int {
 	var codepoints []int
 	for i := range enc.startCode {
