@@ -97,12 +97,20 @@ func (table *postTable) readFormat2Names(file io.Reader) (err error) {
 		if glyphNameIndex[i] >= 258 {
 			idx := int(glyphNameIndex[i] - 258)
 			if idx < 0 || idx >= len(newNames) {
-				return fmt.Errorf("invalid post format 2 glyph name index %d (newNames len=%d)", glyphNameIndex[i], len(newNames))
+				table.names[i] = fallbackPostFormat2GlyphName(i)
+				continue
 			}
 			table.names[i] = newNames[idx]
 		}
 	}
 	return
+}
+
+func fallbackPostFormat2GlyphName(glyphID uint16) string {
+	if glyphID == 0 {
+		return ".notdef"
+	}
+	return fmt.Sprintf("glyph%d", glyphID)
 }
 
 func (table *postTable) write(wr io.Writer) {

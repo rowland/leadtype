@@ -47,7 +47,7 @@
   Suggested direction:
   Change `cmap` loading so unsupported auxiliary subtables, especially format 14, are skipped rather than treated as fatal when another supported Unicode mapping exists. Expand preferred-indexer selection to include modern Microsoft full-repertoire encodings and, more generally, prefer any successfully parsed Unicode-capable subtable over failing the font outright. The corresponding subset-selection logic in [ttf/subset.go](ttf/subset.go) should stay in sync.
 
-- [ ] Relax post format 2 parsing so malformed glyph-name arrays do not reject otherwise usable fonts
+- [x] Relax post format 2 parsing so malformed glyph-name arrays do not reject otherwise usable fonts
   Sample 5 also surfaced many failures of the form:
   `invalid post format 2 glyph name index 311 (newNames len=53)`
 

@@ -2,7 +2,6 @@ package ttf
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 )
 
@@ -18,11 +17,13 @@ func TestPostTable_readFormat2Names_InvalidCustomNameIndex(t *testing.T) {
 		0x03, 'b', 'a', 'd',
 	}
 
-	err := table.readFormat2Names(bytes.NewReader(data))
-	if err == nil {
-		t.Fatal("readFormat2Names() error = nil, want non-nil")
+	if err := table.readFormat2Names(bytes.NewReader(data)); err != nil {
+		t.Fatalf("readFormat2Names() error = %v, want nil fallback", err)
 	}
-	if !strings.Contains(err.Error(), "invalid post format 2 glyph name index") {
-		t.Fatalf("unexpected error: %v", err)
+	if len(table.names) != 1 {
+		t.Fatalf("len(table.names) = %d, want 1", len(table.names))
+	}
+	if table.names[0] != ".notdef" {
+		t.Fatalf("table.names[0] = %q, want fallback .notdef", table.names[0])
 	}
 }
