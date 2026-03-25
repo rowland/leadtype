@@ -166,3 +166,14 @@ func TestSimpleFont_ToUnicodeEntry_SystemFont(t *testing.T) {
 		t.Error("generated PDF missing /ToUnicode entry")
 	}
 }
+
+func TestToUnicodeCMapDataComposite_LigatureSequence(t *testing.T) {
+	data := toUnicodeCMapDataComposite(map[uint16][]rune{
+		42: {'f', 'i'},
+	})
+	s := string(data)
+
+	if !strings.Contains(s, "<002A> <00660069>") {
+		t.Fatalf("expected ligature glyph to map to both code points, got:\n%s", s)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	"github.com/rowland/leadtype/codepage"
@@ -322,9 +323,11 @@ func (pw *PageWriter) flushText() {
 
 			var shaped []shaping.GlyphPosition
 			var runes []rune // allocated only when shaping is attempted
+			var glyphSequences map[int][]rune
 			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
 				runes = []rune(p.Text)
 				shaped, _ = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
+				glyphSequences = shapedGlyphSequences(shaped, runes)
 			}
 
 			if shaped != nil {
@@ -335,7 +338,11 @@ func (pw *PageWriter) flushText() {
 				for i := len(shaped) - 1; i >= 0; i-- {
 					gp := shaped[i]
 					if gr != nil {
-						gr.record(gp.GlyphID, runes[gp.ClusterIndex])
+						if seq := glyphSequences[gp.ClusterIndex]; len(seq) > 0 {
+							gr.recordRunes(gp.GlyphID, seq)
+						} else {
+							gr.record(gp.GlyphID, runes[gp.ClusterIndex])
+						}
 					}
 					buf.WriteByte(byte(gp.GlyphID >> 8))
 					buf.WriteByte(byte(gp.GlyphID & 0xFF))
@@ -415,6 +422,40 @@ func (pw *PageWriter) flushText() {
 
 	pw.line = nil
 	pw.flushing = false
+}
+
+func shapedGlyphSequences(glyphs []shaping.GlyphPosition, runes []rune) map[int][]rune {
+	if len(glyphs) == 0 || len(runes) == 0 {
+		return nil
+	}
+
+	clusterStarts := make(map[int]struct{}, len(glyphs))
+	for _, gp := range glyphs {
+		if gp.ClusterIndex >= 0 && gp.ClusterIndex < len(runes) {
+			clusterStarts[gp.ClusterIndex] = struct{}{}
+		}
+	}
+	if len(clusterStarts) == 0 {
+		return nil
+	}
+
+	sortedStarts := make([]int, 0, len(clusterStarts))
+	for start := range clusterStarts {
+		sortedStarts = append(sortedStarts, start)
+	}
+	sort.Ints(sortedStarts)
+
+	sequences := make(map[int][]rune, len(sortedStarts))
+	for i, start := range sortedStarts {
+		end := len(runes)
+		if i+1 < len(sortedStarts) {
+			end = sortedStarts[i+1]
+		}
+		if start < end {
+			sequences[start] = append([]rune(nil), runes[start:end]...)
+		}
+	}
+	return sequences
 }
 
 func (pw *PageWriter) FontColor() colors.Color {

@@ -8,26 +8,32 @@ package pdf
 // It is used in Unicode mode to build the /W width array and the ToUnicode
 // CMap stream at document close.
 type glyphRecorder struct {
-	glyphToRune map[uint16]rune
+	glyphToRunes map[uint16][]rune
 }
 
 func newGlyphRecorder() *glyphRecorder {
-	return &glyphRecorder{glyphToRune: make(map[uint16]rune)}
+	return &glyphRecorder{glyphToRunes: make(map[uint16][]rune)}
 }
 
 // record notes that glyphID was used to render the given rune.
 // If glyphID is already recorded it is silently ignored (first rune wins).
 func (gr *glyphRecorder) record(glyphID uint16, r rune) {
-	if _, ok := gr.glyphToRune[glyphID]; !ok {
-		gr.glyphToRune[glyphID] = r
+	gr.recordRunes(glyphID, []rune{r})
+}
+
+// recordRunes notes that glyphID was used to render the given Unicode sequence.
+// If glyphID is already recorded it is silently ignored (first sequence wins).
+func (gr *glyphRecorder) recordRunes(glyphID uint16, runes []rune) {
+	if _, ok := gr.glyphToRunes[glyphID]; !ok {
+		gr.glyphToRunes[glyphID] = append([]rune(nil), runes...)
 	}
 }
 
-// mapping returns a copy of the glyph-ID → rune map.
-func (gr *glyphRecorder) mapping() map[uint16]rune {
-	m := make(map[uint16]rune, len(gr.glyphToRune))
-	for k, v := range gr.glyphToRune {
-		m[k] = v
+// mapping returns a copy of the glyph-ID → Unicode-sequence map.
+func (gr *glyphRecorder) mapping() map[uint16][]rune {
+	m := make(map[uint16][]rune, len(gr.glyphToRunes))
+	for k, v := range gr.glyphToRunes {
+		m[k] = append([]rune(nil), v...)
 	}
 	return m
 }

@@ -60,18 +60,18 @@ func toUnicodeCMapData(encoding []rune) []byte {
 }
 
 // toUnicodeCMapDataComposite builds the ToUnicode CMap stream for a composite
-// (Type0 / CIDFontType2) font. glyphToRune maps each glyph ID used in the
-// document back to its Unicode codepoint. The codespace range is <0000>–<FFFF>.
+// (Type0 / CIDFontType2) font. glyphToRunes maps each glyph ID used in the
+// document back to its Unicode sequence. The codespace range is <0000>–<FFFF>.
 //
 // The PDF spec limits each beginbfchar/endbfchar block to 100 entries.
-func toUnicodeCMapDataComposite(glyphToRune map[uint16]rune) []byte {
+func toUnicodeCMapDataComposite(glyphToRunes map[uint16][]rune) []byte {
 	type entry struct {
 		glyphID uint16
-		r       rune
+		runes   []rune
 	}
-	entries := make([]entry, 0, len(glyphToRune))
-	for gid, r := range glyphToRune {
-		entries = append(entries, entry{gid, r})
+	entries := make([]entry, 0, len(glyphToRunes))
+	for gid, runes := range glyphToRunes {
+		entries = append(entries, entry{gid, append([]rune(nil), runes...)})
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].glyphID < entries[j].glyphID })
 
@@ -95,7 +95,7 @@ func toUnicodeCMapDataComposite(glyphToRune map[uint16]rune) []byte {
 		block := entries[i:end]
 		fmt.Fprintf(&sb, "%d beginbfchar\n", len(block))
 		for _, e := range block {
-			fmt.Fprintf(&sb, "<%04X> <%04X>\n", e.glyphID, e.r)
+			fmt.Fprintf(&sb, "<%04X> <%s>\n", e.glyphID, compositeDestinationHex(e.runes))
 		}
 		sb.WriteString("endbfchar\n")
 	}
@@ -104,4 +104,12 @@ func toUnicodeCMapDataComposite(glyphToRune map[uint16]rune) []byte {
 	sb.WriteString("CMap end\n")
 	sb.WriteString("end\n")
 	return []byte(sb.String())
+}
+
+func compositeDestinationHex(runes []rune) string {
+	var sb strings.Builder
+	for _, r := range runes {
+		fmt.Fprintf(&sb, "%04X", r)
+	}
+	return sb.String()
 }

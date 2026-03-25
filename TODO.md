@@ -11,7 +11,7 @@
   Suggested direction:
   Update the shaped emission path so glyph positioning data is honored. That may require switching from a simple `Tj` stream to a more expressive text operator sequence, or otherwise incorporating the shaping offsets into the emitted text layout. Add focused coverage for Arabic text with combining marks or another fixture that produces non-zero offsets.
 
-- [ ] Record full Unicode clusters for ligatures in ToUnicode generation
+- [x] Record full Unicode clusters for ligatures in ToUnicode generation
   The current glyph recorder in [pdf/glyph_recorder.go](/Users/brent/src/leadtype/pdf/glyph_recorder.go) stores a single `rune` per glyph ID, and the shaped-text path records `runes[gp.ClusterIndex]` from [pdf/page_writer.go](/Users/brent/src/leadtype/pdf/page_writer.go). For ligatures, `ClusterIndex` identifies only the first rune in the source cluster, not the whole cluster.
 
   Why this matters:
