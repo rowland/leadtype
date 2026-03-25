@@ -17,33 +17,79 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// NewShaper returns a pure-Go Arabic shaper backed by go-text/typesetting.
-func NewShaper() Shaper { return &goTextShaper{} }
+// NewShaper returns a pure-Go Arabic shaper backed by go-text/typesetting
+// with a default font cache size of 1.
+func NewShaper() Shaper { return &goTextShaper{maxSize: 1} }
 
-type goTextShaper struct {
-	mu         sync.Mutex
-	shaper     gotextshaping.HarfbuzzShaper
-	lastKey    string     // FontKey of the cached font
-	lastParsed *font.Font // go-text Font; thread-safe for reads
+type fontCacheEntry struct {
+	key    string
+	parsed *font.Font // go-text Font; thread-safe for reads
 }
 
-// parsedFont returns the go-text *font.Font for fr, using the size-1 cache.
+type goTextShaper struct {
+	mu      sync.Mutex
+	shaper  gotextshaping.HarfbuzzShaper
+	cache   []fontCacheEntry // MRU order: cache[0] is most recently used
+	maxSize int
+}
+
+// SetFontCacheSize sets the maximum number of parsed fonts held in the LRU.
+// The default is 1, which is optimal for documents using a single Arabic font.
+// Increase it when a document alternates between several Arabic fonts to avoid
+// repeated file reads and re-parses.
+func (s *goTextShaper) SetFontCacheSize(n int) {
+	if n < 1 {
+		n = 1
+	}
+	s.mu.Lock()
+	s.maxSize = n
+	if len(s.cache) > n {
+		s.cache = s.cache[:n]
+	}
+	s.mu.Unlock()
+}
+
+// cacheLookup returns the cached *font.Font for key, promoting it to the
+// front of the cache (MRU position). Must be called with s.mu held.
+func (s *goTextShaper) cacheLookup(key string) (*font.Font, bool) {
+	for i, e := range s.cache {
+		if e.key == key {
+			if i > 0 {
+				copy(s.cache[1:i+1], s.cache[:i])
+				s.cache[0] = e
+			}
+			return s.cache[0].parsed, true
+		}
+	}
+	return nil, false
+}
+
+// cacheStore inserts a new entry at the MRU position, evicting the LRU entry
+// if the cache is at capacity. Must be called with s.mu held.
+func (s *goTextShaper) cacheStore(key string, f *font.Font) {
+	if len(s.cache) < s.maxSize {
+		s.cache = append(s.cache, fontCacheEntry{})
+	}
+	copy(s.cache[1:], s.cache[:len(s.cache)-1])
+	s.cache[0] = fontCacheEntry{key: key, parsed: f}
+}
+
+// parsedFont returns the go-text *font.Font for fr, consulting the LRU cache.
 // fr.Bytes() is called only on a cache miss, keeping disk I/O out of the
-// hot path for documents that use a single Arabic font.
+// hot path for documents that reuse the same Arabic font.
 func (s *goTextShaper) parsedFont(fr FontReader) (*font.Font, error) {
 	key := fr.FontKey()
 
 	s.mu.Lock()
-	if key != "" && key == s.lastKey && s.lastParsed != nil {
-		f := s.lastParsed
+	if f, ok := s.cacheLookup(key); ok {
 		s.mu.Unlock()
 		return f, nil
 	}
 	s.mu.Unlock()
 
-	// Cache miss: read and parse without holding the lock so other goroutines
-	// can still hit the cache concurrently. Worst case: two goroutines both
-	// miss and parse the same font; the second write is harmless.
+	// Cache miss: read and parse outside the lock so other goroutines can
+	// still hit the cache concurrently. Worst case: two goroutines both miss
+	// on the same key and parse it twice; the second store is harmless.
 	data := fr.Bytes()
 	if len(data) == 0 {
 		return nil, fmt.Errorf("shaping: no font data for %q", key)
@@ -54,8 +100,7 @@ func (s *goTextShaper) parsedFont(fr FontReader) (*font.Font, error) {
 	}
 
 	s.mu.Lock()
-	s.lastKey = key
-	s.lastParsed = loaded.Font
+	s.cacheStore(key, loaded.Font)
 	s.mu.Unlock()
 
 	return loaded.Font, nil
