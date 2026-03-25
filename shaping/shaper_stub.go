@@ -12,6 +12,6 @@ func NewShaper() Shaper { return noopShaper{} }
 
 type noopShaper struct{}
 
-func (noopShaper) Shape(_ []rune, _ []byte, _ float32) ([]GlyphPosition, error) {
+func (noopShaper) Shape(_ []rune, _ FontReader, _ float32) ([]GlyphPosition, error) {
 	return nil, nil
 }

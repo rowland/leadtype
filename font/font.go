@@ -185,8 +185,20 @@ func (font *Font) XHeight() int {
 
 // ByteReader is an optional interface implemented by FontMetrics backends that
 // can return their raw font file bytes for use by external shapers.
+// FontKey must be cheap (no I/O); Bytes may perform I/O and should be called
+// only when the shaper's cache misses.
 type ByteReader interface {
+	FontKey() string
 	Bytes() []byte
+}
+
+// FontKey returns a stable string identifying the underlying font file,
+// or "" if the backend does not support it (e.g. AFM fonts).
+func (font *Font) FontKey() string {
+	if br, ok := font.metrics.(ByteReader); ok {
+		return br.FontKey()
+	}
+	return ""
 }
 
 // Bytes returns the raw bytes of the underlying font file, or nil if the font

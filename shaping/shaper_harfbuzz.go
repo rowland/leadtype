@@ -23,9 +23,12 @@ type hbShaper struct{}
 
 // Shape shapes a run of Arabic text using the system libharfbuzz via CGO.
 // The returned glyphs are in visual (display) order.
-func (h *hbShaper) Shape(text []rune, fontBytes []byte, ppem float32) ([]GlyphPosition, error) {
+// TODO: add a size-1 cache here (keyed by fr.FontKey()) to avoid re-creating
+// the hb_face_t on every call, as in the pure-Go backend.
+func (h *hbShaper) Shape(text []rune, fr FontReader, ppem float32) ([]GlyphPosition, error) {
+	fontBytes := fr.Bytes()
 	if len(fontBytes) == 0 {
-		return nil, fmt.Errorf("shaping: empty font data")
+		return nil, fmt.Errorf("shaping: no font data for %q", fr.FontKey())
 	}
 
 	// Load font from raw bytes.

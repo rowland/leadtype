@@ -334,11 +334,9 @@ func (pw *PageWriter) flushText() {
 
 			var shaped []shaping.GlyphPosition
 			var runes []rune // allocated only when shaping is attempted
-			if containsArabic(p.Text) {
-				if fontBytes := p.Font.Bytes(); fontBytes != nil {
-					runes = []rune(p.Text)
-					shaped, _ = textShaper.Shape(runes, fontBytes, float32(p.FontSize))
-				}
+			if containsArabic(p.Text) && p.Font.FontKey() != "" {
+				runes = []rune(p.Text)
+				shaped, _ = textShaper.Shape(runes, p.Font, float32(p.FontSize))
 			}
 
 			if shaped != nil {

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 )
 
 type Font struct {
@@ -22,23 +21,28 @@ type Font struct {
 	postTable postTable
 	vheaTable vheaTable
 	vmtxTable vmtxTable
-	rawBytes     []byte
-	rawBytesOnce sync.Once
+	rawBytes []byte // non-nil only when loaded via LoadFontFromBytes
 }
 
-// Bytes returns the raw bytes of the font file. For fonts loaded from disk the
-// read is deferred until the first call (lazy), so non-Arabic documents pay no
-// I/O or memory cost. Returns nil for TTC members loaded at a non-zero offset.
+// FontKey returns a stable string identifying this font, used as a cache key
+// by the shaper. No I/O is performed.
+func (font *Font) FontKey() string {
+	return fmt.Sprintf("%s@%d", font.filename, font.ttcOffset)
+}
+
+// Bytes returns the raw font file contents. For fonts loaded from disk this
+// performs a file read on every call; callers that need repeated access should
+// cache the result (e.g. the shaper's size-1 LRU). Returns nil for TTC
+// members loaded at a non-zero offset.
 func (font *Font) Bytes() []byte {
 	if font.rawBytes != nil {
-		return font.rawBytes // already available (e.g. LoadFontFromBytes)
+		return font.rawBytes // LoadFontFromBytes path: already in memory
 	}
-	font.rawBytesOnce.Do(func() {
-		if font.ttcOffset == 0 && font.filename != "" && font.filename != "<bytes>" {
-			font.rawBytes, _ = os.ReadFile(font.filename)
-		}
-	})
-	return font.rawBytes
+	if font.ttcOffset != 0 || font.filename == "" || font.filename == "<bytes>" {
+		return nil
+	}
+	data, _ := os.ReadFile(font.filename)
+	return data
 }
 
 // 9,151,820 ns

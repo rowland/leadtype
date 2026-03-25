@@ -20,11 +20,22 @@ var amiriFont []byte
 // arabicText is "مرحبا" (hello in Arabic).
 const arabicText = "مرحبا"
 
+// staticFontReader implements shaping.FontReader for in-memory test fonts.
+type staticFontReader struct {
+	key  string
+	data []byte
+}
+
+func (f staticFontReader) FontKey() string { return f.key }
+func (f staticFontReader) Bytes() []byte   { return f.data }
+
+var amiri = staticFontReader{"testdata/Amiri-Regular.ttf", amiriFont}
+
 func TestShape_arabic(t *testing.T) {
 	s := shaping.NewShaper()
 	runes := []rune(arabicText)
 
-	glyphs, err := s.Shape(runes, amiriFont, 12)
+	glyphs, err := s.Shape(runes, amiri, 12)
 	if err != nil {
 		t.Fatalf("Shape: %v", err)
 	}
@@ -50,7 +61,8 @@ func TestShape_arabic(t *testing.T) {
 
 func TestShape_corruptFont(t *testing.T) {
 	s := shaping.NewShaper()
-	_, err := s.Shape([]rune(arabicText), []byte("not a font"), 12)
+	corrupt := staticFontReader{"corrupt", []byte("not a font")}
+	_, err := s.Shape([]rune(arabicText), corrupt, 12)
 	if err == nil {
 		t.Fatal("expected error for corrupt font data, got nil")
 	}
@@ -60,11 +72,11 @@ func TestShape_fontCacheHit(t *testing.T) {
 	s := shaping.NewShaper()
 	runes := []rune(arabicText)
 
-	first, err := s.Shape(runes, amiriFont, 12)
+	first, err := s.Shape(runes, amiri, 12)
 	if err != nil {
 		t.Fatalf("first Shape: %v", err)
 	}
-	second, err := s.Shape(runes, amiriFont, 12)
+	second, err := s.Shape(runes, amiri, 12)
 	if err != nil {
 		t.Fatalf("second Shape: %v", err)
 	}
@@ -90,7 +102,8 @@ func TestShape_envFont(t *testing.T) {
 		t.Fatalf("read font: %v", err)
 	}
 	s := shaping.NewShaper()
-	glyphs, err := s.Shape([]rune(arabicText), data, 12)
+	fr := staticFontReader{path, data}
+	glyphs, err := s.Shape([]rune(arabicText), fr, 12)
 	if err != nil {
 		t.Fatalf("Shape: %v", err)
 	}

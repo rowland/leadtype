@@ -21,51 +21,56 @@ import (
 func NewShaper() Shaper { return &goTextShaper{} }
 
 type goTextShaper struct {
-	mu     sync.Mutex
-	shaper gotextshaping.HarfbuzzShaper
-	fonts  sync.Map // key: fontKey, value: *font.Font
+	mu         sync.Mutex
+	shaper     gotextshaping.HarfbuzzShaper
+	lastKey    string     // FontKey of the cached font
+	lastParsed *font.Font // go-text Font; thread-safe for reads
 }
 
-// fontKey is a cheap fingerprint for a font's byte slice.
-// It is not cryptographically strong, but collision probability for
-// distinct font files is negligible in practice.
-type fontKey struct {
-	head [16]byte
-	size int
-}
+// parsedFont returns the go-text *font.Font for fr, using the size-1 cache.
+// fr.Bytes() is called only on a cache miss, keeping disk I/O out of the
+// hot path for documents that use a single Arabic font.
+func (s *goTextShaper) parsedFont(fr FontReader) (*font.Font, error) {
+	key := fr.FontKey()
 
-func makeFontKey(data []byte) fontKey {
-	var k fontKey
-	k.size = len(data)
-	copy(k.head[:], data)
-	return k
-}
-
-// face returns a *font.Face for the given font bytes.
-// *font.Font is cached (thread-safe); a new *font.Face wrapping the shared
-// Font is created per call because face caches glyph extents and is not
-// safe for concurrent use.
-func (s *goTextShaper) face(fontBytes []byte) (*font.Face, error) {
-	k := makeFontKey(fontBytes)
-	if v, ok := s.fonts.Load(k); ok {
-		return font.NewFace(v.(*font.Font)), nil
+	s.mu.Lock()
+	if key != "" && key == s.lastKey && s.lastParsed != nil {
+		f := s.lastParsed
+		s.mu.Unlock()
+		return f, nil
 	}
-	loaded, err := font.ParseTTF(bytes.NewReader(fontBytes))
+	s.mu.Unlock()
+
+	// Cache miss: read and parse without holding the lock so other goroutines
+	// can still hit the cache concurrently. Worst case: two goroutines both
+	// miss and parse the same font; the second write is harmless.
+	data := fr.Bytes()
+	if len(data) == 0 {
+		return nil, fmt.Errorf("shaping: no font data for %q", key)
+	}
+	loaded, err := font.ParseTTF(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("shaping: parse font: %w", err)
+		return nil, fmt.Errorf("shaping: parse font %q: %w", key, err)
 	}
-	// Store the underlying *Font (thread-safe); discard the wrapper Face.
-	actual, _ := s.fonts.LoadOrStore(k, loaded.Font)
-	return font.NewFace(actual.(*font.Font)), nil
+
+	s.mu.Lock()
+	s.lastKey = key
+	s.lastParsed = loaded.Font
+	s.mu.Unlock()
+
+	return loaded.Font, nil
 }
 
 // Shape shapes a run of Arabic text using go-text/typesetting's pure-Go
 // HarfBuzz port. The returned glyphs are in visual (display) order.
-func (s *goTextShaper) Shape(text []rune, fontBytes []byte, ppem float32) ([]GlyphPosition, error) {
-	face, err := s.face(fontBytes)
+func (s *goTextShaper) Shape(text []rune, fr FontReader, ppem float32) ([]GlyphPosition, error) {
+	parsed, err := s.parsedFont(fr)
 	if err != nil {
 		return nil, err
 	}
+
+	// font.Face wraps Font with per-call glyph-extent caching; not thread-safe.
+	face := font.NewFace(parsed)
 
 	input := gotextshaping.Input{
 		Text:      text,
@@ -78,8 +83,6 @@ func (s *goTextShaper) Shape(text []rune, fontBytes []byte, ppem float32) ([]Gly
 		Language:  language.NewLanguage("ar"),
 	}
 
-	// HarfbuzzShaper is documented as safe for concurrent use via its
-	// internal LRU cache; guard with a mutex to be conservative.
 	s.mu.Lock()
 	output := s.shaper.Shape(input)
 	s.mu.Unlock()

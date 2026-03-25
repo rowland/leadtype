@@ -13,6 +13,15 @@
 // The harfbuzz tag supersedes arabic; do not combine them.
 package shaping
 
+// FontReader is the interface through which the shaper accesses a font.
+// FontKey returns a stable identifier (no I/O) used as the cache key.
+// Bytes is only called on a cache miss, deferring any file I/O until
+// the font is actually needed.
+type FontReader interface {
+	FontKey() string
+	Bytes() []byte
+}
+
 // GlyphPosition holds one shaped glyph's identifier and its positioning data.
 //
 // XAdvance, YAdvance, XOffset, and YOffset are expressed in 26.6 fixed-point
@@ -34,7 +43,8 @@ type GlyphPosition struct {
 // Shaper shapes a run of Unicode text into positioned glyphs for a given font.
 //
 //   - text is the Arabic (or other complex-script) run to shape.
-//   - fontBytes is the raw content of a TrueType or OpenType font file.
+//   - font provides the font identity and raw bytes; Bytes() is only called
+//     on a cache miss to avoid unnecessary I/O.
 //   - ppem is the size of the font in the caller's coordinate system (e.g.
 //     points for PDF output). It is used to scale the returned metrics.
 //
@@ -42,5 +52,5 @@ type GlyphPosition struct {
 // A nil slice with a nil error indicates the no-op stub build; callers should
 // fall back to standard font metrics in that case.
 type Shaper interface {
-	Shape(text []rune, fontBytes []byte, ppem float32) ([]GlyphPosition, error)
+	Shape(text []rune, font FontReader, ppem float32) ([]GlyphPosition, error)
 }
