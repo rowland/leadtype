@@ -143,6 +143,10 @@ These gaps are intentionally in scope for parity work.
   - `polygon`
   - `star`
 - image embedding and placement
+  - JPEG parity is the immediate requirement
+  - PNG should remain an explicit future extension path, using decoded PNG
+    pixel data mapped into standard PDF image XObjects rather than assuming a
+    native PNG passthrough format
 - transform helpers
   - `rotate`
   - `scale`
@@ -198,7 +202,7 @@ These gaps are intentionally in scope for parity work.
 | PDF tabs / vertical tabs / indent | `eideticpdf` | Not implemented as supported public behavior | Exclude | Keep out of parity scope |
 | PDF explicit path API | `eideticpdf` | Low-level PDF operators exist, no public parity API | Include | Needed for methodical shape and clip work |
 | PDF higher-level shape primitives | `eideticpdf` | Only rectangles and raw curve helpers are present | Include | Add user-facing geometry helpers |
-| PDF images | `eideticpdf` | Not implemented | Include | Legacy parity requires image placement support |
+| PDF images | `eideticpdf` | Not implemented | Include | Deliver JPEG parity first; keep API and internals open for later PNG support via FlateDecode plus optional soft mask |
 | PDF transforms | `eideticpdf` | Not implemented as public block helpers | Include | Needed directly and for LTML transforms |
 | PDF vertical text alignment | `eideticpdf` | Mentioned in legacy, missing in current writer | Include | Separate from existing underline/strikeout |
 | PDF pages-up / imposition | `eideticpdf` | Not implemented | Defer | Useful but not needed for first parity pass |
@@ -235,3 +239,20 @@ A practical order for implementation is:
 4. Finish LTML page-flow behavior:
    display modes, overflow continuation, repeated content handling.
 5. Reassess deferred PDF pages-up support after the first parity milestone.
+
+## Image Format Guidance
+
+The legacy projects only supported JPEG because that matched the historical PDF
+workflow they were written for. For `leadtype`, the image work should be shaped
+so that:
+
+- JPEG remains the first parity target and the first shipped format.
+- The public image API should be format-agnostic, so PNG can be added without
+  replacing the API surface.
+- Future PNG support should be implemented by decoding the PNG container and
+  emitting a normal PDF image XObject, typically using `/FlateDecode`, image
+  metadata, and `/SMask` when alpha transparency is present.
+- A sensible first PNG milestone would be non-interlaced 8-bit grayscale, RGB,
+  and RGBA PNGs, with palette support if it is straightforward.
+- 16-bit PNGs, Adam7 interlacing, and advanced color-management fidelity should
+  remain follow-on work unless they become immediately necessary.

@@ -17,6 +17,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 - [ ] Add a standard `<image>` widget ([#10](https://github.com/rowland/leadtype/issues/10))
   - [ ] map widget attrs to the PDF image API
   - [ ] support sizing with natural aspect ratio rules
+  - [ ] avoid JPEG-specific assumptions in widget design so PNG can be added later without LTML API churn
 - [ ] Add a standard `<line>` widget
   - [ ] define horizontal/vertical/general line semantics
   - [ ] map border/pen attrs cleanly to the PDF layer

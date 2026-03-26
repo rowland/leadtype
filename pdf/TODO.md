@@ -33,7 +33,7 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 - [ ] add focused unit tests for geometry generation
 - [ ] add PDF-level tests for rendered command sequences
 
-### Images ([#8](https://github.com/rowland/leadtype/issues/8))
+### Images ([#8](https://github.com/rowland/leadtype/issues/8), future PNG follow-on [#16](https://github.com/rowland/leadtype/issues/16))
 
 - [ ] Add image support at the PDF layer
   - [ ] support JPEG detection and metadata extraction
@@ -43,6 +43,17 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
   - [ ] define behavior when width and height are both supplied
 - [ ] add tests for JPEG dimension parsing
 - [ ] add PDF integration tests for image XObject output and placement
+- [ ] keep the public image API format-agnostic so PNG can be added later without API churn
+- [ ] keep the image object model open to future PNG import via decoded pixel data, `/FlateDecode`, and optional `/SMask`
+
+### Future Image Extension ([#16](https://github.com/rowland/leadtype/issues/16))
+
+- [ ] Add PNG support as a follow-on enhancement
+  - [ ] support a first milestone of non-interlaced 8-bit grayscale, RGB, and RGBA PNGs
+  - [ ] decode PNG scanlines and map them to standard PDF image XObjects
+  - [ ] support alpha via `/SMask`
+  - [ ] decide whether palette PNGs are expanded to RGB or mapped to Indexed color space in the first implementation
+  - [ ] defer 16-bit PNG, Adam7 interlacing, and advanced color-management handling unless required
 
 ### Transforms ([#12](https://github.com/rowland/leadtype/issues/12))
 
