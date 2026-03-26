@@ -57,12 +57,12 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Transforms ([#12](https://github.com/rowland/leadtype/issues/12))
 
-- [ ] Add block-scoped transform helpers
-  - [ ] `rotate(angle, x, y, ...)`
-  - [ ] `scale(x, y, scaleX, scaleY, ...)`
-- [ ] implement graphics-state save/restore around transforms
-- [ ] verify transforms compose correctly with text, images, and shapes
-- [ ] add tests for emitted transform matrices
+- [x] Add block-scoped transform helpers
+  - [x] `rotate(angle, x, y, ...)`
+  - [x] `scale(x, y, scaleX, scaleY, ...)`
+- [x] implement graphics-state save/restore around transforms
+- [x] verify transforms compose correctly with text, images, and shapes
+- [x] add tests for emitted transform matrices
 
 ### Vertical Text Alignment ([#12](https://github.com/rowland/leadtype/issues/12))
 

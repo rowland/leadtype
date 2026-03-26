@@ -223,6 +223,47 @@ func TestPageWriter_CircleUsesTranslatedMoveTo(t *testing.T) {
 	}
 }
 
+func TestPageWriter_Rotate(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	if err := pw.Rotate(90, 1, 2, func() {
+		pw.Line(1, 1, 0, 1)
+	}); err != nil {
+		t.Fatalf("Rotate returned error: %v", err)
+	}
+
+	expectS(t, "q\n0 1 -1 0 720 576 cm\n72 720 m\n144 720 l\nS\nQ\n", pw.stream.String())
+}
+
+func TestPageWriter_Scale(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	if err := pw.Scale(1, 2, 2, 0.5, func() {
+		pw.Rectangle(1, 1, 1, 0.5, true, false)
+	}); err != nil {
+		t.Fatalf("Scale returned error: %v", err)
+	}
+
+	expectS(t, "q\n2 0 0 0.5 -72 324 cm\n72 684 72 36 re\nS\nQ\n", pw.stream.String())
+}
+
+func TestPageWriter_RotateInsideManualPath(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.Path(func() {
+		if rotateErr := pw.Rotate(45, 1, 1, func() {}); rotateErr != errTransformInsideManualPath {
+			t.Fatalf("expected errTransformInsideManualPath, got %v", rotateErr)
+		}
+		_ = pw.Fill()
+	})
+	if err != nil {
+		t.Fatalf("Path returned error: %v", err)
+	}
+}
+
 func TestPageWriter_flushText(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	fc, err := ttf_fonts.NewFromSystemFonts()

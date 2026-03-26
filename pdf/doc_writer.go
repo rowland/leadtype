@@ -500,6 +500,14 @@ func (dw *DocWriter) Clip(fn func()) error {
 	return dw.CurPage().Clip(fn)
 }
 
+func (dw *DocWriter) Rotate(angle, x, y float64, fn func()) error {
+	return dw.CurPage().Rotate(angle, x, y, fn)
+}
+
+func (dw *DocWriter) Scale(x, y, scaleX, scaleY float64, fn func()) error {
+	return dw.CurPage().Scale(x, y, scaleX, scaleY, fn)
+}
+
 func (dw *DocWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
 	dw.CurPage().Rectangle(x, y, width, height, border, fill)
 }

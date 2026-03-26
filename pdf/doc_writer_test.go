@@ -353,6 +353,42 @@ func TestDocWriter_ShapesIntegration(t *testing.T) {
 	}
 }
 
+func TestDocWriter_TransformsIntegration(t *testing.T) {
+	var buf bytes.Buffer
+
+	dw := NewDocWriter()
+	dw.SetUnits("in")
+	dw.NewPage()
+	if err := dw.Rotate(30, 2, 2, func() {
+		dw.Rectangle(1.5, 1.7, 1.0, 0.5, true, false)
+	}); err != nil {
+		t.Fatalf("Rotate returned error: %v", err)
+	}
+	if err := dw.Scale(4.5, 2.5, 1.5, 0.75, func() {
+		dw.Line(4.0, 2.5, 0, 1.0)
+	}); err != nil {
+		t.Fatalf("Scale returned error: %v", err)
+	}
+
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo returned error: %v", err)
+	}
+	pdf := buf.String()
+
+	for _, fragment := range []string{
+		"%PDF-1.3\n",
+		"q\n",
+		" cm\n",
+		" re\n",
+		"S\n",
+		"Q\n",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
+		}
+	}
+}
+
 // TODO: TestPagesAcross
 // TODO: TestPagesDown
 // TODO: TestPagesUp

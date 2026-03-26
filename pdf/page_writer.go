@@ -243,6 +243,7 @@ var errNoActivePath = errors.New("No active manual path.")
 var errPathAlreadyActive = errors.New("Manual path already active.")
 var errInvalidPolygonSides = errors.New("Polygon requires at least 3 sides.")
 var errInvalidStarPoints = errors.New("Star requires at least 5 points.")
+var errTransformInsideManualPath = errors.New("Transform not allowed during active manual path.")
 
 func (pw *PageWriter) beginManualPath() error {
 	if len(pw.pathStates) > 0 {
@@ -373,6 +374,63 @@ func (pw *PageWriter) Clip(fn func()) error {
 	}
 	pw.gw.restoreGraphicsState()
 	return nil
+}
+
+func (pw *PageWriter) scopedTransform(a, b, c, d, x, y float64, fn func()) error {
+	if len(pw.pathStates) > 0 {
+		return errTransformInsideManualPath
+	}
+	if pw.inText {
+		pw.endText()
+	} else if pw.line != nil {
+		pw.flushText()
+		if pw.inText {
+			pw.endText()
+		}
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	pw.gw.saveGraphicsState()
+	pw.gw.concatMatrix(a, b, c, d, x, y)
+	if fn != nil {
+		fn()
+	}
+	if pw.inText {
+		pw.endText()
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	pw.gw.restoreGraphicsState()
+	return nil
+}
+
+// Rotate applies a scoped rotation around (x, y) for all drawing performed
+// within fn. Coordinates use the PageWriter's current unit system.
+func (pw *PageWriter) Rotate(angle, x, y float64, fn func()) error {
+	theta := angle * math.Pi / 180.0
+	vCos := math.Cos(theta)
+	vSin := math.Sin(theta)
+	xpts := pw.units.toPts(x)
+	ypts := pw.translate(pw.units.toPts(y))
+	return pw.scopedTransform(
+		vCos, vSin, -vSin, vCos,
+		xpts-(xpts*vCos)+(ypts*vSin),
+		ypts-(xpts*vSin)-(ypts*vCos),
+		fn)
+}
+
+// Scale applies a scoped scale around (x, y) for all drawing performed within
+// fn. Coordinates use the PageWriter's current unit system.
+func (pw *PageWriter) Scale(x, y, scaleX, scaleY float64, fn func()) error {
+	xpts := pw.units.toPts(x)
+	ypts := pw.translate(pw.units.toPts(y))
+	return pw.scopedTransform(
+		scaleX, 0, 0, scaleY,
+		xpts-(xpts*scaleX),
+		ypts-(ypts*scaleY),
+		fn)
 }
 
 func (pw *PageWriter) CurvePoints(points []Location) error {
