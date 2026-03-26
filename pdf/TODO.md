@@ -5,7 +5,7 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ## Approved Parity Work
 
-### Path API
+### Path API ([#9](https://github.com/rowland/leadtype/issues/9))
 
 - [ ] Add a public path lifecycle API that mirrors the useful legacy behavior
   - [ ] expose a `path` entry point for manual multi-segment path construction
@@ -17,7 +17,7 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
   - [ ] add unit tests for path state transitions
   - [ ] add integration tests for clipping and hollow-path scenarios
 
-### Shape Primitives
+### Shape Primitives ([#7](https://github.com/rowland/leadtype/issues/7))
 
 - [ ] Add higher-level geometry helpers on top of the existing graph writer
   - [ ] angled `line`
@@ -33,7 +33,7 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 - [ ] add focused unit tests for geometry generation
 - [ ] add PDF-level tests for rendered command sequences
 
-### Images
+### Images ([#8](https://github.com/rowland/leadtype/issues/8))
 
 - [ ] Add image support at the PDF layer
   - [ ] support JPEG detection and metadata extraction
@@ -44,7 +44,7 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 - [ ] add tests for JPEG dimension parsing
 - [ ] add PDF integration tests for image XObject output and placement
 
-### Transforms
+### Transforms ([#12](https://github.com/rowland/leadtype/issues/12))
 
 - [ ] Add block-scoped transform helpers
   - [ ] `rotate(angle, x, y, ...)`
@@ -53,7 +53,7 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 - [ ] verify transforms compose correctly with text, images, and shapes
 - [ ] add tests for emitted transform matrices
 
-### Vertical Text Alignment
+### Vertical Text Alignment ([#12](https://github.com/rowland/leadtype/issues/12))
 
 - [ ] Add vertical text alignment control comparable to legacy `v_text_align`
 - [ ] define supported alignment values and their metric anchors

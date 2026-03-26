@@ -5,7 +5,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ## Approved Parity Work
 
-### Foundational Widget Tags
+### Foundational Widget Tags ([#11](https://github.com/rowland/leadtype/issues/11))
 
 - [ ] Add a standard `<label>` widget
   - [ ] support simple text rendering
@@ -14,14 +14,14 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 - [ ] Add a standard `<pre>` widget
   - [ ] preserve preformatted whitespace/newlines
   - [ ] support file/code-block parity use cases from legacy samples
-- [ ] Add a standard `<image>` widget
+- [ ] Add a standard `<image>` widget ([#10](https://github.com/rowland/leadtype/issues/10))
   - [ ] map widget attrs to the PDF image API
   - [ ] support sizing with natural aspect ratio rules
 - [ ] Add a standard `<line>` widget
   - [ ] define horizontal/vertical/general line semantics
   - [ ] map border/pen attrs cleanly to the PDF layer
 
-### Shape Widgets
+### Shape Widgets ([#10](https://github.com/rowland/leadtype/issues/10))
 
 - [ ] Add standard shape widgets beyond `<rect>`
   - [ ] `<circle>`
@@ -35,7 +35,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 - [ ] ensure widget attrs map predictably to the corresponding PDF primitives
 - [ ] add parser and rendering tests for each tag
 
-### Page Numbering
+### Page Numbering ([#15](https://github.com/rowland/leadtype/issues/15))
 
 - [ ] Add a standard `<pageno>` widget
   - [ ] support current-page output
@@ -43,7 +43,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
   - [ ] define whether explicit inner text provides an offset or override
 - [ ] add tests covering multipage documents and repeated-content scenarios
 
-### Absolute / Relative Positioning
+### Absolute / Relative Positioning ([#14](https://github.com/rowland/leadtype/issues/14))
 
 - [ ] Make documented `absolute` and `relative` layout modes functionally real
 - [ ] implement widget positioning semantics for `position="absolute"` and `position="relative"`
@@ -51,7 +51,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 - [ ] ensure width/height percentages and relative values work under positioned layouts
 - [ ] add rendering tests for positioned widgets inside containers and pages
 
-### Display Modes And Overflow Flow
+### Display Modes And Overflow Flow ([#13](https://github.com/rowland/leadtype/issues/13))
 
 - [ ] Add page-flow behavior from legacy ERML
   - [ ] `display="always"`
@@ -64,7 +64,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 - [ ] define interaction between overflow, repeated content, and page numbering
 - [ ] add tests for first-page-only, repeating, even/odd, and overflow cases
 
-### Transforms And Placement Extras
+### Transforms And Placement Extras ([#14](https://github.com/rowland/leadtype/issues/14))
 
 - [ ] Add widget transform/placement attrs
   - [ ] `rotate`
