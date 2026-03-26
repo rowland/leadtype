@@ -328,6 +328,89 @@ func TestRules_integration_id_and_class_selector_requires_both(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
+// Selectors use the alias name, not the underlying type
+//
+// Aliases map a user-facing name to a built-in tag (e.g. <h> → <p>).
+// The element's Path() is built from the alias name as written in the source,
+// so rules must also use that name.  A rule targeting the underlying type does
+// not apply to elements written with an alias name.
+// ----------------------------------------------------------------------------
+
+// A rule written with the alias name applies to elements using that alias.
+func TestRules_integration_builtin_alias_targeted_by_alias_name(t *testing.T) {
+	// <h> is a built-in alias for <p>. The rule uses "h", not "p".
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>h { font.size: 24; }</rules>
+			<page><h>heading text</h></page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	if len(page.children) == 0 {
+		t.Fatal("no children on page")
+	}
+	p, ok := page.children[0].(*StdParagraph)
+	if !ok {
+		t.Fatalf("expected *StdParagraph (h alias), got %T", page.children[0])
+	}
+	if p.font == nil {
+		t.Fatal("font was not set on <h> element by alias-name rule")
+	}
+	if p.font.size != 24 {
+		t.Errorf("expected font.size=24 from h rule, got %v", p.font.size)
+	}
+}
+
+// A rule targeting the underlying type does NOT apply to elements written with
+// an alias name — the selector matches against the name as written in source.
+func TestRules_integration_underlying_type_rule_does_not_apply_to_alias(t *testing.T) {
+	// <h> is an alias for <p>, but a rule for "p" should not match <h>.
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p { font.size: 14; }</rules>
+			<page><h>heading text</h></page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	if len(page.children) == 0 {
+		t.Fatal("no children on page")
+	}
+	p, ok := page.children[0].(*StdParagraph)
+	if !ok {
+		t.Fatalf("expected *StdParagraph (h alias), got %T", page.children[0])
+	}
+	// The "p" rule must not have set font.size=14 on the <h> element.
+	if p.font != nil && p.font.size == 14 {
+		t.Error("rule for 'p' should not apply to an element written as <h>")
+	}
+}
+
+// A user-defined alias (via <define>) can be targeted by its alias name.
+func TestRules_integration_user_defined_alias_targeted_by_alias_name(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<define id="caption" tag="p" />
+			<rules>caption { font.size: 10; }</rules>
+			<page><caption>fig. 1</caption></page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	if len(page.children) == 0 {
+		t.Fatal("no children on page")
+	}
+	p, ok := page.children[0].(*StdParagraph)
+	if !ok {
+		t.Fatalf("expected *StdParagraph (caption alias), got %T", page.children[0])
+	}
+	if p.font == nil {
+		t.Fatal("font was not set on <caption> element by user-defined alias rule")
+	}
+	if p.font.size != 10 {
+		t.Errorf("expected font.size=10 from caption rule, got %v", p.font.size)
+	}
+}
+
+// ----------------------------------------------------------------------------
 // Multiple properties in a single rule are all applied
 // ----------------------------------------------------------------------------
 
