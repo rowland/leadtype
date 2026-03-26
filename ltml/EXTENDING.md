@@ -323,14 +323,16 @@ functions:
 
 ## The Scope System
 
-Each `HasScope` element (currently `StdDocument` and `StdPage`) owns a `Scope`
-that stores named styles, layouts, page styles, aliases, and rules. Scopes form
-a parent chain; lookups walk from the innermost outward.
+Both `StdDocument` and `StdPage` embed `Scope` directly, so both satisfy
+`HasScope`. The parser's `push` method detects `HasScope` and sets the parent
+scope, building a lookup chain that walks from innermost to outermost. When a
+`<page>` element is popped off the stack its scope is discarded, so definitions
+inside it are never visible to sibling pages.
 
 ```
 defaultScope (global)
-  └─ StdDocument.Scope
-       └─ StdPage.Scope
+  └─ StdDocument.Scope   (<ltml> — shared across all pages)
+       └─ StdPage.Scope  (<page> — exclusive to that page instance)
 ```
 
 **Default scope contents:**

@@ -17,6 +17,32 @@ definitions and one or more `<page>` elements.
 </ltml>
 ```
 
+### Scope
+
+Both `<ltml>` and `<page>` establish a style scope. Style definitions
+(`<font>`, `<pen>`, `<brush>`, `<para>`, `<bullet>`, `<layout>`), aliases
+(`<define>`), and rules (`<rules>`) placed inside a `<page>` are visible only
+to that page. Definitions placed directly inside `<ltml>` are visible to all
+pages. A page can always reference definitions from its parent `<ltml>` scope,
+but other pages cannot see definitions made inside a sibling page.
+
+```xml
+<ltml>
+  <font id="body" name="Helvetica" size="12" />  <!-- shared by all pages -->
+
+  <page>
+    <font id="title" name="Helvetica" size="24" weight="Bold" />  <!-- this page only -->
+    <p font="title">Page One</p>
+    <p font="body">Body text.</p>
+  </page>
+
+  <page>
+    <!-- "title" is not visible here -->
+    <p font="body">Page Two</p>
+  </page>
+</ltml>
+```
+
 ---
 
 ## Elements
