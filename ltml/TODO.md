@@ -78,6 +78,20 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 - [ ] add tests for rotated and shifted widgets
 - [ ] define whether `z_index` is true stacking order or best-effort ordering and document it
 
+### StdDocument Writer Configuration ([#18](https://github.com/rowland/leadtype/issues/18))
+
+- [ ] Add LTML document-level attributes for PDF stream compression ([#18](https://github.com/rowland/leadtype/issues/18))
+  - [ ] add `compress-pages`
+  - [ ] add `compress-to-unicode`
+  - [ ] add `compress-embedded-fonts`
+- [ ] Map those attributes from `StdDocument` into the corresponding fluent `DocWriter` methods ([#18](https://github.com/rowland/leadtype/issues/18))
+  - [ ] `CompressPages(bool)`
+  - [ ] `CompressToUnicode(bool)`
+  - [ ] `CompressEmbeddedFonts(bool)`
+- [ ] default the LTML attributes to the same compatibility-preserving `false` defaults as the PDF layer
+- [ ] ensure LTML document parsing does not require constructor churn in the PDF package
+- [ ] add LTML tests proving document attributes reach the writer and affect generated stream dictionaries ([#18](https://github.com/rowland/leadtype/issues/18))
+
 ## Cross-Cutting Integration
 
 - [ ] Keep LTML syntax docs in sync with the supported tag set and attributes
