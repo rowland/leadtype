@@ -432,6 +432,26 @@ func (dw *DocWriter) PrintWithOptions(text string, options options.Options) (err
 	return dw.CurPage().PrintWithOptions(text, options)
 }
 
+func (dw *DocWriter) Path(fn func()) error {
+	return dw.CurPage().Path(fn)
+}
+
+func (dw *DocWriter) Fill() error {
+	return dw.CurPage().Fill()
+}
+
+func (dw *DocWriter) Stroke() error {
+	return dw.CurPage().Stroke()
+}
+
+func (dw *DocWriter) FillAndStroke() error {
+	return dw.CurPage().FillAndStroke()
+}
+
+func (dw *DocWriter) Clip(fn func()) error {
+	return dw.CurPage().Clip(fn)
+}
+
 func (dw *DocWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {
 	dw.CurPage().Rectangle(x, y, width, height, border, fill)
 }

@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/rowland/leadtype/afm_fonts"
@@ -154,6 +155,137 @@ func TestPageWriter_flushText(t *testing.T) {
 	pw.Print(", World!")
 	pw.flushText()
 	expectS(t, "BT\n/F0 12 Tf\n(Hello, World!) Tj\n", pw.stream.String())
+}
+
+func TestPageWriter_PathDiscardRestoresState(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.Path(func() {
+		pw.SetLineColor(red)
+		pw.MoveTo(1, 1)
+		pw.LineTo(2, 2)
+	})
+	if err != nil {
+		t.Fatalf("Path returned error: %v", err)
+	}
+
+	if len(pw.pathStates) != 0 {
+		t.Fatal("manual path stack should be empty after Path returns")
+	}
+	if !pw.autoPath {
+		t.Fatal("autoPath should be restored after Path returns")
+	}
+	if pw.inPath {
+		t.Fatal("inPath should be cleared after discarding unfinished path")
+	}
+	if pw.LineColor() != black {
+		t.Fatalf("expected line color restored to black, got %v", pw.LineColor())
+	}
+	if !strings.Contains(pw.stream.String(), "n\n") {
+		t.Fatalf("expected discarded path to emit new path operator, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_FillOutsidePathErrors(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Fill(); err != errNoActivePath {
+		t.Fatalf("expected errNoActivePath, got %v", err)
+	}
+	if err := pw.Stroke(); err != errNoActivePath {
+		t.Fatalf("expected errNoActivePath, got %v", err)
+	}
+	if err := pw.FillAndStroke(); err != errNoActivePath {
+		t.Fatalf("expected errNoActivePath, got %v", err)
+	}
+	if err := pw.Clip(nil); err != errNoActivePath {
+		t.Fatalf("expected errNoActivePath, got %v", err)
+	}
+}
+
+func TestPageWriter_PathStroke(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.Path(func() {
+		pw.MoveTo(1, 1)
+		pw.LineTo(2, 2)
+		if err := pw.Stroke(); err != nil {
+			t.Fatalf("Stroke returned error: %v", err)
+		}
+	})
+	if err != nil {
+		t.Fatalf("Path returned error: %v", err)
+	}
+
+	expectS(t, "1 791 m\n2 790 l\nS\n", pw.stream.String())
+}
+
+func TestPageWriter_PathFillAndStrokeRestoresColors(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.Path(func() {
+		pw.SetFillColor(red)
+		pw.SetLineColor(green)
+		pw.MoveTo(1, 1)
+		pw.LineTo(2, 2)
+		if err := pw.FillAndStroke(); err != nil {
+			t.Fatalf("FillAndStroke returned error: %v", err)
+		}
+	})
+	if err != nil {
+		t.Fatalf("Path returned error: %v", err)
+	}
+
+	if pw.fillColor != black {
+		t.Fatalf("expected fill color restored to black, got %v", pw.fillColor)
+	}
+	if pw.LineColor() != black {
+		t.Fatalf("expected line color restored to black, got %v", pw.LineColor())
+	}
+	if !strings.Contains(pw.stream.String(), "1 0 0 rg\n") {
+		t.Fatalf("expected fill color command in stream, got:\n%s", pw.stream.String())
+	}
+	if !strings.Contains(pw.stream.String(), "0 1 0 RG\n") {
+		t.Fatalf("expected line color command in stream, got:\n%s", pw.stream.String())
+	}
+	if !strings.Contains(pw.stream.String(), "B\n") {
+		t.Fatalf("expected fill-and-stroke operator in stream, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_PathClipScopesGraphicsState(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.Path(func() {
+		pw.MoveTo(1, 1)
+		pw.LineTo(2, 2)
+		pw.LineTo(1, 2)
+		pw.LineTo(1, 1)
+		if err := pw.Clip(func() {
+			pw.Rectangle(3, 3, 1, 1, true, false)
+		}); err != nil {
+			t.Fatalf("Clip returned error: %v", err)
+		}
+	})
+	if err != nil {
+		t.Fatalf("Path returned error: %v", err)
+	}
+
+	got := pw.stream.String()
+	if !strings.Contains(got, "q\n") || !strings.Contains(got, "Q\n") {
+		t.Fatalf("expected save/restore graphics state in clip output, got:\n%s", got)
+	}
+	if !strings.Contains(got, "W\nn\n") {
+		t.Fatalf("expected clip and path reset operators, got:\n%s", got)
+	}
+	if !strings.Contains(got, "re\nS\n") {
+		t.Fatalf("expected clipped drawing inside scope, got:\n%s", got)
+	}
 }
 
 func TestPageWriter_FontSize(t *testing.T) {

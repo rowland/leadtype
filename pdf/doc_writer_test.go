@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/rowland/leadtype/afm_fonts"
@@ -229,6 +230,68 @@ func TestDocWriter_SetOptions(t *testing.T) {
 	dw.SetOptions(options.Options{"units": "in"})
 	check(t, len(dw.options) == 1, "Default page options should have 1 option")
 	check(t, dw.options["units"] == "in", "Default units should be in")
+}
+
+func TestDocWriter_PathAPI_Integration(t *testing.T) {
+	var buf bytes.Buffer
+
+	dw := NewDocWriter()
+	dw.Path(func() {
+		dw.MoveTo(72, 720)
+		dw.LineTo(144, 720)
+		dw.LineTo(144, 648)
+		dw.LineTo(72, 720)
+		if err := dw.Clip(func() {
+			dw.Rectangle(90, 666, 72, 36, true, false)
+		}); err != nil {
+			t.Fatalf("Clip returned error: %v", err)
+		}
+	})
+
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo returned error: %v", err)
+	}
+
+	pdf := buf.String()
+
+	if !strings.HasPrefix(pdf, "%PDF-1.3\n") {
+		t.Fatalf("expected PDF header, got:\n%s", pdf[:min(32, len(pdf))])
+	}
+	if !strings.Contains(pdf, "/Type /Catalog") {
+		t.Fatalf("expected catalog object in generated PDF")
+	}
+	if !strings.Contains(pdf, "/Type /Page") {
+		t.Fatalf("expected page object in generated PDF")
+	}
+	if !strings.Contains(pdf, "/Contents ") {
+		t.Fatalf("expected page contents reference in generated PDF")
+	}
+	if !strings.Contains(pdf, "xref\n") {
+		t.Fatalf("expected xref table in generated PDF")
+	}
+	if !strings.Contains(pdf, "startxref\n") {
+		t.Fatalf("expected startxref in generated PDF")
+	}
+	if !strings.HasSuffix(pdf, "%%EOF\n") {
+		t.Fatalf("expected PDF EOF marker")
+	}
+
+	// Public path API should produce path construction, clipping, scoped graphics
+	// state, and drawing operators in the emitted content stream.
+	for _, fragment := range []string{
+		"72 72 m\n",
+		"144 72 l\n",
+		"144 144 l\n",
+		"q\n",
+		"W\nn\n",
+		"90 90 72 36 re\n",
+		"S\n",
+		"Q\n",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
+		}
+	}
 }
 
 // TODO: TestPagesAcross

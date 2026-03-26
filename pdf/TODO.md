@@ -7,15 +7,15 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Path API ([#9](https://github.com/rowland/leadtype/issues/9))
 
-- [ ] Add a public path lifecycle API that mirrors the useful legacy behavior
-  - [ ] expose a `path` entry point for manual multi-segment path construction
-  - [ ] expose `fill`
-  - [ ] expose `stroke`
-  - [ ] expose `fill_and_stroke`
-  - [ ] expose `clip`
-  - [ ] define how path mode interacts with existing auto-path behavior
-  - [ ] add unit tests for path state transitions
-  - [ ] add integration tests for clipping and hollow-path scenarios
+- [x] Add a public path lifecycle API that mirrors the useful legacy behavior
+  - [x] expose a `path` entry point for manual multi-segment path construction
+  - [x] expose `fill`
+  - [x] expose `stroke`
+  - [x] expose `fill_and_stroke`
+  - [x] expose `clip`
+  - [x] define how path mode interacts with existing auto-path behavior
+  - [x] add unit tests for path state transitions
+  - [x] add integration tests for clipping and hollow-path scenarios
 
 ### Shape Primitives ([#7](https://github.com/rowland/leadtype/issues/7))
 

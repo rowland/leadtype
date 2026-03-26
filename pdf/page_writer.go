@@ -48,10 +48,17 @@ type PageWriter struct {
 	page       *page
 	pageHeight float64
 	pageWidth  float64
+	pathStates []pathState
 	stream     bytes.Buffer
 	tw         *textWriter
 	units      *units
 	flushing   boolean
+}
+
+type pathState struct {
+	autoPath  bool
+	fillColor colors.Color
+	lineColor colors.Color
 }
 
 func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
@@ -232,6 +239,139 @@ func (pw *PageWriter) close() {
 }
 
 var errTooFewPoints = errors.New("Need at least 4 points for curve")
+var errNoActivePath = errors.New("No active manual path.")
+var errPathAlreadyActive = errors.New("Manual path already active.")
+
+func (pw *PageWriter) beginManualPath() error {
+	if len(pw.pathStates) > 0 {
+		return errPathAlreadyActive
+	}
+	pw.flushText()
+	pw.pathStates = append(pw.pathStates, pathState{
+		autoPath:  pw.autoPath,
+		fillColor: pw.fillColor,
+		lineColor: pw.lineColor,
+	})
+	pw.autoPath = false
+	return nil
+}
+
+func (pw *PageWriter) discardActivePath() {
+	if !pw.inPath {
+		return
+	}
+	pw.startGraph()
+	pw.gw.newPath()
+	pw.inPath = false
+}
+
+func (pw *PageWriter) restorePathState() {
+	if len(pw.pathStates) == 0 {
+		return
+	}
+	last := pw.pathStates[len(pw.pathStates)-1]
+	pw.autoPath = last.autoPath
+	pw.fillColor = last.fillColor
+	pw.lineColor = last.lineColor
+	pw.pathStates = pw.pathStates[:len(pw.pathStates)-1]
+}
+
+func (pw *PageWriter) requireActivePath() error {
+	if len(pw.pathStates) == 0 || !pw.inPath {
+		return errNoActivePath
+	}
+	return nil
+}
+
+// Path opens a scoped manual path session. During the session, auto-path
+// stroking is disabled so callers can build compound paths and explicitly
+// finalize them with Fill, Stroke, FillAndStroke, or Clip. If fn returns
+// without finalizing the path, the unfinished path is discarded.
+func (pw *PageWriter) Path(fn func()) error {
+	if err := pw.beginManualPath(); err != nil {
+		return err
+	}
+	defer func() {
+		if len(pw.pathStates) > 0 {
+			pw.discardActivePath()
+			pw.restorePathState()
+		}
+	}()
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+// Fill fills the current manual path and restores the pre-path drawing state.
+func (pw *PageWriter) Fill() error {
+	if err := pw.requireActivePath(); err != nil {
+		return err
+	}
+	pw.startGraph()
+	pw.checkSetFillColor()
+	pw.gw.fill()
+	pw.inPath = false
+	pw.restorePathState()
+	return nil
+}
+
+// Stroke strokes the current manual path and restores the pre-path drawing state.
+func (pw *PageWriter) Stroke() error {
+	if err := pw.requireActivePath(); err != nil {
+		return err
+	}
+	pw.startGraph()
+	pw.checkSetLineColor()
+	pw.checkSetLineWidth()
+	pw.checkSetLineDashPattern()
+	pw.gw.stroke()
+	pw.inPath = false
+	pw.restorePathState()
+	return nil
+}
+
+// FillAndStroke fills and strokes the current manual path and restores the
+// pre-path drawing state.
+func (pw *PageWriter) FillAndStroke() error {
+	if err := pw.requireActivePath(); err != nil {
+		return err
+	}
+	pw.startGraph()
+	pw.checkSetFillColor()
+	pw.checkSetLineColor()
+	pw.checkSetLineWidth()
+	pw.checkSetLineDashPattern()
+	pw.gw.fillAndStroke()
+	pw.inPath = false
+	pw.restorePathState()
+	return nil
+}
+
+// Clip uses the current manual path as a clipping boundary for drawing within
+// fn. The clipping region is scoped with save/restore graphics state.
+func (pw *PageWriter) Clip(fn func()) error {
+	if err := pw.requireActivePath(); err != nil {
+		return err
+	}
+	pw.startGraph()
+	pw.gw.saveGraphicsState()
+	pw.gw.clip()
+	pw.gw.newPath()
+	pw.inPath = false
+	pw.restorePathState()
+	if fn != nil {
+		fn()
+	}
+	if pw.inText {
+		pw.endText()
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	pw.gw.restoreGraphicsState()
+	return nil
+}
 
 func (pw *PageWriter) CurvePoints(points []Location) error {
 	if len(points) < 4 {
