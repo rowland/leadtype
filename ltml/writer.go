@@ -24,6 +24,7 @@ type Writer interface {
 	PrintRichText(text *rich_text.RichText)
 	Rectangle(x, y, width, height float64, border bool, fill bool)
 	Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool)
+	AddFont(family string, options options.Options) ([]*font.Font, error)
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
 	SetFillColor(value interface{}) (prev colors.Color)
 	SetLineColor(value colors.Color) (prev colors.Color)

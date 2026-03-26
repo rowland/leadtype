@@ -130,7 +130,7 @@ var defaultStyles = map[string]Styler{
 	"solid":  &PenStyle{id: "solid", color: NamedColor("black"), width: 0.001, pattern: "solid"},
 	"dotted": &PenStyle{id: "dotted", color: NamedColor("black"), width: 0.001, pattern: "dotted"},
 	"dashed": &PenStyle{id: "dashed", color: NamedColor("black"), width: 0.001, pattern: "dashed"},
-	"fixed":  &FontStyle{id: "fixed", name: "Courier New", size: 12},
+	"fixed":  &FontStyle{id: "fixed", entries: []fontEntry{{name: "Courier New"}}, size: 12},
 }
 
 var defaultScope = Scope{

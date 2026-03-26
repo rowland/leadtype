@@ -1,0 +1,31 @@
+<ltml>
+  <!--
+    Font fallback demo.
+
+    The "body" font lists Helvetica as the primary face, with Arial Unicode MS
+    as a fallback for any codepoints Helvetica cannot render.
+
+    The "cjk" font restricts Arial Unicode MS to the CJK Unified Ideographs
+    range so that Latin text always falls through to Helvetica.
+
+    The "adjusted" font shows the size-multiplier feature: the CJK fallback font
+    is scaled to 0.9× its nominal point size so that it visually matches the
+    Latin face at the same declared size.
+  -->
+  <font id="body"     name="Helvetica, Arial Unicode MS" size="12" />
+  <font id="cjk"      name="Helvetica, Arial Unicode MS" size="12"
+                      ranges="| CJK Unified Ideographs" />
+  <font id="adjusted" name="Helvetica, Arial Unicode MS" size="12"
+                      ranges="| CJK Unified Ideographs"
+                      sizes="1.0 | 0.9" />
+
+  <page units="in" margin="1" font="body">
+    <p>Font Fallback Demo</p>
+    <p>Latin text rendered with Helvetica, falling back to Arial Unicode MS for
+       characters outside its coverage.</p>
+    <p font="cjk">CJK restricted to its range: 你好世界 – Latin falls through
+       to Helvetica.</p>
+    <p font="adjusted">With a 0.9× size multiplier on the CJK font: 你好世界
+       appears at a normalised size alongside Latin glyphs.</p>
+  </page>
+</ltml>
