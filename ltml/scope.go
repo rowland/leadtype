@@ -50,6 +50,8 @@ func (scope *Scope) AddPageStyle(style *PageStyle) error {
 	return nil
 }
 
+// AddRules registers a parsed Rules collection with the scope. Multiple Rules
+// sets may be added; they are consulted in the order they were added.
 func (scope *Scope) AddRules(rules *Rules) error {
 	scope.rules = append(scope.rules, rules)
 	return nil
@@ -74,6 +76,11 @@ func (scope *Scope) AliasFor(name string) (alias *Alias, ok bool) {
 	return
 }
 
+// EachRuleFor calls f for every Rule whose selector matches path. Rules from
+// ancestor scopes are yielded first (lowest specificity), followed by rules in
+// the current scope in declaration order. This mirrors the CSS cascade: inner
+// scope rules override outer scope rules, and later declarations win over
+// earlier ones at the same scope level.
 func (scope *Scope) EachRuleFor(path string, f func(rule *Rule)) {
 	if scope.parent != nil {
 		scope.parent.EachRuleFor(path, f)
