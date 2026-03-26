@@ -259,28 +259,31 @@ Pre-defines a named layout configuration that can be referenced by containers.
 
 ---
 
-### `<page>` — Page Style (inside `<ltml>`)
+### Page Size and Orientation
 
-When a `<page>` element appears inside `<ltml>` with an `id`, it defines a
-reusable page style rather than adding a page to the document.
+Page size and orientation cannot be defined via custom styles in LTML markup.
+The `style` attribute on `<page>` accepts only the built-in size names listed
+below. Orientation must be set directly on the `<page>` element.
 
 ```xml
-<ltml>
-  <page id="landscape" size="letter" orientation="landscape" />
-  <page style="landscape">
-    <!-- content -->
-  </page>
-</ltml>
+<page style="A4" orientation="landscape" units="cm" margin="2">
+  <!-- content -->
+</page>
 ```
 
-| Attribute     | Description |
-|---------------|-------------|
-| `id`          | Name for the page style. |
-| `size`        | Named page size: `letter`, `legal`, `A4`, `B5`, `C5`. |
-| `orientation` | `portrait` (default) or `landscape`. |
-| `width`, `height` | Explicit page dimensions in points. |
+**Built-in page sizes** (set via `style` on `<page>`):
 
-**Default page size:** letter (612 × 792 pt).
+| Name     | Width × Height (pt) |
+|----------|---------------------|
+| `letter` | 612 × 792 (default) |
+| `legal`  | 612 × 1008 |
+| `A4`     | 595 × 842 |
+| `B5`     | 499 × 708 |
+| `C5`     | 459 × 649 |
+
+The `orientation` attribute (`portrait` or `landscape`) swaps width and height
+when combined with `style`. Explicit `width` and `height` values (in points)
+can also be set directly on `<page>` to use a custom page size.
 
 ---
 
