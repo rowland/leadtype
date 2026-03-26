@@ -1,0 +1,42 @@
+package ltml
+
+import "testing"
+
+func TestStdParagraph_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
+	p := &StdParagraph{}
+	font := &FontStyle{id: "body", name: "Helvetica", size: 12}
+
+	p.AddTextWithFont("\n        Four score and seven years ago\n        our fathers brought forth.\n", font)
+
+	if len(p.textPieces) != 1 {
+		t.Fatalf("expected 1 text piece, got %d", len(p.textPieces))
+	}
+	got := p.textPieces[0].text
+	want := "Four score and seven years ago our fathers brought forth. "
+	if got != want {
+		t.Fatalf("normalized text = %q, want %q", got, want)
+	}
+}
+
+func TestStdParagraph_AddTextWithFont_PreservesSpanBoundarySpaces(t *testing.T) {
+	p := &StdParagraph{}
+	body := &FontStyle{id: "body", name: "Helvetica", size: 12}
+	emph := &FontStyle{id: "emph", name: "Helvetica", size: 12, weight: "Bold"}
+
+	p.AddTextWithFont("Hello ", body)
+	p.AddTextWithFont("big", emph)
+	p.AddTextWithFont(" world", body)
+
+	if len(p.textPieces) != 3 {
+		t.Fatalf("expected 3 text pieces, got %d", len(p.textPieces))
+	}
+	if got := p.textPieces[0].text; got != "Hello " {
+		t.Fatalf("first piece = %q, want %q", got, "Hello ")
+	}
+	if got := p.textPieces[1].text; got != "big" {
+		t.Fatalf("second piece = %q, want %q", got, "big")
+	}
+	if got := p.textPieces[2].text; got != " world" {
+		t.Fatalf("third piece = %q, want %q", got, " world")
+	}
+}

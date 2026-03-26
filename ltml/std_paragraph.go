@@ -6,6 +6,8 @@ package ltml
 import (
 	"fmt"
 	"os"
+	"strings"
+	"unicode"
 
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
@@ -29,8 +31,42 @@ func (p *StdParagraph) AddText(text string) {
 }
 
 func (p *StdParagraph) AddTextWithFont(text string, font *FontStyle) {
+	text = normalizeXMLText(text)
+	if text == "" {
+		return
+	}
+	if len(p.textPieces) == 0 {
+		text = strings.TrimLeftFunc(text, unicode.IsSpace)
+		if text == "" {
+			return
+		}
+	} else if last := &p.textPieces[len(p.textPieces)-1]; strings.HasSuffix(last.text, " ") && strings.HasPrefix(text, " ") {
+		text = text[1:]
+	}
 	p.richText = nil
+	if len(p.textPieces) > 0 && p.textPieces[len(p.textPieces)-1].font == font {
+		p.textPieces[len(p.textPieces)-1].text += text
+		return
+	}
 	p.textPieces = append(p.textPieces, textPiece{text, font})
+}
+
+func normalizeXMLText(text string) string {
+	var b strings.Builder
+	b.Grow(len(text))
+	inSpace := false
+	for _, r := range text {
+		if unicode.IsSpace(r) {
+			if !inSpace {
+				b.WriteByte(' ')
+				inSpace = true
+			}
+			continue
+		}
+		b.WriteRune(r)
+		inSpace = false
+	}
+	return b.String()
 }
 
 func (p *StdParagraph) BeforePrint(w Writer) error {
