@@ -282,6 +282,81 @@ func TestPageWriter_flushText(t *testing.T) {
 	expectS(t, "BT\n/F0 12 Tf\n(Hello, World!) Tj\n", pw.stream.String())
 }
 
+func TestPageWriter_SetVTextAlign(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	expectS(t, "base", pw.VTextAlign())
+	prev := pw.SetVTextAlign("top")
+	expectS(t, "base", prev)
+	expectS(t, "top", pw.VTextAlign())
+}
+
+func TestPageWriter_flushText_VTextAlignRise(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Courier", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pw.SetVTextAlign("top")
+	if err := pw.Print("Hi"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	expectedRise := -float64(fonts[0].Ascent()) * 0.001 * 12
+	if !strings.Contains(pw.stream.String(), "/F0 12 Tf\n") {
+		t.Fatalf("expected font selection, got:\n%s", pw.stream.String())
+	}
+	if !strings.Contains(pw.stream.String(), g(expectedRise)+" Ts\n") {
+		t.Fatalf("expected rise command %q, got:\n%s", g(expectedRise)+" Ts\n", pw.stream.String())
+	}
+}
+
+func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
+	newWriter := func(vTextAlign string) (*PageWriter, float64) {
+		dw := NewDocWriter()
+		fc, err := afm_fonts.Default()
+		if err != nil {
+			t.Fatal(err)
+		}
+		dw.AddFontSource(fc)
+		pw := dw.NewPage()
+		fonts, err := pw.SetFont("Courier", 12, options.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		pw.SetUnderline(true)
+		pw.SetVTextAlign(vTextAlign)
+		if err := pw.Print("Hi"); err != nil {
+			t.Fatal(err)
+		}
+		pw.flushText()
+		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 - pw.vTextAlignPts
+		return pw, expectedY
+	}
+
+	baseWriter, baseY := newWriter("base")
+	topWriter, topY := newWriter("top")
+
+	if !strings.Contains(baseWriter.stream.String(), g(baseY)+" l\n") {
+		t.Fatalf("expected base underline to include y coordinate %q, got:\n%s", g(baseY)+" l\n", baseWriter.stream.String())
+	}
+	if !strings.Contains(topWriter.stream.String(), g(topY)+" l\n") {
+		t.Fatalf("expected top-aligned underline to include y coordinate %q, got:\n%s", g(topY)+" l\n", topWriter.stream.String())
+	}
+	if g(baseY) == g(topY) {
+		t.Fatalf("expected underline positions to differ between base and top alignment")
+	}
+}
+
 func TestPageWriter_PathDiscardRestoresState(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

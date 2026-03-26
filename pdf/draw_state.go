@@ -19,5 +19,6 @@ type drawState struct {
 	loc             Location
 	strikeout       bool
 	underline       bool
+	vTextAlign      string
 	wordSpacing     float64
 }

@@ -52,6 +52,7 @@ type PageWriter struct {
 	stream     bytes.Buffer
 	tw         *textWriter
 	units      *units
+	vTextAlignPts float64
 	flushing   boolean
 }
 
@@ -78,6 +79,7 @@ func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
 	pw.options = options
 	pw.lineSpacing = options.FloatDefault("line_spacing", 1.0)
 	pw.units = UnitConversions[options.StringDefault("units", "pt")]
+	pw.vTextAlign = options.StringDefault("v_text_align", "base")
 	ps := newPageStyle(options)
 	pw.pageHeight = ps.pageSize.y2
 	pw.pageWidth = ps.pageSize.x2
@@ -146,10 +148,33 @@ func (pw *PageWriter) checkSetFont() {
 	}
 	if pw.last.fontKey != pw.fontKey || pw.last.fontSize != pw.fontSize {
 		pw.tw.setFontAndSize(pw.fontKey, pw.fontSize)
-		// TODO: check_set_v_text_align(true)
+		pw.checkSetVTextAlign(true)
 		pw.last.fontKey = pw.fontKey
 		pw.last.fontSize = pw.fontSize
 	}
+}
+
+func (pw *PageWriter) checkSetVTextAlign(force bool) {
+	if !force && pw.vTextAlign == pw.last.vTextAlign {
+		return
+	}
+	rise := 0.0
+	if len(pw.fonts) > 0 {
+		font := pw.fonts[0]
+		switch pw.vTextAlign {
+		case "above":
+			rise = -float64(font.Height()) * 0.001 * pw.fontSize
+		case "top":
+			rise = -float64(font.Ascent()) * 0.001 * pw.fontSize
+		case "middle":
+			rise = -float64(font.Ascent()) * 0.001 * pw.fontSize / 2.0
+		case "below":
+			rise = -float64(font.Descent()) * 0.001 * pw.fontSize
+		}
+	}
+	pw.vTextAlignPts = rise
+	pw.tw.setRise(rise)
+	pw.last.vTextAlign = pw.vTextAlign
 }
 
 func (pw *PageWriter) checkSetFontColor() {
@@ -679,8 +704,9 @@ func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, rever
 func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, position float64, thickness float64) {
 	saveWidth := pw.setLineWidth(thickness)
 	// TODO: rotate coordiates given angle
-	pw.moveTo(loc1.X, loc1.Y+position)
-	pw.lineTo(loc2.X, loc2.Y+position)
+	offsetY := position - pw.vTextAlignPts
+	pw.moveTo(loc1.X, loc1.Y+offsetY)
+	pw.lineTo(loc2.X, loc2.Y+offsetY)
 	pw.setLineWidth(saveWidth)
 }
 
@@ -808,6 +834,7 @@ func (pw *PageWriter) flushText() {
 			pw.fontKey = fk
 			pw.SetFontSize(p.FontSize)
 			pw.checkSetFont()
+			pw.checkSetVTextAlign(false)
 			if usePositionedGlyphs {
 				pw.charSpacing = 0
 				pw.wordSpacing = 0
@@ -836,6 +863,7 @@ func (pw *PageWriter) flushText() {
 				pw.fontKey = pw.dw.fontKey(piece.Font, cpi)
 				pw.SetFontSize(piece.FontSize)
 				pw.checkSetFont()
+				pw.checkSetVTextAlign(false)
 				pw.charSpacing = piece.CharSpacing
 				pw.wordSpacing = piece.WordSpacing
 				pw.checkSetSpacing()
@@ -1340,6 +1368,12 @@ func (pw *PageWriter) SetUnits(units string) {
 	pw.units = UnitConversions[units]
 }
 
+func (pw *PageWriter) SetVTextAlign(vTextAlign string) (prev string) {
+	prev = pw.vTextAlign
+	pw.vTextAlign = vTextAlign
+	return
+}
+
 func (pw *PageWriter) startGraph() {
 	if pw.inGraph {
 		return
@@ -1378,6 +1412,10 @@ func (pw *PageWriter) translate(y float64) float64 {
 
 func (pw *PageWriter) Underline() bool {
 	return pw.underline
+}
+
+func (pw *PageWriter) VTextAlign() string {
+	return pw.vTextAlign
 }
 
 func (pw *PageWriter) Units() string {

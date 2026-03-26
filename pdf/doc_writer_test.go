@@ -389,6 +389,49 @@ func TestDocWriter_TransformsIntegration(t *testing.T) {
 	}
 }
 
+func TestDocWriter_VTextAlignIntegration(t *testing.T) {
+	var buf bytes.Buffer
+
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	dw.NewPage()
+	fonts, err := dw.SetFont("Courier", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dw.SetVTextAlign("base")
+	if err := dw.Print("Base\n"); err != nil {
+		t.Fatal(err)
+	}
+	dw.SetVTextAlign("top")
+	if err := dw.Print("Top"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo returned error: %v", err)
+	}
+	pdf := buf.String()
+	topRise := -float64(fonts[0].Ascent()) * 0.001 * 12
+
+	for _, fragment := range []string{
+		"%PDF-1.3\n",
+		"0 Ts\n",
+		g(topRise) + " Ts\n",
+		"(Base) Tj\n",
+		"(Top) Tj\n",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
+		}
+	}
+}
+
 // TODO: TestPagesAcross
 // TODO: TestPagesDown
 // TODO: TestPagesUp

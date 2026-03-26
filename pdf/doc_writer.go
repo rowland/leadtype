@@ -568,6 +568,10 @@ func (dw *DocWriter) SetUnderline(underline bool) (prev bool) {
 	return dw.CurPage().SetUnderline(underline)
 }
 
+func (dw *DocWriter) SetVTextAlign(vTextAlign string) (prev string) {
+	return dw.CurPage().SetVTextAlign(vTextAlign)
+}
+
 func (dw *DocWriter) SetUnits(units string) {
 	dw.options["units"] = units
 	if dw.curPage != nil {
@@ -577,6 +581,10 @@ func (dw *DocWriter) SetUnits(units string) {
 
 func (dw *DocWriter) Strikeout() bool {
 	return dw.CurPage().Strikeout()
+}
+
+func (dw *DocWriter) VTextAlign() string {
+	return dw.CurPage().VTextAlign()
 }
 
 func (dw *DocWriter) Underline() bool {

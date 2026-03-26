@@ -66,11 +66,11 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Vertical Text Alignment ([#12](https://github.com/rowland/leadtype/issues/12))
 
-- [ ] Add vertical text alignment control comparable to legacy `v_text_align`
-- [ ] define supported alignment values and their metric anchors
-- [ ] integrate with text placement without regressing underline/strikeout
-- [ ] add unit tests covering each alignment mode
-- [ ] add PDF-level tests proving baseline shifts in output
+- [x] Add vertical text alignment control comparable to legacy `v_text_align`
+- [x] define supported alignment values and their metric anchors
+- [x] integrate with text placement without regressing underline/strikeout
+- [x] add unit tests covering each alignment mode
+- [x] add PDF-level tests proving baseline shifts in output
 
 ### Stream Compression
 
