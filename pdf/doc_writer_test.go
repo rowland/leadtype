@@ -417,7 +417,14 @@ func TestDocWriter_VTextAlignIntegration(t *testing.T) {
 		t.Fatalf("WriteTo returned error: %v", err)
 	}
 	pdf := buf.String()
-	topRise := -float64(fonts[0].Ascent()) * 0.001 * 12
+	scale := 12 * 0.001
+	if upm := fonts[0].UnitsPerEm(); upm > 0 {
+		scale = 12 / float64(upm)
+	}
+	topRise := -float64(fonts[0].CapHeight()) * scale
+	if topRise == 0 {
+		topRise = -float64(fonts[0].Ascent()) * scale
+	}
 
 	for _, fragment := range []string{
 		"%PDF-1.3\n",

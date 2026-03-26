@@ -161,15 +161,24 @@ func (pw *PageWriter) checkSetVTextAlign(force bool) {
 	rise := 0.0
 	if len(pw.fonts) > 0 {
 		font := pw.fonts[0]
+		scale := pw.fontSize * 0.001
+		if upm := font.UnitsPerEm(); upm > 0 {
+			scale = pw.fontSize / float64(upm)
+		}
+		top := float64(font.CapHeight()) * scale
+		if top == 0 {
+			top = float64(font.Ascent()) * scale
+		}
+		descent := float64(font.Descent()) * scale
 		switch pw.vTextAlign {
 		case "above":
-			rise = -float64(font.Height()) * 0.001 * pw.fontSize
+			rise = -(top - descent)
 		case "top":
-			rise = -float64(font.Ascent()) * 0.001 * pw.fontSize
+			rise = -top
 		case "middle":
-			rise = -float64(font.Ascent()) * 0.001 * pw.fontSize / 2.0
+			rise = -((top + descent) / 2.0)
 		case "below":
-			rise = -float64(font.Descent()) * 0.001 * pw.fontSize
+			rise = -descent
 		}
 	}
 	pw.vTextAlignPts = rise
@@ -735,6 +744,13 @@ func (pw *PageWriter) flushText() {
 		return
 	}
 	pw.flushing = true
+	savedFontColor := pw.fontColor
+	savedFontKey := pw.fontKey
+	savedFontSize := pw.fontSize
+	savedCharSpacing := pw.charSpacing
+	savedWordSpacing := pw.wordSpacing
+	savedVTextAlign := pw.vTextAlign
+	savedVTextAlignPts := pw.vTextAlignPts
 	pw.startText()
 	if pw.loc != pw.last.loc {
 		pw.tw.moveBy(pw.loc.X-pw.last.loc.X, pw.loc.Y-pw.last.loc.Y)
@@ -889,6 +905,13 @@ func (pw *PageWriter) flushText() {
 	pw.loc.X += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
 
+	pw.fontColor = savedFontColor
+	pw.fontKey = savedFontKey
+	pw.fontSize = savedFontSize
+	pw.charSpacing = savedCharSpacing
+	pw.wordSpacing = savedWordSpacing
+	pw.vTextAlign = savedVTextAlign
+	pw.vTextAlignPts = savedVTextAlignPts
 	pw.line = nil
 	pw.flushing = false
 }
@@ -1370,6 +1393,9 @@ func (pw *PageWriter) SetUnits(units string) {
 
 func (pw *PageWriter) SetVTextAlign(vTextAlign string) (prev string) {
 	prev = pw.vTextAlign
+	if pw.line != nil && prev != vTextAlign {
+		pw.flushText()
+	}
 	pw.vTextAlign = vTextAlign
 	return
 }

@@ -311,7 +311,14 @@ func TestPageWriter_flushText_VTextAlignRise(t *testing.T) {
 	}
 	pw.flushText()
 
-	expectedRise := -float64(fonts[0].Ascent()) * 0.001 * 12
+	scale := 12 * 0.001
+	if upm := fonts[0].UnitsPerEm(); upm > 0 {
+		scale = 12 / float64(upm)
+	}
+	expectedRise := -float64(fonts[0].CapHeight()) * scale
+	if expectedRise == 0 {
+		expectedRise = -float64(fonts[0].Ascent()) * scale
+	}
 	if !strings.Contains(pw.stream.String(), "/F0 12 Tf\n") {
 		t.Fatalf("expected font selection, got:\n%s", pw.stream.String())
 	}
@@ -339,7 +346,27 @@ func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
 			t.Fatal(err)
 		}
 		pw.flushText()
-		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 - pw.vTextAlignPts
+		rise := 0.0
+		scale := 12 * 0.001
+		if upm := fonts[0].UnitsPerEm(); upm > 0 {
+			scale = 12 / float64(upm)
+		}
+		top := float64(fonts[0].CapHeight()) * scale
+		if top == 0 {
+			top = float64(fonts[0].Ascent()) * scale
+		}
+		descent := float64(fonts[0].Descent()) * scale
+		switch vTextAlign {
+		case "above":
+			rise = -(top - descent)
+		case "top":
+			rise = -top
+		case "middle":
+			rise = -((top + descent) / 2.0)
+		case "below":
+			rise = -descent
+		}
+		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 - rise
 		return pw, expectedY
 	}
 
@@ -354,6 +381,94 @@ func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
 	}
 	if g(baseY) == g(topY) {
 		t.Fatalf("expected underline positions to differ between base and top alignment")
+	}
+}
+
+func TestPageWriter_MoveToPreservesPendingTextSettings(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Courier", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetFontColor(colors.FireBrick)
+	pw.SetVTextAlign("above")
+	if err := pw.Print("First"); err != nil {
+		t.Fatal(err)
+	}
+
+	pw.SetFontColor(colors.DarkBlue)
+	pw.SetVTextAlign("top")
+	pw.MoveTo(1, 2)
+	if err := pw.Print("Second"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	got := pw.stream.String()
+	if !strings.Contains(got, "0 0 0.5451 rg\n") {
+		t.Fatalf("expected second line color command for DarkBlue, got:\n%s", got)
+	}
+	scale := 12 * 0.001
+	if upm := pw.fonts[0].UnitsPerEm(); upm > 0 {
+		scale = 12 / float64(upm)
+	}
+	topRiseValue := -float64(pw.fonts[0].CapHeight()) * scale
+	if topRiseValue == 0 {
+		topRiseValue = -float64(pw.fonts[0].Ascent()) * scale
+	}
+	topRise := g(topRiseValue)
+	if !strings.Contains(got, topRise+" Ts\n") {
+		t.Fatalf("expected second line top rise %q, got:\n%s", topRise+" Ts\n", got)
+	}
+}
+
+func TestPageWriter_SetVTextAlignFlushesPendingText(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Courier", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pw.SetVTextAlign("above")
+	if err := pw.Print("Above"); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetVTextAlign("top")
+	if err := pw.Print("Top"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	scale := 12 * 0.001
+	if upm := fonts[0].UnitsPerEm(); upm > 0 {
+		scale = 12 / float64(upm)
+	}
+	topValue := float64(fonts[0].CapHeight()) * scale
+	if topValue == 0 {
+		topValue = float64(fonts[0].Ascent()) * scale
+	}
+	descent := float64(fonts[0].Descent()) * scale
+	aboveRise := g(-(topValue - descent))
+	topRise := g(-topValue)
+	got := pw.stream.String()
+
+	if !strings.Contains(got, aboveRise+" Ts\n(Above) Tj\n") {
+		t.Fatalf("expected pending text to flush with above rise before alignment change, got:\n%s", got)
+	}
+	if !strings.Contains(got, topRise+" Ts\n(Top) Tj\n") {
+		t.Fatalf("expected later text to use top rise, got:\n%s", got)
 	}
 }
 
