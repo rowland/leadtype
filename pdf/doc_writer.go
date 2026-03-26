@@ -33,6 +33,12 @@ type DocWriter struct {
 	cidFonts        map[string]*cidFont        // PostScript name → CID font, for /W update at Close
 	type0Fonts      map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
 	fontDescriptors map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
+	images          map[string]*cachedImage
+}
+
+type cachedImage struct {
+	image *pdfImage
+	name  string
 }
 
 func NewDocWriter() *DocWriter {
@@ -63,6 +69,7 @@ func NewDocWriter() *DocWriter {
 		cidFonts:        make(map[string]*cidFont),
 		type0Fonts:      make(map[string]*type0Font),
 		fontDescriptors: make(map[string]*fontDescriptor),
+		images:          make(map[string]*cachedImage),
 	}
 }
 
@@ -480,6 +487,14 @@ func (dw *DocWriter) PrintWithOptions(text string, options options.Options) (err
 	return dw.CurPage().PrintWithOptions(text, options)
 }
 
+func (dw *DocWriter) ImageDimensions(data []byte) (width, height int, err error) {
+	return imageDimensions(data)
+}
+
+func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
+	return imageDimensionsFromFile(filename)
+}
+
 func (dw *DocWriter) Path(fn func()) error {
 	return dw.CurPage().Path(fn)
 }
@@ -514,6 +529,14 @@ func (dw *DocWriter) Rectangle(x, y, width, height float64, border bool, fill bo
 
 func (dw *DocWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
 	dw.CurPage().Rectangle2(x, y, width, height, border, fill, corners, path, reverse)
+}
+
+func (dw *DocWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return dw.CurPage().PrintImage(data, x, y, width, height)
+}
+
+func (dw *DocWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return dw.CurPage().PrintImageFile(filename, x, y, width, height)
 }
 
 func (dw *DocWriter) ResetFonts() {

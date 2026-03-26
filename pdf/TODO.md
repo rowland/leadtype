@@ -35,16 +35,16 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Images ([#8](https://github.com/rowland/leadtype/issues/8), future PNG follow-on [#16](https://github.com/rowland/leadtype/issues/16))
 
-- [ ] Add image support at the PDF layer
-  - [ ] support JPEG detection and metadata extraction
-  - [ ] support image placement from file input
-  - [ ] support image placement from in-memory data
-  - [ ] preserve aspect ratio when only one dimension is supplied
-  - [ ] define behavior when width and height are both supplied
-- [ ] add tests for JPEG dimension parsing
-- [ ] add PDF integration tests for image XObject output and placement
-- [ ] keep the public image API format-agnostic so PNG can be added later without API churn
-- [ ] keep the image object model open to future PNG import via decoded pixel data, `/FlateDecode`, and optional `/SMask`
+- [x] Add image support at the PDF layer
+  - [x] support JPEG detection and metadata extraction
+  - [x] support image placement from file input
+  - [x] support image placement from in-memory data
+  - [x] preserve aspect ratio when only one dimension is supplied
+  - [x] define behavior when width and height are both supplied
+- [x] add tests for JPEG dimension parsing
+- [x] add PDF integration tests for image XObject output and placement
+- [x] keep the public image API format-agnostic so PNG can be added later without API churn
+- [x] keep the image object model open to future PNG import via decoded pixel data, `/FlateDecode`, and optional `/SMask`
 
 ### Future Image Extension ([#16](https://github.com/rowland/leadtype/issues/16))
 
