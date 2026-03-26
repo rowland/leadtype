@@ -51,6 +51,25 @@ func TestMarkRuneAttributes_with_hyphens(t *testing.T) {
 	}
 }
 
+func TestMarkRuneAttributes_cjkBreaks(t *testing.T) {
+	const text = "中文かなABC"
+	flags := make([]Flags, len(text))
+
+	MarkRuneAttributes(text, flags)
+
+	if flags[0] != CharStop|WordStop {
+		t.Fatalf("first rune flags = %08b, want %08b", flags[0], CharStop|WordStop)
+	}
+	for _, idx := range []int{3, 6, 9} {
+		if flags[idx]&SoftBreak == 0 {
+			t.Fatalf("expected soft break at byte offset %d, got %08b", idx, flags[idx])
+		}
+		if flags[idx]&WordStop == 0 {
+			t.Fatalf("expected word stop at byte offset %d, got %08b", idx, flags[idx])
+		}
+	}
+}
+
 // Baseline: 310 ns
 // 833 ns
 // 931 ns with hyphen tests

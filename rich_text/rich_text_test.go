@@ -925,6 +925,57 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 	}
 }
 
+func TestRichText_WrapToWidth_chinese(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	st := SuperTest{t}
+	fonts := ttf_fonts.Families("Arial Unicode MS", "Hiragino Sans GB", "STFangsong")
+	rt, err := New("表明你已明确同意你的回答接受评估。", fonts, 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	lines := rt.WrapToWidth(rt.Width()/2, flags, false)
+	st.True(len(lines) > 1, "Chinese text should wrap into multiple lines.")
+	for _, line := range lines {
+		st.True(line.Width() <= rt.Width()/2+0.01, "Wrapped Chinese line too long.")
+	}
+}
+
+func TestRichText_WrapToWidth_japanese(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	st := SuperTest{t}
+	fonts := ttf_fonts.Families("Arial Unicode MS", "Hiragino Sans", "Hiragino Sans GB")
+	rt, err := New("日本語の文章では改行位置を空白に頼らず文字の境界で見つける必要があります。", fonts, 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	lines := rt.WrapToWidth(rt.Width()/2, flags, false)
+	st.True(len(lines) > 1, "Japanese text should wrap into multiple lines.")
+	for _, line := range lines {
+		st.True(line.Width() <= rt.Width()/2+0.01, "Wrapped Japanese line too long.")
+	}
+}
+
+func TestRichText_WrapToWidth_thai(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	st := SuperTest{t}
+	fonts := ttf_fonts.Families("Arial Unicode MS", "Thonburi UI")
+	rt, err := New("ราวกับเปิดโอกาสให้ผู้คนได้สังเกตความงามของช่วงเวลาธรรมดาในแต่ละวันมากขึ้น", fonts, 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	lines := rt.WrapToWidth(rt.Width()/2, flags, false)
+	st.True(len(lines) > 1, "Thai text should wrap into multiple lines.")
+	for _, line := range lines {
+		st.True(line.Width() <= rt.Width()/2+0.01, "Wrapped Thai line too long.")
+	}
+}
+
 func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}

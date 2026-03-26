@@ -69,6 +69,20 @@ func TestSegmentThai_markRuneAttributes(t *testing.T) {
 	}
 }
 
+func TestMarkRuneAttributes_thaiWithoutInsertedZWS(t *testing.T) {
+	text := "เขาไป"
+	flags := make([]Flags, len(text))
+	MarkRuneAttributes(text, flags)
+
+	breakOffset := len("เขา")
+	if flags[breakOffset]&SoftBreak == 0 {
+		t.Fatalf("expected soft break at offset %d, got %08b", breakOffset, flags[breakOffset])
+	}
+	if flags[breakOffset]&WordStop == 0 {
+		t.Fatalf("expected word stop at offset %d, got %08b", breakOffset, flags[breakOffset])
+	}
+}
+
 func BenchmarkSegmentThai(b *testing.B) {
 	const text = "ภาษาไทยเป็นภาษาที่ใช้ในประเทศไทย"
 	for i := 0; i < b.N; i++ {

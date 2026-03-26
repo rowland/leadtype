@@ -102,6 +102,7 @@ func TestSamples(t *testing.T) {
 		"test_009_hbox_layout",
 		"test_010_rich_text",
 		"test_011_table_layout",
+		"test_012_cjk_thai_grid",
 		"test_030_encodings",
 	}
 

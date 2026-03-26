@@ -108,3 +108,65 @@ func SegmentThai(text string) string {
 	}
 	return buf.String()
 }
+
+func thaiBreakOffsets(text string) map[int]struct{} {
+	hasThai := false
+	for _, r := range text {
+		if isThai(r) {
+			hasThai = true
+			break
+		}
+	}
+	if !hasThai {
+		return nil
+	}
+
+	dict := getThaiDict()
+	runes := []rune(text)
+	byteOffsets := make([]int, len(runes))
+	bytePos := 0
+	for i, r := range runes {
+		byteOffsets[i] = bytePos
+		bytePos += len(string(r))
+	}
+
+	breaks := make(map[int]struct{})
+	i := 0
+	for i < len(runes) {
+		if !isThai(runes[i]) {
+			i++
+			continue
+		}
+		start := i
+		for i < len(runes) && isThai(runes[i]) {
+			i++
+		}
+		run := runes[start:i]
+
+		pos := 0
+		first := true
+		for pos < len(run) {
+			end := len(run)
+			matched := false
+			for end > pos {
+				if _, ok := dict[string(run[pos:end])]; ok {
+					matched = true
+					break
+				}
+				end--
+			}
+			if !matched {
+				end = pos + 1
+			}
+			if !first {
+				breaks[byteOffsets[start+pos]] = struct{}{}
+			}
+			pos = end
+			first = false
+		}
+	}
+	if len(breaks) == 0 {
+		return nil
+	}
+	return breaks
+}

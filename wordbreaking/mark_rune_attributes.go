@@ -28,6 +28,7 @@ const (
 	rcOther      = runeClass(iota)
 	rcHyphen     = runeClass(iota)
 	rcWhiteSpace = runeClass(iota)
+	rcCJK        = runeClass(iota)
 )
 
 // unicode.Hyphen includes non-breaking hyphen
@@ -42,25 +43,43 @@ func classifyRune(r rune) runeClass {
 		return rcWhiteSpace
 	} else if isHyphen(r) {
 		return rcHyphen
+	} else if isCJKBreakRune(r) {
+		return rcCJK
 	}
 	return rcOther
+}
+
+func isCJKBreakRune(r rune) bool {
+	return unicode.In(r,
+		unicode.Han,
+		unicode.Hiragana,
+		unicode.Katakana,
+		unicode.Bopomofo,
+	)
 }
 
 func MarkRuneAttributes(text string, flags []Flags) {
 	if len(flags) < len(text) {
 		panic(fmt.Sprintf("flags (len: %d) is smaller than text (len: %d)", len(flags), len(text)))
 	}
+	thaiBreaks := thaiBreakOffsets(text)
 	var rc, last runeClass
 	for i, r := range text {
 		flags[i] |= CharStop
 		rc = classifyRune(r)
 		if i == 0 {
 			flags[i] |= WordStop
+		} else if _, ok := thaiBreaks[i]; ok {
+			flags[i] |= SoftBreak | WordStop
 		} else if rc == rcWhiteSpace {
 			flags[i] |= SoftBreak | WhiteSpace
-		} else if last == rcWhiteSpace && (rc == rcHyphen || rc == rcOther) {
+		} else if last == rcWhiteSpace && (rc == rcHyphen || rc == rcOther || rc == rcCJK) {
 			flags[i] |= SoftBreak | WordStop
-		} else if last == rcHyphen && rc == rcOther {
+		} else if last == rcHyphen && (rc == rcOther || rc == rcCJK) {
+			flags[i] |= SoftBreak | WordStop
+		} else if last == rcCJK && rc == rcCJK {
+			flags[i] |= SoftBreak | WordStop
+		} else if (last == rcOther && rc == rcCJK) || (last == rcCJK && rc == rcOther) {
 			flags[i] |= SoftBreak | WordStop
 		}
 		last = rc
