@@ -4,7 +4,7 @@ import "testing"
 
 func TestStdParagraph_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 	p := &StdParagraph{}
-	font := &FontStyle{id: "body", name: "Helvetica", size: 12}
+	font := &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 
 	p.AddTextWithFont("\n        Four score and seven years ago\n        our fathers brought forth.\n", font)
 
@@ -20,8 +20,8 @@ func TestStdParagraph_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 
 func TestStdParagraph_AddTextWithFont_PreservesSpanBoundarySpaces(t *testing.T) {
 	p := &StdParagraph{}
-	body := &FontStyle{id: "body", name: "Helvetica", size: 12}
-	emph := &FontStyle{id: "emph", name: "Helvetica", size: 12, weight: "Bold"}
+	body := &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	emph := &FontStyle{id: "emph", entries: []fontEntry{{name: "Helvetica"}}, size: 12, weight: "Bold"}
 
 	p.AddTextWithFont("Hello ", body)
 	p.AddTextWithFont("big", emph)
