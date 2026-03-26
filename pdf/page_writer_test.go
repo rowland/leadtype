@@ -139,6 +139,90 @@ func TestClonePageWriter(t *testing.T) {
 	check(t, pwc.LineWidth("pt") == 42, "LineWidth should be 42")
 }
 
+func TestPageWriter_Line(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	pw.Line(1, 1, 0, 2)
+
+	expectS(t, "72 720 m\n216 720 l\nS\n", pw.stream.String())
+}
+
+func TestPageWriter_PointsForCircle(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	points := pw.PointsForCircle(2, 3, 1)
+	expectI(t, 13, len(points))
+	expectF(t, 3, points[0].X)
+	expectF(t, 3, points[0].Y)
+	expectF(t, 3, points[len(points)-1].X)
+	expectF(t, 3, points[len(points)-1].Y)
+}
+
+func TestPageWriter_PointsForArc(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	points := pw.PointsForArc(0, 0, 1, 0, 180)
+	expectI(t, 7, len(points))
+	expectFdelta(t, 1, points[0].X, 0.0001)
+	expectFdelta(t, 0, points[0].Y, 0.0001)
+	expectFdelta(t, -1, points[len(points)-1].X, 0.0001)
+	expectFdelta(t, 0, points[len(points)-1].Y, 0.0001)
+}
+
+func TestPageWriter_Polygon_InvalidSides(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Polygon(1, 1, 1, 2, true, false, false, 0); err != errInvalidPolygonSides {
+		t.Fatalf("expected errInvalidPolygonSides, got %v", err)
+	}
+}
+
+func TestPageWriter_Star_InvalidPoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 4, true, false, false, 0); err != errInvalidStarPoints {
+		t.Fatalf("expected errInvalidStarPoints, got %v", err)
+	}
+}
+
+func TestPageWriter_CircleFillAndStroke(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+	pw.SetFillColor(red)
+	pw.SetLineColor(green)
+
+	if err := pw.Circle(2, 2, 1, true, true, false); err != nil {
+		t.Fatalf("Circle returned error: %v", err)
+	}
+	got := pw.stream.String()
+	if !strings.Contains(got, "1 0 0 rg\n") {
+		t.Fatalf("expected fill color command, got:\n%s", got)
+	}
+	if !strings.Contains(got, "0 1 0 RG\n") {
+		t.Fatalf("expected line color command, got:\n%s", got)
+	}
+	if !strings.Contains(got, "B\n") {
+		t.Fatalf("expected fill-and-stroke operator, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_CircleUsesTranslatedMoveTo(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	if err := pw.Circle(2, 2, 1, true, false, false); err != nil {
+		t.Fatalf("Circle returned error: %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "216 648 m\n") {
+		t.Fatalf("expected translated moveTo at circle start, got:\n%s", pw.stream.String())
+	}
+}
+
 func TestPageWriter_flushText(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	fc, err := ttf_fonts.NewFromSystemFonts()

@@ -241,6 +241,8 @@ func (pw *PageWriter) close() {
 var errTooFewPoints = errors.New("Need at least 4 points for curve")
 var errNoActivePath = errors.New("No active manual path.")
 var errPathAlreadyActive = errors.New("Manual path already active.")
+var errInvalidPolygonSides = errors.New("Polygon requires at least 3 sides.")
+var errInvalidStarPoints = errors.New("Star requires at least 5 points.")
 
 func (pw *PageWriter) beginManualPath() error {
 	if len(pw.pathStates) > 0 {
@@ -390,7 +392,7 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	pw.checkSetLineDashPattern()
 
 	if !(pw.loc.equal(pw.last.loc) && pw.inPath) {
-		pw.gw.moveTo(pw.units.toPts(pw.loc.X), pw.units.toPts(pw.loc.Y))
+		pw.gw.moveTo(pw.loc.X, pw.loc.Y)
 	}
 	i := 1
 	for i+2 < len(points) {
@@ -404,6 +406,216 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	}
 	pw.inPath = true
 	return nil
+}
+
+func (pw *PageWriter) drawClosedShape(border, fill bool, build func()) (err error) {
+	if border && fill {
+		err = pw.Path(func() {
+			build()
+			err = pw.FillAndStroke()
+		})
+	} else if border {
+		err = pw.Path(func() {
+			build()
+			err = pw.Stroke()
+		})
+	} else if fill {
+		err = pw.Path(func() {
+			build()
+			err = pw.Fill()
+		})
+	} else {
+		err = pw.Path(build)
+	}
+	return
+}
+
+// Line draws a line segment of the given length beginning at (x, y) and
+// extending at angle degrees, where 0 is to the right and positive angles turn
+// counter-clockwise in mathematical space.
+func (pw *PageWriter) Line(x, y, angle, length float64) {
+	dx, dy := rotateXY(1, 0, angle)
+	pw.MoveTo(x, y)
+	pw.LineTo(x+(dx*length), y-(dy*length))
+	pw.autoStrokeAndFill(true, false)
+}
+
+func (pw *PageWriter) PointsForCircle(x, y, r float64) []Location {
+	points := make([]Location, 0, 13)
+	for q := 1; q <= 4; q++ {
+		points = append(points, quadrantBezierPoints(q, x, y, r, r)...)
+	}
+	for _, i := range []int{12, 8, 4} {
+		points = append(points[:i], points[i+1:]...)
+	}
+	return points
+}
+
+func (pw *PageWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
+	return pw.drawClosedShape(border, fill, func() {
+		points := pw.PointsForCircle(x, y, r)
+		if reverse {
+			points = reverseCurvePoints(points)
+		}
+		_ = pw.CurvePoints(points)
+	})
+}
+
+func (pw *PageWriter) PointsForEllipse(x, y, rx, ry float64) []Location {
+	points := make([]Location, 0, 13)
+	for q := 1; q <= 4; q++ {
+		points = append(points, quadrantBezierPoints(q, x, y, rx, ry)...)
+	}
+	for _, i := range []int{12, 8, 4} {
+		points = append(points[:i], points[i+1:]...)
+	}
+	return points
+}
+
+func (pw *PageWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
+	return pw.drawClosedShape(border, fill, func() {
+		points := pw.PointsForEllipse(x, y, rx, ry)
+		if reverse {
+			points = reverseCurvePoints(points)
+		}
+		_ = pw.CurvePoints(points)
+	})
+}
+
+func (pw *PageWriter) PointsForArc(x, y, r, startAngle, endAngle float64) []Location {
+	if startAngle == endAngle {
+		return nil
+	}
+	numArcs := 1
+	ccwcw := 1.0
+	arcSpan := endAngle - startAngle
+	if endAngle < startAngle {
+		ccwcw = -1.0
+	}
+	for math.Abs(arcSpan)/float64(numArcs) > 90.0 {
+		numArcs++
+	}
+	angleBump := arcSpan / float64(numArcs)
+	halfBump := 0.5 * angleBump
+	curAngle := startAngle + halfBump
+	points := make([]Location, 0, numArcs*3+1)
+	for i := 0; i < numArcs; i++ {
+		segment := calcArcSmall(r, curAngle, halfBump, ccwcw)
+		for j, point := range segment {
+			if i > 0 && j == 0 {
+				continue
+			}
+			points = append(points, Location{x + point.X, y - point.Y})
+		}
+		curAngle += angleBump
+	}
+	return points
+}
+
+func (pw *PageWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
+	points := pw.PointsForArc(x, y, r, startAngle, endAngle)
+	if len(points) == 0 {
+		return nil
+	}
+	if !moveToStart && pw.inPath {
+		pw.LineTo(points[0].X, points[0].Y)
+	}
+	return pw.CurvePoints(points)
+}
+
+func (pw *PageWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
+	return pw.drawClosedShape(border, fill, func() {
+		if reverse {
+			startAngle, endAngle = endAngle, startAngle
+		}
+		pw.MoveTo(x, y)
+		pw.LineTo(x+r*math.Cos(startAngle*math.Pi/180.0), y-r*math.Sin(startAngle*math.Pi/180.0))
+		_ = pw.Arc(x, y, r, startAngle, endAngle, false)
+		pw.LineTo(x, y)
+	})
+}
+
+func (pw *PageWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
+	if startAngle == endAngle {
+		return nil
+	}
+	if reverse {
+		startAngle, endAngle = endAngle, startAngle
+	}
+	arc1 := pw.PointsForArc(x, y, r1, startAngle, endAngle)
+	arc2 := pw.PointsForArc(x, y, r2, endAngle, startAngle)
+	if len(arc1) == 0 || len(arc2) == 0 {
+		return nil
+	}
+	return pw.drawClosedShape(border, fill, func() {
+		pw.MoveTo(arc1[0].X, arc1[0].Y)
+		_ = pw.CurvePoints(arc1)
+		pw.LineTo(arc2[0].X, arc2[0].Y)
+		_ = pw.CurvePoints(arc2)
+		pw.LineTo(arc1[0].X, arc1[0].Y)
+	})
+}
+
+func (pw *PageWriter) PointsForPolygon(x, y, r float64, sides int, rotation float64) []Location {
+	if sides < 3 {
+		return nil
+	}
+	step := 360.0 / float64(sides)
+	angle := step/2.0 + 90.0
+	points := make([]Location, 0, sides+1)
+	for i := 0; i <= sides; i++ {
+		dx, dy := rotateXY(1, 0, angle)
+		points = append(points, Location{x + dx*r, y - dy*r})
+		angle += step
+	}
+	if rotation != 0 {
+		center := Location{x, y}
+		for i := range points {
+			points[i] = rotatePoint(center, points[i], -rotation)
+		}
+	}
+	return points
+}
+
+func (pw *PageWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
+	if sides < 3 {
+		return errInvalidPolygonSides
+	}
+	return pw.drawClosedShape(border, fill, func() {
+		points := pw.PointsForPolygon(x, y, r, sides, rotation)
+		if reverse {
+			LocationSlice(points).Reverse()
+		}
+		for i, point := range points {
+			if i == 0 {
+				pw.MoveTo(point.X, point.Y)
+			} else {
+				pw.LineTo(point.X, point.Y)
+			}
+		}
+	})
+}
+
+func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
+	if points < 5 {
+		return errInvalidStarPoints
+	}
+	outer := pw.PointsForPolygon(x, y, r1, points, rotation)
+	inner := pw.PointsForPolygon(x, y, r2, points, rotation+(360.0/float64(points)/2.0))
+	if len(outer) == 0 || len(inner) == 0 {
+		return errInvalidStarPoints
+	}
+	return pw.drawClosedShape(border, fill, func() {
+		if reverse {
+			LocationSlice(outer).Reverse()
+			LocationSlice(inner).Reverse()
+		}
+		pw.MoveTo(inner[0].X, inner[0].Y)
+		for i := 0; i < points; i++ {
+			pw.LineTo(outer[i].X, outer[i].Y)
+			pw.LineTo(inner[i+1].X, inner[i+1].Y)
+		}
+	})
 }
 
 func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, position float64, thickness float64) {

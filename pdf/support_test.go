@@ -97,3 +97,25 @@ func TestFloat64Slice(t *testing.T) {
 	expectS(t, "1 2.5 3.1416", float64Slice(values).join(" "))
 	expectS(t, "1, 2.5, 3.1416", float64Slice(values).join(", "))
 }
+
+func TestReverseCurvePoints(t *testing.T) {
+	points := []Location{
+		{0, 0},
+		{1, 0},
+		{2, 0},
+		{3, 0},
+		{4, 0},
+		{5, 0},
+		{6, 0},
+	}
+
+	reversed := reverseCurvePoints(points)
+	expectI(t, len(points), len(reversed))
+	expectV(t, Location{6, 0}, reversed[0])
+	expectV(t, Location{5, 0}, reversed[1])
+	expectV(t, Location{4, 0}, reversed[2])
+	expectV(t, Location{3, 0}, reversed[3])
+	expectV(t, Location{2, 0}, reversed[4])
+	expectV(t, Location{1, 0}, reversed[5])
+	expectV(t, Location{0, 0}, reversed[6])
+}

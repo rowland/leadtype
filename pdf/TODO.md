@@ -19,19 +19,19 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Shape Primitives ([#7](https://github.com/rowland/leadtype/issues/7))
 
-- [ ] Add higher-level geometry helpers on top of the existing graph writer
-  - [ ] angled `line`
-  - [ ] `circle`
-  - [ ] `ellipse`
-  - [ ] `arc`
-  - [ ] `pie`
-  - [ ] `arch`
-  - [ ] `polygon`
-  - [ ] `star`
-- [ ] share curve/path internals where possible so shapes do not duplicate low-level logic
-- [ ] support fill, stroke, reverse-direction, and clip behaviors where legacy parity expects them
-- [ ] add focused unit tests for geometry generation
-- [ ] add PDF-level tests for rendered command sequences
+- [x] Add higher-level geometry helpers on top of the existing graph writer
+  - [x] angled `line`
+  - [x] `circle`
+  - [x] `ellipse`
+  - [x] `arc`
+  - [x] `pie`
+  - [x] `arch`
+  - [x] `polygon`
+  - [x] `star`
+- [x] share curve/path internals where possible so shapes do not duplicate low-level logic
+- [x] support fill, stroke, reverse-direction, and clip behaviors where legacy parity expects them
+- [x] add focused unit tests for geometry generation
+- [x] add PDF-level tests for rendered command sequences
 
 ### Images ([#8](https://github.com/rowland/leadtype/issues/8), future PNG follow-on [#16](https://github.com/rowland/leadtype/issues/16))
 

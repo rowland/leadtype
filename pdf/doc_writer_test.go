@@ -294,6 +294,65 @@ func TestDocWriter_PathAPI_Integration(t *testing.T) {
 	}
 }
 
+func TestDocWriter_ShapesIntegration(t *testing.T) {
+	var buf bytes.Buffer
+
+	dw := NewDocWriter()
+	dw.SetUnits("in")
+	dw.NewPage()
+	if err := dw.Circle(1.5, 1.5, 0.5, true, false, false); err != nil {
+		t.Fatalf("Circle returned error: %v", err)
+	}
+	if err := dw.Ellipse(3.0, 1.5, 0.75, 0.5, true, false, false); err != nil {
+		t.Fatalf("Ellipse returned error: %v", err)
+	}
+	if err := dw.Pie(1.5, 3.5, 0.75, 0, 135, true, true, false); err != nil {
+		t.Fatalf("Pie returned error: %v", err)
+	}
+	if err := dw.Arch(1.5, 5.0, 0.35, 0.7, 220, 20, true, true, false); err != nil {
+		t.Fatalf("Arch returned error: %v", err)
+	}
+	if err := dw.Polygon(3.5, 3.5, 0.7, 6, true, false, false, 0); err != nil {
+		t.Fatalf("Polygon returned error: %v", err)
+	}
+	if err := dw.Star(5.5, 3.5, 0.8, 0.35, 5, true, false, false, 0); err != nil {
+		t.Fatalf("Star returned error: %v", err)
+	}
+	if err := dw.Circle(1.5, 6.0, 0.5, true, true, false); err != nil {
+		t.Fatalf("filled Circle returned error: %v", err)
+	}
+	if err := dw.Ellipse(3.0, 6.0, 0.75, 0.5, true, true, false); err != nil {
+		t.Fatalf("filled Ellipse returned error: %v", err)
+	}
+	if err := dw.Polygon(4.8, 5.5, 0.6, 5, true, true, false, 0); err != nil {
+		t.Fatalf("filled Polygon returned error: %v", err)
+	}
+	if err := dw.Star(5.8, 5.7, 0.55, 0.25, 5, true, true, false, 0); err != nil {
+		t.Fatalf("filled Star returned error: %v", err)
+	}
+
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo returned error: %v", err)
+	}
+	pdf := buf.String()
+
+	if !strings.Contains(pdf, "%PDF-1.3\n") {
+		t.Fatalf("expected PDF header")
+	}
+	if !strings.Contains(pdf, " c\n") {
+		t.Fatalf("expected curve operators from ellipse/circle/arc-based shapes, got:\n%s", pdf)
+	}
+	if !strings.Contains(pdf, " l\n") {
+		t.Fatalf("expected line operators from polygonal shapes, got:\n%s", pdf)
+	}
+	if !strings.Contains(pdf, "B\n") {
+		t.Fatalf("expected fill-and-stroke operators in generated PDF, got:\n%s", pdf)
+	}
+	if !strings.Contains(pdf, "S\n") {
+		t.Fatalf("expected stroke operators in generated PDF, got:\n%s", pdf)
+	}
+}
+
 // TODO: TestPagesAcross
 // TODO: TestPagesDown
 // TODO: TestPagesUp

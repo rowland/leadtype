@@ -102,3 +102,58 @@ func quadrantBezierPoints(quadrant int, x, y, rx, ry float64) (bp []Location) {
 	}
 	return
 }
+
+func rotateXY(x, y, angle float64) (float64, float64) {
+	theta := angle * math.Pi / 180.0
+	vCos := math.Cos(theta)
+	vSin := math.Sin(theta)
+	return (x * vCos) - (y * vSin), (x * vSin) + (y * vCos)
+}
+
+func rotatePoint(center, point Location, angle float64) Location {
+	x, y := rotateXY(point.X-center.X, center.Y-point.Y, angle)
+	return Location{center.X + x, center.Y - y}
+}
+
+func calcArcSmall(r, midTheta, halfAngle, ccwcw float64) (points [4]Location) {
+	halfTheta := math.Abs(halfAngle) * math.Pi / 180.0
+	vCos := math.Cos(halfTheta)
+	vSin := math.Sin(halfTheta)
+
+	x0 := r * vCos
+	y0 := -ccwcw * r * vSin
+	x1 := r * (4.0 - vCos) / 3.0
+	x2 := x1
+	y1 := r * ccwcw * (1.0 - vCos) * (vCos - 3.0) / (3.0 * vSin)
+	y2 := -y1
+	x3 := r * vCos
+	y3 := ccwcw * r * vSin
+
+	x0, y0 = rotateXY(x0, y0, midTheta)
+	x1, y1 = rotateXY(x1, y1, midTheta)
+	x2, y2 = rotateXY(x2, y2, midTheta)
+	x3, y3 = rotateXY(x3, y3, midTheta)
+
+	points[0] = Location{x0, y0}
+	points[1] = Location{x1, y1}
+	points[2] = Location{x2, y2}
+	points[3] = Location{x3, y3}
+	return
+}
+
+func reverseCurvePoints(points []Location) []Location {
+	if len(points) == 0 {
+		return nil
+	}
+	if len(points) < 4 || (len(points)-1)%3 != 0 {
+		reversed := append([]Location(nil), points...)
+		LocationSlice(reversed).Reverse()
+		return reversed
+	}
+	reversed := make([]Location, 0, len(points))
+	reversed = append(reversed, points[len(points)-1])
+	for i := len(points) - 3; i >= 1; i -= 3 {
+		reversed = append(reversed, points[i+1], points[i], points[i-1])
+	}
+	return reversed
+}
