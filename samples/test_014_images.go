@@ -17,11 +17,21 @@ func init() {
 	registerSample("test_014_images", "demonstrate JPEG image placement from file and memory", runTest014Images)
 }
 
-func drawImageFrame(doc *pdf.DocWriter, x, y, width, height float64, label string) {
+func drawPanel(doc *pdf.DocWriter, x, y, width, height float64, title string) {
 	doc.SetLineColor(colors.LightGray)
+	doc.SetLineWidth(1, "pt")
 	doc.Rectangle(x, y, width, height, true, false)
-	doc.SetFontColor(colors.DimGray)
+	doc.SetFontColor(colors.Black)
 	doc.MoveTo(x, y-0.12)
+	fmt.Fprintln(doc, title)
+}
+
+func drawFootprint(doc *pdf.DocWriter, x, y, width, height float64, color colors.Color, label string) {
+	doc.SetLineColor(color)
+	doc.SetLineWidth(1, "pt")
+	doc.Rectangle(x, y, width, height, true, false)
+	doc.SetFontColor(color)
+	doc.MoveTo(x, y-0.08)
 	fmt.Fprintln(doc, label)
 }
 
@@ -44,31 +54,42 @@ func runTest014Images() (string, error) {
 		if err != nil {
 			return err
 		}
+		intrinsicW, intrinsicH, err := doc.ImageDimensions(data)
+		if err != nil {
+			return err
+		}
+		intrinsicWidth := float64(intrinsicW) / 72.0
+		intrinsicHeight := float64(intrinsicH) / 72.0
 
 		doc.SetFont("Arial", 10, options.Options{})
 
-		drawImageFrame(doc, 0.8, 1.3, 2.1, 2.0, "File input, width only")
+		drawPanel(doc, 0.7, 1.4, 3.0, 2.4, "Width fixed to 1.8 in")
 		widthOnly := 1.8
-		if _, _, err := doc.PrintImageFile(imagePath, 0.95, 1.45, &widthOnly, nil); err != nil {
+		if _, _, err := doc.PrintImageFile(imagePath, 1.1, 1.85, &widthOnly, nil); err != nil {
 			return err
 		}
+		drawFootprint(doc, 1.1, 1.85, 1.8, 1.8*float64(intrinsicH)/float64(intrinsicW), colors.SteelBlue, "height inferred")
 
-		drawImageFrame(doc, 3.3, 1.3, 2.1, 2.0, "In-memory input, height only")
+		drawPanel(doc, 4.0, 1.4, 3.0, 2.4, "Height fixed to 1.4 in")
 		heightOnly := 1.4
-		if _, _, err := doc.PrintImage(data, 3.55, 1.45, nil, &heightOnly); err != nil {
+		widthFromHeight := 1.4 * float64(intrinsicW) / float64(intrinsicH)
+		if _, _, err := doc.PrintImage(data, 4.35, 1.85, nil, &heightOnly); err != nil {
 			return err
 		}
+		drawFootprint(doc, 4.35, 1.85, widthFromHeight, 1.4, colors.SeaGreen, "width inferred")
 
-		drawImageFrame(doc, 0.8, 4.0, 2.1, 2.2, "Intrinsic size")
-		if _, _, err := doc.PrintImageFile(imagePath, 1.05, 4.25, nil, nil); err != nil {
+		drawPanel(doc, 0.7, 4.3, 3.2, 3.0, "Native size from JPEG metadata")
+		if _, _, err := doc.PrintImageFile(imagePath, 1.0, 4.8, nil, nil); err != nil {
 			return err
 		}
+		drawFootprint(doc, 1.0, 4.8, intrinsicWidth, intrinsicHeight, colors.OrangeRed, "227 pt x 149 pt")
 
-		drawImageFrame(doc, 3.3, 4.0, 2.1, 2.2, "Explicit width and height")
+		drawPanel(doc, 4.2, 4.3, 2.8, 3.0, "Forced to 1.7 x 1.1 in")
 		explicitWidth, explicitHeight := 1.7, 1.1
-		if _, _, err := doc.PrintImage(data, 3.55, 4.4, &explicitWidth, &explicitHeight); err != nil {
+		if _, _, err := doc.PrintImage(data, 4.55, 4.95, &explicitWidth, &explicitHeight); err != nil {
 			return err
 		}
+		drawFootprint(doc, 4.55, 4.95, explicitWidth, explicitHeight, colors.Purple, "aspect ratio ignored")
 
 		return nil
 	})
