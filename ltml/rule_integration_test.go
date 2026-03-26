@@ -219,6 +219,115 @@ func TestRules_integration_descendant_rule_does_not_apply_without_ancestor(t *te
 }
 
 // ----------------------------------------------------------------------------
+// Direct child selector (>) — only matches an immediate child, not a deeper
+// descendant
+// ----------------------------------------------------------------------------
+
+func TestRules_integration_direct_child_rule_applies_to_immediate_child(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>div>p { font.size: 17; }</rules>
+			<page>
+				<div><p>direct child</p></div>
+			</page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	div, ok := page.children[0].(*StdContainer)
+	if !ok {
+		t.Fatalf("expected *StdContainer (div), got %T", page.children[0])
+	}
+	p, ok := div.children[0].(*StdParagraph)
+	if !ok {
+		t.Fatalf("expected *StdParagraph, got %T", div.children[0])
+	}
+	if p.font == nil {
+		t.Fatal("font was not set on direct child paragraph")
+	}
+	if p.font.size != 17 {
+		t.Errorf("expected font.size=17 from direct child rule, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_direct_child_rule_does_not_match_p_inside_p(t *testing.T) {
+	// div>p should NOT match a <p> whose direct parent is another <p> (path
+	// div/p/p). The inner <p> is a descendant of the <div> but its immediate
+	// parent is <p>, so the direct-child relationship with <div> doesn't hold.
+	// Note: div>p DOES still match the outer <p> (path div/p) — only the inner
+	// one (path div/p/p) should be unaffected.
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>div>p { font.size: 17; }</rules>
+			<page>
+				<div><p>outer<p>inner</p></p></div>
+			</page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	div, ok := page.children[0].(*StdContainer)
+	if !ok {
+		t.Fatalf("expected *StdContainer (div), got %T", page.children[0])
+	}
+	outerP, ok := div.children[0].(*StdParagraph)
+	if !ok {
+		t.Fatalf("expected outer *StdParagraph, got %T", div.children[0])
+	}
+	// The outer <p> (div/p) should match.
+	if outerP.font == nil || outerP.font.size != 17 {
+		t.Errorf("outer p (div/p) should match div>p rule, got font %v", outerP.font)
+	}
+	// The inner <p> (div/p/p) should NOT match.
+	if len(outerP.children) == 0 {
+		t.Fatal("outer <p> has no children")
+	}
+	innerP, ok := outerP.children[0].(*StdParagraph)
+	if !ok {
+		t.Fatalf("expected inner *StdParagraph, got %T", outerP.children[0])
+	}
+	if innerP.font != nil && innerP.font.size == 17 {
+		t.Error("direct child rule (div>p) should not apply to inner <p> whose direct parent is <p>, not <div>")
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Selector with both id and class — e.g. p#intro.highlight
+// ----------------------------------------------------------------------------
+
+func TestRules_integration_id_and_class_selector_matches_exact_element(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p#intro.highlight { font.size: 22; }</rules>
+			<page>
+				<p id="intro" class="highlight">targeted</p>
+			</page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on element matching id+class selector")
+	}
+	if p.font.size != 22 {
+		t.Errorf("expected font.size=22, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_id_and_class_selector_requires_both(t *testing.T) {
+	// Same rule but the element only has the id, not the class — should not match.
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p#intro.highlight { font.size: 22; }</rules>
+			<page>
+				<p id="intro">id only, no class</p>
+			</page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font != nil && p.font.size == 22 {
+		t.Error("id+class selector should not match an element that has only the id")
+	}
+}
+
+// ----------------------------------------------------------------------------
 // Multiple properties in a single rule are all applied
 // ----------------------------------------------------------------------------
 
