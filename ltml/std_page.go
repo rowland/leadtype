@@ -19,8 +19,23 @@ type StdPage struct {
 func (p *StdPage) BeforePrint(w Writer) error {
 	// fmt.Printf("Printing %s\n", p)
 	// fmt.Print(&p.Scope)
+	if doc := p.document(); doc != nil {
+		if start, ok := p.firstPageNoStart(); ok {
+			doc.SetPendingStart(start)
+		}
+		if doc.pendingStart != nil {
+			doc.SetCurrentPageStart(*doc.pendingStart)
+			doc.pendingStart = nil
+		}
+		doc.documentPageNo++
+	}
 	w.NewPage()
 	LayoutContainer(p, w)
+	if doc := p.document(); doc != nil {
+		if reset, ok := p.firstPageNoReset(); ok {
+			doc.SetPendingStart(reset)
+		}
+	}
 	return nil
 }
 
@@ -152,6 +167,34 @@ func (p *StdPage) TopIsSet() bool {
 
 func (p *StdPage) Width() float64 {
 	return p.PageStyle().Width()
+}
+
+func (p *StdPage) firstPageNoReset() (int, bool) {
+	var value int
+	var found bool
+	walkWidgets(p, func(widget Widget) bool {
+		if pageNo, ok := widget.(*StdPageNo); ok && pageNo.hasReset() {
+			value = pageNo.reset
+			found = true
+			return false
+		}
+		return true
+	})
+	return value, found
+}
+
+func (p *StdPage) firstPageNoStart() (int, bool) {
+	var value int
+	var found bool
+	walkWidgets(p, func(widget Widget) bool {
+		if pageNo, ok := widget.(*StdPageNo); ok && pageNo.hasStart() {
+			value = pageNo.start
+			found = true
+			return false
+		}
+		return true
+	})
+	return value, found
 }
 
 func init() {

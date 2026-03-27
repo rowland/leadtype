@@ -291,6 +291,31 @@ When `length` is omitted, the line is sized to fit within its content box.
 
 ---
 
+### `<pageno>` — Inline Page Number
+
+Renders the current document page number inline anywhere `<span>` is allowed.
+It also supports page-counter control attributes for the current or following
+rendered PDF page.
+
+```xml
+<p>Page <pageno /></p>
+<p><pageno hidden="true" reset="1" /></p>
+<p>Page <pageno start="10" font.weight="Bold" /></p>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `font` / `font.*` | Same inline font attributes supported by `<span>`. |
+| `start` | Set the visible number for the current rendered PDF page. |
+| `reset` | Set the number that should begin on the next rendered PDF page. |
+| `hidden` | If `true`, apply control semantics without rendering visible text. |
+
+`<pageno>` is valid only where `<span>` is valid today: inside `<p>`,
+`<label>`, and nested `<span>`. The current implementation renders decimal page
+numbers only.
+
+---
+
 ## Style Definitions
 
 Style definitions are placed inside `<ltml>` (or `<page>` for page-scoped

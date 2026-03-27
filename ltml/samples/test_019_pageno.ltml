@@ -1,0 +1,28 @@
+<ltml>
+  <layout id="vbox" padding="10pt" />
+  <page margin="0.75in" layout="vbox">
+    <label font.weight="Bold">Page numbering</label>
+    <p>Page <pageno /></p>
+  </page>
+  <page margin="0.75in" layout="vbox">
+    <label font.weight="Bold">Page numbering</label>
+    <p>Page <pageno /></p>
+  </page>
+  <page margin="0.75in" layout="vbox">
+    <label font.weight="Bold">Reset after this page</label>
+    <p>This page hides the next-page reset.<pageno hidden="true" reset="1" /></p>
+  </page>
+  <page margin="0.75in" layout="vbox">
+    <label font.weight="Bold">Body starts</label>
+    <p>Page <pageno font.weight="Bold" /></p>
+  </page>
+  <page margin="0.75in" layout="vbox">
+    <label font.weight="Bold">Explicit start</label>
+    <p>Page <pageno start="10" /></p>
+    <label>This is page <pageno font.weight="Bold" />.</label>
+  </page>
+  <page margin="0.75in" layout="vbox">
+    <label font.weight="Bold">Continuation</label>
+    <p>Page <pageno /></p>
+  </page>
+</ltml>

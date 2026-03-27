@@ -38,11 +38,11 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ### Page Numbering ([#15](https://github.com/rowland/leadtype/issues/15))
 
-- [ ] Add a standard `<pageno>` widget
-  - [ ] support current-page output
-  - [ ] support embedded usage inside paragraph/header/footer content
-  - [ ] define whether explicit inner text provides an offset or override
-- [ ] add tests covering multipage documents and repeated-content scenarios
+- [x] Add a standard `<pageno>` widget
+  - [x] support current-page output
+  - [x] support embedded usage inside paragraph and label content
+  - [x] support `start`, `reset`, and `hidden` page-number control attrs
+- [x] add tests covering multipage documents and repeated-content-compatible page counter scenarios
 
 ### Absolute / Relative Positioning ([#14](https://github.com/rowland/leadtype/issues/14))
 

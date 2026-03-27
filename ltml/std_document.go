@@ -9,6 +9,8 @@ import (
 
 type StdDocument struct {
 	StdPage
+	documentPageNo int
+	pendingStart   *int
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -43,7 +45,21 @@ func (d *StdDocument) ParagraphStyle() *ParagraphStyle {
 	return d.paragraphStyle
 }
 
+func (d *StdDocument) CurrentPageNo() int {
+	return d.documentPageNo
+}
+
+func (d *StdDocument) SetCurrentPageStart(start int) {
+	d.documentPageNo = start - 1
+}
+
+func (d *StdDocument) SetPendingStart(start int) {
+	d.pendingStart = &start
+}
+
 func (d *StdDocument) Print(w Writer) error {
+	d.documentPageNo = 0
+	d.pendingStart = nil
 	return d.DrawContent(w)
 }
 

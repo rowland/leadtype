@@ -11,16 +11,16 @@ type StdSpan struct {
 	StdContainer
 }
 
-type AddTextWithFonter interface {
-	AddTextWithFont(text string, font *FontStyle)
-}
-
 func (s *StdSpan) AddText(text string) {
 	s.AddTextWithFont(text, s.Font())
 }
 
 func (s *StdSpan) AddTextWithFont(text string, font *FontStyle) {
 	s.container.(AddTextWithFonter).AddTextWithFont(text, font)
+}
+
+func (s *StdSpan) AddInlineWithFont(content inlineText, font *FontStyle) {
+	s.container.(AddInlineWithFonter).AddInlineWithFont(content, font)
 }
 
 func (s *StdSpan) SetContainer(container Container) error {

@@ -33,15 +33,21 @@ func (l *StdLabel) AddTextWithFont(text string, font *FontStyle) {
 		if text == "" {
 			return
 		}
-	} else if last := &l.textPieces[len(l.textPieces)-1]; strings.HasSuffix(last.text, " ") && strings.HasPrefix(text, " ") {
+	} else if last := &l.textPieces[len(l.textPieces)-1]; strings.HasSuffix(last.ResolvedText(nil), " ") && strings.HasPrefix(text, " ") {
 		text = text[1:]
 	}
 	l.richText = nil
-	if len(l.textPieces) > 0 && l.textPieces[len(l.textPieces)-1].font == font {
-		l.textPieces[len(l.textPieces)-1].text += text
+	if len(l.textPieces) > 0 && l.textPieces[len(l.textPieces)-1].font == font && !l.textPieces[len(l.textPieces)-1].Dynamic() {
+		lastText := l.textPieces[len(l.textPieces)-1].ResolvedText(nil)
+		l.textPieces[len(l.textPieces)-1].content = staticInlineText(lastText + text)
 		return
 	}
-	l.textPieces = append(l.textPieces, textPiece{text, font})
+	l.textPieces = append(l.textPieces, newStaticTextPiece(text, font))
+}
+
+func (l *StdLabel) AddInlineWithFont(content inlineText, font *FontStyle) {
+	l.richText = nil
+	l.textPieces = append(l.textPieces, textPiece{content: content, font: font})
 }
 
 func normalizeLabelXMLText(text string) string {
@@ -99,15 +105,28 @@ func (l *StdLabel) PreferredWidth(w Writer) float64 {
 }
 
 func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
-	if l.richText != nil {
+	doc := documentForContainer(l)
+	if l.richText != nil && !l.hasDynamicText() {
 		return l.richText
 	}
-	l.richText = &rich_text.RichText{}
+	rt := &rich_text.RichText{}
+	lastText := ""
 	for _, piece := range l.textPieces {
-		piece.font.Apply(w)
+		font := piece.Font(l.Font())
+		font.Apply(w)
+		text := piece.ResolvedText(doc)
+		if text == "" {
+			continue
+		}
+		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
+			text = text[1:]
+		}
+		if text == "" {
+			continue
+		}
 		var err error
-		l.richText, err = l.richText.Add(
-			piece.text,
+		rt, err = rt.Add(
+			text,
 			w.Fonts(),
 			w.FontSize(),
 			options.Options{
@@ -119,8 +138,21 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "StdLabel.RichText: %v", err)
 		}
+		lastText = text
 	}
-	return l.richText
+	if !l.hasDynamicText() {
+		l.richText = rt
+	}
+	return rt
+}
+
+func (l *StdLabel) hasDynamicText() bool {
+	for _, piece := range l.textPieces {
+		if piece.Dynamic() {
+			return true
+		}
+	}
+	return false
 }
 
 func (l *StdLabel) String() string {

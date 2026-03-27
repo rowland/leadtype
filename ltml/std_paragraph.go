@@ -14,11 +14,6 @@ import (
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
-type textPiece struct {
-	text string
-	font *FontStyle
-}
-
 type StdParagraph struct {
 	StdContainer
 	textPieces []textPiece
@@ -40,15 +35,21 @@ func (p *StdParagraph) AddTextWithFont(text string, font *FontStyle) {
 		if text == "" {
 			return
 		}
-	} else if last := &p.textPieces[len(p.textPieces)-1]; strings.HasSuffix(last.text, " ") && strings.HasPrefix(text, " ") {
+	} else if last := &p.textPieces[len(p.textPieces)-1]; strings.HasSuffix(last.ResolvedText(nil), " ") && strings.HasPrefix(text, " ") {
 		text = text[1:]
 	}
 	p.richText = nil
-	if len(p.textPieces) > 0 && p.textPieces[len(p.textPieces)-1].font == font {
-		p.textPieces[len(p.textPieces)-1].text += text
+	if len(p.textPieces) > 0 && p.textPieces[len(p.textPieces)-1].font == font && !p.textPieces[len(p.textPieces)-1].Dynamic() {
+		lastText := p.textPieces[len(p.textPieces)-1].ResolvedText(nil)
+		p.textPieces[len(p.textPieces)-1].content = staticInlineText(lastText + text)
 		return
 	}
-	p.textPieces = append(p.textPieces, textPiece{text, font})
+	p.textPieces = append(p.textPieces, newStaticTextPiece(text, font))
+}
+
+func (p *StdParagraph) AddInlineWithFont(content inlineText, font *FontStyle) {
+	p.richText = nil
+	p.textPieces = append(p.textPieces, textPiece{content: content, font: font})
 }
 
 func normalizeXMLText(text string) string {
@@ -150,15 +151,28 @@ func (p *StdParagraph) PreferredWidth(w Writer) float64 {
 }
 
 func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
-	if p.richText != nil {
+	doc := documentForContainer(p)
+	if p.richText != nil && !p.hasDynamicText() {
 		return p.richText
 	}
-	p.richText = &rich_text.RichText{}
+	rt := &rich_text.RichText{}
+	lastText := ""
 	for _, piece := range p.textPieces {
-		piece.font.Apply(w)
+		font := piece.Font(p.Font())
+		font.Apply(w)
+		text := piece.ResolvedText(doc)
+		if text == "" {
+			continue
+		}
+		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
+			text = text[1:]
+		}
+		if text == "" {
+			continue
+		}
 		var err error
-		p.richText, err = p.richText.Add(
-			piece.text,
+		rt, err = rt.Add(
+			text,
 			w.Fonts(),
 			w.FontSize(), options.Options{
 				"color":     w.FontColor(),
@@ -167,8 +181,21 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "StdParagraph.RichText: %v", err)
 		}
+		lastText = text
 	}
-	return p.richText
+	if !p.hasDynamicText() {
+		p.richText = rt
+	}
+	return rt
+}
+
+func (p *StdParagraph) hasDynamicText() bool {
+	for _, piece := range p.textPieces {
+		if piece.Dynamic() {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {

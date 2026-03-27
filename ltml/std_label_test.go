@@ -119,7 +119,7 @@ func TestStdLabel_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 	if len(l.textPieces) != 1 {
 		t.Fatalf("expected 1 text piece, got %d", len(l.textPieces))
 	}
-	got := l.textPieces[0].text
+	got := l.textPieces[0].ResolvedText(nil)
 	want := "Four score and seven years ago our fathers brought forth."
 	if got != want {
 		t.Fatalf("normalized text = %q, want %q", got, want)
@@ -191,10 +191,10 @@ func TestParse_LabelAndBrAlias(t *testing.T) {
 	if len(label.textPieces) != 2 {
 		t.Fatalf("text piece count = %d, want 2", len(label.textPieces))
 	}
-	if got := label.textPieces[0].text; got != "Hello " {
+	if got := label.textPieces[0].ResolvedText(nil); got != "Hello " {
 		t.Fatalf("piece 0 = %q, want %q", got, "Hello ")
 	}
-	if got := label.textPieces[1].text; got != "world" {
+	if got := label.textPieces[1].ResolvedText(nil); got != "world" {
 		t.Fatalf("piece 1 = %q, want %q", got, "world")
 	}
 }
