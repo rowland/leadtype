@@ -16,6 +16,8 @@ type Writer interface {
 	FontSize() float64
 	ImageDimensionsFromFile(filename string) (width, height int, err error)
 	LineSpacing() float64
+	SetLineCapStyle(style string) (prev string)
+	Line(x, y, angle, length float64)
 	LineTo(x, y float64)
 	Loc() (x, y float64)
 	MoveTo(x, y float64)

@@ -1,0 +1,39 @@
+<ltml>
+  <layout id="flow" padding="0.5in" />
+  <layout id="vbox" padding="0.25in" />
+  <layout id="hbox" padding="0.25in" />
+  <pen id="solid3"  width="3" pattern="solid"  color="Orange" />
+  <pen id="dotted3" width="3" pattern="dotted" color="Orange" />
+  <pen id="dashed3" width="3" pattern="dashed" color="Orange" />
+  <pen id="solid5"  width="5" pattern="solid"  color="Teal" cap="round_cap" />
+  <pen id="dotted5" width="5" pattern="dotted" color="Teal" cap="round_cap" />
+  <pen id="dashed5" width="5" pattern="dashed" color="Teal" cap="round_cap" />
+  <pen id="custom"  width="2" pattern="[2 2 4 4 6 6 8 8] 0" color="Black" />
+  <pen id="thin"    width="0.5" color="Black" />
+  <pen id="thinner" width="0.25" color="Black" />
+  <pen id="thinnest" width="0.05" color="Black" />
+  <define id="hline" tag="line" angle="3" width="100%" height="0.5in" />
+  <define id="vline" tag="line" angle="90" height="100%" width = "1pt" />
+  <page margin="0.75in" layout="vbox">
+    <p underline="true">Lines</p>
+    <vbox>
+      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+      <hline />
+      <hbox>
+        <p text_align="justify" border="dotted">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <vline />
+        <p text_align="justify" border="dotted">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+      </hbox>
+      <line width="100%" style="solid3" />
+      <line width="100%" style="dotted3" />
+      <line width="100%" style="dashed3" />
+      <line width="100%" style="solid5" />
+      <line width="100%" style="dotted5" />
+      <line width="100%" style="dashed5" />
+      <line width="100%" style="custom" />
+      <line width="100%" style="thin" />
+      <line width="100%" style="thinner" />
+      <line width="100%" style="thinnest" />
+    </vbox>
+  </page>
+</ltml>

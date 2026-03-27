@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/rowland/leadtype/codepage"
@@ -220,14 +221,56 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 		pw.inPath = false
 	}
 	pat := LinePatterns[pw.lineDashPattern]
+	scale := math.Round(pw.lineWidth)
+	if scale < 1 {
+		scale = 1
+	}
 	if pat == nil {
-		pw.gw.setLineDashPattern(pw.lineDashPattern)
+		if scaled, ok := scaledDashPatternString(pw.lineDashPattern, scale); ok {
+			pw.gw.setLineDashPattern(scaled)
+		} else {
+			pw.gw.setLineDashPattern(pw.lineDashPattern)
+		}
 	} else {
-		pw.gw.setLineDashPattern(pat.String())
+		scaled := make([]float64, len(pat.pattern))
+		for i, value := range pat.pattern {
+			scaled[i] = value * scale
+		}
+		pw.gw.setLineDashPattern((&linePattern{pattern: scaled, phase: pat.phase}).String())
 	}
 	pw.last.lineDashPattern = pw.lineDashPattern
 	pw.gw.setLineCapStyle(int(pw.lineCapStyle))
 	pw.last.lineCapStyle = pw.lineCapStyle
+}
+
+func scaledDashPatternString(pattern string, scale float64) (string, bool) {
+	pattern = strings.TrimSpace(pattern)
+	if !strings.HasPrefix(pattern, "[") {
+		return "", false
+	}
+	end := strings.Index(pattern, "]")
+	if end < 0 {
+		return "", false
+	}
+	body := strings.TrimSpace(pattern[1:end])
+	phaseText := strings.TrimSpace(pattern[end+1:])
+	phase, err := strconv.Atoi(phaseText)
+	if err != nil {
+		return "", false
+	}
+	if body == "" {
+		return (&linePattern{pattern: []float64{}, phase: phase}).String(), true
+	}
+	fields := strings.Fields(body)
+	scaled := make([]float64, len(fields))
+	for i, field := range fields {
+		value, err := strconv.ParseFloat(field, 64)
+		if err != nil {
+			return "", false
+		}
+		scaled[i] = value * scale
+	}
+	return (&linePattern{pattern: scaled, phase: phase}).String(), true
 }
 
 func (pw *PageWriter) checkSetLineWidth() {

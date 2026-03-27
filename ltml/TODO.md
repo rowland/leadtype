@@ -7,20 +7,20 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ### Foundational Widget Tags ([#11](https://github.com/rowland/leadtype/issues/11))
 
-- [ ] Add a standard `<label>` widget
-  - [ ] support simple text rendering
-  - [ ] make the built-in `<br>` alias resolve to working behavior
-  - [ ] decide whether label is inline-only, block-only, or dual-purpose and document it
-- [ ] Add a standard `<pre>` widget
-  - [ ] preserve preformatted whitespace/newlines
-  - [ ] support file/code-block parity use cases from legacy samples
-- [ ] Add a standard `<image>` widget ([#10](https://github.com/rowland/leadtype/issues/10))
-  - [ ] map widget attrs to the PDF image API
-  - [ ] support sizing with natural aspect ratio rules
-  - [ ] avoid JPEG-specific assumptions in widget design so PNG can be added later without LTML API churn
-- [ ] Add a standard `<line>` widget
-  - [ ] define horizontal/vertical/general line semantics
-  - [ ] map border/pen attrs cleanly to the PDF layer
+- [x] Add a standard `<label>` widget
+  - [x] support simple text rendering
+  - [x] make the built-in `<br>` alias resolve to working behavior
+  - [x] decide whether label is inline-only, block-only, or dual-purpose and document it
+- [x] Add a standard `<pre>` widget
+  - [x] preserve preformatted whitespace/newlines
+  - [x] support inline code-block parity use cases from legacy samples
+- [x] Add a standard `<image>` widget ([#10](https://github.com/rowland/leadtype/issues/10))
+  - [x] map widget attrs to the PDF image API
+  - [x] support sizing with natural aspect ratio rules
+  - [x] avoid JPEG-specific assumptions in widget design so PNG can be added later without LTML API churn
+- [x] Add a standard `<line>` widget
+  - [x] define horizontal/vertical/general line semantics
+  - [x] map border/pen attrs cleanly to the PDF layer
 
 ### Shape Widgets ([#10](https://github.com/rowland/leadtype/issues/10))
 

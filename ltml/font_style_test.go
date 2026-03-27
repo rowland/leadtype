@@ -36,6 +36,8 @@ func (m *mockWriter) ImageDimensionsFromFile(filename string) (int, int, error) 
 	return 0, 0, nil
 }
 func (m *mockWriter) LineSpacing() float64    { return 1.0 }
+func (m *mockWriter) SetLineCapStyle(style string) string { return "" }
+func (m *mockWriter) Line(x, y, angle, length float64) {}
 func (m *mockWriter) LineTo(x, y float64)     {}
 func (m *mockWriter) Loc() (float64, float64) { return 0, 0 }
 func (m *mockWriter) MoveTo(x, y float64)     {}

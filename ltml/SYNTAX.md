@@ -233,6 +233,28 @@ added without changing the tag shape.
 
 ---
 
+### `<line>` — Line Segment
+
+Draws a line segment using the configured pen style.
+
+```xml
+<line width="100%" height="12pt" style="dashed" />
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `style` | Reference to a named `<pen>` style. |
+| `angle` | Line angle in degrees. `0` points right; positive angles rotate clockwise in page coordinates. |
+| `length` | Optional explicit line length. |
+| `width`, `height` | Optional layout box dimensions used to infer the line length and placement when `length` is omitted. |
+| `margin`, `padding` | Spacing around and inside the widget box. |
+| `border` | Pen-style fallback if `style` is omitted. |
+
+Horizontal, vertical, and diagonal lines are all represented with the same tag.
+When `length` is omitted, the line is sized to fit within its content box.
+
+---
+
 ## Style Definitions
 
 Style definitions are placed inside `<ltml>` (or `<page>` for page-scoped

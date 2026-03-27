@@ -731,12 +731,26 @@ func TestPageWriter_LineTo(t *testing.T) {
 	check(t, pw.inPath == true, "Should now be in path")
 	// 0 0 1 RG = Blue
 	// 3 w = 3 pts wide
-	// [4 2] 0 = dashed
+	// [12 6] 0 = dashed scaled by 3 pt line width
 	// 0 J = ButtCap
 	// 72 = 1 inch
 	// 792 - 72 = 720 = 1 inch from top
 	// 792 - 144 = 648 = 2 inches from top
-	expectS(t, "0 0 1 RG\n3 w\n[4 2] 0 d\n0 J\n72 720 m\n144 648 l\n", pw.stream.String())
+	expectS(t, "0 0 1 RG\n3 w\n[12 6] 0 d\n0 J\n72 720 m\n144 648 l\n", pw.stream.String())
+}
+
+func TestPageWriter_Line_CustomDashPatternScalesWithLineWidth(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	pw.SetLineColor(colors.Blue)
+	pw.SetLineWidth(2, "pt")
+	pw.SetLineDashPattern("[2 2 4 4 6 6 8 8] 0")
+	pw.SetUnits("in")
+	pw.MoveTo(1, 1)
+	pw.LineTo(2, 1)
+
+	expectS(t, "0 0 1 RG\n2 w\n[4 4 8 8 12 12 16 16] 0 d\n0 J\n72 720 m\n144 720 l\n", pw.stream.String())
 }
 
 func TestPageWriter_LineWidth(t *testing.T) {

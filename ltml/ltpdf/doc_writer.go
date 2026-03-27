@@ -21,6 +21,26 @@ func (dw *DocWriter) SetLineWidth(width float64) {
 	dw.DocWriter.SetLineWidth(width, "pt")
 }
 
+func (dw *DocWriter) SetLineCapStyle(style string) (prev string) {
+	prevStyle := dw.DocWriter.CurPage().LineCapStyle()
+	switch style {
+	case "round_cap":
+		dw.DocWriter.CurPage().SetLineCapStyle(pdf.RoundCap)
+	case "projecting_square_cap":
+		dw.DocWriter.CurPage().SetLineCapStyle(pdf.ProjectingSquareCap)
+	default:
+		dw.DocWriter.CurPage().SetLineCapStyle(pdf.ButtCap)
+	}
+	switch prevStyle {
+	case pdf.RoundCap:
+		return "round_cap"
+	case pdf.ProjectingSquareCap:
+		return "projecting_square_cap"
+	default:
+		return "butt_cap"
+	}
+}
+
 func NewDocWriter() *DocWriter {
 	dw := pdf.NewDocWriter()
 	ttFonts, err := ttf_fonts.NewFromSystemFonts()

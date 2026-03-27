@@ -14,6 +14,7 @@ type PenStyle struct {
 	color   colors.Color
 	width   float64
 	pattern string
+	cap     string
 }
 
 func (ps *PenStyle) Apply(w Writer) {
@@ -21,6 +22,7 @@ func (ps *PenStyle) Apply(w Writer) {
 	w.SetLineColor(colors.Color(ps.color))
 	w.SetLineWidth(ps.width)
 	w.SetLineDashPattern(ps.pattern)
+	w.SetLineCapStyle(ps.Cap())
 }
 
 func (ps *PenStyle) Clone() *PenStyle {
@@ -45,13 +47,27 @@ func (ps *PenStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if pattern, ok := attrs[prefix+"pattern"]; ok {
 		ps.pattern = pattern
 	}
+	if cap, ok := attrs[prefix+"cap"]; ok {
+		switch cap {
+		case "round_cap", "projecting_square_cap", "butt_cap":
+			ps.cap = cap
+		}
+	}
 }
 
 func (ps *PenStyle) String() string {
-	return fmt.Sprintf("PenStyle id=%s color=%v width=%f pattern=%s", ps.id, ps.color, ps.width, ps.pattern)
+	return fmt.Sprintf("PenStyle id=%s color=%v width=%f pattern=%s cap=%s", ps.id, ps.color, ps.width, ps.pattern, ps.cap)
 }
 
 const defaultPenPattern = "solid"
+const defaultPenCap = "butt_cap"
+
+func (ps *PenStyle) Cap() string {
+	if ps.cap == "" {
+		return defaultPenCap
+	}
+	return ps.cap
+}
 
 func PenStyleFor(id string, scope HasScope) *PenStyle {
 	style, ok := scope.StyleFor(id)
@@ -62,7 +78,7 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 		ps, _ := style.(*PenStyle)
 		return ps
 	}
-	ps := &PenStyle{id: "pen_" + id, color: NamedColor(id), pattern: defaultPenPattern}
+	ps := &PenStyle{id: "pen_" + id, color: NamedColor(id), pattern: defaultPenPattern, cap: defaultPenCap}
 	scope.AddStyle(ps)
 	return ps
 }

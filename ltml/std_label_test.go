@@ -30,6 +30,8 @@ func (w *labelTestWriter) LineSpacing() float64 {
 	}
 	return w.lineSpacing
 }
+func (w *labelTestWriter) SetLineCapStyle(style string) (prev string) { return "" }
+func (w *labelTestWriter) Line(x, y, angle, length float64) {}
 func (w *labelTestWriter) LineTo(x, y float64) {}
 func (w *labelTestWriter) Loc() (x, y float64) { return 0, 0 }
 func (w *labelTestWriter) MoveTo(x, y float64) { w.moves = append(w.moves, [2]float64{x, y}) }
