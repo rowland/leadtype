@@ -86,6 +86,12 @@ func (m *mockWriter) Path(fn func()) error {
 	fn()
 	return nil
 }
+func (m *mockWriter) Rotate(angle, x, y float64, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (m *mockWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }

@@ -480,6 +480,11 @@ func (pw *PageWriter) scopedTransform(a, b, c, d, x, y float64, fn func()) error
 	}
 	if pw.inText {
 		pw.endText()
+	} else if pw.line != nil {
+		pw.flushText()
+		if pw.inText {
+			pw.endText()
+		}
 	}
 	if pw.inGraph {
 		pw.endGraph()

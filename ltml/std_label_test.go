@@ -30,7 +30,14 @@ type labelTestWriter struct {
 	lineSpacing float64
 	moves       [][2]float64
 	printed     []*rich_text.RichText
+	rotations   []rotationCall
 	t           testing.TB
+}
+
+type rotationCall struct {
+	angle float64
+	x     float64
+	y     float64
 }
 
 func (w *labelTestWriter) FontColor() colors.Color { return 0 }
@@ -88,6 +95,13 @@ func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reve
 }
 func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
+}
+func (w *labelTestWriter) Rotate(angle, x, y float64, fn func()) error {
+	w.rotations = append(w.rotations, rotationCall{angle: angle, x: x, y: y})
+	if fn != nil {
+		fn()
+	}
+	return nil
 }
 func (w *labelTestWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
 	return w.Fonts(), nil

@@ -107,6 +107,10 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `margin`, `padding` | Spacing around and inside the element. |
 | `border`           | Reference to a named `<pen>` style. |
 | `fill`             | Reference to a named `<brush>` style. |
+| `rotate`           | Rotate the widget around its origin by the given degrees. |
+| `origin_x`         | Rotation origin on the x axis: `left`, `center`, `right`, or a measurement. |
+| `origin_y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
+| `shift`            | Offset the widget after layout using `x,y` measurements. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
 | `colspan`, `rowspan` | Span multiple table cells (when inside a `table`). |
 
@@ -591,6 +595,11 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 - For text widgets such as `<label>` and `<p>`, `top` anchors the widget box.
   Visible glyphs begin lower at the text ascent/baseline, so text can look
   lower than boxes or shapes with the same `top` value.
+- `shift="x,y"` applies after layout and is especially useful for nudging
+  layout-managed widgets.
+- `rotate` wraps the widget's normal background/content/border rendering.
+- `origin_x` defaults to the widget's left edge; `origin_y` defaults to the
+  widget's top edge.
 
 ---
 

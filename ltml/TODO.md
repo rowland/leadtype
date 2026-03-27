@@ -68,14 +68,14 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 ### Transforms And Placement Extras ([#14](https://github.com/rowland/leadtype/issues/14))
 
 - [ ] Add widget transform/placement attrs
-  - [ ] `rotate`
-  - [ ] `origin_x`
-  - [ ] `origin_y`
-  - [ ] `shift`
+  - [x] `rotate`
+  - [x] `origin_x`
+  - [x] `origin_y`
+  - [x] `shift`
   - [ ] `z_index`
 - [ ] define how transforms interact with layout bounds and printing order
 - [ ] implement graphics-state handling through the PDF writer
-- [ ] add tests for rotated and shifted widgets
+- [x] add tests for rotated and shifted widgets
 - [ ] define whether `z_index` is true stacking order or best-effort ordering and document it
 
 ### StdDocument Writer Configuration ([#18](https://github.com/rowland/leadtype/issues/18))

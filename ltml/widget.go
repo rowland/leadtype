@@ -107,14 +107,27 @@ func Print(widget Widget, writer Writer) error {
 	if err := widget.BeforePrint(writer); err != nil {
 		return err
 	}
-	if err := widget.PaintBackground(writer); err != nil {
+	render := func() error {
+		if err := widget.PaintBackground(writer); err != nil {
+			return err
+		}
+		if err := widget.DrawBorder(writer); err != nil {
+			return err
+		}
+		if err := widget.DrawContent(writer); err != nil {
+			return err
+		}
+		return nil
+	}
+	if tw, ok := widget.(interface {
+		paintWithTransform(Writer, func() error) error
+	}); ok {
+		if err := tw.paintWithTransform(writer, render); err != nil {
+			return err
+		}
+	} else if err := render(); err != nil {
 		return err
 	}
-	if err := widget.DrawBorder(writer); err != nil {
-		return err
-	}
-	if err := widget.DrawContent(writer); err != nil {
-		return err
-	}
+	widget.SetPrinted(true)
 	return nil
 }

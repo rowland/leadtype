@@ -112,6 +112,7 @@ func TestSamples(t *testing.T) {
 		"test_019_pageno",
 		"test_020_positioning",
 		"test_021_compression",
+		"test_022_transforms",
 		"test_030_encodings",
 	}
 

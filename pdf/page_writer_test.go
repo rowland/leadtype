@@ -236,6 +236,45 @@ func TestPageWriter_Rotate(t *testing.T) {
 	expectS(t, "q\n0 1 -1 0 720 576 cm\n72 720 m\n144 720 l\nS\nQ\n", pw.stream.String())
 }
 
+func TestPageWriter_RotateFlushesQueuedRichTextInsideTransform(t *testing.T) {
+	dw := NewDocWriter()
+	afmfc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatalf("Default AFM fonts returned error: %v", err)
+	}
+	dw.AddFontSource(afmfc)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	if _, err := pw.AddFont("Helvetica", options.Options{}); err != nil {
+		t.Fatalf("AddFont returned error: %v", err)
+	}
+
+	rt, err := pw.richTextForString("rotate me")
+	if err != nil {
+		t.Fatalf("richTextForString returned error: %v", err)
+	}
+
+	if err := pw.Rotate(25, 1, 2, func() {
+		pw.PrintRichText(rt)
+	}); err != nil {
+		t.Fatalf("Rotate returned error: %v", err)
+	}
+
+	got := pw.stream.String()
+	idxQ := strings.Index(got, "Q\n")
+	idxBT := strings.Index(got, "BT\n")
+	idxET := strings.Index(got, "ET\n")
+	if idxBT < 0 || idxET < 0 || idxQ < 0 {
+		t.Fatalf("expected rotated text operators in stream, got:\n%s", got)
+	}
+	if idxBT > idxQ {
+		t.Fatalf("expected text block to begin before graphics restore, got:\n%s", got)
+	}
+	if idxET > idxQ {
+		t.Fatalf("expected text block to end before graphics restore, got:\n%s", got)
+	}
+}
+
 func TestPageWriter_Scale(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{"units": "in"})

@@ -6,6 +6,7 @@ package ltml
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type StdWidget struct {
@@ -22,6 +23,11 @@ type StdWidget struct {
 	position  Position
 	rowSpan   int
 	align     Align
+	rotate    *float64
+	originX   string
+	originY   string
+	shiftX    float64
+	shiftY    float64
 	printed   bool
 	invisible bool
 	disabled  bool
@@ -216,6 +222,22 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if rowSpan, ok := attrs["rowspan"]; ok {
 		widget.rowSpan, _ = strconv.Atoi(rowSpan)
 	}
+	if rotate, ok := attrs["rotate"]; ok {
+		if value, err := strconv.ParseFloat(rotate, 64); err == nil {
+			widget.rotate = &value
+		}
+	}
+	if originX, ok := attrs["origin_x"]; ok {
+		widget.originX = strings.TrimSpace(originX)
+	}
+	if originY, ok := attrs["origin_y"]; ok {
+		widget.originY = strings.TrimSpace(originY)
+	}
+	if shift, ok := attrs["shift"]; ok {
+		x, y := split2(shift, ",")
+		widget.shiftX = ParseMeasurement(strings.TrimSpace(x), widget.Units())
+		widget.shiftY = ParseMeasurement(strings.TrimSpace(y), widget.Units())
+	}
 }
 
 func (widget *StdWidget) SetContainer(container Container) error {
@@ -357,6 +379,7 @@ func (widget *StdWidget) resolveLeft(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Left()
 	}
+	value += widget.shiftX
 	return value
 }
 
@@ -367,6 +390,7 @@ func (widget *StdWidget) resolveRight(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Left()
 	}
+	value += widget.shiftX
 	return value
 }
 
@@ -377,6 +401,7 @@ func (widget *StdWidget) resolveTop(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Top()
 	}
+	value += widget.shiftY
 	return value
 }
 
@@ -387,7 +412,47 @@ func (widget *StdWidget) resolveBottom(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Top()
 	}
+	value += widget.shiftY
 	return value
+}
+
+func (widget *StdWidget) paintWithTransform(w Writer, fn func() error) error {
+	if widget.rotate == nil {
+		return fn()
+	}
+	var renderErr error
+	if err := w.Rotate(*widget.rotate, widget.OriginX(), widget.OriginY(), func() {
+		renderErr = fn()
+	}); err != nil {
+		return err
+	}
+	return renderErr
+}
+
+func (widget *StdWidget) OriginX() float64 {
+	switch widget.originX {
+	case "center":
+		return (widget.Left() + widget.Right()) / 2
+	case "right":
+		return widget.Right()
+	case "":
+		return widget.Left()
+	default:
+		return ParseMeasurement(widget.originX, widget.Units())
+	}
+}
+
+func (widget *StdWidget) OriginY() float64 {
+	switch widget.originY {
+	case "middle":
+		return (widget.Top() + widget.Bottom()) / 2
+	case "bottom":
+		return widget.Bottom()
+	case "":
+		return widget.Top()
+	default:
+		return ParseMeasurement(widget.originY, widget.Units())
+	}
 }
 
 func init() {

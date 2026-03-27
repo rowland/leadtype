@@ -35,6 +35,7 @@ type Writer interface {
 	Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error
 	Rectangle(x, y, width, height float64, border bool, fill bool)
 	Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool)
+	Rotate(angle, x, y float64, fn func()) error
 	AddFont(family string, options options.Options) ([]*font.Font, error)
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
 	SetFillColor(value interface{}) (prev colors.Color)
