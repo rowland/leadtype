@@ -4,11 +4,13 @@
 package ltml
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 )
 
 // mockWriter records SetFont and AddFont calls for inspection.
@@ -17,17 +19,30 @@ type mockWriter struct {
 	setFontSize  float64
 	addFontNames []string
 	fonts        []*font.Font
+	setFontCalls []string
+	addFontCalls []string
+	setFontErrs  map[string]error
+	addFontErrs  map[string]error
 	t            testing.TB
 }
 
 func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
+	m.addFontCalls = append(m.addFontCalls, family)
 	m.addFontNames = append(m.addFontNames, family)
+	if err := m.addFontErrs[family]; err != nil {
+		return nil, err
+	}
 	return m.Fonts(), nil
 }
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
+	m.setFontCalls = append(m.setFontCalls, name)
 	m.setFontName = name
 	m.setFontSize = size
 	m.addFontNames = nil
+	if err := m.setFontErrs[name]; err != nil {
+		m.fonts = nil
+		return nil, err
+	}
 	return m.Fonts(), nil
 }
 func (m *mockWriter) FontColor() colors.Color { return 0 }
@@ -52,9 +67,9 @@ func (m *mockWriter) Print(text string) error { return nil }
 func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }
-func (m *mockWriter) PrintParagraph(para interface{}, opts interface{}) {}
-func (m *mockWriter) PrintRichText(text interface{})                   {}
-func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)         {}
+func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
+func (m *mockWriter) PrintRichText(text *rich_text.RichText)                             {}
+func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)                           {}
 func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
 func (m *mockWriter) SetFillColor(v interface{}) colors.Color         { return 0 }
 func (m *mockWriter) SetLineColor(v colors.Color) colors.Color        { return 0 }
@@ -195,5 +210,58 @@ func TestFontStyle_DefaultFont(t *testing.T) {
 	}
 	if defaultFont.entries[0].name != defaultFontName {
 		t.Errorf("defaultFont entry name: expected %s, got %s", defaultFontName, defaultFont.entries[0].name)
+	}
+}
+
+func TestFontStyle_Apply_UsesFirstAvailableFontInChain(t *testing.T) {
+	fs := &FontStyle{
+		entries: []fontEntry{
+			{name: "Missing Primary"},
+			{name: "Helvetica"},
+			{name: "Courier"},
+		},
+		size: 12,
+	}
+	w := &mockWriter{
+		t:           t,
+		setFontErrs: map[string]error{"Missing Primary": errors.New("not found")},
+	}
+
+	fs.Apply(w)
+
+	if len(w.setFontCalls) != 2 || w.setFontCalls[0] != "Missing Primary" || w.setFontCalls[1] != "Helvetica" {
+		t.Fatalf("SetFont calls = %v, want [Missing Primary Helvetica]", w.setFontCalls)
+	}
+	if w.setFontName != "Helvetica" {
+		t.Fatalf("final SetFont name = %q, want %q", w.setFontName, "Helvetica")
+	}
+	if len(w.addFontCalls) != 1 || w.addFontCalls[0] != "Courier" {
+		t.Fatalf("AddFont calls = %v, want [Courier]", w.addFontCalls)
+	}
+}
+
+func TestFontStyle_Apply_FallsBackToDefaultFontWhenChainMissing(t *testing.T) {
+	fs := &FontStyle{
+		entries: []fontEntry{
+			{name: "Missing One"},
+			{name: "Missing Two"},
+		},
+		size: 12,
+	}
+	w := &mockWriter{
+		t: t,
+		setFontErrs: map[string]error{
+			"Missing One": errors.New("not found"),
+			"Missing Two": errors.New("not found"),
+		},
+	}
+
+	fs.Apply(w)
+
+	if got := w.setFontName; got != defaultFontName {
+		t.Fatalf("final SetFont name = %q, want %q", got, defaultFontName)
+	}
+	if len(w.setFontCalls) != 3 || w.setFontCalls[2] != defaultFontName {
+		t.Fatalf("SetFont calls = %v, want fallback to %q", w.setFontCalls, defaultFontName)
 	}
 }

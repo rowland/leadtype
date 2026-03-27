@@ -43,11 +43,20 @@ func (fs *FontStyle) Apply(w Writer) {
 		"weight": fs.weight,
 		"style":  fs.style,
 	}
-	// SetFont resets the font list and loads the primary (first) font.
-	w.SetFont(fs.entries[0].name, fs.size, applyEntryOptions(fs.entries[0], baseOpts))
-	// AddFont appends each fallback font in order.
-	for _, entry := range fs.entries[1:] {
-		w.AddFont(entry.name, applyEntryOptions(entry, baseOpts))
+	loadedPrimary := false
+	for _, entry := range fs.entries {
+		opts := applyEntryOptions(entry, baseOpts)
+		if !loadedPrimary {
+			if fonts, err := w.SetFont(entry.name, fs.size, opts); err == nil && len(fonts) > 0 {
+				loadedPrimary = true
+			}
+			continue
+		}
+		w.AddFont(entry.name, opts)
+	}
+	if !loadedPrimary {
+		// Keep LTML renderable on machines that lack requested system fonts.
+		w.SetFont(defaultFontName, fs.size, baseOpts)
 	}
 	if fs.lineHeight == 0 {
 		fs.lineHeight = 1.0
