@@ -184,6 +184,33 @@ line break in stacked layouts.
 
 ---
 
+### `<pre>` — Preformatted Text
+
+Draws literal multiline text without paragraph reflow. This is intended for
+code blocks and other preformatted content.
+
+```xml
+<pre font="fixed" border="solid" padding="6pt">
+  if x &lt; 1 {
+    return
+  }
+</pre>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `font` / `font.*` | Same font attributes supported by `<p>`. Defaults to the built-in `fixed` font style. |
+| `width`, `height` | Optional explicit dimensions. |
+| `margin`, `padding` | Spacing around and inside the block. |
+| `border` | Reference to a named `<pen>` style. |
+| `fill` | Reference to a named `<brush>` style. |
+
+`<pre>` preserves internal spaces and line breaks, does not wrap lines, trims a
+single surrounding newline from block content, removes common leading
+indentation from non-blank lines, and expands tab characters to four spaces.
+
+---
+
 ## Style Definitions
 
 Style definitions are placed inside `<ltml>` (or `<page>` for page-scoped

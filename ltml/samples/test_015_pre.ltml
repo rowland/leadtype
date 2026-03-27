@@ -1,0 +1,21 @@
+<ltml units="in" margin="0.5">
+  <layout id="vbox" padding="8pt" />
+  <page>
+    <p font.weight="Bold">Preformatted text</p>
+    <pre border="solid" padding="6pt">
+      package main
+
+      import "fmt"
+
+      func main() {
+          fmt.Println("hello from &lt;pre&gt;")
+      }
+    </pre>
+    <pre>
+      Name      Count  Status
+      alpha        12  ready
+      beta          3  waiting
+      gamma       108  complete
+    </pre>
+  </page>
+</ltml>

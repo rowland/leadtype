@@ -105,6 +105,7 @@ func TestSamples(t *testing.T) {
 		"test_012_cjk_thai_grid",
 		"test_013_font_fallback",
 		"test_014_label_br",
+		"test_015_pre",
 		"test_030_encodings",
 	}
 
