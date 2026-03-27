@@ -5,6 +5,7 @@ package pdf
 
 import (
 	"bytes"
+	"compress/zlib"
 	"fmt"
 	"io"
 	"sort"
@@ -632,6 +633,22 @@ func (s *stream) len() int {
 
 func (s *stream) setFilter(filter string) {
 	s.dict["Filter"] = name(filter)
+}
+
+func (s *stream) compress() error {
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+	if _, err := zw.Write(s.data); err != nil {
+		zw.Close()
+		return err
+	}
+	if err := zw.Close(); err != nil {
+		return err
+	}
+	s.data = buf.Bytes()
+	s.setFilter("FlateDecode")
+	s.dict["Length"] = integer(len(s.data))
+	return nil
 }
 
 // setLength1 sets the /Length1 entry required for TTF FontFile2 streams.

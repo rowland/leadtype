@@ -55,6 +55,9 @@ The root element. Attributes set here apply as defaults to all pages.
 |-----------|-------------|
 | `units`   | Default unit for measurements (`pt`, `in`, `cm`). Default: `pt`. |
 | `margin`  | Page margin applied to all pages unless overridden. |
+| `compress-pages` | If `true`, compress page content streams with `FlateDecode`. Default: `false`. |
+| `compress-to-unicode` | If `true`, compress generated `ToUnicode` streams. Default: `false`. |
+| `compress-embedded-fonts` | If `true`, compress embedded font subset streams. Default: `false`. |
 
 ---
 

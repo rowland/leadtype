@@ -5,12 +5,17 @@ package ltml
 
 import (
 	"fmt"
+
+	"github.com/rowland/leadtype/pdf"
 )
 
 type StdDocument struct {
 	StdPage
 	documentPageNo int
 	pendingStart   *int
+	compressPages         bool
+	compressToUnicode     bool
+	compressEmbeddedFonts bool
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -58,9 +63,35 @@ func (d *StdDocument) SetPendingStart(start int) {
 }
 
 func (d *StdDocument) Print(w Writer) error {
+	d.applyWriterCompression(w)
 	d.documentPageNo = 0
 	d.pendingStart = nil
 	return d.DrawContent(w)
+}
+
+func (d *StdDocument) SetAttrs(attrs map[string]string) {
+	d.StdPage.SetAttrs(attrs)
+	if value, ok := attrs["compress-pages"]; ok {
+		d.compressPages = value == "true"
+	}
+	if value, ok := attrs["compress-to-unicode"]; ok {
+		d.compressToUnicode = value == "true"
+	}
+	if value, ok := attrs["compress-embedded-fonts"]; ok {
+		d.compressEmbeddedFonts = value == "true"
+	}
+}
+
+func (d *StdDocument) applyWriterCompression(w Writer) {
+	if cw, ok := w.(interface{ CompressPages(bool) *pdf.DocWriter }); ok {
+		cw.CompressPages(d.compressPages)
+	}
+	if cw, ok := w.(interface{ CompressToUnicode(bool) *pdf.DocWriter }); ok {
+		cw.CompressToUnicode(d.compressToUnicode)
+	}
+	if cw, ok := w.(interface{ CompressEmbeddedFonts(bool) *pdf.DocWriter }); ok {
+		cw.CompressEmbeddedFonts(d.compressEmbeddedFonts)
+	}
 }
 
 func (d *StdDocument) String() string {

@@ -1,0 +1,6 @@
+<ltml compress-pages="true" compress-to-unicode="true" compress-embedded-fonts="true">
+  <page>
+    <label>Compression attributes enabled.</label>
+    <p>This sample exists to exercise LTML document-level compression settings.</p>
+  </page>
+</ltml>

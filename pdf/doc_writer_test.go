@@ -51,6 +51,33 @@ func TestDocWriter_Close(t *testing.T) {
 	check(t, len(dw.pages) == 1, "DocWriter pages should have minimum of 1 page after Close")
 }
 
+func TestDocWriter_CompressPages(t *testing.T) {
+	dw := NewDocWriter()
+	dw.CompressPages(true)
+	fonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fonts)
+	pw := dw.NewPage()
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	if err := pw.Print("Hello"); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdf := buf.String()
+	if !strings.Contains(pdf, "/Filter /FlateDecode") {
+		t.Fatalf("expected compressed page stream, got pdf excerpt:\n%s", pdf)
+	}
+}
+
 func TestDocWriter_fontKey(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	fc, err := ttf_fonts.NewFromSystemFonts()

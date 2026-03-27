@@ -5,6 +5,8 @@ package pdf
 
 import (
 	"bytes"
+	"compress/zlib"
+	"io"
 	"testing"
 )
 
@@ -453,6 +455,26 @@ func TestStream(t *testing.T) {
 	buf.Reset()
 	s.write(&buf)
 	expectS(t, "1 0 obj\n<<\n/Filter /bogus \n/Length 4 \n>>\nstream\ntestendstream\nendobj\n", buf.String())
+}
+
+func TestStream_Compress(t *testing.T) {
+	s := newStream(1, 0, []byte("test"))
+	if err := s.compress(); err != nil {
+		t.Fatal(err)
+	}
+	if s.dict["Filter"] != name("FlateDecode") {
+		t.Fatalf("Filter = %v, want %v", s.dict["Filter"], name("FlateDecode"))
+	}
+	r, err := zlib.NewReader(bytes.NewReader(s.data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	data, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectS(t, "test", string(data))
 }
 
 func TestTrailer(t *testing.T) {

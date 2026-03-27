@@ -307,6 +307,11 @@ func (pw *PageWriter) close() {
 	pw.endGraph()
 	// compress stream
 	pdfStream := newStream(pw.dw.nextSeq(), 0, pw.stream.Bytes())
+	if pw.dw.compressPages {
+		if err := pdfStream.compress(); err != nil {
+			panic(err)
+		}
+	}
 	pw.dw.file.body.add(pdfStream)
 	// set annots
 	pw.page.add(pdfStream)

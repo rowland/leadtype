@@ -169,6 +169,30 @@ func TestUnicodeMode_ToUnicodeCMap(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_ToUnicodeCMap_Compressed(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	dw.CompressToUnicode(true)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("A")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if !strings.Contains(pdf, "/ToUnicode") {
+		t.Error("expected /ToUnicode in composite font output")
+	}
+	if !strings.Contains(pdf, "/Filter /FlateDecode") {
+		t.Fatalf("expected compressed ToUnicode stream, got pdf excerpt:\n%s", extractSection(pdf, "/ToUnicode", 400))
+	}
+}
+
 // TestUnicodeMode_WidthArray verifies that the /W array is populated after
 // rendering.
 func TestUnicodeMode_WidthArray(t *testing.T) {
@@ -216,6 +240,34 @@ func TestUnicodeMode_FontFile2(t *testing.T) {
 	}
 	if !strings.Contains(pdf, "/Length1") {
 		t.Errorf("expected /Length1 in FontFile2 stream dictionary")
+	}
+}
+
+func TestUnicodeMode_FontFile2_Compressed(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	dw.CompressEmbeddedFonts(true)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("ABC")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if !strings.Contains(pdf, "/FontFile2") {
+		t.Errorf("expected /FontFile2 in FontDescriptor, got pdf containing:\n%s",
+			extractSection(pdf, "/FontDescriptor", 400))
+	}
+	if !strings.Contains(pdf, "/Length1") {
+		t.Errorf("expected /Length1 in FontFile2 stream dictionary")
+	}
+	if !strings.Contains(pdf, "/Filter /FlateDecode") {
+		t.Fatalf("expected compressed FontFile2 stream, got pdf excerpt:\n%s", extractSection(pdf, "/FontFile2", 500))
 	}
 }
 

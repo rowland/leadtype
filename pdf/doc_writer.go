@@ -34,6 +34,9 @@ type DocWriter struct {
 	type0Fonts      map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
 	fontDescriptors map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 	images          map[string]*cachedImage
+	compressPages         bool
+	compressToUnicode     bool
+	compressEmbeddedFonts bool
 }
 
 type cachedImage struct {
@@ -87,6 +90,21 @@ func (dw *DocWriter) AddFont(family string, options options.Options) ([]*font.Fo
 
 func (dw *DocWriter) AddFontSource(fontSource font.FontSource) {
 	dw.fontSources = append(dw.fontSources, fontSource)
+}
+
+func (dw *DocWriter) CompressPages(value bool) *DocWriter {
+	dw.compressPages = value
+	return dw
+}
+
+func (dw *DocWriter) CompressToUnicode(value bool) *DocWriter {
+	dw.compressToUnicode = value
+	return dw
+}
+
+func (dw *DocWriter) CompressEmbeddedFonts(value bool) *DocWriter {
+	dw.compressEmbeddedFonts = value
+	return dw
 }
 
 func (dw *DocWriter) CurPage() *PageWriter {
@@ -182,6 +200,11 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	}
 	toUnicodeData := toUnicodeCMapData(cpi.Map())
 	toUnicodeStream := newStream(dw.nextSeq(), 0, toUnicodeData)
+	if dw.compressToUnicode {
+		if err := toUnicodeStream.compress(); err != nil {
+			panic(err)
+		}
+	}
 	dw.file.body.add(toUnicodeStream)
 	font.setToUnicode(&indirectObjectRef{toUnicodeStream})
 
@@ -276,6 +299,11 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		// Build ToUnicode CMap stream.
 		tuData := toUnicodeCMapDataComposite(mapping)
 		tuStream := newStream(dw.nextSeq(), 0, tuData)
+		if dw.compressToUnicode {
+			if err := tuStream.compress(); err != nil {
+				panic(err)
+			}
+		}
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
 
@@ -287,6 +315,11 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
 			fontStream := newStream(dw.nextSeq(), 0, subsetData)
 			fontStream.setLength1(len(subsetData))
+			if dw.compressEmbeddedFonts {
+				if err := fontStream.compress(); err != nil {
+					panic(err)
+				}
+			}
 			dw.file.body.add(fontStream)
 			dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
 
