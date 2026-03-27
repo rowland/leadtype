@@ -24,17 +24,17 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ### Shape Widgets ([#10](https://github.com/rowland/leadtype/issues/10))
 
-- [ ] Add standard shape widgets beyond `<rect>`
-  - [ ] `<circle>`
-  - [ ] `<ellipse>`
-  - [ ] `<polygon>`
-  - [ ] `<star>`
-  - [ ] `<arc>`
-  - [ ] `<pie>`
-  - [ ] `<arch>`
-- [ ] register all new tags in the standard tag factory
-- [ ] ensure widget attrs map predictably to the corresponding PDF primitives
-- [ ] add parser and rendering tests for each tag
+- [x] Add standard shape widgets beyond `<rect>`
+  - [x] `<circle>`
+  - [x] `<ellipse>`
+  - [x] `<polygon>`
+  - [x] `<star>`
+  - [x] `<arc>`
+  - [x] `<pie>`
+  - [x] `<arch>`
+- [x] register all new tags in the standard tag factory
+- [x] ensure widget attrs map predictably to the corresponding PDF primitives
+- [x] add parser and rendering tests for each tag
 
 ### Page Numbering ([#15](https://github.com/rowland/leadtype/issues/15))
 
@@ -94,13 +94,13 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ## Cross-Cutting Integration
 
-- [ ] Keep LTML syntax docs in sync with the supported tag set and attributes
-- [ ] add or refresh sample documents for the newly supported widgets and behaviors
-- [ ] confirm new LTML features do not regress existing paragraph, table, hbox, vbox, and flow behavior
+- [x] Keep LTML syntax docs in sync with the supported tag set and attributes
+- [x] add or refresh sample documents for the newly supported widgets and behaviors
+- [x] confirm new LTML features do not regress existing paragraph, table, hbox, vbox, and flow behavior
 
 ## Acceptance Checklist
 
-- [ ] `go test ./ltml` passes
-- [ ] any dependent package tests still pass
-- [ ] each new standard tag has parser coverage
-- [ ] each behavior that affects layout or pagination has rendering-oriented coverage
+- [x] `go test ./ltml` passes
+- [x] any dependent package tests still pass
+- [x] each new standard tag has parser coverage
+- [x] each behavior that affects layout or pagination has rendering-oriented coverage

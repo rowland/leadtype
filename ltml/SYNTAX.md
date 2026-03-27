@@ -162,6 +162,42 @@ Draws a rectangle with optional border and fill.
 
 ---
 
+### Shape Widgets — `<circle>`, `<ellipse>`, `<polygon>`, `<star>`, `<arc>`, `<pie>`, `<arch>`
+
+Draw shape primitives using the existing PDF shape APIs. These widgets are also
+containers, so nested LTML content can still be laid out inside their content
+boxes.
+
+```xml
+<circle width="1.5in" height="1.5in" border="solid" fill="LightBlue" />
+<polygon width="1.5in" height="1.5in" sides="6" rotation="30" border="solid" fill="Gold" />
+<pie width="1.5in" height="1.5in" start_angle="30" end_angle="150" border="solid" fill="Pink" />
+```
+
+Shared attributes:
+
+| Attribute | Description |
+|-----------|-------------|
+| `width`, `height` | Layout box dimensions. Shapes are centered within their content boxes. |
+| `border` | Reference to a named `<pen>` style for the shape outline. |
+| `fill` | Reference to a named `<brush>` style for the interior. |
+| `margin`, `padding` | Spacing around and inside the shape widget. |
+| `reverse` | Reverse the path direction for shapes that support it. |
+
+Shape-specific attributes:
+
+| Tag | Attributes |
+|-----|------------|
+| `<circle>` | `r` for an explicit radius. Otherwise radius is inferred from the content box. |
+| `<ellipse>` | `rx`, `ry` for explicit radii. Otherwise radii are inferred from width and height. |
+| `<polygon>` | `r`, `sides`, `rotation`. |
+| `<star>` | `r` or `r1` for outer radius, `r2` for inner radius, `points`, `rotation`. |
+| `<arc>` | `r`, `start_angle`, `end_angle`. |
+| `<pie>` | `r`, `start_angle`, `end_angle`. |
+| `<arch>` | `r1`, `r2`, `start_angle`, `end_angle`. |
+
+---
+
 ### `<label>` — Simple Text Label
 
 Draws a single text run using the current font and inline `<span>` styling.
@@ -248,7 +284,7 @@ Draws a line segment using the configured pen style.
 | `length` | Optional explicit line length. |
 | `width`, `height` | Optional layout box dimensions used to infer the line length and placement when `length` is omitted. |
 | `margin`, `padding` | Spacing around and inside the widget box. |
-| `border` | Pen-style fallback if `style` is omitted. |
+| `border` | Optional enclosing widget border, separate from the line stroke. |
 
 Horizontal, vertical, and diagonal lines are all represented with the same tag.
 When `length` is omitted, the line is sized to fit within its content box.

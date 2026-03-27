@@ -1,0 +1,26 @@
+<ltml>
+  <layout id="vbox" padding="8pt" />
+  <layout id="hbox" padding="8pt" />
+  <brush id="bg" color="LightSkyBlue" />
+  <brush id="fg" color="Crimson" />
+  <page margin="0.5in" layout="vbox">
+    <label font.weight="Bold">Shapes</label>
+    <hbox>
+      <circle width="1.5in" height="1.5in" border="solid" />
+      <circle width="1.5in" height="1.5in" border="solid" fill="bg" />
+      <ellipse width="1.75in" height="1.25in" rx="0.75in" border="solid" fill="bg" />
+    </hbox>
+    <hbox>
+      <circle width="1.5in" height="1.5in" border="solid" fill="bg" padding="0.35in">
+        <circle width="100%" height="100%" border="solid" fill="fg" />
+      </circle>
+      <polygon width="1.5in" height="1.5in" sides="5" border="Blue" fill="bg" />
+      <star width="1.5in" height="1.5in" points="5" border="DarkSlateGray" fill="Gold" />
+    </hbox>
+    <hbox>
+      <arc width="1.5in" height="1.5in" border="solid" start_angle="20" end_angle="300" />
+      <pie width="1.5in" height="1.5in" border="solid" fill="bg" start_angle="30" end_angle="150" />
+      <arch width="1.75in" height="1.5in" r2="0.35in" border="ForestGreen" fill="bg" start_angle="210" end_angle="30" />
+    </hbox>
+  </page>
+</ltml>

@@ -34,6 +34,16 @@ type labelTestWriter struct {
 }
 
 func (w *labelTestWriter) FontColor() colors.Color { return 0 }
+func (w *labelTestWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
+	return nil
+}
+func (w *labelTestWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
+	return nil
+}
+func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
+	return nil
+}
 func (w *labelTestWriter) Fonts() []*font.Font {
 	if len(w.fonts) == 0 && w.t != nil {
 		w.fonts = defaultTestFonts(w.t)
@@ -66,6 +76,16 @@ func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts option
 func (w *labelTestWriter) PrintRichText(text *rich_text.RichText) {
 	w.printed = append(w.printed, text)
 }
+func (w *labelTestWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
+	return nil
+}
+func (w *labelTestWriter) Path(fn func()) error {
+	fn()
+	return nil
+}
+func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
+	return nil
+}
 func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
 }
@@ -83,6 +103,10 @@ func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   {
 func (w *labelTestWriter) SetLineWidth(width float64)                           {}
 func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool)             { return false }
 func (w *labelTestWriter) SetUnderline(underline bool) (prev bool)             { return false }
+func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
+	return nil
+}
+func (w *labelTestWriter) Stroke() error                                        { return nil }
 func (w *labelTestWriter) Strikeout() bool                                      { return false }
 func (w *labelTestWriter) Underline() bool                                      { return false }
 

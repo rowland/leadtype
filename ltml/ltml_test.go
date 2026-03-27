@@ -108,6 +108,7 @@ func TestSamples(t *testing.T) {
 		"test_015_pre",
 		"test_016_image",
 		"test_017_line",
+		"test_018_shapes",
 		"test_030_encodings",
 	}
 

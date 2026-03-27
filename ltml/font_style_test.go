@@ -34,6 +34,16 @@ func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font,
 	}
 	return m.Fonts(), nil
 }
+func (m *mockWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
+	return nil
+}
+func (m *mockWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
+	return nil
+}
+func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
+	return nil
+}
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontCalls = append(m.setFontCalls, name)
 	m.setFontName = name
@@ -69,6 +79,16 @@ func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height
 }
 func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
 func (m *mockWriter) PrintRichText(text *rich_text.RichText)                             {}
+func (m *mockWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
+	return nil
+}
+func (m *mockWriter) Path(fn func()) error {
+	fn()
+	return nil
+}
+func (m *mockWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
+	return nil
+}
 func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)                           {}
 func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
 func (m *mockWriter) SetFillColor(v interface{}) colors.Color         { return 0 }
@@ -78,6 +98,10 @@ func (m *mockWriter) SetLineSpacing(ls float64) float64               { return 0
 func (m *mockWriter) SetLineWidth(w float64)                          {}
 func (m *mockWriter) SetStrikeout(s bool) bool                        { return false }
 func (m *mockWriter) SetUnderline(u bool) bool                        { return false }
+func (m *mockWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
+	return nil
+}
+func (m *mockWriter) Stroke() error                                   { return nil }
 func (m *mockWriter) Strikeout() bool                                 { return false }
 func (m *mockWriter) Underline() bool                                 { return false }
 
