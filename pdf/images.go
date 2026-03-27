@@ -4,16 +4,22 @@
 package pdf
 
 import (
+	"bytes"
 	"crypto/sha1"
+	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
+	"image/color"
+	"image/png"
 	"os"
 )
 
 var errUnsupportedImageFormat = errors.New("unsupported image format")
 var errNotJPEG = errors.New("not a JPEG")
 var errBadJPEG = errors.New("bad JPEG")
+var errNotPNG = errors.New("not a PNG")
+var errBadPNG = errors.New("bad PNG")
+var errUnsupportedPNG = errors.New("unsupported PNG")
 
 type imageInfo struct {
 	width            int
@@ -22,12 +28,34 @@ type imageInfo struct {
 	bitsPerComponent int
 }
 
+const (
+	imageComponentsGray      = 1
+	imageComponentsGrayAlpha = 2
+	imageComponentsRGB       = 3
+	imageComponentsRGBA      = 4
+	imageComponentsCMYK      = 4
+)
+
+const (
+	pngColorTypeGray      = 0
+	pngColorTypeRGB       = 2
+	pngColorTypeGrayAlpha = 4
+	pngColorTypeRGBA      = 6
+)
+
 type pdfImage struct {
 	stream
 	width            int
 	height           int
 	bitsPerComponent int
 	colorSpace       string
+}
+
+type decodedImage struct {
+	info      imageInfo
+	data      []byte
+	filter    string
+	alphaData []byte
 }
 
 func newPDFImage(seq, gen int, data []byte) *pdfImage {
@@ -55,13 +83,17 @@ func (img *pdfImage) setColorSpace(colorSpace string) {
 	img.dict["ColorSpace"] = name(colorSpace)
 }
 
+func (img *pdfImage) setSMask(ref *indirectObjectRef) {
+	img.dict["SMask"] = ref
+}
+
 func imageColorSpace(components int) (string, error) {
 	switch components {
-	case 1:
+	case imageComponentsGray:
 		return "DeviceGray", nil
-	case 3:
+	case imageComponentsRGB:
 		return "DeviceRGB", nil
-	case 4:
+	case imageComponentsCMYK:
 		return "DeviceCMYK", nil
 	default:
 		return "", fmt.Errorf("unsupported JPEG component count: %d", components)
@@ -70,11 +102,31 @@ func imageColorSpace(components int) (string, error) {
 
 func imageKey(data []byte) string {
 	sum := sha1.Sum(data)
-	return fmt.Sprintf("jpeg:%x", sum)
+	switch {
+	case isJPEG(data):
+		return fmt.Sprintf("jpeg:%x", sum)
+	case isPNG(data):
+		return fmt.Sprintf("png:%x", sum)
+	default:
+		return fmt.Sprintf("image:%x", sum)
+	}
 }
 
 func isJPEG(image []byte) bool {
 	return len(image) >= 2 && image[0] == 0xFF && image[1] == 0xD8
+}
+
+func isPNG(data []byte) bool {
+	if len(data) < 8 {
+		return false
+	}
+	sig := []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}
+	for i := range sig {
+		if data[i] != sig[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func jpegInfo(image []byte) (imageInfo, error) {
@@ -122,6 +174,59 @@ func jpegInfo(image []byte) (imageInfo, error) {
 	return imageInfo{}, errBadJPEG
 }
 
+func pngInfo(data []byte) (imageInfo, error) {
+	if !isPNG(data) {
+		return imageInfo{}, errNotPNG
+	}
+	if len(data) < 33 {
+		return imageInfo{}, errBadPNG
+	}
+	if string(data[12:16]) != "IHDR" {
+		return imageInfo{}, errBadPNG
+	}
+	if binary.BigEndian.Uint32(data[8:12]) != 13 {
+		return imageInfo{}, errBadPNG
+	}
+	width := int(binary.BigEndian.Uint32(data[16:20]))
+	height := int(binary.BigEndian.Uint32(data[20:24]))
+	if width <= 0 || height <= 0 {
+		return imageInfo{}, errBadPNG
+	}
+	bitDepth := int(data[24])
+	colorType := int(data[25])
+	compressionMethod := data[26]
+	filterMethod := data[27]
+	interlaceMethod := data[28]
+	if compressionMethod != 0 || filterMethod != 0 {
+		return imageInfo{}, errUnsupportedPNG
+	}
+	if interlaceMethod != 0 {
+		return imageInfo{}, errUnsupportedPNG
+	}
+	if bitDepth != 8 {
+		return imageInfo{}, errUnsupportedPNG
+	}
+	components := 0
+	switch colorType {
+	case pngColorTypeGray:
+		components = imageComponentsGray
+	case pngColorTypeRGB:
+		components = imageComponentsRGB
+	case pngColorTypeGrayAlpha:
+		components = imageComponentsGrayAlpha
+	case pngColorTypeRGBA:
+		components = imageComponentsRGBA
+	default:
+		return imageInfo{}, errUnsupportedPNG
+	}
+	return imageInfo{
+		width:            width,
+		height:           height,
+		components:       components,
+		bitsPerComponent: bitDepth,
+	}, nil
+}
+
 func readImageFile(filename string) ([]byte, error) {
 	return os.ReadFile(filename)
 }
@@ -129,6 +234,9 @@ func readImageFile(filename string) ([]byte, error) {
 func imageInfoForData(data []byte) (imageInfo, error) {
 	if isJPEG(data) {
 		return jpegInfo(data)
+	}
+	if isPNG(data) {
+		return pngInfo(data)
 	}
 	return imageInfo{}, errUnsupportedImageFormat
 }
@@ -171,27 +279,125 @@ func writeImageXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width
 	gw.restoreGraphicsState()
 }
 
-func copyImageData(r io.Reader) ([]byte, error) {
-	return io.ReadAll(r)
+func decodePNG(data []byte) (decodedImage, error) {
+	info, err := pngInfo(data)
+	if err != nil {
+		return decodedImage{}, err
+	}
+	img, err := png.Decode(bytes.NewReader(data))
+	if err != nil {
+		return decodedImage{}, errBadPNG
+	}
+	result := decodedImage{
+		info:   info,
+		filter: "FlateDecode",
+	}
+	pixelCount := info.width * info.height
+	switch info.components {
+	case imageComponentsGray:
+		result.data = make([]byte, 0, pixelCount)
+	case imageComponentsGrayAlpha:
+		result.data = make([]byte, 0, pixelCount)
+		result.alphaData = make([]byte, 0, pixelCount)
+	case imageComponentsRGB:
+		result.data = make([]byte, 0, pixelCount*3)
+	case imageComponentsRGBA:
+		result.data = make([]byte, 0, pixelCount*3)
+		result.alphaData = make([]byte, 0, pixelCount)
+	}
+	allOpaque := true
+	bounds := img.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			switch info.components {
+			case imageComponentsGray:
+				gray := color.GrayModel.Convert(img.At(x, y)).(color.Gray)
+				result.data = append(result.data, gray.Y)
+			case imageComponentsGrayAlpha:
+				grayAlpha := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+				result.data = append(result.data, grayFromNRGBA(grayAlpha))
+				result.alphaData = append(result.alphaData, grayAlpha.A)
+				allOpaque = allOpaque && grayAlpha.A == 0xFF
+			case imageComponentsRGB:
+				nrgba := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+				result.data = append(result.data, nrgba.R, nrgba.G, nrgba.B)
+			case imageComponentsRGBA:
+				nrgba := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+				result.data = append(result.data, nrgba.R, nrgba.G, nrgba.B)
+				result.alphaData = append(result.alphaData, nrgba.A)
+				allOpaque = allOpaque && nrgba.A == 0xFF
+			}
+		}
+	}
+	if allOpaque {
+		result.alphaData = nil
+	}
+	return result, nil
+}
+
+func grayFromNRGBA(c color.NRGBA) byte {
+	r := float64(c.R)
+	g := float64(c.G)
+	b := float64(c.B)
+	return byte((0.299 * r) + (0.587 * g) + (0.114 * b) + 0.5)
+}
+
+func decodeImage(data []byte) (decodedImage, error) {
+	if isJPEG(data) {
+		info, err := jpegInfo(data)
+		if err != nil {
+			return decodedImage{}, err
+		}
+		return decodedImage{
+			info:   info,
+			data:   data,
+			filter: "DCTDecode",
+		}, nil
+	}
+	if isPNG(data) {
+		return decodePNG(data)
+	}
+	return decodedImage{}, errUnsupportedImageFormat
 }
 
 func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, error) {
 	if cached, ok := dw.images[key]; ok {
 		return cached.image, cached.name, nil
 	}
-	info, err := imageInfoForData(data)
+	decoded, err := decodeImage(data)
 	if err != nil {
 		return nil, "", err
 	}
-	colorSpace, err := imageColorSpace(info.components)
+	components := decoded.info.components
+	if len(decoded.alphaData) > 0 && (components == imageComponentsGrayAlpha || components == imageComponentsRGBA) {
+		components--
+	}
+	colorSpace, err := imageColorSpace(components)
 	if err != nil {
 		return nil, "", err
 	}
-	image := newPDFImage(dw.nextSeq(), 0, data)
-	image.setDimensions(info.width, info.height)
-	image.setBitsPerComponent(info.bitsPerComponent)
+	image := newPDFImage(dw.nextSeq(), 0, decoded.data)
+	image.setDimensions(decoded.info.width, decoded.info.height)
+	image.setBitsPerComponent(decoded.info.bitsPerComponent)
 	image.setColorSpace(colorSpace)
-	image.setFilter("DCTDecode")
+	if decoded.filter == "FlateDecode" {
+		if err := image.compress(); err != nil {
+			return nil, "", err
+		}
+	} else if decoded.filter != "" {
+		image.setFilter(decoded.filter)
+	}
+	if len(decoded.alphaData) > 0 {
+		mask := newPDFImage(dw.nextSeq(), 0, decoded.alphaData)
+		mask.setDimensions(decoded.info.width, decoded.info.height)
+		mask.setBitsPerComponent(decoded.info.bitsPerComponent)
+		mask.setColorSpace("DeviceGray")
+		if err := mask.compress(); err != nil {
+			return nil, "", err
+		}
+		dw.file.body.add(mask)
+		image.setSMask(&indirectObjectRef{mask})
+	}
 
 	name := fmt.Sprintf("Im%d", len(dw.images))
 	dw.file.body.add(image)

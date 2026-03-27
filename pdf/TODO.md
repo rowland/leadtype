@@ -48,10 +48,10 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Future Image Extension ([#16](https://github.com/rowland/leadtype/issues/16))
 
-- [ ] Add PNG support as a follow-on enhancement
-  - [ ] support a first milestone of non-interlaced 8-bit grayscale, RGB, and RGBA PNGs
-  - [ ] decode PNG scanlines and map them to standard PDF image XObjects
-  - [ ] support alpha via `/SMask`
+- [x] Add PNG support as a follow-on enhancement
+  - [x] support a first milestone of non-interlaced 8-bit grayscale, RGB, and RGBA PNGs
+  - [x] decode PNG scanlines and map them to standard PDF image XObjects
+  - [x] support alpha via `/SMask`
   - [ ] decide whether palette PNGs are expanded to RGB or mapped to Indexed color space in the first implementation
   - [ ] defer 16-bit PNG, Adam7 interlacing, and advanced color-management handling unless required
 
