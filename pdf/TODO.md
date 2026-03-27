@@ -74,23 +74,23 @@ This checklist tracks the `pdf`-layer parity work approved from the legacy
 
 ### Stream Compression
 
-- [ ] Add fluent `DocWriter` compression configuration ([#20](https://github.com/rowland/leadtype/issues/20))
-  - [ ] add `CompressPages(bool) *DocWriter`
-  - [ ] add `CompressToUnicode(bool) *DocWriter`
-  - [ ] add `CompressEmbeddedFonts(bool) *DocWriter`
-  - [ ] default all compression flags to `false` for compatibility
-- [ ] Add stream-level Flate compression support in the PDF object model ([#20](https://github.com/rowland/leadtype/issues/20))
-  - [ ] support emitting compressed stream data
-  - [ ] set `/Filter /FlateDecode` when compression is enabled
-  - [ ] preserve `/Length1` semantics for embedded font streams
-- [ ] Apply compression selectively by stream type
-  - [ ] compress page content streams when `CompressPages(true)` is set ([#19](https://github.com/rowland/leadtype/issues/19))
-  - [ ] compress ToUnicode streams when `CompressToUnicode(true)` is set ([#17](https://github.com/rowland/leadtype/issues/17))
-  - [ ] compress embedded font streams when `CompressEmbeddedFonts(true)` is set ([#17](https://github.com/rowland/leadtype/issues/17))
-- [ ] keep compression decisions at stream creation time rather than as a late global rewrite
-- [ ] add unit tests for compressed stream dictionaries and round-trippable payloads ([#20](https://github.com/rowland/leadtype/issues/20))
-- [ ] add document-level tests proving compressed and uncompressed output modes both work ([#19](https://github.com/rowland/leadtype/issues/19), [#17](https://github.com/rowland/leadtype/issues/17))
-- [ ] keep existing string-based PDF tests readable by leaving compression opt-in rather than default-on
+- [x] Add fluent `DocWriter` compression configuration ([#20](https://github.com/rowland/leadtype/issues/20))
+  - [x] add `CompressPages(bool) *DocWriter`
+  - [x] add `CompressToUnicode(bool) *DocWriter`
+  - [x] add `CompressEmbeddedFonts(bool) *DocWriter`
+  - [x] default all compression flags to `false` for compatibility
+- [x] Add stream-level Flate compression support in the PDF object model ([#20](https://github.com/rowland/leadtype/issues/20))
+  - [x] support emitting compressed stream data
+  - [x] set `/Filter /FlateDecode` when compression is enabled
+  - [x] preserve `/Length1` semantics for embedded font streams
+- [x] Apply compression selectively by stream type
+  - [x] compress page content streams when `CompressPages(true)` is set ([#19](https://github.com/rowland/leadtype/issues/19))
+  - [x] compress ToUnicode streams when `CompressToUnicode(true)` is set ([#17](https://github.com/rowland/leadtype/issues/17))
+  - [x] compress embedded font streams when `CompressEmbeddedFonts(true)` is set ([#17](https://github.com/rowland/leadtype/issues/17))
+- [x] keep compression decisions at stream creation time rather than as a late global rewrite
+- [x] add unit tests for compressed stream dictionaries and round-trippable payloads ([#20](https://github.com/rowland/leadtype/issues/20))
+- [x] add document-level tests proving compressed and uncompressed output modes both work ([#19](https://github.com/rowland/leadtype/issues/19), [#17](https://github.com/rowland/leadtype/issues/17))
+- [x] keep existing string-based PDF tests readable by leaving compression opt-in rather than default-on
 
 ## Deferred
 
@@ -117,7 +117,7 @@ These should not be pulled into parity work unless scope changes later.
 
 ## Acceptance Checklist
 
-- [ ] `go test ./pdf` passes
-- [ ] affected cross-package tests pass
-- [ ] any new serialized PDF behavior has stable test coverage
-- [ ] public APIs are documented in code comments or adjacent docs where needed
+- [x] `go test ./pdf` passes
+- [x] affected cross-package tests pass
+- [x] any new serialized PDF behavior has stable test coverage
+- [x] public APIs are documented in code comments or adjacent docs where needed
