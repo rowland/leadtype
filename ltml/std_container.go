@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 )
 
@@ -30,7 +31,11 @@ func (c *StdContainer) Container() Container {
 
 func (c *StdContainer) DrawContent(w Writer) error {
 	// fmt.Printf("DrawContent %s\n", c)
-	for _, child := range c.children {
+	children := slices.Clone(c.children)
+	slices.SortStableFunc(children, func(a, b Widget) int {
+		return a.ZIndex() - b.ZIndex()
+	})
+	for _, child := range children {
 		if err := Print(child, w); err != nil {
 			return err
 		}

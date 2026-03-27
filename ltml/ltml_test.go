@@ -113,6 +113,7 @@ func TestSamples(t *testing.T) {
 		"test_020_positioning",
 		"test_021_compression",
 		"test_022_transforms",
+		"test_023_zindex",
 		"test_030_encodings",
 	}
 

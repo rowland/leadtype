@@ -61,6 +61,7 @@ type Widget interface {
 	SetDisabled(value bool)
 	SetPrinted(value bool)
 	SetVisible(value bool)
+	ZIndex() int
 
 	ColSpan() int
 	RowSpan() int

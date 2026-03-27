@@ -600,6 +600,9 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 - `rotate` wraps the widget's normal background/content/border rendering.
 - `origin_x` defaults to the widget's left edge; `origin_y` defaults to the
   widget's top edge.
+- `z_index="N"` controls paint order among siblings in the same container.
+  Lower values paint first, higher values paint later and appear on top.
+  Equal `z_index` values preserve source order.
 
 ---
 
