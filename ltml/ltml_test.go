@@ -104,6 +104,7 @@ func TestSamples(t *testing.T) {
 		"test_011_table_layout",
 		"test_012_cjk_thai_grid",
 		"test_013_font_fallback",
+		"test_014_label_br",
 		"test_030_encodings",
 	}
 

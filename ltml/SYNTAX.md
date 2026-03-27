@@ -111,7 +111,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 ### `<span>` — Inline Text Run
 
 Applies font styling to a portion of text within a `<p>`. Must be a child of
-`<p>` or another `<span>`.
+`<p>`, `<label>`, or another `<span>`.
 
 ```xml
 <p>Normal <span font.weight="Bold">bold</span> normal.</p>
@@ -159,6 +159,28 @@ Draws a rectangle with optional border and fill.
 | `fill`     | Reference to a named `<brush>` style. |
 | `corners`  | Corner radius for rounded corners, in current units. |
 | `margin`, `padding` | Spacing. |
+
+---
+
+### `<label>` — Simple Text Label
+
+Draws a single text run using the current font and inline `<span>` styling.
+Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
+
+```xml
+<label>Hello <span font.weight="Bold">world</span></label>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `font` / `font.*` | Same font attributes supported by `<p>`. |
+| `width`, `height` | Optional explicit dimensions. |
+| `margin`, `padding` | Spacing around and inside the label. |
+| `border` | Reference to a named `<pen>` style. |
+| `fill` | Reference to a named `<brush>` style. |
+
+The built-in `<br/>` alias expands to an empty `<label/>`, which behaves as a
+line break in stacked layouts.
 
 ---
 

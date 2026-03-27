@@ -1,0 +1,11 @@
+<ltml units="in" margin="0.5">
+  <layout id="vbox" padding="8pt" />
+  <page>
+    <p font.weight="Bold">Label and br</p>
+    <label>Hello world from a label.</label>
+    <label border="blue" fill="LightYellow" padding="6pt">Styled <span font.weight="Bold">label</span> content.</label>
+    <label>First line</label>
+    <br/>
+    <label>Third line after an empty label break.</label>
+  </page>
+</ltml>
