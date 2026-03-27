@@ -101,16 +101,6 @@ func (widget *StdWidget) Font() *FontStyle {
 	return widget.font
 }
 
-func (widget *StdWidget) Height() float64 {
-	if widget.heightPct > 0 {
-		return widget.heightPct / 100.0 * ContentHeight(widget.container)
-	}
-	if widget.heightRel != 0 {
-		return ContentHeight(widget.container) + widget.heightRel
-	}
-	return widget.height
-}
-
 func (widget *StdWidget) LayoutWidget(w Writer) {
 	// to be overridden
 }
@@ -142,6 +132,10 @@ func (widget *StdWidget) Position() Position {
 	return widget.position
 }
 
+func (widget *StdWidget) SetPosition(value Position) {
+	widget.position = value
+}
+
 func (widget *StdWidget) PreferredHeight(Writer) float64 {
 	return widget.Height()
 }
@@ -162,6 +156,21 @@ func (widget *StdWidget) Printed() bool {
 func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	widget.units.SetAttrs(attrs)
 	widget.Dimensions.SetAttrs(attrs, widget.Units())
+
+	if position, ok := attrs["position"]; ok {
+		switch position {
+		case "static":
+			widget.position = Static
+		case "relative":
+			widget.position = Relative
+		case "absolute":
+			widget.position = Absolute
+		}
+	} else if MapHasAnyKey(attrs, "top", "right", "bottom", "left") {
+		// Match ERML continuity: positional attrs implicitly opt a widget into
+		// positioned layout when position is otherwise omitted.
+		widget.position = Relative
+	}
 
 	if align, ok := attrs["align"]; ok {
 		switch align {
@@ -236,42 +245,42 @@ func (widget *StdWidget) String() string {
 
 func (widget *StdWidget) Top() float64 {
 	if widget.sides[topSide].IsSet {
-		return widget.sides[topSide].Value
+		return widget.resolveTop(widget.sides[topSide].Value)
 	}
 	if !widget.sides[bottomSide].IsSet || widget.Height() == 0 {
 		return 0
 	}
-	return widget.sides[bottomSide].Value - widget.Height()
+	return widget.resolveBottom(widget.sides[bottomSide].Value) - widget.Height()
 }
 
 func (widget *StdWidget) Right() float64 {
 	if widget.sides[rightSide].IsSet {
-		return widget.sides[rightSide].Value
+		return widget.resolveRight(widget.sides[rightSide].Value)
 	}
 	if !widget.sides[leftSide].IsSet || widget.Width() == 0 {
 		return 0
 	}
-	return widget.sides[leftSide].Value + widget.Width()
+	return widget.resolveLeft(widget.sides[leftSide].Value) + widget.Width()
 }
 
 func (widget *StdWidget) Bottom() float64 {
 	if widget.sides[bottomSide].IsSet {
-		return widget.sides[bottomSide].Value
+		return widget.resolveBottom(widget.sides[bottomSide].Value)
 	}
 	if !widget.sides[topSide].IsSet || widget.Height() == 0 {
 		return 0
 	}
-	return widget.sides[topSide].Value + widget.Height()
+	return widget.resolveTop(widget.sides[topSide].Value) + widget.Height()
 }
 
 func (widget *StdWidget) Left() float64 {
 	if widget.sides[leftSide].IsSet {
-		return widget.sides[leftSide].Value
+		return widget.resolveLeft(widget.sides[leftSide].Value)
 	}
 	if !widget.sides[rightSide].IsSet || widget.Width() == 0 {
 		return 0
 	}
-	return widget.sides[rightSide].Value - widget.Width()
+	return widget.resolveRight(widget.sides[rightSide].Value) - widget.Width()
 }
 
 func (widget *StdWidget) TopIsSet() bool {
@@ -304,11 +313,81 @@ func (widget *StdWidget) Width() float64 {
 	if widget.widthRel != 0 {
 		return ContentWidth(widget.container) + widget.widthRel
 	}
+	if widget.widthSet {
+		return widget.width
+	}
+	if widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet {
+		return widget.resolveRight(widget.sides[rightSide].Value) - widget.resolveLeft(widget.sides[leftSide].Value)
+	}
 	return widget.width
+}
+
+func (widget *StdWidget) Height() float64 {
+	if widget.heightPct > 0 {
+		return widget.heightPct / 100.0 * ContentHeight(widget.container)
+	}
+	if widget.heightRel != 0 {
+		return ContentHeight(widget.container) + widget.heightRel
+	}
+	if widget.heightSet {
+		return widget.height
+	}
+	if widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet {
+		return widget.resolveBottom(widget.sides[bottomSide].Value) - widget.resolveTop(widget.sides[topSide].Value)
+	}
+	return widget.height
+}
+
+func (widget *StdWidget) HeightIsSet() bool {
+	return widget.heightSet || (widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet)
+}
+
+func (widget *StdWidget) WidthIsSet() bool {
+	return widget.widthSet || (widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet)
 }
 
 func (widget *StdWidget) Visible() bool {
 	return !widget.invisible
+}
+
+func (widget *StdWidget) resolveLeft(value float64) float64 {
+	if widget.container != nil && value < 0 {
+		value = widget.container.Width() + value
+	}
+	if widget.position == Relative && widget.container != nil {
+		value += widget.container.Left()
+	}
+	return value
+}
+
+func (widget *StdWidget) resolveRight(value float64) float64 {
+	if widget.container != nil && value <= 0 {
+		value = widget.container.Width() + value
+	}
+	if widget.position == Relative && widget.container != nil {
+		value += widget.container.Left()
+	}
+	return value
+}
+
+func (widget *StdWidget) resolveTop(value float64) float64 {
+	if widget.container != nil && value < 0 {
+		value = widget.container.Height() + value
+	}
+	if widget.position == Relative && widget.container != nil {
+		value += widget.container.Top()
+	}
+	return value
+}
+
+func (widget *StdWidget) resolveBottom(value float64) float64 {
+	if widget.container != nil && value <= 0 {
+		value = widget.container.Height() + value
+	}
+	if widget.position == Relative && widget.container != nil {
+		value += widget.container.Top()
+	}
+	return value
 }
 
 func init() {

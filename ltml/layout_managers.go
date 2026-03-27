@@ -33,7 +33,7 @@ const (
 )
 
 func LayoutAbsolute(container Container, style *LayoutStyle, writer Writer) {
-
+	layoutWidgetsWithPosition(writer, container.Widgets(), Absolute)
 }
 
 func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
@@ -86,7 +86,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 	if container.Height() == 0 && maxY > 0 {
 		container.SetHeight(cy + maxY + NonContentHeight(container))
 	}
-	// super(container, writer)
+	layoutPositionedChildren(container, writer)
 }
 
 func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
@@ -222,11 +222,43 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 			widget.LayoutWidget(writer)
 		}
 	}
-	// super(container, writer)
+	layoutPositionedChildren(container, writer)
 }
 
 func LayoutRelative(container Container, style *LayoutStyle, writer Writer) {
+	layoutWidgetsWithPosition(writer, container.Widgets(), Relative)
+}
 
+func layoutPositionedChildren(container Container, writer Writer) {
+	absolute, _ := printableWidgets(container, Absolute)
+	layoutWidgetsWithPosition(writer, absolute, Absolute)
+
+	relative, _ := printableWidgets(container, Relative)
+	layoutWidgetsWithPosition(writer, relative, Relative)
+}
+
+func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Position) {
+	for _, widget := range widgets {
+		if widget.Printed() {
+			widget.SetVisible(false)
+			continue
+		}
+		widget.SetVisible(true)
+		widget.SetPosition(position)
+		if !widget.LeftIsSet() && !widget.RightIsSet() {
+			widget.SetLeft(0)
+		}
+		if !widget.TopIsSet() && !widget.BottomIsSet() {
+			widget.SetTop(0)
+		}
+		if !widget.WidthIsSet() {
+			widget.SetWidth(widget.PreferredWidth(writer))
+		}
+		widget.LayoutWidget(writer)
+		if !widget.HeightIsSet() {
+			widget.SetHeight(widget.PreferredHeight(writer))
+		}
+	}
 }
 
 func markGrid(grid *BoolGrid, a, b, c, d int, value bool) {
@@ -512,8 +544,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 	for _, widget := range static {
 		widget.LayoutWidget(writer)
 	}
-
-	// super(container, writer)
+	layoutPositionedChildren(container, writer)
 }
 
 func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
@@ -613,6 +644,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 		top += style.VPadding()
 	}
+	layoutPositionedChildren(container, writer)
 }
 
 func printableWidgets(c Container, p Position) (widgets, remaining []Widget) {

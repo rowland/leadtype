@@ -25,6 +25,15 @@ func MapHasKeyPrefix(attrs map[string]string, prefix string) bool {
 	return false
 }
 
+func MapHasAnyKey(attrs map[string]string, keys ...string) bool {
+	for _, key := range keys {
+		if _, ok := attrs[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 func split2(s, sep string) (s1, s2 string) {
 	a := strings.SplitN(s, sep, 2)
 	if len(a) > 0 {

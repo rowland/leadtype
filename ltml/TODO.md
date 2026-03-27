@@ -46,11 +46,11 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ### Absolute / Relative Positioning ([#14](https://github.com/rowland/leadtype/issues/14))
 
-- [ ] Make documented `absolute` and `relative` layout modes functionally real
-- [ ] implement widget positioning semantics for `position="absolute"` and `position="relative"`
-- [ ] verify `top`, `right`, `bottom`, and `left` behave consistently with existing dimensions logic
-- [ ] ensure width/height percentages and relative values work under positioned layouts
-- [ ] add rendering tests for positioned widgets inside containers and pages
+- [x] Make documented `absolute` and `relative` layout modes functionally real
+- [x] implement widget positioning semantics for `position="absolute"` and `position="relative"`
+- [x] verify `top`, `right`, `bottom`, and `left` behave consistently with existing dimensions logic
+- [x] ensure width/height percentages and relative values work under positioned layouts
+- [x] add rendering tests for positioned widgets inside containers and pages
 
 ### Display Modes And Overflow Flow ([#13](https://github.com/rowland/leadtype/issues/13))
 

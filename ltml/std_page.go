@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+
+	"github.com/rowland/leadtype/colors"
 )
 
 type StdPage struct {
@@ -14,6 +16,8 @@ type StdPage struct {
 	Scope
 	pageStyle     *PageStyle
 	marginChanged bool
+	grid          bool
+	gridStep      float64
 }
 
 func (p *StdPage) BeforePrint(w Writer) error {
@@ -120,6 +124,16 @@ func (p *StdPage) PageStyle() *PageStyle {
 	return p.pageStyle
 }
 
+func (p *StdPage) PaintBackground(w Writer) error {
+	if err := p.StdContainer.PaintBackground(w); err != nil {
+		return err
+	}
+	if !p.grid {
+		return nil
+	}
+	return p.drawGrid(w)
+}
+
 func (p *StdPage) Right() float64 {
 	return p.Width()
 }
@@ -134,6 +148,18 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
 	if style, ok := attrs["style"]; ok {
 		p.pageStyle = PageStyleFor(style, p.scope)
+	}
+	if grid, ok := attrs["grid"]; ok {
+		switch grid {
+		case "", "false":
+			p.grid = false
+		case "true":
+			p.grid = true
+			p.gridStep = 0.25
+		default:
+			p.grid = true
+			p.gridStep = ParseMeasurement(grid, p.Units())
+		}
 	}
 	for k, _ := range attrs {
 		if reMargin.MatchString(k) {
@@ -167,6 +193,34 @@ func (p *StdPage) TopIsSet() bool {
 
 func (p *StdPage) Width() float64 {
 	return p.PageStyle().Width()
+}
+
+func (p *StdPage) drawGrid(w Writer) error {
+	step := p.gridStep
+	if step <= 0 {
+		step = ParseMeasurement("0.25in", p.Units())
+	}
+	prevColor := w.SetLineColor(colors.LightGray)
+	prevDash := w.SetLineDashPattern("solid")
+	prevCap := w.SetLineCapStyle("butt_cap")
+	w.SetLineWidth(0.25)
+	defer func() {
+		w.SetLineColor(prevColor)
+		w.SetLineDashPattern(prevDash)
+		w.SetLineCapStyle(prevCap)
+	}()
+
+	return w.Path(func() {
+		for x := 0.0; x <= p.Width(); x += step {
+			w.MoveTo(x, 0)
+			w.LineTo(x, p.Height())
+		}
+		for y := 0.0; y <= p.Height(); y += step {
+			w.MoveTo(0, y)
+			w.LineTo(p.Width(), y)
+		}
+		_ = w.Stroke()
+	})
 }
 
 func (p *StdPage) firstPageNoReset() (int, bool) {

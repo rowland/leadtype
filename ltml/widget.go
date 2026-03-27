@@ -25,6 +25,7 @@ type Widget interface {
 	SetRight(value float64)
 	SetBottom(value float64)
 	SetLeft(value float64)
+	SetPosition(value Position)
 
 	TopIsSet() bool
 	RightIsSet() bool

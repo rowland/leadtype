@@ -69,6 +69,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`). Default: `vbox`. |
+| `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `font`        | Reference to a named `<font>` style. |
 | `fill`        | Reference to a named `<brush>` style for the background. |
 | `border`      | Reference to a named `<pen>` style for all borders. |
@@ -572,6 +573,21 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 
 - Children are placed left to right, wrapping to the next row when the container
   width is exceeded.
+
+### Positioning Details
+
+- Widgets default to `position="static"` and participate in their parent layout.
+- `position="absolute"` uses page-space coordinates.
+- `position="relative"` offsets the widget from its parent container.
+- If `top`, `right`, `bottom`, or `left` is present and `position` is omitted,
+  LTML follows legacy ERML behavior and treats the widget as `relative`.
+- In `layout="absolute"`, all children are treated as absolute-positioned and
+  default missing horizontal/vertical anchors to `left="0"` and `top="0"`.
+- In `layout="relative"`, all children are treated as relative-positioned and
+  default missing horizontal/vertical anchors to `left="0"` and `top="0"`.
+- For text widgets such as `<label>` and `<p>`, `top` anchors the widget box.
+  Visible glyphs begin lower at the text ascent/baseline, so text can look
+  lower than boxes or shapes with the same `top` value.
 
 ---
 
