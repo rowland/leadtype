@@ -17,20 +17,26 @@ type mockWriter struct {
 	setFontSize  float64
 	addFontNames []string
 	fonts        []*font.Font
+	t            testing.TB
 }
 
 func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
 	m.addFontNames = append(m.addFontNames, family)
-	return m.fonts, nil
+	return m.Fonts(), nil
 }
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontName = name
 	m.setFontSize = size
 	m.addFontNames = nil
-	return m.fonts, nil
+	return m.Fonts(), nil
 }
 func (m *mockWriter) FontColor() colors.Color { return 0 }
-func (m *mockWriter) Fonts() []*font.Font     { return m.fonts }
+func (m *mockWriter) Fonts() []*font.Font {
+	if len(m.fonts) == 0 && m.t != nil {
+		m.fonts = defaultTestFonts(m.t)
+	}
+	return m.fonts
+}
 func (m *mockWriter) FontSize() float64       { return m.setFontSize }
 func (m *mockWriter) ImageDimensionsFromFile(filename string) (int, int, error) {
 	return 0, 0, nil

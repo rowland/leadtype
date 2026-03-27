@@ -10,16 +10,36 @@ import (
 	"github.com/rowland/leadtype/rich_text"
 )
 
+func defaultTestFonts(t testing.TB) []*font.Font {
+	t.Helper()
+
+	fontSource, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	face, err := font.New("Helvetica", options.Options{"size": 12.0}, font.FontSources{fontSource})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return []*font.Font{face}
+}
+
 type labelTestWriter struct {
 	fonts       []*font.Font
 	fontSize    float64
 	lineSpacing float64
 	moves       [][2]float64
 	printed     []*rich_text.RichText
+	t           testing.TB
 }
 
 func (w *labelTestWriter) FontColor() colors.Color { return 0 }
-func (w *labelTestWriter) Fonts() []*font.Font     { return w.fonts }
+func (w *labelTestWriter) Fonts() []*font.Font {
+	if len(w.fonts) == 0 && w.t != nil {
+		w.fonts = defaultTestFonts(w.t)
+	}
+	return w.fonts
+}
 func (w *labelTestWriter) FontSize() float64       { return w.fontSize }
 func (w *labelTestWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	return 0, 0, nil
@@ -50,11 +70,11 @@ func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fi
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
 }
 func (w *labelTestWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
-	return w.fonts, nil
+	return w.Fonts(), nil
 }
 func (w *labelTestWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	w.fontSize = size
-	return w.fonts, nil
+	return w.Fonts(), nil
 }
 func (w *labelTestWriter) SetFillColor(value interface{}) (prev colors.Color)  { return 0 }
 func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) { return 0 }
@@ -85,7 +105,7 @@ func TestStdLabel_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 func TestStdLabel_PreferredHeight_EmptyLabelUsesFontLineHeight(t *testing.T) {
 	l := &StdLabel{}
 	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
-	w := &labelTestWriter{lineSpacing: 1.25}
+	w := &labelTestWriter{t: t, lineSpacing: 1.25}
 
 	got := l.PreferredHeight(w)
 	want := 15.0
@@ -101,15 +121,7 @@ func TestStdLabel_DrawContent_PrintsRichText(t *testing.T) {
 	l.SetTop(20)
 	l.AddText("Hello")
 
-	fontSource, err := afm_fonts.Default()
-	if err != nil {
-		t.Fatal(err)
-	}
-	face, err := font.New("Helvetica", options.Options{"size": 12.0}, font.FontSources{fontSource})
-	if err != nil {
-		t.Fatal(err)
-	}
-	w := &labelTestWriter{fonts: []*font.Font{face}, lineSpacing: 1.0}
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
 
 	if err := l.DrawContent(w); err != nil {
 		t.Fatal(err)
