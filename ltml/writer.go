@@ -14,12 +14,14 @@ type Writer interface {
 	FontColor() colors.Color
 	Fonts() []*font.Font
 	FontSize() float64
+	ImageDimensionsFromFile(filename string) (width, height int, err error)
 	LineSpacing() float64
 	LineTo(x, y float64)
 	Loc() (x, y float64)
 	MoveTo(x, y float64)
 	NewPage()
 	Print(text string) (err error)
+	PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
 	PrintParagraph(para []*rich_text.RichText, options options.Options)
 	PrintRichText(text *rich_text.RichText)
 	Rectangle(x, y, width, height float64, border bool, fill bool)

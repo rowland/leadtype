@@ -1,0 +1,8 @@
+<ltml units="in" margin="0.5">
+  <layout id="vbox" padding="10pt" />
+  <page>
+    <p font.weight="Bold">Image placement</p>
+    <image src="../pdf/testdata/testimg.jpg" width="2.5" border="LightGray" padding="4pt" />
+    <image src="../pdf/testdata/testimg.jpg" height="1.1" />
+  </page>
+</ltml>

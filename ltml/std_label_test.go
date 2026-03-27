@@ -21,6 +21,9 @@ type labelTestWriter struct {
 func (w *labelTestWriter) FontColor() colors.Color { return 0 }
 func (w *labelTestWriter) Fonts() []*font.Font     { return w.fonts }
 func (w *labelTestWriter) FontSize() float64       { return w.fontSize }
+func (w *labelTestWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
+	return 0, 0, nil
+}
 func (w *labelTestWriter) LineSpacing() float64 {
 	if w.lineSpacing == 0 {
 		return 1.0
@@ -33,6 +36,9 @@ func (w *labelTestWriter) MoveTo(x, y float64) { w.moves = append(w.moves, [2]fl
 func (w *labelTestWriter) NewPage()            {}
 func (w *labelTestWriter) Print(text string) error {
 	return nil
+}
+func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
 }
 func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
 func (w *labelTestWriter) PrintRichText(text *rich_text.RichText) {

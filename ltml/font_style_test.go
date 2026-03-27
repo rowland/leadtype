@@ -6,6 +6,7 @@ package ltml
 import (
 	"testing"
 
+	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 )
@@ -28,28 +29,34 @@ func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([
 	m.addFontNames = nil
 	return m.fonts, nil
 }
-func (m *mockWriter) FontColor() interface{}                            { return nil }
-func (m *mockWriter) Fonts() []*font.Font                              { return m.fonts }
-func (m *mockWriter) FontSize() float64                                { return m.setFontSize }
-func (m *mockWriter) LineSpacing() float64                             { return 1.0 }
-func (m *mockWriter) LineTo(x, y float64)                              {}
-func (m *mockWriter) Loc() (float64, float64)                          { return 0, 0 }
-func (m *mockWriter) MoveTo(x, y float64)                              {}
-func (m *mockWriter) NewPage()                                         {}
-func (m *mockWriter) Print(text string) error                          { return nil }
+func (m *mockWriter) FontColor() colors.Color { return 0 }
+func (m *mockWriter) Fonts() []*font.Font     { return m.fonts }
+func (m *mockWriter) FontSize() float64       { return m.setFontSize }
+func (m *mockWriter) ImageDimensionsFromFile(filename string) (int, int, error) {
+	return 0, 0, nil
+}
+func (m *mockWriter) LineSpacing() float64    { return 1.0 }
+func (m *mockWriter) LineTo(x, y float64)     {}
+func (m *mockWriter) Loc() (float64, float64) { return 0, 0 }
+func (m *mockWriter) MoveTo(x, y float64)     {}
+func (m *mockWriter) NewPage()                {}
+func (m *mockWriter) Print(text string) error { return nil }
+func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
+	return 0, 0, nil
+}
 func (m *mockWriter) PrintParagraph(para interface{}, opts interface{}) {}
 func (m *mockWriter) PrintRichText(text interface{})                   {}
 func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)         {}
 func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
-func (m *mockWriter) SetFillColor(v interface{}) interface{}           { return nil }
-func (m *mockWriter) SetLineColor(v interface{}) interface{}           { return nil }
-func (m *mockWriter) SetLineDashPattern(p string) string               { return "" }
-func (m *mockWriter) SetLineSpacing(ls float64) float64                { return 0 }
-func (m *mockWriter) SetLineWidth(w float64)                           {}
-func (m *mockWriter) SetStrikeout(s bool) bool                         { return false }
-func (m *mockWriter) SetUnderline(u bool) bool                         { return false }
-func (m *mockWriter) Strikeout() bool                                  { return false }
-func (m *mockWriter) Underline() bool                                  { return false }
+func (m *mockWriter) SetFillColor(v interface{}) colors.Color         { return 0 }
+func (m *mockWriter) SetLineColor(v colors.Color) colors.Color        { return 0 }
+func (m *mockWriter) SetLineDashPattern(p string) string              { return "" }
+func (m *mockWriter) SetLineSpacing(ls float64) float64               { return 0 }
+func (m *mockWriter) SetLineWidth(w float64)                          {}
+func (m *mockWriter) SetStrikeout(s bool) bool                        { return false }
+func (m *mockWriter) SetUnderline(u bool) bool                        { return false }
+func (m *mockWriter) Strikeout() bool                                 { return false }
+func (m *mockWriter) Underline() bool                                 { return false }
 
 func TestFontStyle_SetAttrs_SingleName(t *testing.T) {
 	var fs FontStyle

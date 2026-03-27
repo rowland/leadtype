@@ -211,6 +211,28 @@ indentation from non-blank lines, and expands tab characters to four spaces.
 
 ---
 
+### `<image>` — Image Placement
+
+Places an image file into the document using the PDF image API.
+
+```xml
+<image src="../pdf/testdata/testimg.jpg" width="2in" />
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `src` | Path to the source image file. |
+| `width`, `height` | Optional explicit dimensions. If only one is supplied, the other is inferred from the image aspect ratio. |
+| `margin`, `padding` | Spacing around and inside the widget box. |
+| `border` | Reference to a named `<pen>` style. |
+| `fill` | Reference to a named `<brush>` style. |
+
+The current implementation supports the same file-based JPEG workflow as the
+PDF layer. The LTML API stays format-agnostic so future PNG support can be
+added without changing the tag shape.
+
+---
+
 ## Style Definitions
 
 Style definitions are placed inside `<ltml>` (or `<page>` for page-scoped
