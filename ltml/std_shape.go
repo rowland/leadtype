@@ -465,13 +465,13 @@ func (a *StdArch) innerRadius() float64 {
 }
 
 func init() {
-	registerTag(DefaultSpace, "circle", func() interface{} { return &StdCircle{} })
-	registerTag(DefaultSpace, "ellipse", func() interface{} { return &StdEllipse{} })
-	registerTag(DefaultSpace, "polygon", func() interface{} { return &StdPolygon{} })
-	registerTag(DefaultSpace, "star", func() interface{} { return &StdStar{} })
-	registerTag(DefaultSpace, "arc", func() interface{} { return &StdArc{} })
-	registerTag(DefaultSpace, "pie", func() interface{} { return &StdPie{} })
-	registerTag(DefaultSpace, "arch", func() interface{} { return &StdArch{} })
+	registerTag(DefaultSpace, "circle", func() any { return &StdCircle{} })
+	registerTag(DefaultSpace, "ellipse", func() any { return &StdEllipse{} })
+	registerTag(DefaultSpace, "polygon", func() any { return &StdPolygon{} })
+	registerTag(DefaultSpace, "star", func() any { return &StdStar{} })
+	registerTag(DefaultSpace, "arc", func() any { return &StdArc{} })
+	registerTag(DefaultSpace, "pie", func() any { return &StdPie{} })
+	registerTag(DefaultSpace, "arch", func() any { return &StdArch{} })
 }
 
 func (c *StdCircle) String() string  { return fmt.Sprintf("StdCircle %s", &c.StdShape) }

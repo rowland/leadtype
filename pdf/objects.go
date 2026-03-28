@@ -319,7 +319,7 @@ func nameArray(names ...string) array {
 }
 
 type number struct {
-	value interface{}
+	value any
 }
 
 func (n number) write(w io.Writer) {
@@ -422,7 +422,7 @@ func (pb *pageBase) setCropBox(r rectangle) {
 	pb.dict["CropBox"] = &r
 }
 
-func (pb *pageBase) setDuration(duration interface{}) {
+func (pb *pageBase) setDuration(duration any) {
 	pb.dict["Dur"] = number{duration}
 }
 

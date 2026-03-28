@@ -87,5 +87,5 @@ var defaultLayouts = map[string]*LayoutStyle{
 }
 
 func init() {
-	registerTag(DefaultSpace, "layout", func() interface{} { return &LayoutStyle{} })
+	registerTag(DefaultSpace, "layout", func() any { return &LayoutStyle{} })
 }

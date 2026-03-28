@@ -36,5 +36,5 @@ func (s *StdSpan) SetContainer(container Container) error {
 }
 
 func init() {
-	registerTag(DefaultSpace, "span", func() interface{} { return &StdSpan{} })
+	registerTag(DefaultSpace, "span", func() any { return &StdSpan{} })
 }

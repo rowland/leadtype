@@ -69,7 +69,7 @@ func (p *StdPageNo) hasStart() bool {
 }
 
 func init() {
-	registerTag(DefaultSpace, "pageno", func() interface{} { return &StdPageNo{} })
+	registerTag(DefaultSpace, "pageno", func() any { return &StdPageNo{} })
 }
 
 var _ HasAttrs = (*StdPageNo)(nil)

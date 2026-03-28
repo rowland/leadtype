@@ -12,7 +12,7 @@ type layoutProbeWriter struct {
 }
 
 func newLayoutProbeWriter(base Writer) Writer {
-	if factory, ok := base.(interface{ LayoutProbeWriter() interface{} }); ok {
+	if factory, ok := base.(interface{ LayoutProbeWriter() any }); ok {
 		if probe, ok := factory.LayoutProbeWriter().(Writer); ok {
 			base = probe
 		}
@@ -72,7 +72,7 @@ func (w *layoutProbeWriter) Rotate(angle, x, y float64, fn func()) error {
 	}
 	return nil
 }
-func (w *layoutProbeWriter) SetFillColor(value interface{}) (prev colors.Color) {
+func (w *layoutProbeWriter) SetFillColor(value any) (prev colors.Color) {
 	return w.base.FontColor()
 }
 func (w *layoutProbeWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {

@@ -17,7 +17,7 @@ func (dw *DocWriter) NewPage() {
 	dw.DocWriter.NewPage()
 }
 
-func (dw *DocWriter) LayoutProbeWriter() interface{} {
+func (dw *DocWriter) LayoutProbeWriter() any {
 	probe := NewDocWriter()
 	probe.SetAssetFS(dw.AssetFS())
 	return probe

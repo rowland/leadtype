@@ -59,7 +59,7 @@ var StdAliases = map[string]*Alias{
 }
 
 func init() {
-	registerTag(DefaultSpace, "define", func() interface{} { return &Alias{} })
+	registerTag(DefaultSpace, "define", func() any { return &Alias{} })
 }
 
 var _ HasAttrs = (*Alias)(nil)

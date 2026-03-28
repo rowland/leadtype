@@ -149,7 +149,7 @@ func quadrant(angle float64) int {
 }
 
 func init() {
-	registerTag(DefaultSpace, "line", func() interface{} { return &StdLine{} })
+	registerTag(DefaultSpace, "line", func() any { return &StdLine{} })
 }
 
 var _ HasAttrs = (*StdLine)(nil)

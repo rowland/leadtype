@@ -1361,7 +1361,7 @@ func (pw *PageWriter) SetFont(name string, size float64, options options.Options
 	return pw.AddFont(name, options)
 }
 
-func (pw *PageWriter) SetFillColor(value interface{}) (prev colors.Color) {
+func (pw *PageWriter) SetFillColor(value any) (prev colors.Color) {
 	prev = pw.fillColor
 
 	switch value := value.(type) {
@@ -1380,7 +1380,7 @@ func (pw *PageWriter) SetFillColor(value interface{}) (prev colors.Color) {
 	return
 }
 
-func (pw *PageWriter) SetFontColor(value interface{}) (prev colors.Color) {
+func (pw *PageWriter) SetFontColor(value any) (prev colors.Color) {
 	prev = pw.fontColor
 
 	switch value := value.(type) {

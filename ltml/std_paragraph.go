@@ -320,7 +320,7 @@ func (p *StdParagraph) String() string {
 }
 
 func init() {
-	registerTag(DefaultSpace, "p", func() interface{} { return &StdParagraph{} })
+	registerTag(DefaultSpace, "p", func() any { return &StdParagraph{} })
 }
 
 var _ Container = (*StdParagraph)(nil)

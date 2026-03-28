@@ -396,17 +396,17 @@ func TestSimpleFont_TrueType(t *testing.T) {
 	widths := arrayFromInts(arial1252Widths)
 	fd := newFontDescriptor(100, 0, // seq, gen
 		"ArialMT", "Arial", // fontName, fontFamily
-		32, // flags
+		32,                             // flags
 		[4]int{-665, -325, 2029, 1006}, // fontBBox
-		0, 0, 0, // missingWidth, stemV, stemH
+		0, 0, 0,                        // missingWidth, stemV, stemH
 		9.1,                              // italicAngle
 		723, 525, 905, -212, 33, 2000, 0) // capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth
 	f := newTrueTypeFont(200, 0, // seq, gen
 		"ArialMT", // baseFont
 		0, 255,    // firstChar, lastChar
 		&indirectObject{50, 0, &widths}, // widths
-		fd,  // fontDescriptor
-		nil) // fontEncoding
+		fd,                              // fontDescriptor
+		nil)                             // fontEncoding
 
 	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /TrueType \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
 	expectS(t, expected, stringFromWriter(f))
@@ -416,16 +416,16 @@ func TestSimpleFont_Type1(t *testing.T) {
 	widths := arrayFromInts(arial1252Widths)
 	fd := newFontDescriptor(100, 0, // seq, gen
 		"ArialMT", "Arial", // fontName, fontFamily
-		32, // flags
+		32,                             // flags
 		[4]int{-665, -325, 2029, 1006}, // fontBBox
-		0, 0, 0, // missingWidth, stemV, stemH
+		0, 0, 0,                        // missingWidth, stemV, stemH
 		9.1,                              // italicAngle
 		723, 525, 905, -212, 33, 2000, 0) // capHeight, xHeight, ascent, descent, leading, maxWidth, avgWidth
 	f := newType1Font(200, 0, // seq, gen
 		"ArialMT", // baseFont
 		0, 255,    // firstChar, lastChar
 		&indirectObject{50, 0, &widths}, // widths
-		fd, name("WinAnsiEncoding")) // fontDescriptor, fontEncoding
+		fd, name("WinAnsiEncoding"))     // fontDescriptor, fontEncoding
 
 	expected := "200 0 obj\n<<\n/BaseFont /ArialMT \n/Encoding /WinAnsiEncoding \n/FirstChar 0 \n/FontDescriptor 100 0 R \n/LastChar 255 \n/Subtype /Type1 \n/Type /Font \n/Widths 50 0 R \n>>\nendobj\n"
 	expectS(t, expected, stringFromWriter(f))

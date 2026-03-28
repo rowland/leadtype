@@ -654,7 +654,7 @@ func (dw *DocWriter) ResetFonts() {
 	dw.CurPage().ResetFonts()
 }
 
-func (dw *DocWriter) SetFillColor(color interface{}) (prev colors.Color) {
+func (dw *DocWriter) SetFillColor(color any) (prev colors.Color) {
 	return dw.CurPage().SetFillColor(color)
 }
 
@@ -662,7 +662,7 @@ func (dw *DocWriter) SetFont(name string, size float64, options options.Options)
 	return dw.CurPage().SetFont(name, size, options)
 }
 
-func (dw *DocWriter) SetFontColor(color interface{}) (lastColor colors.Color) {
+func (dw *DocWriter) SetFontColor(color any) (lastColor colors.Color) {
 	return dw.CurPage().SetFontColor(color)
 }
 

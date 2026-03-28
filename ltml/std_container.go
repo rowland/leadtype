@@ -359,7 +359,7 @@ func minInt(a, b int) int {
 }
 
 func init() {
-	registerTag(DefaultSpace, "div", func() interface{} { return &StdContainer{} })
+	registerTag(DefaultSpace, "div", func() any { return &StdContainer{} })
 }
 
 var _ Container = (*StdContainer)(nil)

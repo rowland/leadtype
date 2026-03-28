@@ -21,7 +21,7 @@ type Font struct {
 	postTable postTable
 	vheaTable vheaTable
 	vmtxTable vmtxTable
-	rawBytes []byte // non-nil only when loaded via LoadFontFromBytes
+	rawBytes  []byte // non-nil only when loaded via LoadFontFromBytes
 }
 
 // FontKey returns a stable string identifying this font, used as a cache key

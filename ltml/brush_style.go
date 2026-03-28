@@ -59,5 +59,5 @@ var _ HasAttrsPrefix = (*BrushStyle)(nil)
 var _ Styler = (*BrushStyle)(nil)
 
 func init() {
-	registerTag(DefaultSpace, "brush", func() interface{} { return &BrushStyle{} })
+	registerTag(DefaultSpace, "brush", func() any { return &BrushStyle{} })
 }

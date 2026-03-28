@@ -60,5 +60,5 @@ var _ Styler = (*ParagraphStyle)(nil)
 var _ WantsScope = (*ParagraphStyle)(nil)
 
 func init() {
-	registerTag(DefaultSpace, "para", func() interface{} { return &ParagraphStyle{} })
+	registerTag(DefaultSpace, "para", func() any { return &ParagraphStyle{} })
 }

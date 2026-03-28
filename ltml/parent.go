@@ -4,14 +4,14 @@
 package ltml
 
 type AParent struct {
-	parent interface{}
+	parent any
 }
 
-func (p *AParent) Parent() interface{} {
+func (p *AParent) Parent() any {
 	return p.parent
 }
 
-func (p *AParent) SetParent(value interface{}) error {
+func (p *AParent) SetParent(value any) error {
 	p.parent = value
 	return nil
 }

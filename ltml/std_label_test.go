@@ -136,7 +136,7 @@ func (w *labelTestWriter) SetFont(name string, size float64, opts options.Option
 	}
 	return w.Fonts(), nil
 }
-func (w *labelTestWriter) SetFillColor(value interface{}) (prev colors.Color) {
+func (w *labelTestWriter) SetFillColor(value any) (prev colors.Color) {
 	prev = w.fillColor
 	switch value := value.(type) {
 	case colors.Color:
@@ -254,8 +254,8 @@ func TestStdLabel_DrawContent_AngleRotatesAroundLeftAnchor(t *testing.T) {
 
 func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
 	cases := []struct {
-		name      string
-		align     HAlign
+		name       string
+		align      HAlign
 		wantAnchor func(*StdLabel, *rich_text.RichText) (float64, float64)
 		wantStart  func(*StdLabel, *rich_text.RichText) (float64, float64)
 	}{

@@ -474,7 +474,7 @@ func (widget *StdWidget) OriginY() float64 {
 }
 
 func init() {
-	registerTag(DefaultSpace, "widget", func() interface{} { return &StdWidget{} })
+	registerTag(DefaultSpace, "widget", func() any { return &StdWidget{} })
 }
 
 var _ HasAttrs = (*StdWidget)(nil)

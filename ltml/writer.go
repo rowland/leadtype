@@ -38,7 +38,7 @@ type Writer interface {
 	Rotate(angle, x, y float64, fn func()) error
 	AddFont(family string, options options.Options) ([]*font.Font, error)
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
-	SetFillColor(value interface{}) (prev colors.Color)
+	SetFillColor(value any) (prev colors.Color)
 	SetLineColor(value colors.Color) (prev colors.Color)
 	SetLineDashPattern(pattern string) (prev string)
 	SetLineSpacing(lineSpacing float64) (prev float64)

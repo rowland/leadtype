@@ -13,7 +13,7 @@ import (
 
 type Doc struct {
 	ltmls     []*StdDocument
-	stack     []interface{}
+	stack     []any
 	scopes    []HasScope
 	rootScope Scope // per-document root scope; parent = &defaultScope
 }
@@ -197,7 +197,7 @@ func (doc *Doc) comment(comment xml.Comment) {
 	}
 }
 
-func (doc *Doc) push(value interface{}) {
+func (doc *Doc) push(value any) {
 	doc.stack = append(doc.stack, value)
 	if scope, ok := value.(HasScope); ok {
 		scope.SetParentScope(doc.scope())
@@ -205,7 +205,7 @@ func (doc *Doc) push(value interface{}) {
 	}
 }
 
-func (doc *Doc) pop() (value interface{}) {
+func (doc *Doc) pop() (value any) {
 	if len(doc.stack) > 0 {
 		value, doc.stack = doc.stack[len(doc.stack)-1], doc.stack[:len(doc.stack)-1]
 		if _, ok := value.(HasScope); ok {
@@ -215,7 +215,7 @@ func (doc *Doc) pop() (value interface{}) {
 	return
 }
 
-func (doc *Doc) current() (value interface{}) {
+func (doc *Doc) current() (value any) {
 	if len(doc.stack) > 0 {
 		value = doc.stack[len(doc.stack)-1]
 	}

@@ -55,7 +55,7 @@ func (st *SuperTest) AlmostEqual(expected, actual, delta float64, msg ...string)
 	}
 }
 
-func (st *SuperTest) Equal(expected, actual interface{}, msg ...string) {
+func (st *SuperTest) Equal(expected, actual any, msg ...string) {
 	if expected != actual {
 		st.fail(expected, actual, false, msg...)
 	}
@@ -103,7 +103,7 @@ func (st *SuperTest) where(skip int) (file string, line int, name string) {
 	return
 }
 
-func (st *SuperTest) fail(expected, actual interface{}, must bool, msg ...string) {
+func (st *SuperTest) fail(expected, actual any, must bool, msg ...string) {
 	file, line, name := st.where(3)
 	if must {
 		st.Fatalf("\t%s:%d: %s: Expected <%v>, got <%v>. %v\n", file, line, name, expected, actual, msg)

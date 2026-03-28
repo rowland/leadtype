@@ -29,7 +29,7 @@ type longDateTime int64
 
 type PANOSE [10]byte
 
-func readValues(r io.Reader, values ...interface{}) (err error) {
+func readValues(r io.Reader, values ...any) (err error) {
 	for _, v := range values {
 		if err = binary.Read(r, binary.BigEndian, v); err != nil {
 			return

@@ -80,7 +80,7 @@ func (img *StdImage) heightForWriter() *float64 {
 }
 
 func init() {
-	registerTag(DefaultSpace, "image", func() interface{} { return &StdImage{} })
+	registerTag(DefaultSpace, "image", func() any { return &StdImage{} })
 }
 
 var _ HasAttrs = (*StdImage)(nil)

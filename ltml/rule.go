@@ -73,5 +73,5 @@ func attrsMapFromString(s string) map[string]string {
 }
 
 func init() {
-	registerTag(DefaultSpace, "rules", func() interface{} { return &Rules{} })
+	registerTag(DefaultSpace, "rules", func() any { return &Rules{} })
 }

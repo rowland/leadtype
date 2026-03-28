@@ -105,7 +105,7 @@ func (d *StdDocument) String() string {
 }
 
 func init() {
-	registerTag(DefaultSpace, "ltml", func() interface{} { return &StdDocument{} })
+	registerTag(DefaultSpace, "ltml", func() any { return &StdDocument{} })
 }
 
 var _ HasAttrs = (*StdDocument)(nil)

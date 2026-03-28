@@ -10,7 +10,7 @@ import (
 
 const DefaultSpace = "std"
 
-type TagFactory func() interface{}
+type TagFactory func() any
 
 var (
 	reTag           = regexp.MustCompile(`^\w+$`)
@@ -38,7 +38,7 @@ func RegisterTag(namespace, tag string, f TagFactory) error {
 	return registerTag(namespace, tag, f)
 }
 
-func makeElement(namespace, tag string) interface{} {
+func makeElement(namespace, tag string) any {
 	if f, ok := registeredTags[namespace+":"+tag]; ok {
 		return f()
 	}

@@ -9,8 +9,8 @@
 package main
 
 import (
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"os"
@@ -69,13 +69,13 @@ func codepoints() []rune {
 // ── font builder ─────────────────────────────────────────────────────────────
 
 const (
-	unitsPerEm    = 1000
-	advanceWidth  = 512
-	ascent        = 800
-	descent       = -200
-	lineGap       = 0
-	glyphWidth    = 400
-	glyphHeight   = 600
+	unitsPerEm   = 1000
+	advanceWidth = 512
+	ascent       = 800
+	descent      = -200
+	lineGap      = 0
+	glyphWidth   = 400
+	glyphHeight  = 600
 )
 
 func buildFont(family, subfamily string, weight uint16) []byte {
@@ -182,15 +182,15 @@ func buildCmapFormat4(cp []rune) []byte {
 		glyphPos += uint16(seg.end-seg.start) + 1
 	}
 
-	headerSize := uint16(14) // format(2)+length(2)+language(2)+segCountX2(2)+searchRange(2)+entrySelector(2)+rangeShift(2)
+	headerSize := uint16(14)      // format(2)+length(2)+language(2)+segCountX2(2)+searchRange(2)+entrySelector(2)+rangeShift(2)
 	arraysSize := segCount2*4 + 2 // endCode(segCount*2) + reservedPad(2) + startCode + idDelta + idRangeOffset
 	length := headerSize + arraysSize
 
 	var b bytes.Buffer
-	putU16(&b, 4)            // format
-	putU16(&b, length)       // length
-	putU16(&b, 0)            // language
-	putU16(&b, segCount2)    // segCountX2
+	putU16(&b, 4)         // format
+	putU16(&b, length)    // length
+	putU16(&b, 0)         // language
+	putU16(&b, segCount2) // segCountX2
 	putU16(&b, searchRange)
 	putU16(&b, entrySelector)
 	putU16(&b, rangeShift)
@@ -254,13 +254,13 @@ func compositeGlyph(comp1, comp2 uint16) []byte {
 
 func simpleSquareGlyph() []byte {
 	var b bytes.Buffer
-	putI16(&b, 1)          // numberOfContours
-	putI16(&b, 0)          // xMin
-	putI16(&b, 0)          // yMin
-	putI16(&b, glyphWidth) // xMax
-	putI16(&b, glyphHeight)// yMax
-	putU16(&b, 3)          // endPtsOfContours[0] = 3 (4 points: 0..3)
-	putU16(&b, 0)          // instructionLength
+	putI16(&b, 1)           // numberOfContours
+	putI16(&b, 0)           // xMin
+	putI16(&b, 0)           // yMin
+	putI16(&b, glyphWidth)  // xMax
+	putI16(&b, glyphHeight) // yMax
+	putU16(&b, 3)           // endPtsOfContours[0] = 3 (4 points: 0..3)
+	putU16(&b, 0)           // instructionLength
 	// flags: 4 on-curve points, each flag = 0x01 (on curve)
 	b.WriteByte(0x01)
 	b.WriteByte(0x01)
@@ -287,8 +287,8 @@ func buildHead() []byte {
 	putU32(&b, 0x5F0F3CF5) // magicNumber
 	putU16(&b, 0x000B)     // flags
 	putU16(&b, unitsPerEm)
-	putU64(&b, 0) // created
-	putU64(&b, 0) // modified
+	putU64(&b, 0)          // created
+	putU64(&b, 0)          // modified
 	putI16(&b, 0)          // xMin
 	putI16(&b, descent)    // yMin
 	putI16(&b, glyphWidth) // xMax
@@ -303,7 +303,7 @@ func buildHead() []byte {
 
 func buildHhea(numGlyphs uint16) []byte {
 	var b bytes.Buffer
-	putU32(&b, 0x00010000)  // version
+	putU32(&b, 0x00010000) // version
 	putI16(&b, ascent)
 	putI16(&b, descent)
 	putI16(&b, lineGap)
@@ -318,8 +318,8 @@ func buildHhea(numGlyphs uint16) []byte {
 	putI16(&b, 0)
 	putI16(&b, 0)
 	putI16(&b, 0)
-	putI16(&b, 0)            // metricDataFormat
-	putU16(&b, numGlyphs)   // numberOfHMetrics
+	putI16(&b, 0)         // metricDataFormat
+	putU16(&b, numGlyphs) // numberOfHMetrics
 	return b.Bytes()
 }
 
@@ -360,19 +360,19 @@ func buildMaxp(numGlyphs uint16) []byte {
 	var b bytes.Buffer
 	putU32(&b, 0x00010000) // version 1.0
 	putU16(&b, numGlyphs)
-	putU16(&b, 4)  // maxPoints
-	putU16(&b, 1)  // maxContours
-	putU16(&b, 8)  // maxCompositePoints (4 pts × 2 components)
-	putU16(&b, 2)  // maxCompositeContours (1 per component)
-	putU16(&b, 2)  // maxZones
-	putU16(&b, 0)  // maxTwilightPoints
-	putU16(&b, 0)  // maxStorage
-	putU16(&b, 0)  // maxFunctionDefs
-	putU16(&b, 0)  // maxInstructionDefs
-	putU16(&b, 0)  // maxStackElements
-	putU16(&b, 0)  // maxSizeOfInstructions
-	putU16(&b, 2)  // maxComponentElements
-	putU16(&b, 1)  // maxComponentDepth
+	putU16(&b, 4) // maxPoints
+	putU16(&b, 1) // maxContours
+	putU16(&b, 8) // maxCompositePoints (4 pts × 2 components)
+	putU16(&b, 2) // maxCompositeContours (1 per component)
+	putU16(&b, 2) // maxZones
+	putU16(&b, 0) // maxTwilightPoints
+	putU16(&b, 0) // maxStorage
+	putU16(&b, 0) // maxFunctionDefs
+	putU16(&b, 0) // maxInstructionDefs
+	putU16(&b, 0) // maxStackElements
+	putU16(&b, 0) // maxSizeOfInstructions
+	putU16(&b, 2) // maxComponentElements
+	putU16(&b, 1) // maxComponentDepth
 	return b.Bytes()
 }
 
@@ -416,7 +416,7 @@ func buildName(family, subfamily string) []byte {
 	count := uint16(len(records))
 	stringOffset := uint16(6 + count*12)
 	var b bytes.Buffer
-	putU16(&b, 0)            // format
+	putU16(&b, 0) // format
 	putU16(&b, count)
 	putU16(&b, stringOffset)
 	for _, r := range records {
@@ -435,41 +435,45 @@ func buildOS2(weight uint16, cp []rune) []byte {
 	// Find first/last char index
 	minCP, maxCP := rune(0xFFFF), rune(0)
 	for _, r := range cp {
-		if r < minCP { minCP = r }
-		if r > maxCP { maxCP = r }
+		if r < minCP {
+			minCP = r
+		}
+		if r > maxCP {
+			maxCP = r
+		}
 	}
 
 	var b bytes.Buffer
-	putU16(&b, 4)            // version
+	putU16(&b, 4)                     // version
 	putI16(&b, int16(advanceWidth/2)) // xAvgCharWidth
-	putU16(&b, weight)       // usWeightClass
-	putU16(&b, 5)            // usWidthClass: medium
-	putU16(&b, 0)            // fsType: embeddable
-	putI16(&b, 100)          // ySubscriptXSize
-	putI16(&b, 100)          // ySubscriptYSize
-	putI16(&b, 0)            // ySubscriptXOffset
-	putI16(&b, -100)         // ySubscriptYOffset
-	putI16(&b, 100)          // ySuperscriptXSize
-	putI16(&b, 100)          // ySuperscriptYSize
-	putI16(&b, 0)            // ySuperscriptXOffset
-	putI16(&b, 200)          // ySuperscriptYOffset
-	putI16(&b, 50)           // yStrikeoutSize
-	putI16(&b, 250)          // yStrikeoutPosition
-	putI16(&b, 0)            // sFamilyClass
-	b.Write(make([]byte, 10)) // panose
+	putU16(&b, weight)                // usWeightClass
+	putU16(&b, 5)                     // usWidthClass: medium
+	putU16(&b, 0)                     // fsType: embeddable
+	putI16(&b, 100)                   // ySubscriptXSize
+	putI16(&b, 100)                   // ySubscriptYSize
+	putI16(&b, 0)                     // ySubscriptXOffset
+	putI16(&b, -100)                  // ySubscriptYOffset
+	putI16(&b, 100)                   // ySuperscriptXSize
+	putI16(&b, 100)                   // ySuperscriptYSize
+	putI16(&b, 0)                     // ySuperscriptXOffset
+	putI16(&b, 200)                   // ySuperscriptYOffset
+	putI16(&b, 50)                    // yStrikeoutSize
+	putI16(&b, 250)                   // yStrikeoutPosition
+	putI16(&b, 0)                     // sFamilyClass
+	b.Write(make([]byte, 10))         // panose
 	// ulUnicodeRange: set bits for Latin (0), Latin supplement (1), Greek (7), CJK (59)
 	putU32(&b, (1<<0)|(1<<1)|(1<<7))
 	putU32(&b, 1<<(59-32))
 	putU32(&b, 0)
 	putU32(&b, 0)
-	b.Write([]byte("MINI"))  // achVendID
-	putU16(&b, 0x0040)       // fsSelection: REGULAR
-	putU16(&b, uint16(minCP)) // fsFirstCharIndex
-	putU16(&b, uint16(maxCP)) // fsLastCharIndex
-	putI16(&b, ascent)       // sTypoAscender
-	putI16(&b, descent)      // sTypoDescender
-	putI16(&b, lineGap)      // sTypoLineGap
-	putU16(&b, uint16(ascent))  // usWinAscent
+	b.Write([]byte("MINI"))      // achVendID
+	putU16(&b, 0x0040)           // fsSelection: REGULAR
+	putU16(&b, uint16(minCP))    // fsFirstCharIndex
+	putU16(&b, uint16(maxCP))    // fsLastCharIndex
+	putI16(&b, ascent)           // sTypoAscender
+	putI16(&b, descent)          // sTypoDescender
+	putI16(&b, lineGap)          // sTypoLineGap
+	putU16(&b, uint16(ascent))   // usWinAscent
 	putU16(&b, uint16(-descent)) // usWinDescent
 	// Version 1+ fields
 	putU32(&b, 0) // ulCodePageRange1
@@ -477,9 +481,9 @@ func buildOS2(weight uint16, cp []rune) []byte {
 	// Version 2+ fields
 	putI16(&b, int16(ascent*7/10)) // sxHeight
 	putI16(&b, int16(ascent))      // sCapHeight
-	putU16(&b, 0)  // usDefaultChar
-	putU16(&b, 32) // usBreakChar (space)
-	putU16(&b, 1)  // usMaxContext
+	putU16(&b, 0)                  // usDefaultChar
+	putU16(&b, 32)                 // usBreakChar (space)
+	putU16(&b, 1)                  // usMaxContext
 	return b.Bytes()
 }
 

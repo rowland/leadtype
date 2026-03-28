@@ -4,6 +4,6 @@
 package ltml
 
 type HasParent interface {
-	Parent() interface{}
-	SetParent(value interface{}) error
+	Parent() any
+	SetParent(value any) error
 }

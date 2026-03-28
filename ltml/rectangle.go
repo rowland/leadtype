@@ -8,7 +8,7 @@ type Rectangle struct {
 }
 
 func init() {
-	registerTag(DefaultSpace, "rect", func() interface{} { return &Rectangle{} })
+	registerTag(DefaultSpace, "rect", func() any { return &Rectangle{} })
 }
 
 var _ Container = (*Rectangle)(nil)

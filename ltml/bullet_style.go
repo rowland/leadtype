@@ -78,5 +78,5 @@ var _ Styler = (*BulletStyle)(nil)
 var _ WantsScope = (*BulletStyle)(nil)
 
 func init() {
-	registerTag(DefaultSpace, "bullet", func() interface{} { return &BulletStyle{width: 36} })
+	registerTag(DefaultSpace, "bullet", func() any { return &BulletStyle{width: 36} })
 }

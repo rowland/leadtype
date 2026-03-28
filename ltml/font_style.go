@@ -250,5 +250,5 @@ var _ HasAttrsPrefix = (*FontStyle)(nil)
 var _ Styler = (*FontStyle)(nil)
 
 func init() {
-	registerTag(DefaultSpace, "font", func() interface{} { return &FontStyle{} })
+	registerTag(DefaultSpace, "font", func() any { return &FontStyle{} })
 }

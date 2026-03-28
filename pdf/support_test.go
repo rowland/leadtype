@@ -80,7 +80,7 @@ func expectNS(t *testing.T, name string, expected, actual string) {
 	}
 }
 
-func expectV(t *testing.T, expected, actual interface{}) {
+func expectV(t *testing.T, expected, actual any) {
 	if expected != actual {
 		t.Errorf("Expected %v, got %v", expected, actual)
 	}

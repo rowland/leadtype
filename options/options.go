@@ -9,7 +9,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 )
 
-type Options map[string]interface{}
+type Options map[string]any
 
 func (this Options) BoolDefault(key string, def bool) bool {
 	if value, ok := this[key]; ok {

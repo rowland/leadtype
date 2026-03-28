@@ -7,7 +7,7 @@ import (
 
 var debugEnabled = os.Getenv("LEADTYPE_DEBUG") != ""
 
-func debugf(format string, args ...interface{}) {
+func debugf(format string, args ...any) {
 	if !debugEnabled {
 		return
 	}

@@ -168,7 +168,7 @@ func (p *StdPre) richTextForLine(line string, w Writer) (*rich_text.RichText, er
 }
 
 func init() {
-	registerTag(DefaultSpace, "pre", func() interface{} { return &StdPre{} })
+	registerTag(DefaultSpace, "pre", func() any { return &StdPre{} })
 }
 
 var _ HasAttrs = (*StdPre)(nil)

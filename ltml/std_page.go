@@ -573,7 +573,7 @@ func (p *StdPage) copySplitGeometry(dst, src Widget) {
 }
 
 func init() {
-	registerTag(DefaultSpace, "page", func() interface{} { return &StdPage{} })
+	registerTag(DefaultSpace, "page", func() any { return &StdPage{} })
 }
 
 var _ Container = (*StdPage)(nil)

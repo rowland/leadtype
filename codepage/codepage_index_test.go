@@ -3,8 +3,10 @@
 
 package codepage
 
-import "testing"
-import "reflect"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestCodepageIndex_Codepage(t *testing.T) {
 	for idx := Idx_CP1250; idx <= Idx_CP874; idx++ {
@@ -43,7 +45,8 @@ func TestCodepageIndex_Map_default(t *testing.T) {
 // 167 ns go1.2.1
 // 173 ns go1.4.2
 // 101 ns go1.6.2 mbp
-//  91 ns go1.7.3
+//	91 ns go1.7.3
+
 func BenchmarkCharForCodepointForEachCodepage(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for idx := Idx_CP1250; idx <= Idx_CP874; idx++ {

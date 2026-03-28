@@ -81,5 +81,5 @@ func init() {
 	for id, sz := range PageSizes {
 		defaultPageStyles[id] = &PageStyle{id: id, width: sz[0], height: sz[1]}
 	}
-	registerTag(DefaultSpace, "page", func() interface{} { return &PageStyle{} })
+	registerTag(DefaultSpace, "page", func() any { return &PageStyle{} })
 }

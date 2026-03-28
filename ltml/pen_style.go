@@ -87,5 +87,5 @@ var _ HasAttrsPrefix = (*PenStyle)(nil)
 var _ Styler = (*PenStyle)(nil)
 
 func init() {
-	registerTag(DefaultSpace, "pen", func() interface{} { return &PenStyle{} })
+	registerTag(DefaultSpace, "pen", func() any { return &PenStyle{} })
 }

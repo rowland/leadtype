@@ -233,7 +233,7 @@ func (l *StdLabel) String() string {
 }
 
 func init() {
-	registerTag(DefaultSpace, "label", func() interface{} { return &StdLabel{} })
+	registerTag(DefaultSpace, "label", func() any { return &StdLabel{} })
 }
 
 var _ Container = (*StdLabel)(nil)
