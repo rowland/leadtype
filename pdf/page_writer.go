@@ -462,6 +462,7 @@ func (pw *PageWriter) scopedTransform(a, b, c, d, x, y float64, fn func()) error
 	if len(pw.pathStates) > 0 {
 		return errTransformInsideManualPath
 	}
+	savedLast := pw.last
 	if pw.inText {
 		pw.endText()
 	} else if pw.line != nil {
@@ -490,6 +491,7 @@ func (pw *PageWriter) scopedTransform(a, b, c, d, x, y float64, fn func()) error
 		pw.endGraph()
 	}
 	pw.gw.restoreGraphicsState()
+	pw.last = savedLast
 	return nil
 }
 
@@ -1506,8 +1508,17 @@ func (pw *PageWriter) startText() {
 		pw.endGraph()
 	}
 	pw.last.loc = Location{0, 0}
+	pw.resetTextStateCache()
 	pw.tw.open()
 	pw.inText = true
+}
+
+func (pw *PageWriter) resetTextStateCache() {
+	pw.last.fontKey = ""
+	pw.last.fontSize = 0
+	pw.last.charSpacing = 0
+	pw.last.wordSpacing = 0
+	pw.last.vTextAlign = ""
 }
 
 func (pw *PageWriter) Strikeout() bool {

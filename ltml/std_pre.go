@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -158,12 +157,9 @@ func (p *StdPre) lineHeight(w Writer) float64 {
 }
 
 func (p *StdPre) richTextForLine(line string, w Writer) (*rich_text.RichText, error) {
-	p.Font().Apply(w)
-	rt, err := rich_text.New(line, w.Fonts(), w.FontSize(), options.Options{
-		"color":     w.FontColor(),
-		"strikeout": w.Strikeout(),
-		"underline": w.Underline(),
-	})
+	font := p.Font()
+	font.Apply(w)
+	rt, err := rich_text.New(line, w.Fonts(), w.FontSize(), font.RichTextOptions())
 	if err != nil {
 		debugf("StdPre.richTextForLine: %v", err)
 		return nil, err

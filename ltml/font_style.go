@@ -230,6 +230,14 @@ func (fs *FontStyle) String() string {
 		fs.id, strings.Join(names, ","), fs.size, fs.color, fs.strikeout, fs.style, fs.underline, fs.weight, fs.lineHeight)
 }
 
+func (fs *FontStyle) RichTextOptions() options.Options {
+	return options.Options{
+		"color":     fs.color,
+		"strikeout": fs.strikeout,
+		"underline": fs.underline,
+	}
+}
+
 func FontStyleFor(id string, scope HasScope) *FontStyle {
 	if style, ok := scope.StyleFor(id); ok {
 		fs, _ := style.(*FontStyle)

@@ -27,8 +27,12 @@ func defaultTestFonts(t testing.TB) []*font.Font {
 
 type labelTestWriter struct {
 	fonts         []*font.Font
+	fontColor     colors.Color
+	fillColor     colors.Color
 	fontSize      float64
 	lineSpacing   float64
+	strikeout     bool
+	underline     bool
 	moves         [][2]float64
 	printed       []*rich_text.RichText
 	printedPages  []int
@@ -47,7 +51,7 @@ type rotationCall struct {
 	y     float64
 }
 
-func (w *labelTestWriter) FontColor() colors.Color { return 0 }
+func (w *labelTestWriter) FontColor() colors.Color { return w.fontColor }
 func (w *labelTestWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }
@@ -127,21 +131,43 @@ func (w *labelTestWriter) AddFont(family string, opts options.Options) ([]*font.
 }
 func (w *labelTestWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	w.fontSize = size
+	if color, ok := opts["color"].(colors.Color); ok {
+		w.fontColor = color
+	}
 	return w.Fonts(), nil
 }
-func (w *labelTestWriter) SetFillColor(value interface{}) (prev colors.Color)  { return 0 }
+func (w *labelTestWriter) SetFillColor(value interface{}) (prev colors.Color) {
+	prev = w.fillColor
+	switch value := value.(type) {
+	case colors.Color:
+		w.fillColor = value
+	case int:
+		w.fillColor = colors.Color(value)
+	case int32:
+		w.fillColor = colors.Color(value)
+	}
+	return prev
+}
 func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) { return 0 }
 func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
 func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return w.lineSpacing }
 func (w *labelTestWriter) SetLineWidth(width float64)                          {}
-func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool)             { return false }
-func (w *labelTestWriter) SetUnderline(underline bool) (prev bool)             { return false }
+func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool) {
+	prev = w.strikeout
+	w.strikeout = strikeout
+	return prev
+}
+func (w *labelTestWriter) SetUnderline(underline bool) (prev bool) {
+	prev = w.underline
+	w.underline = underline
+	return prev
+}
 func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
 func (w *labelTestWriter) Stroke() error   { return nil }
-func (w *labelTestWriter) Strikeout() bool { return false }
-func (w *labelTestWriter) Underline() bool { return false }
+func (w *labelTestWriter) Strikeout() bool { return w.strikeout }
+func (w *labelTestWriter) Underline() bool { return w.underline }
 
 func TestStdLabel_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 	l := &StdLabel{}
@@ -191,6 +217,108 @@ func TestStdLabel_DrawContent_PrintsRichText(t *testing.T) {
 	}
 	if got := w.printed[0].String(); got != "Hello" {
 		t.Fatalf("printed text = %q, want %q", got, "Hello")
+	}
+	if len(w.rotations) != 0 {
+		t.Fatalf("rotation count = %d, want 0", len(w.rotations))
+	}
+}
+
+func TestStdLabel_DrawContent_AngleRotatesAroundLeftAnchor(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.angle = 45
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	rt := l.fittedRichText(w)
+
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.rotations) != 1 {
+		t.Fatalf("rotation count = %d, want 1", len(w.rotations))
+	}
+	call := w.rotations[0]
+	if call.angle != 45 {
+		t.Fatalf("rotation angle = %v, want 45", call.angle)
+	}
+	if math.Abs(call.x-ContentLeft(l)) > 0.001 {
+		t.Fatalf("rotation x = %v, want %v", call.x, ContentLeft(l))
+	}
+	if math.Abs(call.y-(ContentTop(l)+rt.Ascent())) > 0.001 {
+		t.Fatalf("rotation y = %v, want %v", call.y, ContentTop(l)+rt.Ascent())
+	}
+}
+
+func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
+	cases := []struct {
+		name      string
+		align     HAlign
+		wantAnchor func(*StdLabel, *rich_text.RichText) (float64, float64)
+		wantStart  func(*StdLabel, *rich_text.RichText) (float64, float64)
+	}{
+		{
+			name:  "center",
+			align: HAlignCenter,
+			wantAnchor: func(l *StdLabel, rt *rich_text.RichText) (float64, float64) {
+				return (ContentLeft(l) + ContentRight(l)) / 2, ContentTop(l) + rt.Ascent()
+			},
+			wantStart: func(l *StdLabel, rt *rich_text.RichText) (float64, float64) {
+				return ((ContentLeft(l)+ContentRight(l))/2 - (rt.Width() / 2)), ContentTop(l) + rt.Ascent()
+			},
+		},
+		{
+			name:  "right",
+			align: HAlignRight,
+			wantAnchor: func(l *StdLabel, rt *rich_text.RichText) (float64, float64) {
+				return ContentRight(l), ContentTop(l) + rt.Ascent()
+			},
+			wantStart: func(l *StdLabel, rt *rich_text.RichText) (float64, float64) {
+				return ContentRight(l) - rt.Width(), ContentTop(l) + rt.Ascent()
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			l := &StdLabel{}
+			l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+			l.angle = 30
+			l.textAlign = tc.align
+			l.SetLeft(10)
+			l.SetTop(20)
+			l.SetWidth(100)
+			l.AddText("Hello")
+
+			w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+			rt := l.fittedRichText(w)
+
+			if err := l.DrawContent(w); err != nil {
+				t.Fatal(err)
+			}
+			if len(w.moves) != 1 {
+				t.Fatalf("move count = %d, want 1", len(w.moves))
+			}
+			wantX, wantY := tc.wantStart(l, rt)
+			if math.Abs(w.moves[0][0]-wantX) > 0.001 {
+				t.Fatalf("move x = %v, want %v", w.moves[0][0], wantX)
+			}
+			if math.Abs(w.moves[0][1]-wantY) > 0.001 {
+				t.Fatalf("move y = %v, want %v", w.moves[0][1], wantY)
+			}
+			if len(w.rotations) != 1 {
+				t.Fatalf("rotation count = %d, want 1", len(w.rotations))
+			}
+			wantAnchorX, wantAnchorY := tc.wantAnchor(l, rt)
+			if math.Abs(w.rotations[0].x-wantAnchorX) > 0.001 {
+				t.Fatalf("rotation x = %v, want %v", w.rotations[0].x, wantAnchorX)
+			}
+			if math.Abs(w.rotations[0].y-wantAnchorY) > 0.001 {
+				t.Fatalf("rotation y = %v, want %v", w.rotations[0].y, wantAnchorY)
+			}
+		})
 	}
 }
 
@@ -302,6 +430,73 @@ func TestStdLabel_PreferredHeight_UsesShrunkTextHeight(t *testing.T) {
 	}
 }
 
+func TestStdLabel_DrawContent_AngleUsesFittedWidthForCenterAnchor(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.SetWidth(35)
+	l.shrinkToFit = true
+	l.angle = 30
+	l.textAlign = HAlignCenter
+	l.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	rt := l.fittedRichText(w)
+
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.moves) != 1 {
+		t.Fatalf("move count = %d, want 1", len(w.moves))
+	}
+	centerX := (ContentLeft(l) + ContentRight(l)) / 2
+	centerY := ContentTop(l) + rt.Ascent()
+	wantX := centerX - (rt.Width() / 2)
+	wantY := centerY
+	if math.Abs(w.moves[0][0]-wantX) > 0.001 {
+		t.Fatalf("move x = %v, want %v", w.moves[0][0], wantX)
+	}
+	if math.Abs(w.moves[0][1]-wantY) > 0.001 {
+		t.Fatalf("move y = %v, want %v", w.moves[0][1], wantY)
+	}
+	if len(w.rotations) != 1 {
+		t.Fatalf("rotation count = %d, want 1", len(w.rotations))
+	}
+	if math.Abs(w.rotations[0].x-centerX) > 0.001 {
+		t.Fatalf("rotation x = %v, want %v", w.rotations[0].x, centerX)
+	}
+	if math.Abs(w.rotations[0].y-centerY) > 0.001 {
+		t.Fatalf("rotation y = %v, want %v", w.rotations[0].y, centerY)
+	}
+}
+
+func TestStdLabel_DrawContent_AngleSupportsDynamicContent(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <label angle="45" text-align="right" width="80">Page <pageno /></label>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.ltmls[0].documentPageNo = 7
+
+	label := doc.ltmls[0].Page(0).children[0].(*StdLabel)
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	if err := label.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.rotations) != 1 {
+		t.Fatalf("rotation count = %d, want 1", len(w.rotations))
+	}
+	if len(w.printed) != 1 || w.printed[0].String() != "Page 7" {
+		t.Fatalf("printed = %q, want %q", printedText(w.printed), "Page 7")
+	}
+}
+
 func TestStdLabel_FittedRichText_DynamicContentUsesResolvedPageNumber(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>
@@ -324,6 +519,26 @@ func TestStdLabel_FittedRichText_DynamicContentUsesResolvedPageNumber(t *testing
 	got := label.fittedRichText(w)
 	if got.String() != "Page 9" {
 		t.Fatalf("fitted text = %q, want %q", got.String(), "Page 9")
+	}
+}
+
+func TestStdLabel_RichText_UsesFontStyleColorInsteadOfWriterState(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.AddText("Color check")
+
+	w := &labelTestWriter{
+		t:         t,
+		fonts:     defaultTestFonts(t),
+		fontColor: NamedColor("LemonChiffon"),
+		fillColor: NamedColor("LemonChiffon"),
+	}
+
+	rt := l.RichText(w)
+	for _, color := range leafColors(rt) {
+		if color != colors.Black {
+			t.Fatalf("leaf color = %v, want %v", color, colors.Black)
+		}
 	}
 }
 
@@ -373,6 +588,23 @@ func leafFontSizes(rt *rich_text.RichText) []float64 {
 		}
 	})
 	return sizes
+}
+
+func leafColors(rt *rich_text.RichText) []colors.Color {
+	var result []colors.Color
+	rt.VisitAll(func(p *rich_text.RichText) {
+		if p.IsLeaf() && p.Len() > 0 {
+			result = append(result, p.Color)
+		}
+	})
+	return result
+}
+
+func printedText(pieces []*rich_text.RichText) string {
+	if len(pieces) == 0 || pieces[0] == nil {
+		return ""
+	}
+	return pieces[0].String()
 }
 
 func assertAllLeafFontSizesBelow(t testing.TB, rt *rich_text.RichText, max float64) {

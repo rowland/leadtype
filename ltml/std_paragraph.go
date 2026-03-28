@@ -176,10 +176,9 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 		rt, err = rt.Add(
 			text,
 			w.Fonts(),
-			w.FontSize(), options.Options{
-				"color":     w.FontColor(),
-				"strikeout": w.Strikeout(),
-				"underline": w.Underline()})
+			w.FontSize(),
+			font.RichTextOptions(),
+		)
 		if err != nil {
 			debugf("StdParagraph.RichText: %v", err)
 		}

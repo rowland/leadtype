@@ -5,10 +5,10 @@ package ltml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
-	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -17,6 +17,8 @@ type StdLabel struct {
 	textPieces  []textPiece
 	richText    *rich_text.RichText
 	shrinkToFit bool
+	angle       float64
+	textAlign   HAlign
 }
 
 func (l *StdLabel) AddText(text string) {
@@ -85,8 +87,19 @@ func (l *StdLabel) DrawContent(w Writer) error {
 		return nil
 	}
 	l.Font().Apply(w)
-	w.MoveTo(ContentLeft(l), ContentTop(l)+rt.Ascent())
-	w.PrintRichText(rt)
+	anchorX, anchorY := l.textAnchor(rt)
+	startX := anchorX - l.textAnchorOffset(rt)
+	if l.angle == 0 {
+		w.MoveTo(startX, anchorY)
+		w.PrintRichText(rt)
+		return nil
+	}
+	if err := w.Rotate(l.angle, anchorX, anchorY, func() {
+		w.MoveTo(startX, anchorY)
+		w.PrintRichText(rt)
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -134,11 +147,7 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 			text,
 			w.Fonts(),
 			w.FontSize(),
-			options.Options{
-				"color":     w.FontColor(),
-				"strikeout": w.Strikeout(),
-				"underline": w.Underline(),
-			},
+			font.RichTextOptions(),
 		)
 		if err != nil {
 			debugf("StdLabel.RichText: %v", err)
@@ -154,6 +163,18 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
 	l.StdContainer.SetAttrs(attrs)
 	l.shrinkToFit = attrs["fit"] == "shrink"
+	if angle, ok := attrs["angle"]; ok {
+		l.angle, _ = strconv.ParseFloat(angle, 64)
+	}
+	l.textAlign = HAlignLeft
+	if textAlign, ok := attrs["text-align"]; ok {
+		switch textAlign {
+		case "center":
+			l.textAlign = HAlignCenter
+		case "right":
+			l.textAlign = HAlignRight
+		}
+	}
 }
 
 func (l *StdLabel) fittedRichText(w Writer) *rich_text.RichText {
@@ -179,6 +200,32 @@ func (l *StdLabel) hasDynamicText() bool {
 		}
 	}
 	return false
+}
+
+func (l *StdLabel) textAnchorX() float64 {
+	switch l.textAlign {
+	case HAlignCenter:
+		return (ContentLeft(l) + ContentRight(l)) / 2
+	case HAlignRight:
+		return ContentRight(l)
+	default:
+		return ContentLeft(l)
+	}
+}
+
+func (l *StdLabel) textAnchor(rt *rich_text.RichText) (x, y float64) {
+	return l.textAnchorX(), ContentTop(l) + rt.Ascent()
+}
+
+func (l *StdLabel) textAnchorOffset(rt *rich_text.RichText) float64 {
+	switch l.textAlign {
+	case HAlignCenter:
+		return rt.Width() / 2
+	case HAlignRight:
+		return rt.Width()
+	default:
+		return 0
+	}
 }
 
 func (l *StdLabel) String() string {

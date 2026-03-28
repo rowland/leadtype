@@ -1,6 +1,6 @@
 <ltml>
   <page units="in" layout="absolute" grid="0.25in">
-    <label left="0.75" top="0.6" font.size="20" font.weight="Bold">Label shrink-to-fit</label>
+    <label left="0.75" top="0.6" font.size="20" font.weight="Bold">Label parity features</label>
 
     <p left="0.75" top="1.05" width="6.3">
       Labels remain single-line. The left column uses <span font.weight="Bold">fit="shrink"</span>;
@@ -29,6 +29,45 @@
     </label>
     <label left="4.2" top="4.35" width="2.5" padding="6pt" border="thin" fill="AliceBlue" font.size="12">
       Short headings are fine.
+    </label>
+
+    <p left="0.75" top="5.35" width="6.4">
+      Label <span font.weight="Bold">angle</span> rotates only the text. Widget
+      <span font.weight="Bold">rotate</span> transforms the full box, including fill and border.
+    </p>
+
+    <label left="0.75" top="6.1" font.weight="Bold">label angle</label>
+    <label left="4.2" top="6.1" font.weight="Bold">widget rotate</label>
+
+    <label left="0.75" top="6.45" width="2.6" padding="6pt" border="thin" fill="LemonChiffon" font.size="14" text-align="center" angle="30">
+      Angle Text
+    </label>
+    <label left="4.2" top="6.45" width="2.6" padding="6pt" border="thin" fill="Lavender" font.size="14" text-align="center" rotate="30" origin_x="center" origin_y="middle">
+      Rotate Box
+    </label>
+
+    <label left="0.75" top="7.2" font.weight="Bold" font.color="black">alignment anchors</label>
+    <label left="0.75" top="7.5" font.weight="Bold" font.size="10" font.color="black">left anchor</label>
+    <label left="2.95" top="7.5" font.weight="Bold" font.size="10" font.color="black">center anchor</label>
+    <label left="5.15" top="7.5" font.weight="Bold" font.size="10" font.color="black">right anchor</label>
+
+    <label left="0.75" top="7.8" width="1.8" padding="6pt" border="thin" fill="HoneyDew" font.size="12" text-align="left" angle="30">
+      Left Anchor
+    </label>
+    <label left="2.95" top="7.8" width="1.8" padding="6pt" border="thin" fill="AliceBlue" font.size="12" text-align="center" angle="30">
+      Center Anchor
+    </label>
+    <label left="5.15" top="7.8" width="1.8" padding="6pt" border="thin" fill="MistyRose" font.size="12" text-align="right" angle="30">
+      Right Anchor
+    </label>
+
+    <label left="0.75" top="8.55" font.weight="Bold" font.color="black">text decorations</label>
+
+    <label left="0.75" top="8.9" width="2.6" padding="6pt" border="thin" fill="LemonChiffon" font.size="16" font.underline="true" text-align="center" angle="30">
+      Underlined Text
+    </label>
+    <label left="4.2" top="8.9" width="2.6" padding="6pt" border="thin" fill="LavenderBlush" font.size="16" font.strikeout="true" text-align="center" angle="30">
+      Strikeout Text
     </label>
   </page>
 </ltml>

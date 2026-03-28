@@ -226,6 +226,8 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | Attribute | Description |
 |-----------|-------------|
 | `font` / `font.*` | Same font attributes supported by `<p>`. |
+| `text-align` | Label text alignment: `left`, `center`, `right`. Affects the text anchor inside the label box. |
+| `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |
 | `width`, `height` | Optional explicit dimensions. |
 | `margin`, `padding` | Spacing around and inside the label. |
@@ -234,7 +236,8 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 
 The built-in `<br/>` alias expands to an empty `<label/>`, which behaves as a
 line break in stacked layouts. Labels still do not wrap; `fit="shrink"` scales
-the rendered text instead.
+the rendered text instead. Unlike the generic widget `rotate` attribute, label
+`angle` rotates only the text paint operation.
 
 ---
 

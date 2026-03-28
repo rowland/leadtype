@@ -290,8 +290,8 @@ func TestPageWriter_RotateFlushesQueuedRichTextInsideTransform(t *testing.T) {
 	dw.AddFontSource(afmfc)
 	pw := newPageWriter(dw, options.Options{"units": "in"})
 
-	if _, err := pw.AddFont("Helvetica", options.Options{}); err != nil {
-		t.Fatalf("AddFont returned error: %v", err)
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
 	}
 
 	rt, err := pw.richTextForString("rotate me")
@@ -317,6 +317,83 @@ func TestPageWriter_RotateFlushesQueuedRichTextInsideTransform(t *testing.T) {
 	}
 	if idxET > idxQ {
 		t.Fatalf("expected text block to end before graphics restore, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_RotateRestoresGraphicsStateCache(t *testing.T) {
+	dw := NewDocWriter()
+	afmfc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatalf("Default AFM fonts returned error: %v", err)
+	}
+	dw.AddFontSource(afmfc)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
+	}
+
+	pw.SetFillColor(colors.LemonChiffon)
+	pw.Rectangle(1, 1, 2, 0.5, false, true)
+
+	if err := pw.Rotate(30, 2, 2, func() {
+		pw.MoveTo(1.2, 1.4)
+		if err := pw.Print("inside"); err != nil {
+			t.Fatalf("Print(inside) returned error: %v", err)
+		}
+	}); err != nil {
+		t.Fatalf("Rotate returned error: %v", err)
+	}
+
+	pw.MoveTo(1, 3)
+	if err := pw.Print("after"); err != nil {
+		t.Fatalf("Print(after) returned error: %v", err)
+	}
+	pw.flushText()
+
+	got := pw.stream.String()
+	lastBT := strings.LastIndex(got, "BT\n")
+	if lastBT < 0 {
+		t.Fatalf("expected trailing text object, got:\n%s", got)
+	}
+	lastBlock := got[lastBT:]
+	if !strings.Contains(lastBlock, "0 0 0 rg\n") {
+		t.Fatalf("expected post-rotate text to reissue black fill color, got:\n%s", lastBlock)
+	}
+}
+
+func TestPageWriter_StartTextReissuesFontInsideFreshTextObject(t *testing.T) {
+	dw := NewDocWriter()
+	afmfc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatalf("Default AFM fonts returned error: %v", err)
+	}
+	dw.AddFontSource(afmfc)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
+	}
+
+	if err := pw.Print("before"); err != nil {
+		t.Fatalf("Print(before) returned error: %v", err)
+	}
+	pw.endText()
+
+	pw.MoveTo(1, 2)
+	if err := pw.Print("after"); err != nil {
+		t.Fatalf("Print(after) returned error: %v", err)
+	}
+	pw.flushText()
+
+	got := pw.stream.String()
+	blocks := strings.Split(got, "BT\n")
+	if len(blocks) < 3 {
+		t.Fatalf("expected two text objects, got:\n%s", got)
+	}
+	second := blocks[2]
+	if !strings.Contains(second, "/F0 12 Tf\n") {
+		t.Fatalf("expected second text object to reissue font selection, got:\n%s", second)
 	}
 }
 
