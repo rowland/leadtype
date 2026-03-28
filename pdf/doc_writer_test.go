@@ -83,7 +83,10 @@ func TestDocWriter_CompressPages(t *testing.T) {
 
 func TestDocWriter_fontKey(t *testing.T) {
 	skipIfNoTTFFonts(t)
-	fc := mustTTFFontSource()
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
 	dw := NewDocWriter()
 	dw.AddFontSource(fc)
 	dw.NewPage()
@@ -326,7 +329,10 @@ func TestDocWriter_SetFont_TrueType(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
-	fc := mustTTFFontSource()
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
 	dw.AddFontSource(fc)
 
 	dw.NewPage()
