@@ -31,6 +31,8 @@ type labelTestWriter struct {
 	moves         [][2]float64
 	printed       []*rich_text.RichText
 	printedPages  []int
+	plainPrinted  []string
+	plainPages    []int
 	rotations     []rotationCall
 	pageCount     int
 	rectPages     []int
@@ -78,6 +80,8 @@ func (w *labelTestWriter) Loc() (x, y float64)                        { return 0
 func (w *labelTestWriter) MoveTo(x, y float64)                        { w.moves = append(w.moves, [2]float64{x, y}) }
 func (w *labelTestWriter) NewPage()                                   { w.pageCount++ }
 func (w *labelTestWriter) Print(text string) error {
+	w.plainPrinted = append(w.plainPrinted, text)
+	w.plainPages = append(w.plainPages, w.pageCount)
 	return nil
 }
 func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {

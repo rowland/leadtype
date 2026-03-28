@@ -117,6 +117,7 @@ func TestSamples(t *testing.T) {
 		"test_024_vbox_overflow",
 		"test_025_flow_overflow",
 		"test_026_table_overflow",
+		"test_027_paragraph_split",
 		"test_030_encodings",
 	}
 

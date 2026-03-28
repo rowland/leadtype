@@ -6,6 +6,7 @@ package ltml
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -16,9 +17,16 @@ import (
 
 type StdParagraph struct {
 	StdContainer
-	textPieces []textPiece
-	richText   *rich_text.RichText
-	bullet     *BulletStyle
+	textPieces         []textPiece
+	richText           *rich_text.RichText
+	bullet             *BulletStyle
+	splitEnabled       bool
+	splitExplicit      bool
+	orphans            int
+	widows             int
+	splitLines         []*rich_text.RichText
+	suppressBullet     bool
+	continuationIndent float64
 }
 
 func (p *StdParagraph) AddText(text string) {
@@ -98,13 +106,17 @@ func (p *StdParagraph) bulletWidth() float64 {
 }
 
 func (p *StdParagraph) DrawContent(w Writer) error {
-	fmt.Println(p.RichText(w))
-	para := p.Lines(w, ContentWidth(p)-p.bulletWidth())
+	para := p.Lines(w, p.lineWidth())
 	if len(para) == 0 {
 		return nil
 	}
-	w.MoveTo(ContentLeft(p), ContentTop(p)+para[0].Ascent())
-	if b := p.Bullet(); b != nil {
+	indent := p.textIndent()
+	x := ContentLeft(p)
+	if p.suppressBullet {
+		x += indent
+	}
+	w.MoveTo(x, ContentTop(p)+para[0].Ascent())
+	if b := p.Bullet(); b != nil && !p.suppressBullet {
 		x, y := w.Loc()
 		b.Apply(w)
 		w.Print(b.Text())
@@ -112,12 +124,15 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 	}
 	w.PrintParagraph(para, options.Options{
 		"text-align": p.ParagraphStyle().textAlign.String(),
-		"width":      ContentWidth(p),
+		"width":      ContentWidth(p) - indent,
 	})
 	return nil
 }
 
 func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
+	if p.splitLines != nil {
+		return p.splitLines
+	}
 	rt := p.RichText(w)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
@@ -128,24 +143,7 @@ func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 	if p.height != 0 {
 		return p.height
 	}
-	var width float64
-	if p.Width() == 0 {
-		width = ContentWidth(p.container) - p.bulletWidth() - NonContentWidth(p)
-	} else {
-		width = ContentWidth(p) - p.bulletWidth()
-	}
-
-	para := p.Lines(w, width)
-
-	height := NonContentHeight(p)
-	for _, line := range para {
-		height += line.Leading() * w.LineSpacing()
-	}
-	if len(para) > 0 {
-		height -= para[len(para)-1].Height() * (w.LineSpacing() - 1)
-		height -= para[len(para)-1].LineGap()
-	}
-	return height
+	return p.heightForLines(p.Lines(w, p.lineWidth()), w)
 }
 
 func (p *StdParagraph) PreferredWidth(w Writer) float64 {
@@ -205,6 +203,9 @@ func (p *StdParagraph) hasDynamicText() bool {
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
+	p.splitEnabled = true
+	p.orphans = 2
+	p.widows = 2
 	if style, ok := attrs["style"]; ok {
 		p.paragraphStyle = ParagraphStyleFor(style, p.scope)
 	}
@@ -215,6 +216,105 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	if bullet, ok := attrs["bullet"]; ok {
 		p.bullet = BulletStyleFor(bullet, p.scope)
 	}
+	if split, ok := attrs["split"]; ok {
+		p.splitExplicit = true
+		p.splitEnabled = split != "false"
+	}
+	if orphans, ok := attrs["orphans"]; ok {
+		if value, err := strconv.Atoi(orphans); err == nil {
+			p.orphans = value
+		}
+	}
+	if widows, ok := attrs["widows"]; ok {
+		if value, err := strconv.Atoi(widows); err == nil {
+			p.widows = value
+		}
+	}
+}
+
+func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
+	if !p.splitEnabled {
+		return nil, nil
+	}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) < 2 {
+		return nil, nil
+	}
+	avail -= NonContentHeight(p)
+	if avail <= 0 {
+		return nil, nil
+	}
+	fit := 0
+	for i := 1; i <= len(lines); i++ {
+		if p.contentHeightForLines(lines[:i], w) <= avail {
+			fit = i
+			continue
+		}
+		break
+	}
+	if fit < p.orphanCount() || len(lines)-fit < p.widowCount() {
+		return nil, nil
+	}
+	head := p.cloneForSplit(lines[:fit], p.suppressBullet, p.continuationIndent)
+	tail := p.cloneForSplit(lines[fit:], true, p.textIndent())
+	return &SplitResult{Head: head, Tail: tail}, nil
+}
+
+func (p *StdParagraph) cloneForSplit(lines []*rich_text.RichText, suppressBullet bool, continuationIndent float64) *StdParagraph {
+	clone := *p
+	clone.splitLines = append([]*rich_text.RichText(nil), lines...)
+	clone.suppressBullet = suppressBullet
+	clone.continuationIndent = continuationIndent
+	clone.richText = nil
+	clone.printed = false
+	clone.invisible = false
+	clone.disabled = false
+	clone.path = ""
+	return &clone
+}
+
+func (p *StdParagraph) textIndent() float64 {
+	if p.suppressBullet {
+		return p.continuationIndent
+	}
+	return p.bulletWidth()
+}
+
+func (p *StdParagraph) lineWidth() float64 {
+	if p.Width() == 0 {
+		return ContentWidth(p.container) - p.textIndent() - NonContentWidth(p)
+	}
+	return ContentWidth(p) - p.textIndent()
+}
+
+func (p *StdParagraph) heightForLines(lines []*rich_text.RichText, w Writer) float64 {
+	return NonContentHeight(p) + p.contentHeightForLines(lines, w)
+}
+
+func (p *StdParagraph) contentHeightForLines(lines []*rich_text.RichText, w Writer) float64 {
+	height := 0.0
+	for _, line := range lines {
+		height += line.Leading() * w.LineSpacing()
+	}
+	if len(lines) > 0 {
+		height -= lines[len(lines)-1].Height() * (w.LineSpacing() - 1)
+		height -= lines[len(lines)-1].LineGap()
+	}
+	return height
+}
+
+func (p *StdParagraph) orphanCount() int {
+	if p.orphans < 1 {
+		return 1
+	}
+	return p.orphans
+}
+
+func (p *StdParagraph) widowCount() int {
+	if p.widows < 1 {
+		return 1
+	}
+	return p.widows
 }
 
 func (p *StdParagraph) String() string {

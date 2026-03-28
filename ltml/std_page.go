@@ -15,16 +15,25 @@ import (
 type StdPage struct {
 	StdContainer
 	Scope
-	pageStyle     *PageStyle
-	marginChanged bool
-	grid          bool
-	gridStep      float64
-	overflow      bool
-	flowPageIndex int
+	pageStyle      *PageStyle
+	marginChanged  bool
+	grid           bool
+	gridStep       float64
+	overflow       bool
+	flowPageIndex  int
+	flowItems      []*pageItem
+	activeChildren []Widget
+}
+
+type pageItem struct {
+	Source  Widget
+	Current Widget
+	Done    bool
 }
 
 func (p *StdPage) BeforePrint(w Writer) error {
 	p.flowPageIndex = 1
+	p.initFlowItems()
 	return p.preparePhysicalPage(w, true)
 }
 
@@ -213,6 +222,13 @@ func (p *StdPage) Width() float64 {
 	return p.PageStyle().Width()
 }
 
+func (p *StdPage) Widgets() []Widget {
+	if p.activeChildren != nil {
+		return p.activeChildren
+	}
+	return p.children
+}
+
 func (p *StdPage) drawGrid(w Writer) error {
 	step := p.gridStep
 	if step <= 0 {
@@ -245,17 +261,30 @@ var errNoProgressPage = errors.New("page overflow retry would print no display=o
 
 func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 	printedOnce := 0
-	children := slices.Clone(p.children)
+	children := slices.Clone(p.Widgets())
 	slices.SortStableFunc(children, func(a, b Widget) int {
 		return a.ZIndex() - b.ZIndex()
 	})
 	for _, child := range children {
 		if !child.Visible() || child.Disabled() {
+			if item := p.pageItemForCurrent(child); item != nil && !item.Done {
+				progress, err := p.trySplitChild(item, child, w)
+				if err != nil {
+					return printedOnce, err
+				}
+				if progress {
+					printedOnce++
+				}
+			}
 			continue
 		}
 		wasPrinted := child.Printed()
 		if err := Print(child, w); err != nil {
 			return printedOnce, err
+		}
+		if item := p.pageItemForCurrent(child); item != nil {
+			item.Done = true
+			item.Current = nil
 		}
 		if child.Display() == DisplayOnce && !wasPrinted && child.Printed() {
 			printedOnce++
@@ -265,6 +294,14 @@ func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 }
 
 func (p *StdPage) hasPendingOnceChildren() bool {
+	if len(p.flowItems) > 0 {
+		for _, item := range p.flowItems {
+			if !item.Done && item.Current != nil {
+				return true
+			}
+		}
+		return false
+	}
 	for _, child := range p.children {
 		if child.Display() == DisplayOnce && !child.Printed() {
 			return true
@@ -302,11 +339,14 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 	}
 
 	if force {
+		p.rebuildActiveChildren()
 		w.NewPage()
 		LayoutContainer(p, w)
 	} else {
-		LayoutContainer(p, newLayoutProbeWriter(w))
-		if p.countVisibleOnceChildren() == 0 {
+		probe := newLayoutProbeWriter(w)
+		p.rebuildActiveChildren()
+		LayoutContainer(p, probe)
+		if p.countVisibleOnceChildren() == 0 && !p.hasSplittableOnceProgress(probe) {
 			if doc != nil {
 				doc.documentPageNo = savedDocPageNo
 				doc.physicalPageNo = savedPhysicalPageNo
@@ -314,6 +354,7 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 			}
 			return errNoProgressPage
 		}
+		p.rebuildActiveChildren()
 		w.NewPage()
 		LayoutContainer(p, w)
 	}
@@ -327,7 +368,7 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 
 func (p *StdPage) countVisibleOnceChildren() int {
 	count := 0
-	for _, child := range p.children {
+	for _, child := range p.Widgets() {
 		if child.Visible() && !child.Disabled() && child.Display() == DisplayOnce && !child.Printed() {
 			count++
 		}
@@ -387,6 +428,121 @@ func (p *StdPage) walkDisplayWidgets(root Container, fn func(Widget) bool) bool 
 		}
 	}
 	return true
+}
+
+func (p *StdPage) initFlowItems() {
+	p.flowItems = nil
+	p.activeChildren = nil
+	if !p.overflow {
+		return
+	}
+	for _, child := range p.children {
+		if child.Display() == DisplayOnce {
+			p.flowItems = append(p.flowItems, &pageItem{Source: child, Current: child})
+		}
+	}
+}
+
+func (p *StdPage) rebuildActiveChildren() {
+	if len(p.flowItems) == 0 {
+		p.activeChildren = nil
+		return
+	}
+	items := make(map[Widget]*pageItem, len(p.flowItems))
+	for _, item := range p.flowItems {
+		items[item.Source] = item
+	}
+	active := make([]Widget, 0, len(p.children))
+	for _, child := range p.children {
+		if child.Display() != DisplayOnce {
+			active = append(active, child)
+			continue
+		}
+		item := items[child]
+		if item == nil || item.Done || item.Current == nil {
+			continue
+		}
+		if wc, ok := item.Current.(WantsContainer); ok {
+			_ = wc.SetContainer(p)
+		}
+		active = append(active, item.Current)
+	}
+	p.activeChildren = active
+}
+
+func (p *StdPage) pageItemForCurrent(widget Widget) *pageItem {
+	for _, item := range p.flowItems {
+		if item.Current == widget {
+			return item
+		}
+	}
+	return nil
+}
+
+func (p *StdPage) availableHeightForChild(child Widget) float64 {
+	avail := ContentBottom(p) - child.Top()
+	if avail < 0 {
+		return 0
+	}
+	return avail
+}
+
+func (p *StdPage) hasSplittableOnceProgress(w Writer) bool {
+	for _, child := range p.Widgets() {
+		if child.Display() != DisplayOnce || child.Visible() || child.Disabled() {
+			continue
+		}
+		item := p.pageItemForCurrent(child)
+		if item == nil || item.Done {
+			continue
+		}
+		splittable, ok := child.(Splittable)
+		if !ok {
+			continue
+		}
+		result, err := splittable.SplitForHeight(p.availableHeightForChild(child), w)
+		if err == nil && result != nil && result.Head != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *StdPage) trySplitChild(item *pageItem, child Widget, w Writer) (bool, error) {
+	splittable, ok := child.(Splittable)
+	if !ok {
+		return false, nil
+	}
+	result, err := splittable.SplitForHeight(p.availableHeightForChild(child), w)
+	if err != nil || result == nil || result.Head == nil {
+		return false, err
+	}
+	p.copySplitGeometry(result.Head, child)
+	if result.Tail != nil {
+		if wc, ok := result.Tail.(WantsContainer); ok {
+			_ = wc.SetContainer(p)
+		}
+		item.Current = result.Tail
+	} else {
+		item.Current = nil
+		item.Done = true
+	}
+	if err := Print(result.Head, w); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (p *StdPage) copySplitGeometry(dst, src Widget) {
+	dst.SetLeft(src.Left())
+	dst.SetTop(src.Top())
+	dst.SetWidth(src.Width())
+	if src.HeightIsSet() {
+		dst.SetHeight(src.Height())
+	}
+	dst.SetPosition(src.Position())
+	dst.SetVisible(true)
+	dst.SetDisabled(false)
 }
 
 func init() {

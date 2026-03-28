@@ -357,3 +357,46 @@ func TestSample_TableOverflow_DefersWholeRows(t *testing.T) {
 		t.Fatalf("expected only even table footer on page 2, got %q", page2Text)
 	}
 }
+
+func TestSample_ParagraphSplit_RepeatsHeaderAndSplitsBody(t *testing.T) {
+	doc, err := ParseFile(sampleFile("test_027_paragraph_split.ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 3 {
+		t.Fatalf("page count = %d, want 3", w.pageCount)
+	}
+	pageTexts := map[int][]string{}
+	for i, rt := range w.printed {
+		pageTexts[w.printedPages[i]] = append(pageTexts[w.printedPages[i]], rt.String())
+	}
+	page1Text := strings.Join(pageTexts[1], "\n")
+	page2Text := strings.Join(pageTexts[2], "\n")
+	page3Text := strings.Join(pageTexts[3], "\n")
+	if !strings.Contains(page1Text, "Paragraph split") || !strings.Contains(page2Text, "Paragraph split") || !strings.Contains(page3Text, "Paragraph split") {
+		t.Fatalf("expected repeating paragraph header on all pages, got page1=%q page2=%q page3=%q", page1Text, page2Text, page3Text)
+	}
+	if !strings.Contains(page1Text, "Odd paragraph footer") || strings.Contains(page1Text, "Even paragraph footer") {
+		t.Fatalf("expected only odd paragraph footer on page 1, got %q", page1Text)
+	}
+	if !strings.Contains(page2Text, "Even paragraph footer") || strings.Contains(page2Text, "Odd paragraph footer") {
+		t.Fatalf("expected only even paragraph footer on page 2, got %q", page2Text)
+	}
+	if !strings.Contains(page3Text, "Odd paragraph footer") || strings.Contains(page3Text, "Even paragraph footer") {
+		t.Fatalf("expected only odd paragraph footer on page 3, got %q", page3Text)
+	}
+	pagePlain := map[int][]string{}
+	for i, text := range w.plainPrinted {
+		pagePlain[w.plainPages[i]] = append(pagePlain[w.plainPages[i]], text)
+	}
+	if !strings.Contains(strings.Join(pagePlain[1], "\n"), "*") {
+		t.Fatalf("expected bullet on page 1, got %q", strings.Join(pagePlain[1], "\n"))
+	}
+	if strings.Contains(strings.Join(pagePlain[2], "\n"), "*") || strings.Contains(strings.Join(pagePlain[3], "\n"), "*") {
+		t.Fatalf("did not expect bullets on continuation pages, got page2=%q page3=%q", strings.Join(pagePlain[2], "\n"), strings.Join(pagePlain[3], "\n"))
+	}
+}
