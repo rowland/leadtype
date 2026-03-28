@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/rowland/leadtype/font"
@@ -16,6 +17,12 @@ import (
 )
 
 var update = flag.Bool("update", false, "regenerate golden files")
+
+var (
+	testTTFFontSourceOnce sync.Once
+	testTTFFontSource     *ttf_fonts.TtfFonts
+	testTTFFontSourceErr  error
+)
 
 // normaliseDate replaces the CreationDate value in a PDF byte slice with a
 // fixed placeholder so golden-file comparisons are not date-sensitive.
@@ -129,4 +136,14 @@ func skipIfNoTTFFonts(t *testing.T) {
 	if _, err := os.Stat("/Library/Fonts/Arial.ttf"); err != nil {
 		t.Skip("macOS TTF fonts not available")
 	}
+}
+
+func mustTTFFontSource() *ttf_fonts.TtfFonts {
+	testTTFFontSourceOnce.Do(func() {
+		testTTFFontSource, testTTFFontSourceErr = ttf_fonts.NewFromSystemFonts()
+	})
+	if testTTFFontSourceErr != nil {
+		panic(testTTFFontSourceErr)
+	}
+	return testTTFFontSource
 }

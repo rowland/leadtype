@@ -13,7 +13,6 @@ import (
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const (
@@ -350,10 +349,7 @@ func TestPageWriter_RotateInsideManualPath(t *testing.T) {
 
 func TestPageWriter_flushText(t *testing.T) {
 	skipIfNoTTFFonts(t)
-	fc, err := ttf_fonts.NewFromSystemFonts()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fc := mustTTFFontSource()
 
 	dw := NewDocWriter()
 	dw.AddFontSource(fc)
@@ -701,10 +697,7 @@ func TestPageWriter_FontStyle(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
-	ttfc, err := ttf_fonts.NewFromSystemFonts()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ttfc := mustTTFFontSource()
 	dw.AddFontSource(ttfc)
 
 	afmfc, err := afm_fonts.Default()
@@ -894,10 +887,7 @@ func TestPageWriter_Print(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	fc, err := ttf_fonts.NewFromSystemFonts()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fc := mustTTFFontSource()
 	dw.AddFontSource(fc)
 	pw.SetFont("Arial", 12, options.Options{})
 
@@ -913,10 +903,7 @@ func TestPageWriter_SetFont(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	dw := NewDocWriter()
 
-	fc, err := ttf_fonts.NewFromSystemFonts()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fc := mustTTFFontSource()
 	dw.AddFontSource(fc)
 
 	pw := dw.NewPage()
@@ -1009,10 +996,7 @@ func TestPageWriter_Write(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	fc, err := ttf_fonts.NewFromSystemFonts()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fc := mustTTFFontSource()
 	dw.AddFontSource(fc)
 	pw.SetFont("Arial", 12, options.Options{})
 

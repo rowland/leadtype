@@ -10,7 +10,6 @@ import (
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 // TestToUnicodeCMapData_CP1252 verifies the CMap stream for CP1252 contains
@@ -145,10 +144,7 @@ func TestSimpleFont_ToUnicodeEntry_Fixture(t *testing.T) {
 func TestSimpleFont_ToUnicodeEntry_SystemFont(t *testing.T) {
 	skipIfNoTTFFonts(t)
 
-	fc, err := ttf_fonts.NewFromSystemFonts()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fc := mustTTFFontSource()
 
 	dw := NewDocWriter()
 	dw.AddFontSource(fc)
