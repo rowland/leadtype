@@ -73,6 +73,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `style`       | Reference to a named `<page>` style. |
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`). Default: `vbox`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
+| `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
 | `font`        | Reference to a named `<font>` style. |
 | `fill`        | Reference to a named `<brush>` style for the background. |
 | `border`      | Reference to a named `<pen>` style for all borders. |
@@ -112,6 +113,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `origin_y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
 | `shift`            | Offset the widget after layout using `x,y` measurements. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
+| `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`. |
 | `colspan`, `rowspan` | Span multiple table cells (when inside a `table`). |
 
 ---
@@ -603,6 +605,15 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 - `z_index="N"` controls paint order among siblings in the same container.
   Lower values paint first, higher values paint later and appear on top.
   Equal `z_index` values preserve source order.
+
+### Page Flow Details
+
+- `display` defaults to `once`.
+- `overflow` is currently honored only on `<page>`.
+- Overflow retries only reconsider direct children of the page.
+- `align="top"` and `align="bottom"` in `vbox` behave like repeating header/footer slots when paired with a repeating `display` value.
+- `align="left"` and `align="right"` in `hbox` preserve source order, but `hbox` does not participate in overflow retries.
+- `display="even"` and `display="odd"` follow physical PDF page sequence, not `<pageno>` display values.
 
 ---
 

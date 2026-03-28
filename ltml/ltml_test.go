@@ -114,6 +114,9 @@ func TestSamples(t *testing.T) {
 		"test_021_compression",
 		"test_022_transforms",
 		"test_023_zindex",
+		"test_024_vbox_overflow",
+		"test_025_flow_overflow",
+		"test_026_table_overflow",
 		"test_030_encodings",
 	}
 

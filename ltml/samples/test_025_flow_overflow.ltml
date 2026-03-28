@@ -1,0 +1,14 @@
+<ltml>
+  <page units="in" margin="0.5" layout="flow" overflow="true" grid="0.25in">
+    <p display="always" width="100%" font.weight="Bold">Flow banner</p>
+    <p display="once" width="100%">Intro text appears only once.</p>
+
+    <rect width="3.4" height="2.6" fill="LightSkyBlue" border="thin" />
+    <rect width="3.4" height="2.6" fill="PaleGreen" border="thin" />
+    <rect width="3.4" height="2.6" fill="LightSalmon" border="thin" />
+    <rect width="3.4" height="2.6" fill="Khaki" border="thin" />
+    <rect width="3.4" height="2.6" fill="Plum" border="thin" />
+    <rect width="3.4" height="2.6" fill="LightCyan" border="thin" />
+    <rect width="3.4" height="2.6" fill="MistyRose" border="thin" />
+  </page>
+</ltml>

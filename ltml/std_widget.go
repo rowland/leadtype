@@ -29,6 +29,7 @@ type StdWidget struct {
 	shiftX    float64
 	shiftY    float64
 	zIndex    int
+	display   DisplayMode
 	printed   bool
 	invisible bool
 	disabled  bool
@@ -242,6 +243,9 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if zIndex, ok := attrs["z_index"]; ok {
 		widget.zIndex, _ = strconv.Atoi(strings.TrimSpace(zIndex))
 	}
+	if display, ok := attrs["display"]; ok {
+		widget.display = ParseDisplayMode(display)
+	}
 }
 
 func (widget *StdWidget) SetContainer(container Container) error {
@@ -378,6 +382,13 @@ func (widget *StdWidget) Visible() bool {
 
 func (widget *StdWidget) ZIndex() int {
 	return widget.zIndex
+}
+
+func (widget *StdWidget) Display() DisplayMode {
+	if widget.display == "" {
+		return DisplayOnce
+	}
+	return widget.display
 }
 
 func (widget *StdWidget) resolveLeft(value float64) float64 {

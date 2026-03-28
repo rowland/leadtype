@@ -61,12 +61,55 @@ type Widget interface {
 	SetDisabled(value bool)
 	SetPrinted(value bool)
 	SetVisible(value bool)
+	Display() DisplayMode
 	ZIndex() int
 
 	ColSpan() int
 	RowSpan() int
 
 	Path() string
+}
+
+type DisplayMode string
+
+const (
+	DisplayOnce       DisplayMode = "once"
+	DisplayAlways     DisplayMode = "always"
+	DisplayFirst      DisplayMode = "first"
+	DisplaySucceeding DisplayMode = "succeeding"
+	DisplayEven       DisplayMode = "even"
+	DisplayOdd        DisplayMode = "odd"
+)
+
+func ParseDisplayMode(value string) DisplayMode {
+	switch DisplayMode(value) {
+	case DisplayAlways, DisplayFirst, DisplaySucceeding, DisplayEven, DisplayOdd:
+		return DisplayMode(value)
+	default:
+		return DisplayOnce
+	}
+}
+
+func widgetDisplayForRender(widget Widget, parentRepeats bool, flowPageIndex int, physicalPageNo int) bool {
+	if !parentRepeats {
+		return !widget.Printed()
+	}
+	switch widget.Display() {
+	case DisplayAlways:
+		return true
+	case DisplayFirst:
+		return flowPageIndex == 1
+	case DisplaySucceeding:
+		return flowPageIndex > 1
+	case DisplayEven:
+		return physicalPageNo > 0 && physicalPageNo%2 == 0
+	case DisplayOdd:
+		return physicalPageNo%2 == 1
+	case DisplayOnce:
+		fallthrough
+	default:
+		return !widget.Printed()
+	}
 }
 
 func ContentHeight(widget Widget) float64 {

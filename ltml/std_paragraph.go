@@ -75,6 +75,11 @@ func (p *StdParagraph) BeforePrint(w Writer) error {
 	return nil
 }
 
+func (p *StdParagraph) LayoutWidget(Writer) {
+	// Paragraphs are text leaf widgets. Inline descendants contribute rich text
+	// rather than participating in container child layout.
+}
+
 func (p *StdParagraph) Bullet() *BulletStyle {
 	if p.bullet != nil {
 		return p.bullet

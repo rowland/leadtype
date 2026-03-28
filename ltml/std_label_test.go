@@ -25,13 +25,17 @@ func defaultTestFonts(t testing.TB) []*font.Font {
 }
 
 type labelTestWriter struct {
-	fonts       []*font.Font
-	fontSize    float64
-	lineSpacing float64
-	moves       [][2]float64
-	printed     []*rich_text.RichText
-	rotations   []rotationCall
-	t           testing.TB
+	fonts         []*font.Font
+	fontSize      float64
+	lineSpacing   float64
+	moves         [][2]float64
+	printed       []*rich_text.RichText
+	printedPages  []int
+	rotations     []rotationCall
+	pageCount     int
+	rectPages     []int
+	fillRectPages []int
+	t             testing.TB
 }
 
 type rotationCall struct {
@@ -57,7 +61,7 @@ func (w *labelTestWriter) Fonts() []*font.Font {
 	}
 	return w.fonts
 }
-func (w *labelTestWriter) FontSize() float64       { return w.fontSize }
+func (w *labelTestWriter) FontSize() float64 { return w.fontSize }
 func (w *labelTestWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	return 0, 0, nil
 }
@@ -68,20 +72,26 @@ func (w *labelTestWriter) LineSpacing() float64 {
 	return w.lineSpacing
 }
 func (w *labelTestWriter) SetLineCapStyle(style string) (prev string) { return "" }
-func (w *labelTestWriter) Line(x, y, angle, length float64) {}
-func (w *labelTestWriter) LineTo(x, y float64) {}
-func (w *labelTestWriter) Loc() (x, y float64) { return 0, 0 }
-func (w *labelTestWriter) MoveTo(x, y float64) { w.moves = append(w.moves, [2]float64{x, y}) }
-func (w *labelTestWriter) NewPage()            {}
+func (w *labelTestWriter) Line(x, y, angle, length float64)           {}
+func (w *labelTestWriter) LineTo(x, y float64)                        {}
+func (w *labelTestWriter) Loc() (x, y float64)                        { return 0, 0 }
+func (w *labelTestWriter) MoveTo(x, y float64)                        { w.moves = append(w.moves, [2]float64{x, y}) }
+func (w *labelTestWriter) NewPage()                                   { w.pageCount++ }
 func (w *labelTestWriter) Print(text string) error {
 	return nil
 }
 func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return 0, 0, nil
 }
-func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
+func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {
+	for _, line := range para {
+		w.printed = append(w.printed, line)
+		w.printedPages = append(w.printedPages, w.pageCount)
+	}
+}
 func (w *labelTestWriter) PrintRichText(text *rich_text.RichText) {
 	w.printed = append(w.printed, text)
+	w.printedPages = append(w.printedPages, w.pageCount)
 }
 func (w *labelTestWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
@@ -95,6 +105,10 @@ func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reve
 }
 func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
+	w.rectPages = append(w.rectPages, w.pageCount)
+	if fill {
+		w.fillRectPages = append(w.fillRectPages, w.pageCount)
+	}
 }
 func (w *labelTestWriter) Rotate(angle, x, y float64, fn func()) error {
 	w.rotations = append(w.rotations, rotationCall{angle: angle, x: x, y: y})
@@ -114,15 +128,15 @@ func (w *labelTestWriter) SetFillColor(value interface{}) (prev colors.Color)  {
 func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) { return 0 }
 func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
 func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return w.lineSpacing }
-func (w *labelTestWriter) SetLineWidth(width float64)                           {}
+func (w *labelTestWriter) SetLineWidth(width float64)                          {}
 func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool)             { return false }
 func (w *labelTestWriter) SetUnderline(underline bool) (prev bool)             { return false }
 func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
-func (w *labelTestWriter) Stroke() error                                        { return nil }
-func (w *labelTestWriter) Strikeout() bool                                      { return false }
-func (w *labelTestWriter) Underline() bool                                      { return false }
+func (w *labelTestWriter) Stroke() error   { return nil }
+func (w *labelTestWriter) Strikeout() bool { return false }
+func (w *labelTestWriter) Underline() bool { return false }
 
 func TestStdLabel_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 	l := &StdLabel{}

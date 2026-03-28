@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 
 	"github.com/rowland/leadtype/colors"
 )
@@ -18,29 +19,13 @@ type StdPage struct {
 	marginChanged bool
 	grid          bool
 	gridStep      float64
+	overflow      bool
+	flowPageIndex int
 }
 
 func (p *StdPage) BeforePrint(w Writer) error {
-	// fmt.Printf("Printing %s\n", p)
-	// fmt.Print(&p.Scope)
-	if doc := p.document(); doc != nil {
-		if start, ok := p.firstPageNoStart(); ok {
-			doc.SetPendingStart(start)
-		}
-		if doc.pendingStart != nil {
-			doc.SetCurrentPageStart(*doc.pendingStart)
-			doc.pendingStart = nil
-		}
-		doc.documentPageNo++
-	}
-	w.NewPage()
-	LayoutContainer(p, w)
-	if doc := p.document(); doc != nil {
-		if reset, ok := p.firstPageNoReset(); ok {
-			doc.SetPendingStart(reset)
-		}
-	}
-	return nil
+	p.flowPageIndex = 1
+	return p.preparePhysicalPage(w, true)
 }
 
 func (p *StdPage) Bottom() float64 {
@@ -134,6 +119,36 @@ func (p *StdPage) PaintBackground(w Writer) error {
 	return p.drawGrid(w)
 }
 
+func (p *StdPage) DrawContent(w Writer) error {
+	printedOnce, err := p.drawVisibleChildren(w)
+	if err != nil {
+		return err
+	}
+	if !p.overflow || !p.supportsOverflowRetry() {
+		return nil
+	}
+	for printedOnce > 0 && p.hasPendingOnceChildren() {
+		p.flowPageIndex++
+		if err := p.preparePhysicalPage(w, false); err != nil {
+			if errors.Is(err, errNoProgressPage) {
+				return nil
+			}
+			return err
+		}
+		if err := p.PaintBackground(w); err != nil {
+			return err
+		}
+		if err := p.DrawBorder(w); err != nil {
+			return err
+		}
+		printedOnce, err = p.drawVisibleChildren(w)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (p *StdPage) Right() float64 {
 	return p.Width()
 }
@@ -160,6 +175,9 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 			p.grid = true
 			p.gridStep = ParseMeasurement(grid, p.Units())
 		}
+	}
+	if overflow, ok := attrs["overflow"]; ok {
+		p.overflow = overflow == "true"
 	}
 	for k, _ := range attrs {
 		if reMargin.MatchString(k) {
@@ -223,10 +241,104 @@ func (p *StdPage) drawGrid(w Writer) error {
 	})
 }
 
-func (p *StdPage) firstPageNoReset() (int, bool) {
+var errNoProgressPage = errors.New("page overflow retry would print no display=once direct children")
+
+func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
+	printedOnce := 0
+	children := slices.Clone(p.children)
+	slices.SortStableFunc(children, func(a, b Widget) int {
+		return a.ZIndex() - b.ZIndex()
+	})
+	for _, child := range children {
+		if !child.Visible() || child.Disabled() {
+			continue
+		}
+		wasPrinted := child.Printed()
+		if err := Print(child, w); err != nil {
+			return printedOnce, err
+		}
+		if child.Display() == DisplayOnce && !wasPrinted && child.Printed() {
+			printedOnce++
+		}
+	}
+	return printedOnce, nil
+}
+
+func (p *StdPage) hasPendingOnceChildren() bool {
+	for _, child := range p.children {
+		if child.Display() == DisplayOnce && !child.Printed() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *StdPage) supportsOverflowRetry() bool {
+	switch p.LayoutStyle().manager {
+	case "flow", "table", "vbox":
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
+	doc := p.document()
+	var savedDocPageNo, savedPhysicalPageNo int
+	var savedPendingStart *int
+	if doc != nil {
+		savedDocPageNo = doc.documentPageNo
+		savedPhysicalPageNo = doc.physicalPageNo
+		savedPendingStart = doc.pendingStart
+		if start, ok := p.firstPageNoStartForRender(); ok {
+			doc.SetPendingStart(start)
+		}
+		if doc.pendingStart != nil {
+			doc.SetCurrentPageStart(*doc.pendingStart)
+			doc.pendingStart = nil
+		}
+		doc.documentPageNo++
+		doc.physicalPageNo++
+	}
+
+	if force {
+		w.NewPage()
+		LayoutContainer(p, w)
+	} else {
+		LayoutContainer(p, newLayoutProbeWriter(w))
+		if p.countVisibleOnceChildren() == 0 {
+			if doc != nil {
+				doc.documentPageNo = savedDocPageNo
+				doc.physicalPageNo = savedPhysicalPageNo
+				doc.pendingStart = savedPendingStart
+			}
+			return errNoProgressPage
+		}
+		w.NewPage()
+		LayoutContainer(p, w)
+	}
+	if doc != nil {
+		if reset, ok := p.firstPageNoResetForRender(); ok {
+			doc.SetPendingStart(reset)
+		}
+	}
+	return nil
+}
+
+func (p *StdPage) countVisibleOnceChildren() int {
+	count := 0
+	for _, child := range p.children {
+		if child.Visible() && !child.Disabled() && child.Display() == DisplayOnce && !child.Printed() {
+			count++
+		}
+	}
+	return count
+}
+
+func (p *StdPage) firstPageNoResetForRender() (int, bool) {
 	var value int
 	var found bool
-	walkWidgets(p, func(widget Widget) bool {
+	p.walkDisplayWidgets(p, func(widget Widget) bool {
 		if pageNo, ok := widget.(*StdPageNo); ok && pageNo.hasReset() {
 			value = pageNo.reset
 			found = true
@@ -237,10 +349,10 @@ func (p *StdPage) firstPageNoReset() (int, bool) {
 	return value, found
 }
 
-func (p *StdPage) firstPageNoStart() (int, bool) {
+func (p *StdPage) firstPageNoStartForRender() (int, bool) {
 	var value int
 	var found bool
-	walkWidgets(p, func(widget Widget) bool {
+	p.walkDisplayWidgets(p, func(widget Widget) bool {
 		if pageNo, ok := widget.(*StdPageNo); ok && pageNo.hasStart() {
 			value = pageNo.start
 			found = true
@@ -249,6 +361,32 @@ func (p *StdPage) firstPageNoStart() (int, bool) {
 		return true
 	})
 	return value, found
+}
+
+func (p *StdPage) walkDisplayWidgets(root Container, fn func(Widget) bool) bool {
+	if !fn(root) {
+		return false
+	}
+	physicalPageNo := 0
+	if doc := p.document(); doc != nil {
+		physicalPageNo = doc.CurrentPhysicalPageNo()
+	}
+	for _, child := range root.Widgets() {
+		parentRepeats := root == p || root.Display() != DisplayOnce
+		if !widgetDisplayForRender(child, parentRepeats, p.flowPageIndex, physicalPageNo) {
+			continue
+		}
+		if container, ok := child.(Container); ok {
+			if !p.walkDisplayWidgets(container, fn) {
+				return false
+			}
+			continue
+		}
+		if !fn(child) {
+			return false
+		}
+	}
+	return true
 }
 
 func init() {

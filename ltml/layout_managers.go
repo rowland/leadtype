@@ -42,9 +42,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 	bottom := ContentTop(container) + MaxContentHeight(container)
 	widgets, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {
-		if widget.Printed() {
-			widget.SetVisible(false)
-		}
+		widget.SetVisible(false)
 	}
 	for _, widget := range widgets {
 		widget.SetVisible(!containerFull)
@@ -73,9 +71,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 		widget.LayoutWidget(writer)
 		if widget.Bottom() > bottom {
 			containerFull = true
-			//     # widget.visible = (cy == 0)
-			//     widget.visible = container.root_page.positioned_widgets[:static] == 0
-			//     # $stderr.puts "+++flow+++ #{container.root_page.positioned_widgets[:static]}, visible: #{widget.visible}"
+			widget.SetVisible(false)
 			continue
 		}
 		//   container.root_page.positioned_widgets[widget.position] += 1
@@ -95,9 +91,7 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 
 	static, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {
-		if widget.Printed() {
-			widget.SetVisible(false)
-		}
+		widget.SetVisible(false)
 	}
 
 	var lpanels, rpanels, unaligned []Widget
@@ -523,7 +517,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 			containerFull = true
 			for c := 0; c < grid.Cols(); c++ {
 				if widget := grid.Cell(c, r); widget != nil {
-					widget.SetVisible(r == 0)
+					widget.SetVisible(false)
 				}
 			}
 			// container.more(true) if container.overflow and (r > 0)
@@ -537,9 +531,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 	}
 	static, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {
-		if widget.Printed() {
-			widget.SetVisible(false)
-		}
+		widget.SetVisible(false)
 	}
 	for _, widget := range static {
 		widget.LayoutWidget(writer)
@@ -552,9 +544,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	containerFull := false
 	static, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {
-		if widget.Printed() {
-			widget.SetVisible(false)
-		}
+		widget.SetVisible(false)
 	}
 	var headers, footers, unaligned []Widget
 	for _, widget := range static {
@@ -604,16 +594,15 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 
 	if len(footers) > 0 {
-		if !container.HeightIsSet() {
-			container.SetHeightPct(100)
-		}
+		footerBottom := bottom
 		for i := len(footers) - 1; i >= 0; i-- {
 			widget := footers[i]
-			widget.SetBottom(bottom)
-			widget.LayoutWidget(writer)
 			if !widget.HeightIsSet() {
 				widget.SetHeight(widget.PreferredHeight(writer))
 			}
+			widget.SetBottom(footerBottom)
+			widget.LayoutWidget(writer)
+			footerBottom = widget.Top() - style.VPadding()
 			widget.SetVisible(widget.Top() >= top)
 		}
 	}
@@ -636,20 +625,50 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 		if top > bottom {
 			containerFull = true
-			widget.SetVisible(widgetsVisible == 0)
-			// widget.visible = widget.leaves > 0 and container.root_page.positioned_widgets[:static] == 0
+			widget.SetVisible(false)
 		}
 		if widget.Visible() {
 			widgetsVisible += 1
 		}
 		top += style.VPadding()
 	}
+	if !container.HeightIsSet() {
+		contentHeight := dy
+		if len(headers) > 0 {
+			contentHeight = math.Max(contentHeight, top-ContentTop(container)-style.VPadding())
+		}
+		if len(footers) > 0 {
+			footerTop := bottom
+			for _, widget := range footers {
+				if widget.Visible() {
+					footerTop = math.Min(footerTop, widget.Top())
+				}
+			}
+			if footerTop < bottom {
+				contentHeight = math.Max(contentHeight, footerTop-ContentTop(container))
+			}
+		}
+		container.SetHeight(math.Max(contentHeight, 0) + NonContentHeight(container))
+	}
 	layoutPositionedChildren(container, writer)
 }
 
 func printableWidgets(c Container, p Position) (widgets, remaining []Widget) {
+	root := rootPageForContainer(c)
+	physicalPageNo := 0
+	if root != nil {
+		if doc := root.document(); doc != nil {
+			physicalPageNo = doc.CurrentPhysicalPageNo()
+		}
+	}
+	parentRepeats := c.Display() != DisplayOnce
+	flowPageIndex := 1
+	if root != nil {
+		parentRepeats = c == root || c.Display() != DisplayOnce
+		flowPageIndex = root.flowPageIndex
+	}
 	for _, w := range c.Widgets() {
-		if w.Position() == p {
+		if w.Position() == p && widgetDisplayForRender(w, parentRepeats, flowPageIndex, physicalPageNo) {
 			widgets = append(widgets, w)
 		} else {
 			remaining = append(remaining, w)

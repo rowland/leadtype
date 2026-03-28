@@ -1,0 +1,17 @@
+<ltml>
+  <page units="in" margin="0.5" layout="table" order="rows" cols="2" overflow="true" grid="0.25in">
+    <p colspan="2" display="always" border="dashed" padding="4pt" font.weight="Bold">Repeating table header</p>
+
+    <rect height="3.4" fill="LightSkyBlue" border="thin" />
+    <rect height="3.4" fill="PaleGreen" border="thin" />
+    <rect height="3.4" fill="LightSalmon" border="thin" />
+    <rect height="3.4" fill="Khaki" border="thin" />
+
+    <p colspan="2" display="odd" border="dotted" padding="4pt">Odd page table footer</p>
+
+    <rect height="3.4" fill="Plum" border="thin" />
+    <rect height="3.4" fill="LightCyan" border="thin" />
+
+    <p colspan="2" display="even" border="dotted" padding="4pt">Even page table footer</p>
+  </page>
+</ltml>

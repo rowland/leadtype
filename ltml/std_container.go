@@ -36,6 +36,9 @@ func (c *StdContainer) DrawContent(w Writer) error {
 		return a.ZIndex() - b.ZIndex()
 	})
 	for _, child := range children {
+		if !child.Visible() || child.Disabled() {
+			continue
+		}
 		if err := Print(child, w); err != nil {
 			return err
 		}
@@ -52,6 +55,19 @@ func (c *StdContainer) LayoutStyle() *LayoutStyle {
 
 func (c *StdContainer) LayoutWidget(w Writer) {
 	LayoutContainer(c, w)
+}
+
+func (c *StdContainer) PreferredHeight(w Writer) float64 {
+	if c.height != 0 {
+		return c.height
+	}
+	savedHeight, savedHeightPct, savedHeightRel, savedHeightSet :=
+		c.height, c.heightPct, c.heightRel, c.heightSet
+	LayoutContainer(c, newLayoutProbeWriter(w))
+	height := c.Height()
+	c.height, c.heightPct, c.heightRel, c.heightSet =
+		savedHeight, savedHeightPct, savedHeightRel, savedHeightSet
+	return height
 }
 
 func (c *StdContainer) Order() TableOrder {

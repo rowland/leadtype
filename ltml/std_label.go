@@ -74,6 +74,11 @@ func normalizeLabelXMLText(text string) string {
 	return b.String()
 }
 
+func (l *StdLabel) LayoutWidget(Writer) {
+	// Labels are leaf widgets even though they embed StdContainer to collect
+	// inline children like <span> and <pageno>.
+}
+
 func (l *StdLabel) DrawContent(w Writer) error {
 	rt := l.RichText(w)
 	if rt.Len() == 0 {

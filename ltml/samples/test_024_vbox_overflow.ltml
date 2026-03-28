@@ -1,0 +1,17 @@
+<ltml>
+  <page units="in" margin="0.5" layout="vbox" overflow="true" grid="0.25in">
+    <div display="always" align="top" border="dashed" padding="6pt">
+      <label display="always" font.weight="Bold">Repeating header</label>
+      <label display="once">This boilerplate appears only on the first page.</label>
+    </div>
+
+    <rect height="3.2" fill="LightSkyBlue" border="thin" />
+    <rect height="3.2" fill="PaleGreen" border="thin" />
+    <rect height="3.2" fill="LightSalmon" border="thin" />
+
+    <div display="always" align="bottom" border="dotted" padding="4pt">
+      <label display="odd">Odd page footer</label>
+      <label display="even">Even page footer</label>
+    </div>
+  </page>
+</ltml>

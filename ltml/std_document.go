@@ -11,8 +11,9 @@ import (
 
 type StdDocument struct {
 	StdPage
-	documentPageNo int
-	pendingStart   *int
+	documentPageNo        int
+	physicalPageNo        int
+	pendingStart          *int
 	compressPages         bool
 	compressToUnicode     bool
 	compressEmbeddedFonts bool
@@ -54,6 +55,10 @@ func (d *StdDocument) CurrentPageNo() int {
 	return d.documentPageNo
 }
 
+func (d *StdDocument) CurrentPhysicalPageNo() int {
+	return d.physicalPageNo
+}
+
 func (d *StdDocument) SetCurrentPageStart(start int) {
 	d.documentPageNo = start - 1
 }
@@ -65,6 +70,7 @@ func (d *StdDocument) SetPendingStart(start int) {
 func (d *StdDocument) Print(w Writer) error {
 	d.applyWriterCompression(w)
 	d.documentPageNo = 0
+	d.physicalPageNo = 0
 	d.pendingStart = nil
 	return d.DrawContent(w)
 }
