@@ -54,16 +54,19 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 ### Display Modes And Overflow Flow ([#13](https://github.com/rowland/leadtype/issues/13))
 
-- [ ] Add page-flow behavior from legacy ERML
-  - [ ] `display="always"`
-  - [ ] `display="first"`
-  - [ ] `display="succeeding"`
-  - [ ] `display="even"`
-  - [ ] `display="odd"`
-- [ ] support repeated header/footer style content across pages
-- [ ] support overflow continuation for multi-page containers where intended
-- [ ] define interaction between overflow, repeated content, and page numbering
-- [ ] add tests for first-page-only, repeating, even/odd, and overflow cases
+- [x] Add page-flow behavior from legacy ERML
+  - [x] `display="always"`
+  - [x] `display="first"`
+  - [x] `display="succeeding"`
+  - [x] `display="even"`
+  - [x] `display="odd"`
+- [x] support repeated header/footer style content across pages
+- [x] support overflow continuation for direct page children where intended
+  - [x] whole-child deferral for `vbox`, `flow`, and `table`
+  - [x] paragraph splitting by wrapped line
+  - [x] table splitting by whole row
+- [x] define interaction between overflow, repeated content, and page numbering
+- [x] add tests for first-page-only, repeating, even/odd, and overflow cases
 
 ### Transforms And Placement Extras ([#14](https://github.com/rowland/leadtype/issues/14))
 

@@ -487,6 +487,12 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 
 	top := ContentTop(container)
 	bottom := top + MaxContentHeight(container)
+	externalSplit := false
+	if table, ok := container.(*StdContainer); ok && table.tableSplitEnabled() {
+		if _, ok := table.Container().(*StdPage); ok {
+			externalSplit = true
+		}
+	}
 	for r := 0; r < grid.Rows(); r++ {
 		maxHeight := 0.0
 		left := ContentLeft(container)
@@ -513,7 +519,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		if containerFull {
 			continue
 		}
-		if top+maxHeight > bottom {
+		if !externalSplit && top+maxHeight > bottom {
 			containerFull = true
 			for c := 0; c < grid.Cols(); c++ {
 				if widget := grid.Cell(c, r); widget != nil {
@@ -522,7 +528,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 			}
 			// container.more(true) if container.overflow and (r > 0)
 		}
-		if !containerFull {
+		if externalSplit || !containerFull {
 			top += maxHeight + style.VPadding()
 		}
 	}

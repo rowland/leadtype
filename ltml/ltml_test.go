@@ -118,6 +118,8 @@ func TestSamples(t *testing.T) {
 		"test_025_flow_overflow",
 		"test_026_table_overflow",
 		"test_027_paragraph_split",
+		"test_028_table_split_headers",
+		"test_029_table_split_headers_footers",
 		"test_030_encodings",
 	}
 

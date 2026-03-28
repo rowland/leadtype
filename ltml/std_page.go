@@ -462,12 +462,26 @@ func (p *StdPage) rebuildActiveChildren() {
 		if item == nil || item.Done || item.Current == nil {
 			continue
 		}
+		p.resetWidgetRenderState(item.Current)
 		if wc, ok := item.Current.(WantsContainer); ok {
 			_ = wc.SetContainer(p)
 		}
 		active = append(active, item.Current)
 	}
 	p.activeChildren = active
+}
+
+func (p *StdPage) resetWidgetRenderState(widget Widget) {
+	widget.SetPrinted(false)
+	widget.SetVisible(true)
+	widget.SetDisabled(false)
+	container, ok := widget.(Container)
+	if !ok {
+		return
+	}
+	for _, child := range container.Widgets() {
+		p.resetWidgetRenderState(child)
+	}
 }
 
 func (p *StdPage) pageItemForCurrent(widget Widget) *pageItem {
@@ -480,7 +494,16 @@ func (p *StdPage) pageItemForCurrent(widget Widget) *pageItem {
 }
 
 func (p *StdPage) availableHeightForChild(child Widget) float64 {
-	avail := ContentBottom(p) - child.Top()
+	limit := ContentBottom(p)
+	for _, sibling := range p.Widgets() {
+		if sibling == child || !sibling.Visible() || sibling.Disabled() {
+			continue
+		}
+		if sibling.Align() == AlignBottom {
+			limit = min(limit, sibling.Top())
+		}
+	}
+	avail := limit - child.Top()
 	if avail < 0 {
 		return 0
 	}
@@ -517,7 +540,11 @@ func (p *StdPage) trySplitChild(item *pageItem, child Widget, w Writer) (bool, e
 	if err != nil || result == nil || result.Head == nil {
 		return false, err
 	}
+	if wc, ok := result.Head.(WantsContainer); ok {
+		_ = wc.SetContainer(p)
+	}
 	p.copySplitGeometry(result.Head, child)
+	result.Head.LayoutWidget(w)
 	if result.Tail != nil {
 		if wc, ok := result.Tail.(WantsContainer); ok {
 			_ = wc.SetContainer(p)

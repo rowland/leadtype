@@ -1,0 +1,26 @@
+<ltml>
+  <page units="in" margin="0.5" layout="vbox" overflow="true" grid="0.25in">
+    <p display="always" align="top" border="dashed" padding="4pt" font.size="20" font.weight="Bold">
+      Table split with headers
+    </p>
+    <p display="always" align="top" border="dotted" padding="4pt">
+      The page uses an ordinary vbox layout. The table below is a direct page child, so it can split by whole rows.
+    </p>
+
+    <p display="odd" align="bottom" border="dotted" padding="4pt">Odd table footer</p>
+    <p display="even" align="bottom" border="dotted" padding="4pt">Even table footer</p>
+
+    <table order="rows" cols="2" width="100%" split="true" header-rows="1" border="dotted" padding="6pt">
+      <p colspan="2" border="solid" fill="LightYellow" padding="4pt" font.weight="Bold">
+        Line items
+      </p>
+
+      <rect height="3.8" fill="LightSkyBlue" border="thin" />
+      <rect height="3.8" fill="PaleGreen" border="thin" />
+      <rect height="3.8" fill="LightSalmon" border="thin" />
+      <rect height="3.8" fill="Khaki" border="thin" />
+      <rect height="3.8" fill="Plum" border="thin" />
+      <rect height="3.8" fill="LightCyan" border="thin" />
+    </table>
+  </page>
+</ltml>

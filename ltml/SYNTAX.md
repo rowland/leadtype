@@ -114,6 +114,9 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `shift`            | Offset the widget after layout using `x,y` measurements. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
 | `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`. |
+| `split`            | Whether a direct page-child paragraph may split across pages. Defaults to `true`. |
+| `orphans`          | Minimum number of lines kept on the first fragment when splitting. Defaults to `2`. |
+| `widows`           | Minimum number of lines carried to the continuation fragment when splitting. Defaults to `2`. |
 | `colspan`, `rowspan` | Span multiple table cells (when inside a `table`). |
 
 ---
@@ -150,6 +153,9 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `cols`           | Number of columns (required for `table` layout). |
 | `rows`           | Number of rows (for column-order `table` layout). |
 | `order`          | Table fill order: `rows` (default) or `cols`. |
+| `split`          | Whether a direct page-child `table` may split by whole rows across pages. Defaults to `true` for table layouts. |
+| `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
+| `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
 
 ---
@@ -611,6 +617,11 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 - `display` defaults to `once`.
 - `overflow` is currently honored only on `<page>`.
 - Overflow retries only reconsider direct children of the page.
+- Direct page-child paragraphs can split by wrapped lines.
+- Direct page-child tables can split by whole rows.
+- Paragraph splitting defaults to `split="true"`, `orphans="2"`, and `widows="2"`.
+- Table splitting defaults to `split="true"` for `layout="table"` containers.
+- Table `header-rows` and `footer-rows` repeat on every fragment page.
 - `align="top"` and `align="bottom"` in `vbox` behave like repeating header/footer slots when paired with a repeating `display` value.
 - `align="left"` and `align="right"` in `hbox` preserve source order, but `hbox` does not participate in overflow retries.
 - `display="even"` and `display="odd"` follow physical PDF page sequence, not `<pageno>` display values.
