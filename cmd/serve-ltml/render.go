@@ -12,20 +12,24 @@ import (
 	"github.com/rowland/leadtype/ltml/ltpdf"
 )
 
-// renderLTML parses ltmlBytes, attaches overlay as the asset filesystem,
-// renders the document to a temp PDF file inside tmpDir, and returns an
+// renderLTML parses ltmlBytes, renders the document using overlay as the
+// writer's asset filesystem, and returns a temp PDF file inside tmpDir.
+// The returned file is positioned at the beginning of the PDF.
 // open *os.File positioned at the beginning of the PDF. The caller is
 // responsible for closing the file; the file itself lives inside tmpDir
 // and will be removed when tmpDir is cleaned up.
 func renderLTML(ltmlBytes []byte, overlay *overlayFS, tmpDir string) (*os.File, error) {
+	if overlay == nil {
+		return nil, fmt.Errorf("missing asset filesystem")
+	}
+
 	doc, err := ltml.Parse(ltmlBytes)
 	if err != nil {
 		return nil, fmt.Errorf("parsing LTML: %w", err)
 	}
 
-	doc.SetAssetFS(overlay)
-
 	w := ltpdf.NewDocWriter()
+	w.SetAssetFS(overlay)
 
 	if err := doc.Print(w); err != nil {
 		return nil, fmt.Errorf("rendering LTML: %w", err)

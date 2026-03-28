@@ -18,11 +18,13 @@ render-ltml [flags] <file.ltml>
 
 ### Asset resolution
 
-When `-assets` and/or `-extra` are given, a virtual filesystem is constructed and attached to the document before rendering. Images and other assets referenced in the LTML are resolved through this filesystem:
+When `-assets` and/or `-extra` are given, a virtual filesystem is constructed and attached to the PDF writer before rendering. Asset-backed PDF operations resolve through this filesystem:
 
 - Files supplied with `-extra` form the **upper layer** and shadow same-named files from `-assets`.
 - Files in the `-assets` directory form the **lower layer** and are used when an asset is not supplied as an extra file.
 - When neither flag is given, asset paths are resolved by the PDF writer directly (relative to the working directory).
+
+When an asset filesystem is attached, asset names must be clean relative `fs.FS` paths such as `logo.png` or `assets/logo.png`. Paths like `./logo.png`, `a/../logo.png`, or absolute paths are rejected.
 
 If the same base name is given more than once via `-extra`, the last occurrence wins.
 

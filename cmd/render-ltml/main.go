@@ -79,19 +79,19 @@ func run(inputFile, assetsDir, outputPath string, extraFiles []string) error {
 	}
 
 	// Build and attach an asset filesystem when assets or extra files are provided.
-	assetFS, cleanup, err := buildAssetFS(assetsDir, extraFiles)
+	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
 	}
 	if cleanup != nil {
 		defer cleanup()
 	}
-	if assetFS != nil {
-		doc.SetAssetFS(assetFS)
-	}
 
 	// Render to PDF.
 	w := ltpdf.NewDocWriter()
+	if assetFS != nil {
+		w.SetAssetFS(assetFS)
+	}
 	if err := doc.Print(w); err != nil {
 		return fmt.Errorf("rendering: %w", err)
 	}
@@ -115,14 +115,15 @@ func run(inputFile, assetsDir, outputPath string, extraFiles []string) error {
 	return nil
 }
 
-// buildAssetFS constructs an fs.FS that covers assetsDir (lower layer) and the
-// named extraFiles (upper layer, each stored under its base name). Extra files
-// shadow same-named entries in assetsDir rather than erroring on conflict.
+// buildOptionalAssetFS constructs an optional fs.FS that covers assetsDir
+// (lower layer) and the named extraFiles (upper layer, each stored under its
+// base name). Extra files shadow same-named entries in assetsDir rather than
+// erroring on conflict.
 //
 // Returns nil, nil, nil when neither assetsDir nor extraFiles are provided.
 // When a non-nil cleanup function is returned, the caller must invoke it after
 // rendering is complete.
-func buildAssetFS(assetsDir string, extraFiles []string) (fs.FS, func(), error) {
+func buildOptionalAssetFS(assetsDir string, extraFiles []string) (fs.FS, func(), error) {
 	hasAssets := assetsDir != ""
 	hasExtras := len(extraFiles) > 0
 

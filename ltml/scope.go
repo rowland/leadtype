@@ -6,7 +6,6 @@ package ltml
 import (
 	"bytes"
 	"fmt"
-	"io/fs"
 )
 
 type Scope struct {
@@ -16,7 +15,6 @@ type Scope struct {
 	layouts    map[string]*LayoutStyle
 	pageStyles map[string]*PageStyle
 	rules      []*Rules
-	assetFS    fs.FS
 }
 
 func (scope *Scope) AddAlias(alias *Alias) error {
@@ -114,25 +112,6 @@ func (scope *Scope) PageStyleFor(id string) (style *PageStyle, ok bool) {
 
 func (scope *Scope) SetParentScope(parent HasScope) {
 	scope.parent = parent
-}
-
-// SetAssetFS stores the asset filesystem for this scope. Nested scopes that
-// do not have their own asset filesystem inherit it from the nearest ancestor
-// that has one set.
-func (scope *Scope) SetAssetFS(fsys fs.FS) {
-	scope.assetFS = fsys
-}
-
-// AssetFS returns the nearest asset filesystem in scope, walking up the parent
-// chain until one is found. Returns nil if no ancestor has an asset filesystem.
-func (scope *Scope) AssetFS() fs.FS {
-	if scope.assetFS != nil {
-		return scope.assetFS
-	}
-	if scope.parent != nil {
-		return scope.parent.AssetFS()
-	}
-	return nil
 }
 
 func (scope *Scope) String() string {

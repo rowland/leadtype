@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"strings"
 )
@@ -222,14 +221,6 @@ func (doc *Doc) current() (value interface{}) {
 		value = doc.stack[len(doc.stack)-1]
 	}
 	return
-}
-
-// SetAssetFS attaches an asset filesystem to this document's root scope.
-// All nested scopes that do not have their own asset filesystem will inherit
-// it, so assets looked up during rendering are resolved against fsys first
-// and fall through to whatever the renderer's default resolution is.
-func (doc *Doc) SetAssetFS(fsys fs.FS) {
-	doc.rootScope.SetAssetFS(fsys)
 }
 
 func (doc *Doc) scope() HasScope {

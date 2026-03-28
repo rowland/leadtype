@@ -49,7 +49,7 @@ Render an LTML document to PDF.
 
 ### Asset resolution
 
-Uploaded files form a **per-request upper layer** that shadows same-named files in the configured `base-path` for the duration of that request only. Parallel requests never share upload state. Uploaded filenames must be non-empty relative paths that do not escape the upload root (absolute paths and `..` components are rejected).
+Uploaded files form a **per-request upper layer** that shadows same-named files in the configured `base-path` for the duration of that request only. Parallel requests never share upload state. Uploaded filenames must be clean relative `fs.FS` paths such as `logo.png` or `assets/logo.png`; empty names, `.`, paths containing `.` / `..` segments, and absolute paths are rejected.
 
 ## Examples
 

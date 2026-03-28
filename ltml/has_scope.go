@@ -3,8 +3,6 @@
 
 package ltml
 
-import "io/fs"
-
 type HasScope interface {
 	AddAlias(alias *Alias) error
 	AddLayout(layout *LayoutStyle) error
@@ -12,11 +10,9 @@ type HasScope interface {
 	AddRules(rules *Rules) error
 	AddStyle(style Styler) error
 	AliasFor(name string) (alias *Alias, ok bool)
-	AssetFS() fs.FS
 	EachRuleFor(path string, f func(rule *Rule))
 	LayoutFor(id string) (layout *LayoutStyle, ok bool)
 	PageStyleFor(id string) (style *PageStyle, ok bool)
-	SetAssetFS(fsys fs.FS)
 	SetParentScope(parent HasScope)
 	StyleFor(id string) (style Styler, ok bool)
 }

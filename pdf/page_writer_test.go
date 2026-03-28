@@ -4,7 +4,9 @@
 package pdf
 
 import (
+	"bytes"
 	"fmt"
+	"image/jpeg"
 	"strings"
 	"testing"
 
@@ -146,6 +148,49 @@ func TestPageWriter_Line(t *testing.T) {
 	pw.Line(1, 1, 0, 2)
 
 	expectS(t, "72 720 m\n216 720 l\nS\n", pw.stream.String())
+}
+
+func TestPageWriter_PrintImage_DefaultSize(t *testing.T) {
+	data := mustReadTestImage(t)
+	cfg, err := jpeg.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+	width, height, err := pw.PrintImage(data, 10, 20, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != float64(cfg.Width) || height != float64(cfg.Height) {
+		t.Fatalf("expected intrinsic size %dx%d, got %.2fx%.2f", cfg.Width, cfg.Height, width, height)
+	}
+	if !strings.Contains(pw.stream.String(), "/Im0 Do\n") {
+		t.Fatalf("expected image draw operator, got:\n%s", pw.stream.String())
+	}
+	if dw.resources.xObjects["Im0"] == nil {
+		t.Fatal("expected image XObject registered in resources")
+	}
+}
+
+func TestPageWriter_PrintImage_AspectRatio(t *testing.T) {
+	data := mustReadTestImage(t)
+	cfg, err := jpeg.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+	width := 2.0
+	actualWidth, actualHeight, err := pw.PrintImage(data, 1, 2, floatPtr(width), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedHeight := width * float64(cfg.Height) / float64(cfg.Width)
+	expectFdelta(t, width, actualWidth, 0.0001)
+	expectFdelta(t, expectedHeight, actualHeight, 0.0001)
 }
 
 func TestPageWriter_PointsForCircle(t *testing.T) {

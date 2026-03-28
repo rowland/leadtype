@@ -31,30 +31,30 @@ const (
 
 type PageWriter struct {
 	drawState
-	autoPath   bool
-	dw         *DocWriter
-	fonts      []*font.Font
-	gw         *graphWriter
-	inGraph    bool
-	inPath     bool
-	inText     bool
-	isClosed   bool
-	keepOrigin bool
-	last       drawState
-	line       *rich_text.RichText
-	lineHeight float64
-	mw         *miscWriter
-	options    options.Options
-	origin     Location
-	page       *page
-	pageHeight float64
-	pageWidth  float64
-	pathStates []pathState
-	stream     bytes.Buffer
-	tw         *textWriter
-	units      *units
+	autoPath      bool
+	dw            *DocWriter
+	fonts         []*font.Font
+	gw            *graphWriter
+	inGraph       bool
+	inPath        bool
+	inText        bool
+	isClosed      bool
+	keepOrigin    bool
+	last          drawState
+	line          *rich_text.RichText
+	lineHeight    float64
+	mw            *miscWriter
+	options       options.Options
+	origin        Location
+	page          *page
+	pageHeight    float64
+	pageWidth     float64
+	pathStates    []pathState
+	stream        bytes.Buffer
+	tw            *textWriter
+	units         *units
 	vTextAlignPts float64
-	flushing   boolean
+	flushing      boolean
 }
 
 type pathState struct {
@@ -1119,6 +1119,41 @@ func (pw *PageWriter) Print(text string) (err error) {
 		i = strings.IndexAny(text, "\t\r\n")
 	}
 	return pw.print(text)
+}
+
+func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	key := imageKey(data)
+	image, name, err := pw.dw.loadImage(data, key)
+	if err != nil {
+		return 0, 0, err
+	}
+	xpts := pw.units.toPts(x)
+	ypts := pw.units.toPts(y)
+	info := imageInfo{
+		width:            image.width,
+		height:           image.height,
+		bitsPerComponent: image.bitsPerComponent,
+	}
+	wpts, hpts := imageSizeInPoints(info, pw.units, width, height)
+	if pw.inPath {
+		pw.endPath()
+	}
+	if pw.inText {
+		pw.endText()
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
+	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
+}
+
+func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	data, err := pw.dw.readImageFile(filename)
+	if err != nil {
+		return 0, 0, err
+	}
+	return pw.PrintImage(data, x, y, width, height)
 }
 
 func (pw *PageWriter) print(text string) (err error) {

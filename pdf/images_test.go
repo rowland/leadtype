@@ -206,82 +206,6 @@ func TestDecodePNG_Gray(t *testing.T) {
 	}
 }
 
-func TestPageWriter_PrintImage_DefaultSize(t *testing.T) {
-	data := mustReadTestImage(t)
-	cfg, err := jpeg.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dw := NewDocWriter()
-	pw := newPageWriter(dw, options.Options{})
-	width, height, err := pw.PrintImage(data, 10, 20, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if width != float64(cfg.Width) || height != float64(cfg.Height) {
-		t.Fatalf("expected intrinsic size %dx%d, got %.2fx%.2f", cfg.Width, cfg.Height, width, height)
-	}
-	if !strings.Contains(pw.stream.String(), "/Im0 Do\n") {
-		t.Fatalf("expected image draw operator, got:\n%s", pw.stream.String())
-	}
-	if dw.resources.xObjects["Im0"] == nil {
-		t.Fatal("expected image XObject registered in resources")
-	}
-}
-
-func TestPageWriter_PrintImage_AspectRatio(t *testing.T) {
-	data := mustReadTestImage(t)
-	cfg, err := jpeg.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dw := NewDocWriter()
-	pw := newPageWriter(dw, options.Options{"units": "in"})
-	width := 2.0
-	actualWidth, actualHeight, err := pw.PrintImage(data, 1, 2, floatPtr(width), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectedHeight := width * float64(cfg.Height) / float64(cfg.Width)
-	expectFdelta(t, width, actualWidth, 0.0001)
-	expectFdelta(t, expectedHeight, actualHeight, 0.0001)
-}
-
-func TestDocWriter_PrintImageFile_Integration(t *testing.T) {
-	var buf bytes.Buffer
-
-	dw := NewDocWriter()
-	dw.SetUnits("in")
-	dw.NewPage()
-	actualWidth, actualHeight, err := dw.PrintImageFile("testdata/testimg.jpg", 1, 1, floatPtr(2.0), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectFdelta(t, 2.0, actualWidth, 0.0001)
-	if actualHeight <= 0 {
-		t.Fatalf("expected positive inferred height, got %f", actualHeight)
-	}
-	if _, err := dw.WriteTo(&buf); err != nil {
-		t.Fatal(err)
-	}
-	pdf := buf.String()
-	for _, fragment := range []string{
-		"/Subtype /Image",
-		"/Filter /DCTDecode",
-		"/ColorSpace /DeviceRGB",
-		"/XObject <<",
-		"/Im0 ",
-		" cm\n",
-		"/Im0 Do\n",
-	} {
-		if !strings.Contains(pdf, fragment) {
-			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
-		}
-	}
-}
-
 func TestPageWriter_PrintImage_PNG_DefaultSize(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 3, 2))
 	data := mustEncodePNG(t, img)
@@ -326,39 +250,6 @@ func TestDocWriter_PrintImage_PNG_RGBA_Integration(t *testing.T) {
 		"/SMask ",
 		"/XObject <<",
 		"/Im0 ",
-	} {
-		if !strings.Contains(pdf, fragment) {
-			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
-		}
-	}
-}
-
-func TestDocWriter_PrintImageFile_PNG_Integration(t *testing.T) {
-	var buf bytes.Buffer
-
-	dw := NewDocWriter()
-	dw.SetUnits("in")
-	dw.NewPage()
-	actualWidth, actualHeight, err := dw.PrintImageFile("testdata/eidetic.png", 1, 1, floatPtr(2.0), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectFdelta(t, 2.0, actualWidth, 0.0001)
-	if actualHeight <= 0 {
-		t.Fatalf("expected positive inferred height, got %f", actualHeight)
-	}
-	if _, err := dw.WriteTo(&buf); err != nil {
-		t.Fatal(err)
-	}
-	pdf := buf.String()
-	for _, fragment := range []string{
-		"/Subtype /Image",
-		"/Filter /FlateDecode",
-		"/ColorSpace /DeviceRGB",
-		"/XObject <<",
-		"/Im0 ",
-		" cm\n",
-		"/Im0 Do\n",
 	} {
 		if !strings.Contains(pdf, fragment) {
 			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)

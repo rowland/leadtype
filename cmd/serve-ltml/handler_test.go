@@ -153,7 +153,11 @@ func TestHandler_InvalidUploadFilename(t *testing.T) {
 	}{
 		{"empty", ""},
 		{"absolute", "/etc/passwd"},
+		{"dot", "."},
+		{"dotSlash", "./logo.png"},
 		{"dotdot", "../secret"},
+		{"normalizedDotDot", "a/../logo.png"},
+		{"normalizedDir", "a/.."},
 		{"escapingDotDot", "foo/../../secret"},
 	}
 
@@ -297,8 +301,12 @@ func TestValidateUploadFilename(t *testing.T) {
 
 	bad := []string{
 		"",
+		".",
+		"./logo.png",
 		"/etc/passwd",
 		"../escape",
+		"a/../logo.png",
+		"a/..",
 		"a/../../escape",
 	}
 	for _, name := range bad {

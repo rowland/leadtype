@@ -7,14 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 )
 
 // ltmlContentTypes lists the accepted Content-Type values for the LTML part.
@@ -187,28 +186,16 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// validateUploadFilename checks that filename is a safe relative path and
-// returns the absolute destination path under uploadDir.
+// validateUploadFilename checks that filename is a clean fs.FS-relative path
+// and returns the absolute destination path under uploadDir.
 func validateUploadFilename(filename, uploadDir string) (string, error) {
 	if filename == "" {
 		return "", fmt.Errorf("filename must not be empty")
 	}
-	if path.IsAbs(filename) {
-		return "", fmt.Errorf("absolute paths are not allowed")
+	if filename == "." || !fs.ValidPath(filename) {
+		return "", fmt.Errorf("filename must be a clean relative asset path")
 	}
-	// Reject any path element that is "..".
-	cleaned := path.Clean(filename)
-	for _, elem := range strings.Split(cleaned, "/") {
-		if elem == ".." {
-			return "", fmt.Errorf("path traversal is not allowed")
-		}
-	}
-	// Verify the cleaned path stays within uploadDir after joining.
-	dest := filepath.Join(uploadDir, filepath.FromSlash(cleaned))
-	if !strings.HasPrefix(dest+string(filepath.Separator), uploadDir+string(filepath.Separator)) {
-		return "", fmt.Errorf("path escapes upload root")
-	}
-	return dest, nil
+	return filepath.Join(uploadDir, filepath.FromSlash(filename)), nil
 }
 
 // saveUploadedFile writes the contents of part to destPath, creating parent
