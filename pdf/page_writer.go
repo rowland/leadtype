@@ -812,6 +812,7 @@ func (pw *PageWriter) flushText() {
 	}
 	loc1 := pw.loc
 	textLoc := loc1
+	usedPositionedText := false
 	var buf bytes.Buffer
 	merged := pw.line.Merge()
 	// Iterate leaf pieces directly. TrueType leaves are encoded as big-endian
@@ -840,6 +841,7 @@ func (pw *PageWriter) flushText() {
 
 			if shaped != nil {
 				usePositionedGlyphs = true
+				usedPositionedText = true
 				penX := 0.0
 				// Emit shaped glyphs in reverse visual order so that the
 				// left-to-right PDF text stream matches the left-to-right
@@ -867,6 +869,7 @@ func (pw *PageWriter) flushText() {
 			} else {
 				usePositionedGlyphs = p.CharSpacing != 0 || p.WordSpacing != 0
 				if usePositionedGlyphs {
+					usedPositionedText = true
 					penX := 0.0
 					fsize := p.FontSize / float64(p.Font.UnitsPerEm())
 					for _, r := range p.Text {
@@ -942,6 +945,9 @@ func (pw *PageWriter) flushText() {
 			})
 		}
 	})
+	if usedPositionedText {
+		pw.tw.setMatrix(1, 0, 0, 1, pw.loc.X, pw.loc.Y)
+	}
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
 			return

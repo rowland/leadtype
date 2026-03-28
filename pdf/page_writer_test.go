@@ -13,6 +13,7 @@ import (
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/wordbreaking"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
@@ -630,6 +631,49 @@ func TestPageWriter_SetVTextAlignFlushesPendingText(t *testing.T) {
 	}
 	if !strings.Contains(got, topRise+" Ts\n(Top) Tj\n") {
 		t.Fatalf("expected later text to use top rise, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_PrintParagraph_JustifyLeavesLastLineAtLeftEdge(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Arial", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	rt, err := pw.richTextForString("one two three four five six seven eight nine ten eleven")
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	para := rt.WrapToWidth(140, flags, false)
+	if len(para) < 2 {
+		t.Fatalf("expected wrapped paragraph to produce multiple lines, got %d", len(para))
+	}
+
+	pw.MoveTo(72, 720)
+	pw.PrintParagraph(para, options.Options{"text-align": "justify", "width": 140})
+	pw.flushText()
+
+	got := pw.stream.String()
+	if strings.Count(got, " 720 Td\n") > 1 {
+		t.Fatalf("expected later lines not to drift right from the left edge, got:\n%s", got)
+	}
+	lastBT := strings.LastIndex(got, "BT\n")
+	if lastBT < 0 {
+		t.Fatalf("expected text output, got:\n%s", got)
+	}
+	lastBlock := got[lastBT:]
+	if strings.Contains(lastBlock, " Tc\n") || strings.Contains(lastBlock, " Tw\n") {
+		t.Fatalf("expected final line not to carry justification spacing, got:\n%s", lastBlock)
 	}
 }
 
