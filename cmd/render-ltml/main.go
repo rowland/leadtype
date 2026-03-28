@@ -7,9 +7,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
+	"github.com/rowland/leadtype/internal/overlayfs"
 	"github.com/rowland/leadtype/ltml"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 )
@@ -57,7 +59,6 @@ func main() {
 }
 
 func run(inputFile, assetsDir, outputPath string, extraFiles []string) error {
-	// Resolve paths before potentially changing directory.
 	absInput, err := filepath.Abs(inputFile)
 	if err != nil {
 		return fmt.Errorf("resolving input: %w", err)
@@ -71,22 +72,22 @@ func run(inputFile, assetsDir, outputPath string, extraFiles []string) error {
 		}
 	}
 
-	// Set up asset working directory when assets or extra files are provided.
-	if assetsDir != "" || len(extraFiles) > 0 {
-		workDir, cleanup, err := setupWorkDir(assetsDir, extraFiles)
-		if err != nil {
-			return err
-		}
-		defer cleanup()
-		if err := os.Chdir(workDir); err != nil {
-			return fmt.Errorf("chdir to work dir: %w", err)
-		}
-	}
-
 	// Parse LTML.
 	doc, err := ltml.ParseFile(absInput)
 	if err != nil {
 		return fmt.Errorf("parsing %s: %w", inputFile, err)
+	}
+
+	// Build and attach an asset filesystem when assets or extra files are provided.
+	assetFS, cleanup, err := buildAssetFS(assetsDir, extraFiles)
+	if err != nil {
+		return err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if assetFS != nil {
+		doc.SetAssetFS(assetFS)
 	}
 
 	// Render to PDF.
@@ -114,49 +115,66 @@ func run(inputFile, assetsDir, outputPath string, extraFiles []string) error {
 	return nil
 }
 
-// setupWorkDir creates a temporary directory populated with symlinks to the
-// contents of assetsDir and each file in extraFiles. The caller must invoke
-// the returned cleanup function when rendering is complete.
-func setupWorkDir(assetsDir string, extraFiles []string) (string, func(), error) {
-	tmpDir, err := os.MkdirTemp("", "render-ltml-*")
-	if err != nil {
-		return "", nil, fmt.Errorf("creating work dir: %w", err)
-	}
-	cleanup := func() { os.RemoveAll(tmpDir) }
+// buildAssetFS constructs an fs.FS that covers assetsDir (lower layer) and the
+// named extraFiles (upper layer, each stored under its base name). Extra files
+// shadow same-named entries in assetsDir rather than erroring on conflict.
+//
+// Returns nil, nil, nil when neither assetsDir nor extraFiles are provided.
+// When a non-nil cleanup function is returned, the caller must invoke it after
+// rendering is complete.
+func buildAssetFS(assetsDir string, extraFiles []string) (fs.FS, func(), error) {
+	hasAssets := assetsDir != ""
+	hasExtras := len(extraFiles) > 0
 
-	if assetsDir != "" {
-		absAssets, err := filepath.Abs(assetsDir)
+	if !hasAssets && !hasExtras {
+		return nil, nil, nil
+	}
+
+	// Place extra files in a temp directory so they can be addressed as an
+	// os.DirFS. Symlinks keep memory use low for large files.
+	var extraDir string
+	var cleanup func()
+	if hasExtras {
+		tmpDir, err := os.MkdirTemp("", "render-ltml-*")
 		if err != nil {
-			cleanup()
-			return "", nil, fmt.Errorf("resolving assets dir: %w", err)
+			return nil, nil, fmt.Errorf("creating work dir: %w", err)
 		}
-		entries, err := os.ReadDir(absAssets)
-		if err != nil {
-			cleanup()
-			return "", nil, fmt.Errorf("reading assets dir: %w", err)
-		}
-		for _, entry := range entries {
-			src := filepath.Join(absAssets, entry.Name())
-			dst := filepath.Join(tmpDir, entry.Name())
-			if err := os.Symlink(src, dst); err != nil {
+		cleanup = func() { os.RemoveAll(tmpDir) }
+		extraDir = tmpDir
+
+		for _, f := range extraFiles {
+			abs, err := filepath.Abs(f)
+			if err != nil {
 				cleanup()
-				return "", nil, fmt.Errorf("linking asset %s: %w", entry.Name(), err)
+				return nil, nil, fmt.Errorf("resolving extra file %s: %w", f, err)
+			}
+			dst := filepath.Join(extraDir, filepath.Base(f))
+			// If two extra files share a base name, the last one wins.
+			os.Remove(dst)
+			if err := os.Symlink(abs, dst); err != nil {
+				cleanup()
+				return nil, nil, fmt.Errorf("linking extra file %s: %w", filepath.Base(f), err)
 			}
 		}
 	}
 
-	for _, f := range extraFiles {
-		abs, err := filepath.Abs(f)
+	switch {
+	case hasExtras && hasAssets:
+		absAssets, err := filepath.Abs(assetsDir)
 		if err != nil {
 			cleanup()
-			return "", nil, fmt.Errorf("resolving extra file %s: %w", f, err)
+			return nil, nil, fmt.Errorf("resolving assets dir: %w", err)
 		}
-		dst := filepath.Join(tmpDir, filepath.Base(f))
-		if err := os.Symlink(abs, dst); err != nil {
-			cleanup()
-			return "", nil, fmt.Errorf("linking extra file %s: %w", filepath.Base(f), err)
-		}
-	}
+		return overlayfs.New(os.DirFS(extraDir), os.DirFS(absAssets)), cleanup, nil
 
-	return tmpDir, cleanup, nil
+	case hasExtras:
+		return os.DirFS(extraDir), cleanup, nil
+
+	default: // hasAssets only
+		absAssets, err := filepath.Abs(assetsDir)
+		if err != nil {
+			return nil, nil, fmt.Errorf("resolving assets dir: %w", err)
+		}
+		return os.DirFS(absAssets), nil, nil
+	}
 }
