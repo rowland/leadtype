@@ -1,0 +1,34 @@
+<ltml>
+  <page units="in" layout="absolute" grid="0.25in">
+    <label left="0.75" top="0.6" font.size="20" font.weight="Bold">Label shrink-to-fit</label>
+
+    <p left="0.75" top="1.05" width="6.3">
+      Labels remain single-line. The left column uses <span font.weight="Bold">fit="shrink"</span>;
+      the right column keeps the current non-fitting behavior for comparison. 12 pt fonts specified.
+    </p>
+
+    <label left="0.75" top="1.65" font.weight="Bold">fit="shrink"</label>
+    <label left="4.2" top="1.65" font.weight="Bold">without fit</label>
+
+    <label left="0.75" top="1.95" width="2.5" padding="6pt" border="thin" fill="LightYellow" font.size="12" fit="shrink">
+      A very long translated page heading
+    </label>
+    <label left="4.2" top="1.95" width="2.5" padding="6pt" border="thin" fill="MistyRose" font.size="12">
+      A very long translated page heading
+    </label>
+
+    <label left="0.75" top="3.1" width="2.5" padding="6pt" border="thin" fill="HoneyDew" font.size="12" fit="shrink">
+      Quarterly <span font.size="22" font.weight="Bold">Performance</span> Summary
+    </label>
+    <label left="4.2" top="3.1" width="2.5" padding="6pt" border="thin" fill="LavenderBlush" font.size="12">
+      Quarterly <span font.size="22" font.weight="Bold">Performance</span> Summary
+    </label>
+
+    <label left="0.75" top="4.35" width="2.5" padding="6pt" border="thin" fill="AliceBlue" font.size="12" fit="shrink">
+      Short headings are fine.
+    </label>
+    <label left="4.2" top="4.35" width="2.5" padding="6pt" border="thin" fill="AliceBlue" font.size="12">
+      Short headings are fine.
+    </label>
+  </page>
+</ltml>

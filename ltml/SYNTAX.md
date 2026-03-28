@@ -226,13 +226,15 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | Attribute | Description |
 |-----------|-------------|
 | `font` / `font.*` | Same font attributes supported by `<p>`. |
+| `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |
 | `width`, `height` | Optional explicit dimensions. |
 | `margin`, `padding` | Spacing around and inside the label. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
 
 The built-in `<br/>` alias expands to an empty `<label/>`, which behaves as a
-line break in stacked layouts.
+line break in stacked layouts. Labels still do not wrap; `fit="shrink"` scales
+the rendered text instead.
 
 ---
 

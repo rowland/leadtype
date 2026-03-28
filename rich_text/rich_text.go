@@ -56,16 +56,17 @@ var errNoFontSet = errors.New("No font set")
 // Font size is in points.
 //
 // Options:
-//   color:        Fill text with color.
-//                 A value of type Color, a string with a color name from NamedColors map, or an RGB color as int, int32 or hexadecimal string.
-//   underline:    Draw a line under text.
-//                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-//   strikeout:    Draw a line through text.
-//                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
-//   char_spacing: Add extra space between characters, expressed in points.
-//   word_spacing: Add extra space between words, expressed in points.
-//   nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
-//                 A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
+//
+//	color:        Fill text with color.
+//	              A value of type Color, a string with a color name from NamedColors map, or an RGB color as int, int32 or hexadecimal string.
+//	underline:    Draw a line under text.
+//	              A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
+//	strikeout:    Draw a line through text.
+//	              A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
+//	char_spacing: Add extra space between characters, expressed in points.
+//	word_spacing: Add extra space between words, expressed in points.
+//	nobreak:      Prevent WordsToWidth or WrapToWidth from breaking within this stretch of text.
+//	              A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
 func New(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
 	piece := &RichText{
 		Text:        s,
@@ -647,6 +648,66 @@ func (piece *RichText) Width() float64 {
 		}
 	}
 	return piece.width
+}
+
+// Scale returns a deep-cloned structure with every leaf FontSize multiplied by
+// scale. The returned text preserves relative inline sizing. If scaling would
+// reduce any leaf below minFontSize, the effective scale is clamped upward so
+// all leaves remain at least minFontSize. The result is never enlarged beyond
+// the original size.
+func (piece *RichText) Scale(scale float64, minFontSize float64) *RichText {
+	if piece == nil {
+		return nil
+	}
+	if scale >= 1.0 {
+		return piece
+	}
+	if scale < 0.0 {
+		scale = 0.0
+	}
+	minScale := 0.0
+	piece.VisitAll(func(p *RichText) {
+		if !p.IsLeaf() || p.FontSize <= 0.0 || minFontSize <= 0.0 {
+			return
+		}
+		required := minFontSize / p.FontSize
+		if required > minScale {
+			minScale = required
+		}
+	})
+	if minScale > scale {
+		scale = minScale
+	}
+	if scale > 1.0 {
+		scale = 1.0
+	}
+	if scale >= 1.0 {
+		return piece
+	}
+	return piece.scaleClone(scale)
+}
+
+func (piece *RichText) scaleClone(scale float64) *RichText {
+	clone := &RichText{
+		Text:        piece.Text,
+		Font:        piece.Font,
+		FontSize:    piece.FontSize,
+		Color:       piece.Color,
+		Underline:   piece.Underline,
+		Strikeout:   piece.Strikeout,
+		CharSpacing: piece.CharSpacing,
+		WordSpacing: piece.WordSpacing,
+		NoBreak:     piece.NoBreak,
+	}
+	if piece.IsLeaf() {
+		clone.FontSize *= scale
+		return clone
+	}
+	clone.pieces = make([]*RichText, len(piece.pieces))
+	for i, child := range piece.pieces {
+		clone.pieces[i] = child.scaleClone(scale)
+	}
+	return clone
 }
 
 // WordsToWidth splits the text at the last breaking point before width is exceeded, making use of the previously-allocated and marked flags

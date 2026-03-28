@@ -15,8 +15,9 @@ import (
 
 type StdLabel struct {
 	StdContainer
-	textPieces []textPiece
-	richText   *rich_text.RichText
+	textPieces  []textPiece
+	richText    *rich_text.RichText
+	shrinkToFit bool
 }
 
 func (l *StdLabel) AddText(text string) {
@@ -80,7 +81,7 @@ func (l *StdLabel) LayoutWidget(Writer) {
 }
 
 func (l *StdLabel) DrawContent(w Writer) error {
-	rt := l.RichText(w)
+	rt := l.fittedRichText(w)
 	if rt.Len() == 0 {
 		return nil
 	}
@@ -94,7 +95,7 @@ func (l *StdLabel) PreferredHeight(w Writer) float64 {
 	if l.height != 0 {
 		return l.height
 	}
-	rt := l.RichText(w)
+	rt := l.fittedRichText(w)
 	if rt.Len() == 0 {
 		return l.Font().size*w.LineSpacing() + NonContentHeight(l)
 	}
@@ -149,6 +150,27 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 		l.richText = rt
 	}
 	return rt
+}
+
+func (l *StdLabel) SetAttrs(attrs map[string]string) {
+	l.StdContainer.SetAttrs(attrs)
+	l.shrinkToFit = attrs["fit"] == "shrink"
+}
+
+func (l *StdLabel) fittedRichText(w Writer) *rich_text.RichText {
+	rt := l.RichText(w)
+	if rt == nil || rt.Len() == 0 || !l.shrinkToFit || l.width == 0 {
+		return rt
+	}
+	availableWidth := ContentWidth(l)
+	if availableWidth <= 0 {
+		return rt
+	}
+	measuredWidth := rt.Width()
+	if measuredWidth <= 0 || measuredWidth <= availableWidth {
+		return rt
+	}
+	return rt.Scale(availableWidth/measuredWidth, 6.0)
 }
 
 func (l *StdLabel) hasDynamicText() bool {

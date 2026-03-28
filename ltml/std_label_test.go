@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"math"
 	"testing"
 
 	"github.com/rowland/leadtype/afm_fonts"
@@ -193,6 +194,139 @@ func TestStdLabel_DrawContent_PrintsRichText(t *testing.T) {
 	}
 }
 
+func TestStdLabel_DrawContent_ShrinksToFitWidth(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(35)
+	l.shrinkToFit = true
+	l.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.printed) != 1 {
+		t.Fatalf("PrintRichText count = %d, want 1", len(w.printed))
+	}
+	got := w.printed[0]
+	if got.Width() > ContentWidth(l)+0.001 {
+		t.Fatalf("printed width = %v, want <= %v", got.Width(), ContentWidth(l))
+	}
+	if gotWidth := got.Width(); gotWidth >= l.RichText(w).Width() {
+		t.Fatalf("printed width = %v, want shrink from %v", gotWidth, l.RichText(w).Width())
+	}
+	assertAllLeafFontSizesBelow(t, got, 12)
+}
+
+func TestStdLabel_DrawContent_DoesNotShrinkWithoutFit(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(35)
+	l.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	got := w.printed[0]
+	if math.Abs(got.Width()-l.RichText(w).Width()) > 0.001 {
+		t.Fatalf("printed width = %v, want %v", got.Width(), l.RichText(w).Width())
+	}
+	assertAllLeafFontSizesEqual(t, got, 12)
+}
+
+func TestStdLabel_FittedRichText_DoesNotShrinkWhenTextFits(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(200)
+	l.shrinkToFit = true
+	l.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	got := l.fittedRichText(w)
+	if got != l.RichText(w) {
+		t.Fatalf("fittedRichText should return the original rich text when already fitting")
+	}
+}
+
+func TestStdLabel_FittedRichText_ScalesInlineSpansProportionally(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(35)
+	l.shrinkToFit = true
+	l.AddText("Hello ")
+	l.AddTextWithFont("big", &FontStyle{id: "big", entries: []fontEntry{{name: "Helvetica"}}, size: 18})
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	got := l.fittedRichText(w)
+	sizes := leafFontSizes(got)
+	if len(sizes) != 2 {
+		t.Fatalf("leaf font size count = %d, want 2", len(sizes))
+	}
+	ratio := sizes[1] / sizes[0]
+	if math.Abs(ratio-1.5) > 0.001 {
+		t.Fatalf("scaled ratio = %v, want 1.5", ratio)
+	}
+}
+
+func TestStdLabel_FittedRichText_RespectsMinimumFontSize(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(5)
+	l.shrinkToFit = true
+	l.AddText("This heading is much too long to fit")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	got := l.fittedRichText(w)
+	assertAllLeafFontSizesAtLeast(t, got, 6)
+}
+
+func TestStdLabel_PreferredHeight_UsesShrunkTextHeight(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(20)
+	l.shrinkToFit = true
+	l.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+
+	got := l.PreferredHeight(w)
+	unshrunk := l.RichText(w).Leading()*w.LineSpacing() + NonContentHeight(l)
+	if got >= unshrunk {
+		t.Fatalf("PreferredHeight() = %v, want less than unshrunk %v", got, unshrunk)
+	}
+}
+
+func TestStdLabel_FittedRichText_DynamicContentUsesResolvedPageNumber(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <label width="10" fit="shrink">Page <pageno /></label>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.ltmls[0].documentPageNo = 9
+
+	page := doc.ltmls[0].Page(0)
+	label, ok := page.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdLabel", page.children[0])
+	}
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	got := label.fittedRichText(w)
+	if got.String() != "Page 9" {
+		t.Fatalf("fitted text = %q, want %q", got.String(), "Page 9")
+	}
+}
+
 func TestParse_LabelAndBrAlias(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>
@@ -228,5 +362,42 @@ func TestParse_LabelAndBrAlias(t *testing.T) {
 	}
 	if got := label.textPieces[1].ResolvedText(nil); got != "world" {
 		t.Fatalf("piece 1 = %q, want %q", got, "world")
+	}
+}
+
+func leafFontSizes(rt *rich_text.RichText) []float64 {
+	var sizes []float64
+	rt.VisitAll(func(p *rich_text.RichText) {
+		if p.IsLeaf() && p.Len() > 0 {
+			sizes = append(sizes, p.FontSize)
+		}
+	})
+	return sizes
+}
+
+func assertAllLeafFontSizesBelow(t testing.TB, rt *rich_text.RichText, max float64) {
+	t.Helper()
+	for _, size := range leafFontSizes(rt) {
+		if size >= max {
+			t.Fatalf("leaf font size = %v, want < %v", size, max)
+		}
+	}
+}
+
+func assertAllLeafFontSizesEqual(t testing.TB, rt *rich_text.RichText, want float64) {
+	t.Helper()
+	for _, size := range leafFontSizes(rt) {
+		if math.Abs(size-want) > 0.001 {
+			t.Fatalf("leaf font size = %v, want %v", size, want)
+		}
+	}
+}
+
+func assertAllLeafFontSizesAtLeast(t testing.TB, rt *rich_text.RichText, min float64) {
+	t.Helper()
+	for _, size := range leafFontSizes(rt) {
+		if size < min {
+			t.Fatalf("leaf font size = %v, want >= %v", size, min)
+		}
 	}
 }

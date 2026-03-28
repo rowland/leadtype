@@ -143,6 +143,7 @@ func TestSamples(t *testing.T) {
 		"test_028_table_split_headers",
 		"test_029_table_split_headers_footers",
 		"test_030_encodings",
+		"test_032_label_shrink_to_fit",
 	}
 
 	for _, sample := range samples {
