@@ -841,6 +841,26 @@ func (pw *PageWriter) flushText() {
 
 			if shaped != nil {
 				usePositionedGlyphs = true
+			} else {
+				usePositionedGlyphs = p.CharSpacing != 0 || p.WordSpacing != 0
+			}
+
+			pw.SetFontColor(p.Color)
+			pw.checkSetFontColor()
+			pw.fontKey = fk
+			pw.SetFontSize(p.FontSize)
+			pw.checkSetFont()
+			pw.checkSetVTextAlign(false)
+			if usePositionedGlyphs {
+				pw.charSpacing = 0
+				pw.wordSpacing = 0
+			} else {
+				pw.charSpacing = p.CharSpacing
+				pw.wordSpacing = p.WordSpacing
+			}
+			pw.checkSetSpacing()
+
+			if shaped != nil {
 				usedPositionedText = true
 				penX := 0.0
 				// Emit shaped glyphs in reverse visual order so that the
@@ -866,60 +886,39 @@ func (pw *PageWriter) flushText() {
 					buf.Reset()
 					penX += float64(gp.XAdvance) / 64.0
 				}
-			} else {
-				usePositionedGlyphs = p.CharSpacing != 0 || p.WordSpacing != 0
-				if usePositionedGlyphs {
-					usedPositionedText = true
-					penX := 0.0
-					fsize := p.FontSize / float64(p.Font.UnitsPerEm())
-					for _, r := range p.Text {
-						gid := p.Font.GlyphIndex(r)
-						if gr != nil {
-							gr.record(gid, r)
-						}
-						advanceWidth, _ := p.Font.AdvanceWidth(r)
-						buf.WriteByte(byte(gid >> 8))
-						buf.WriteByte(byte(gid & 0xFF))
-						pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+penX, leafStart.Y)
-						pw.tw.showHex(buf.Bytes())
-						buf.Reset()
-						penX += (fsize * float64(advanceWidth)) + p.CharSpacing
-						if r == ' ' {
-							penX += p.WordSpacing
-						}
+			} else if usePositionedGlyphs {
+				usedPositionedText = true
+				penX := 0.0
+				fsize := p.FontSize / float64(p.Font.UnitsPerEm())
+				for _, r := range p.Text {
+					gid := p.Font.GlyphIndex(r)
+					if gr != nil {
+						gr.record(gid, r)
 					}
-				} else {
-					for _, r := range p.Text {
-						gid := p.Font.GlyphIndex(r)
-						if gr != nil {
-							gr.record(gid, r)
-						}
-						buf.WriteByte(byte(gid >> 8))
-						buf.WriteByte(byte(gid & 0xFF))
+					advanceWidth, _ := p.Font.AdvanceWidth(r)
+					buf.WriteByte(byte(gid >> 8))
+					buf.WriteByte(byte(gid & 0xFF))
+					pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+penX, leafStart.Y)
+					pw.tw.showHex(buf.Bytes())
+					buf.Reset()
+					penX += (fsize * float64(advanceWidth)) + p.CharSpacing
+					if r == ' ' {
+						penX += p.WordSpacing
 					}
 				}
+			} else {
+				for _, r := range p.Text {
+					gid := p.Font.GlyphIndex(r)
+					if gr != nil {
+						gr.record(gid, r)
+					}
+					buf.WriteByte(byte(gid >> 8))
+					buf.WriteByte(byte(gid & 0xFF))
+				}
+				pw.tw.show(buf.Bytes())
 			}
 			if usePositionedGlyphs {
 				pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+p.Width(), leafStart.Y)
-			}
-
-			pw.SetFontColor(p.Color)
-			pw.checkSetFontColor()
-			pw.fontKey = fk
-			pw.SetFontSize(p.FontSize)
-			pw.checkSetFont()
-			pw.checkSetVTextAlign(false)
-			if usePositionedGlyphs {
-				pw.charSpacing = 0
-				pw.wordSpacing = 0
-			} else {
-				pw.charSpacing = p.CharSpacing
-				pw.wordSpacing = p.WordSpacing
-			}
-			pw.checkSetSpacing()
-			if !usePositionedGlyphs {
-				pw.tw.show(buf.Bytes())
-				// pw.tw.showHex(buf.Bytes())
 			}
 		} else {
 			// AFM/Type1: still needs codepage-based encoding.

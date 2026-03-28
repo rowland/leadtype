@@ -12,9 +12,11 @@ import (
 
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/wordbreaking"
+	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/ttf_fonts"
+	"github.com/rowland/leadtype/wordbreaking"
 )
 
 const (
@@ -674,6 +676,71 @@ func TestPageWriter_PrintParagraph_JustifyLeavesLastLineAtLeftEdge(t *testing.T)
 	lastBlock := got[lastBT:]
 	if strings.Contains(lastBlock, " Tc\n") || strings.Contains(lastBlock, " Tw\n") {
 		t.Fatalf("expected final line not to carry justification spacing, got:\n%s", lastBlock)
+	}
+}
+
+func TestPageWriter_FlushText_PositionedTrueTypeLeafSetsFontBeforeGlyphs(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	regular, err := font.New("Arial", options.Options{}, dw.fontSources)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bold, err := font.New("Arial", options.Options{"weight": "Bold"}, dw.fontSources)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := rich_text.New("plain ", []*font.Font{regular}, 12, options.Options{
+		"char_spacing": 1.0,
+		"word_spacing": 2.0,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := rich_text.New("bold", []*font.Font{bold}, 12, options.Options{
+		"char_spacing": 1.0,
+		"color":        colors.Red,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(72, 720)
+	pw.PrintRichText(first.AddPiece(second))
+	pw.flushText()
+
+	got := pw.stream.String()
+	secondTm := fmt.Sprintf("1 0 0 1 %s 720 Tm\n", g(72+first.Width()))
+	secondTmIndex := strings.Index(got, secondTm)
+	if secondTmIndex < 0 {
+		t.Fatalf("expected positioned glyph matrix for second leaf, got:\n%s", got)
+	}
+
+	boldKey := dw.fontKeyUnicode(bold)
+	boldTf := fmt.Sprintf("/%s 12 Tf\n", boldKey)
+	boldTfIndex := strings.Index(got, boldTf)
+	if boldTfIndex < 0 {
+		t.Fatalf("expected bold font selection in stream, got:\n%s", got)
+	}
+	if boldTfIndex > secondTmIndex {
+		t.Fatalf("expected second leaf font selection before positioned glyphs, got:\n%s", got)
+	}
+
+	redIndex := strings.Index(got, "1 0 0 rg\n")
+	if redIndex < 0 {
+		t.Fatalf("expected second leaf color in stream, got:\n%s", got)
+	}
+	if redIndex > secondTmIndex {
+		t.Fatalf("expected second leaf color before positioned glyphs, got:\n%s", got)
 	}
 }
 
