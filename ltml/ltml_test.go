@@ -10,13 +10,34 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/ltml/ltpdf"
+	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 var openSamplePDFs = flag.Bool("open-sample-pdfs", false, "open generated LTML sample PDFs after tests run")
+
+var (
+	sampleFontSourcesOnce sync.Once
+	sampleTTFonts         *ttf_fonts.TtfFonts
+	sampleAFMFonts        *afm_fonts.AfmFonts
+	sampleFontSourcesErr  error
+)
+
+func loadSampleFontSources() (*ttf_fonts.TtfFonts, *afm_fonts.AfmFonts, error) {
+	sampleFontSourcesOnce.Do(func() {
+		sampleTTFonts, sampleFontSourcesErr = ttf_fonts.NewFromSystemFonts()
+		if sampleFontSourcesErr != nil {
+			return
+		}
+		sampleAFMFonts, sampleFontSourcesErr = afm_fonts.Default()
+	})
+	return sampleTTFonts, sampleAFMFonts, sampleFontSourcesErr
+}
 
 func TestParse(t *testing.T) {
 	t.Run("Bytes", func(t *testing.T) {
@@ -58,7 +79,7 @@ func sampleFile(filename string) string {
 	return sample
 }
 
-func writeSamplePDF(name string, t *testing.T) {
+func writeSamplePDF(name string, outputFile string, t *testing.T) {
 	t.Helper()
 
 	doc, err := ParseFile(sampleFile(name + ".ltml"))
@@ -66,17 +87,18 @@ func writeSamplePDF(name string, t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f, err := os.Create(sampleFile(name + ".pdf"))
+	f, err := os.Create(outputFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	w := ltpdf.NewDocWriter()
-	ttFonts, err := ttf_fonts.NewFromSystemFonts()
+	ttFonts, afmFonts, err := loadSampleFontSources()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
+	w := &ltpdf.DocWriter{DocWriter: pdf.NewDocWriter()}
 	w.AddFontSource(ttFonts)
+	w.AddFontSource(afmFonts)
 
 	if err := doc.Print(w); err != nil {
 		t.Errorf("Printing sample: %v", err)
@@ -85,7 +107,7 @@ func writeSamplePDF(name string, t *testing.T) {
 	w.WriteTo(f)
 	f.Close()
 	if *openSamplePDFs {
-		exec.Command("open", sampleFile(name+".pdf")).Start()
+		exec.Command("open", outputFile).Start()
 	}
 }
 
@@ -126,7 +148,8 @@ func TestSamples(t *testing.T) {
 	for _, sample := range samples {
 		sample := sample
 		t.Run(sample, func(t *testing.T) {
-			writeSamplePDF(sample, t)
+			outputFile := filepath.Join(t.TempDir(), sample+".pdf")
+			writeSamplePDF(sample, outputFile, t)
 		})
 	}
 }
