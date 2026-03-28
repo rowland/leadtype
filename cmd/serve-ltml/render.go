@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"github.com/rowland/leadtype/ltml"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 )
+
+var errInvalidLTML = errors.New("invalid LTML")
 
 // renderLTML parses ltmlBytes, renders the document using overlay as the
 // writer's asset filesystem, and returns a temp PDF file inside tmpDir.
@@ -25,7 +28,7 @@ func renderLTML(ltmlBytes []byte, overlay *overlayFS, tmpDir string) (*os.File, 
 
 	doc, err := ltml.Parse(ltmlBytes)
 	if err != nil {
-		return nil, fmt.Errorf("parsing LTML: %w", err)
+		return nil, fmt.Errorf("%w: %v", errInvalidLTML, err)
 	}
 
 	w := ltpdf.NewDocWriter()

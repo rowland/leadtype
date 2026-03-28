@@ -172,7 +172,11 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	pdfFile, err := renderLTML(ltmlBytes, overlay, tmpDir)
 	if err != nil {
 		log.Printf("serve-ltml: render: %v", err)
-		http.Error(w, "render failed", http.StatusInternalServerError)
+		if errors.Is(err, errInvalidLTML) {
+			http.Error(w, "invalid LTML", http.StatusBadRequest)
+		} else {
+			http.Error(w, "render failed", http.StatusInternalServerError)
+		}
 		return
 	}
 	defer pdfFile.Close()

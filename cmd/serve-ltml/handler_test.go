@@ -260,15 +260,34 @@ func TestHandler_TempDirRemovedAfterRenderFailure(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 
-	// Render should fail (bad LTML or bad XML results in 500).
-	if rr.Code == http.StatusOK {
-		t.Log("note: render unexpectedly succeeded; skipping cleanup assertion")
-		return
+	// Render should fail for malformed LTML.
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rr.Code, rr.Body.String())
 	}
 
 	after := countServeLTMLDirs(t, tmpBase)
 	if after != before {
 		t.Errorf("serve-ltml-* temp dirs after failed request = %d, want %d (leaked)", after, before)
+	}
+}
+
+func TestHandler_MalformedLTMLReturnsBadRequest(t *testing.T) {
+	h, _ := newHandler(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "", "<not-valid-xml>"},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "invalid LTML") {
+		t.Fatalf("body = %q, want invalid LTML message", rr.Body.String())
 	}
 }
 
