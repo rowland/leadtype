@@ -5,8 +5,8 @@ package main
 
 import (
 	"errors"
-	"io"
 	"io/fs"
+	"sort"
 )
 
 // overlayFS is a read-only composite filesystem that consults the upper
@@ -88,13 +88,11 @@ func (o *overlayFS) ReadDir(name string) ([]fs.DirEntry, error) {
 			merged = append(merged, e)
 		}
 	}
+	// fs.ReadDirFS requires entries to be sorted by name.
+	sort.Slice(merged, func(i, j int) bool {
+		return merged[i].Name() < merged[j].Name()
+	})
 	return merged, nil
-}
-
-// overlayFile wraps an fs.File to satisfy io.ReadCloser without exposing the
-// full fs.File interface where only reading is needed.
-type overlayFile struct {
-	fs.File
 }
 
 var (
@@ -102,5 +100,4 @@ var (
 	_ fs.ReadFileFS = (*overlayFS)(nil)
 	_ fs.StatFS     = (*overlayFS)(nil)
 	_ fs.ReadDirFS  = (*overlayFS)(nil)
-	_ io.ReadCloser = (*overlayFile)(nil)
 )

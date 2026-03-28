@@ -45,7 +45,7 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.cfg.MaxUploadBytes)
 
 	mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+	if err != nil || mediaType != "multipart/form-data" {
 		http.Error(w, "Content-Type must be multipart/form-data", http.StatusBadRequest)
 		return
 	}

@@ -78,9 +78,10 @@ func TestOverlayFS_ConcurrentRequestsDoNotShare(t *testing.T) {
 	}
 }
 
-// TestOverlayFS_ReadDir_MergesEntries verifies that ReadDir includes entries
-// from both upper and lower, with upper entries shadowing lower.
-func TestOverlayFS_ReadDir_MergesEntries(t *testing.T) {
+// TestOverlayFS_ReadDir_MergesAndSortsEntries verifies that ReadDir includes
+// entries from both upper and lower (with upper shadowing lower) and that the
+// result is sorted by name, as required by the fs.ReadDirFS contract.
+func TestOverlayFS_ReadDir_MergesAndSortsEntries(t *testing.T) {
 	upper := makeMapFS(map[string]string{"a.txt": "upper-a", "b.txt": "upper-b"})
 	lower := makeMapFS(map[string]string{"b.txt": "lower-b", "c.txt": "lower-c"})
 
@@ -91,19 +92,16 @@ func TestOverlayFS_ReadDir_MergesEntries(t *testing.T) {
 		t.Fatalf("ReadDir: %v", err)
 	}
 
-	names := make(map[string]bool)
-	for _, e := range entries {
-		names[e.Name()] = true
-	}
-
-	for _, want := range []string{"a.txt", "b.txt", "c.txt"} {
-		if !names[want] {
-			t.Errorf("missing entry %q", want)
-		}
-	}
-
-	// b.txt should come from upper (shadow), so count should be 3 not 4.
+	// b.txt from upper shadows lower's b.txt, so exactly 3 entries expected.
 	if len(entries) != 3 {
-		t.Errorf("entry count = %d, want 3", len(entries))
+		t.Fatalf("entry count = %d, want 3", len(entries))
+	}
+
+	// Entries must be sorted by name (fs.ReadDirFS contract).
+	want := []string{"a.txt", "b.txt", "c.txt"}
+	for i, e := range entries {
+		if e.Name() != want[i] {
+			t.Errorf("entries[%d].Name() = %q, want %q", i, e.Name(), want[i])
+		}
 	}
 }

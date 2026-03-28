@@ -36,11 +36,8 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /render", newRenderHandler(cfg))
-	// Return 405 for non-POST requests to /render.
-	mux.HandleFunc("/render", func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	})
+	// renderHandler returns 405 for non-POST requests, so a single pattern suffices.
+	mux.Handle("/render", newRenderHandler(cfg))
 
 	srv := &http.Server{
 		Addr:         cfg.Listen,
