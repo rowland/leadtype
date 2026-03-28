@@ -111,6 +111,19 @@ func writeSamplePDF(name string, outputFile string, t *testing.T) {
 	}
 }
 
+func sampleOutputFile(name string, t *testing.T) string {
+	t.Helper()
+	if !*openSamplePDFs {
+		return filepath.Join(t.TempDir(), name+".pdf")
+	}
+	dir, err := os.MkdirTemp("", "leadtype-ltml-samples-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("opened sample PDFs are being written to %s", dir)
+	return filepath.Join(dir, name+".pdf")
+}
+
 func TestSamples(t *testing.T) {
 	samples := []string{
 		"test_001_empty_doc",
@@ -149,7 +162,7 @@ func TestSamples(t *testing.T) {
 	for _, sample := range samples {
 		sample := sample
 		t.Run(sample, func(t *testing.T) {
-			outputFile := filepath.Join(t.TempDir(), sample+".pdf")
+			outputFile := sampleOutputFile(sample, t)
 			writeSamplePDF(sample, outputFile, t)
 		})
 	}

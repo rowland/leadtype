@@ -1,4 +1,4 @@
-.PHONY: binaries test samples ltml-image-sample-local ltml-image-sample-remote
+.PHONY: binaries test samples ltml-samples-open ltml-image-sample-local ltml-image-sample-remote
 
 SAMPLES := $(sort $(wildcard samples/*/*.go))
 BIN_DIR := bin
@@ -26,6 +26,9 @@ samples:
 		echo "==> go run $$sample"; \
 		go run $$sample || exit $$?; \
 	done
+
+ltml-samples-open:
+	go test ./ltml -run TestSamples -args -open-sample-pdfs
 
 ltml-image-sample-local: binaries
 	@echo "==> rendering $(LTML_IMAGE_SAMPLE) locally"
