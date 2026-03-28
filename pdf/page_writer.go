@@ -80,7 +80,7 @@ func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
 	pw.options = options
 	pw.lineSpacing = options.FloatDefault("line_spacing", 1.0)
 	pw.units = UnitConversions[options.StringDefault("units", "pt")]
-	pw.vTextAlign = options.StringDefault("v_text_align", "base")
+	pw.vTextAlign = parseVerticalTextAlign(options.StringDefault("v_text_align", "base"))
 	ps := newPageStyle(options)
 	pw.pageHeight = ps.pageSize.y2
 	pw.pageWidth = ps.pageSize.x2
@@ -172,13 +172,13 @@ func (pw *PageWriter) checkSetVTextAlign(force bool) {
 		}
 		descent := float64(font.Descent()) * scale
 		switch pw.vTextAlign {
-		case "above":
+		case VTextAlignAbove:
 			rise = -(top - descent)
-		case "top":
+		case VTextAlignTop:
 			rise = -top
-		case "middle":
+		case VTextAlignMiddle:
 			rise = -((top + descent) / 2.0)
-		case "below":
+		case VTextAlignBelow:
 			rise = -descent
 		}
 	}
@@ -1486,11 +1486,12 @@ func (pw *PageWriter) SetUnits(units string) {
 }
 
 func (pw *PageWriter) SetVTextAlign(vTextAlign string) (prev string) {
-	prev = pw.vTextAlign
-	if pw.line != nil && prev != vTextAlign {
+	next := parseVerticalTextAlign(vTextAlign)
+	prev = pw.vTextAlign.String()
+	if pw.line != nil && pw.vTextAlign != next {
 		pw.flushText()
 	}
-	pw.vTextAlign = vTextAlign
+	pw.vTextAlign = next
 	return
 }
 
@@ -1523,7 +1524,7 @@ func (pw *PageWriter) resetTextStateCache() {
 	pw.last.fontSize = 0
 	pw.last.charSpacing = 0
 	pw.last.wordSpacing = 0
-	pw.last.vTextAlign = ""
+	pw.last.vTextAlign = VTextAlignBase
 }
 
 func (pw *PageWriter) Strikeout() bool {
@@ -1544,7 +1545,7 @@ func (pw *PageWriter) Underline() bool {
 }
 
 func (pw *PageWriter) VTextAlign() string {
-	return pw.vTextAlign
+	return pw.vTextAlign.String()
 }
 
 func (pw *PageWriter) Units() string {

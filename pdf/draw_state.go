@@ -5,6 +5,46 @@ package pdf
 
 import "github.com/rowland/leadtype/colors"
 
+type VerticalTextAlign uint8
+
+const (
+	VTextAlignBase VerticalTextAlign = iota
+	VTextAlignAbove
+	VTextAlignTop
+	VTextAlignMiddle
+	VTextAlignBelow
+)
+
+func parseVerticalTextAlign(value string) VerticalTextAlign {
+	switch value {
+	case "above":
+		return VTextAlignAbove
+	case "top":
+		return VTextAlignTop
+	case "middle":
+		return VTextAlignMiddle
+	case "below":
+		return VTextAlignBelow
+	default:
+		return VTextAlignBase
+	}
+}
+
+func (v VerticalTextAlign) String() string {
+	switch v {
+	case VTextAlignAbove:
+		return "above"
+	case VTextAlignTop:
+		return "top"
+	case VTextAlignMiddle:
+		return "middle"
+	case VTextAlignBelow:
+		return "below"
+	default:
+		return "base"
+	}
+}
+
 type drawState struct {
 	charSpacing     float64
 	fillColor       colors.Color
@@ -19,6 +59,6 @@ type drawState struct {
 	loc             Location
 	strikeout       bool
 	underline       bool
-	vTextAlign      string
+	vTextAlign      VerticalTextAlign
 	wordSpacing     float64
 }
