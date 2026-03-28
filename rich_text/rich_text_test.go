@@ -14,6 +14,7 @@ import (
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/ttf"
+	"github.com/rowland/leadtype/ttf_fonts"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -22,7 +23,7 @@ import (
 func TestNewRichText_English(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial")
+	fonts := ttf_fonts.Families("Arial")
 	rt, err := New("abc", fonts, 10, options.Options{"color": colors.Green, "underline": true, "strikeout": true, "nobreak": true})
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +40,7 @@ func TestNewRichText_English(t *testing.T) {
 func TestNewRichText_EnglishAndChinese_Fail(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	_, err := New("abc所有测", mustTTFFamilies("Arial", ""), 10, options.Options{})
+	_, err := New("abc所有测", ttf_fonts.Families("Arial", ""), 10, options.Options{})
 	st.False(err == nil, "New should fail with Chinese text and only Arial.")
 	st.Equal("No font found for 所有测.", err.Error())
 }
@@ -47,7 +48,7 @@ func TestNewRichText_EnglishAndChinese_Fail(t *testing.T) {
 func TestNewRichText_EnglishAndChinese_substitute(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	rt, err := New("abc所有测", mustTTFFamilies("Arial"), 10, options.Options{})
+	rt, err := New("abc所有测", ttf_fonts.Families("Arial"), 10, options.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +58,7 @@ func TestNewRichText_EnglishAndChinese_substitute(t *testing.T) {
 func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial", "STFangsong")
+	fonts := ttf_fonts.Families("Arial", "STFangsong")
 	rt, err := New("abc所有测def", fonts, 10, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +91,7 @@ func TestNewRichText_EnglishAndChinese_Pass(t *testing.T) {
 func TestNewRichText_ChineseAndEnglish(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial", "STFangsong")
+	fonts := ttf_fonts.Families("Arial", "STFangsong")
 	rt, err := New("所有测abc", fonts, 10, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +113,10 @@ func TestNewRichText_ChineseAndEnglish_ranges(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 
-	fc := mustTTFFontSource()
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
 	cjk, err := ttf.NewCodepointRangeSet("CJK Unified Ideographs")
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +151,7 @@ func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 	afmFonts := afm_fonts.Families("Helvetica")
-	ttfFonts := mustTTFFamilies("Arial", "STFangsong")
+	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	rt, err := New(englishRussianChinese, fonts, 10, options.Options{})
 	if err != nil {
@@ -175,7 +179,7 @@ func TestNewRichText_EnglishRussianAndChineseLanguages(t *testing.T) {
 func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("STFangsong", "Arial")
+	fonts := ttf_fonts.Families("STFangsong", "Arial")
 	rt, err := New("所有测abc", fonts, 10, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +191,7 @@ func TestNewRichText_ChineseAndEnglish_Reversed(t *testing.T) {
 }
 
 func richTextMixedText() *RichText {
-	rt, err := New("abc所有测def", mustTTFFamilies("Arial", "STFangsong"), 10, options.Options{})
+	rt, err := New("abc所有测def", ttf_fonts.Families("Arial", "STFangsong"), 10, options.Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -276,7 +280,7 @@ func TestRichText_Height(t *testing.T) {
 	st := SuperTest{t}
 	p := new(RichText)
 	st.Equal(0.0, p.Height())
-	fonts := mustTTFFamilies("Courier New", "STFangsong")
+	fonts := ttf_fonts.Families("Courier New", "STFangsong")
 	p, err := New("abc所有测", fonts, 10, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -296,7 +300,7 @@ func TestRichText_InsertStringAtOffsets(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 	afmFonts := afm_fonts.Families("Helvetica")
-	ttfFonts := mustTTFFamilies("Arial", "STFangsong")
+	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Automatic "
 	text1 := "hyphenation "
@@ -342,7 +346,7 @@ func TestRichText_InsertStringAtOffsets_simple2(t *testing.T) {
 func TestRichText_IsNewLine(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	font := mustTTFFamilies("Arial")[0]
+	font := ttf_fonts.Families("Arial")[0]
 
 	empty := RichText{
 		Text:     "",
@@ -369,7 +373,7 @@ func TestRichText_IsNewLine(t *testing.T) {
 func TestRichText_IsWhiteSpace(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	font := mustTTFFamilies("Arial")[0]
+	font := ttf_fonts.Families("Arial")[0]
 
 	empty := RichText{
 		Text:     "",
@@ -441,7 +445,7 @@ func TestRichText_Len_simple(t *testing.T) {
 }
 
 func arialText(s string) *RichText {
-	rt, err := New(s, mustTTFFamilies("Arial"), 10, options.Options{})
+	rt, err := New(s, ttf_fonts.Families("Arial"), 10, options.Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -457,7 +461,7 @@ func helveticaText(s string) *RichText {
 }
 
 func courierNewText(s string) *RichText {
-	rt, err := New(s, mustTTFFamilies("Courier New"), 10, options.Options{})
+	rt, err := New(s, ttf_fonts.Families("Courier New"), 10, options.Options{})
 	if err != nil {
 		panic(err)
 	}
@@ -482,7 +486,7 @@ func TestRichText_MatchesAttributes(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 
-	font := mustTTFFamilies("Arial")[0]
+	font := ttf_fonts.Families("Arial")[0]
 	p1 := RichText{
 		Text:     "Lorem",
 		Font:     font,
@@ -491,7 +495,7 @@ func TestRichText_MatchesAttributes(t *testing.T) {
 	p2 := p1
 	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
 
-	p2.Font = mustTTFFamilies("Arial")[0]
+	p2.Font = ttf_fonts.Families("Arial")[0]
 	st.True(p1.MatchesAttributes(&p2), "Attributes should match.")
 
 	p2.FontSize = 12
@@ -537,7 +541,7 @@ func TestRichText_Merge(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 	afmFonts := afm_fonts.Families("Helvetica")
-	ttfFonts := mustTTFFamilies("Arial", "STFangsong")
+	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	text := "Here is some "
 	text1 := "Russian, Неприкосновенность, "
@@ -619,7 +623,7 @@ func TestRichText_Merge(t *testing.T) {
 func TestRichText_Merge_width_chars(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial")
+	fonts := ttf_fonts.Families("Arial")
 	text := "Here is some "
 	text1 := "English text."
 	original, err := New(text, fonts, 10, options.Options{})
@@ -641,7 +645,7 @@ func TestRichText_Merge_width_chars(t *testing.T) {
 
 func mixedText() *RichText {
 	afmFonts := afm_fonts.Families("Helvetica")
-	ttfFonts := mustTTFFamilies("Arial", "STFangsong")
+	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	rt, err := New(englishRussianChinese, fonts, 10, options.Options{})
 	if err != nil {
@@ -726,7 +730,7 @@ func TestRichText_TrimSpace(t *testing.T) {
 func TestRichText_TrimRightFunc_complex(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial")
+	fonts := ttf_fonts.Families("Arial")
 	t1, err := New(whiteSpaceText_complex1, fonts, 10, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -888,7 +892,7 @@ func TestRichText_WrapToWidth_soft_hyphenated2(t *testing.T) {
 func TestRichText_WrapToWidth_short(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	p, err := New("Lorem ipsum.", mustTTFFamilies("Arial"), 10, options.Options{"nobreak": true})
+	p, err := New("Lorem ipsum.", ttf_fonts.Families("Arial"), 10, options.Options{"nobreak": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -924,7 +928,7 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 func TestRichText_WrapToWidth_chinese(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial Unicode MS", "Hiragino Sans GB", "STFangsong")
+	fonts := ttf_fonts.Families("Arial Unicode MS", "Hiragino Sans GB", "STFangsong")
 	rt, err := New("表明你已明确同意你的回答接受评估。", fonts, 12, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -941,7 +945,7 @@ func TestRichText_WrapToWidth_chinese(t *testing.T) {
 func TestRichText_WrapToWidth_japanese(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial Unicode MS", "Hiragino Sans", "Hiragino Sans GB")
+	fonts := ttf_fonts.Families("Arial Unicode MS", "Hiragino Sans", "Hiragino Sans GB")
 	rt, err := New("日本語の文章では改行位置を空白に頼らず文字の境界で見つける必要があります。", fonts, 12, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -958,7 +962,7 @@ func TestRichText_WrapToWidth_japanese(t *testing.T) {
 func TestRichText_WrapToWidth_thai(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial Unicode MS", "Thonburi UI")
+	fonts := ttf_fonts.Families("Arial Unicode MS", "Thonburi UI")
 	rt, err := New("ราวกับเปิดโอกาสให้ผู้คนได้สังเกตความงามของช่วงเวลาธรรมดาในแต่ละวันมากขึ้น", fonts, 12, options.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -995,7 +999,7 @@ func TestRichText_WrapToWidth_nobreak_simple(t *testing.T) {
 	st := SuperTest{t}
 	rt, err := New(
 		"Here is a long sentence with mostly small words.",
-		mustTTFFamilies("Arial"), 10,
+		ttf_fonts.Families("Arial"), 10,
 		options.Options{"nobreak": true})
 	if err != nil {
 		t.Fatal(err)
@@ -1010,7 +1014,7 @@ func TestRichText_WrapToWidth_nobreak_simple(t *testing.T) {
 func TestRichText_WrapToWidth_nobreak_complex(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
-	fonts := mustTTFFamilies("Arial")
+	fonts := ttf_fonts.Families("Arial")
 	var rt *RichText
 	var err error
 	rt, err = New("Here is a ", fonts, 10, options.Options{})
@@ -1068,7 +1072,7 @@ func TestRichText_Zapf(t *testing.T) {
 func BenchmarkNewRichText(b *testing.B) {
 	b.StopTimer()
 	afmFonts := afm_fonts.Families("Helvetica")
-	ttfFonts := mustTTFFamilies("Arial", "STFangsong")
+	ttfFonts := ttf_fonts.Families("Arial", "STFangsong")
 	fonts := append(afmFonts, ttfFonts...)
 	b.StartTimer()
 
@@ -1088,7 +1092,7 @@ func BenchmarkNewRichText(b *testing.B) {
 // 48.3 ns go1.7.3 mbp
 func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	b.StopTimer()
-	font := mustTTFFamilies("Arial")[0]
+	font := ttf_fonts.Families("Arial")[0]
 	piece := &RichText{
 		Text:     "  \t\n\v\f\r",
 		Font:     font,

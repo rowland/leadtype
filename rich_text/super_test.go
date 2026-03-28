@@ -6,23 +6,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
-
-	"github.com/rowland/leadtype/font"
-	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 type SuperTest struct {
 	*testing.T
 }
-
-var (
-	testTTFFontSourceOnce sync.Once
-	testTTFFontSource     *ttf_fonts.TtfFonts
-	testTTFFontSourceErr  error
-)
 
 func (st *SuperTest) AlmostEqual(expected, actual, delta float64, msg ...string) {
 	if math.Abs(expected-actual) > delta {
@@ -92,30 +81,4 @@ func skipIfNoTTFFonts(t *testing.T) {
 	if _, err := os.Stat("/Library/Fonts/Arial.ttf"); err != nil {
 		t.Skip("macOS TTF fonts not available")
 	}
-}
-
-func mustTTFFontSource() *ttf_fonts.TtfFonts {
-	testTTFFontSourceOnce.Do(func() {
-		testTTFFontSource, testTTFFontSourceErr = ttf_fonts.NewFromSystemFonts()
-	})
-	if testTTFFontSourceErr != nil {
-		panic(testTTFFontSourceErr)
-	}
-	return testTTFFontSource
-}
-
-func mustTTFFamilies(families ...string) (fonts []*font.Font) {
-	fc := mustTTFFontSource()
-	for _, family := range families {
-		if family == "" {
-			fonts = append(fonts, nil)
-			continue
-		}
-		f, err := font.New(family, options.Options{}, font.FontSources{fc})
-		if err != nil {
-			panic(err)
-		}
-		fonts = append(fonts, f)
-	}
-	return
 }
