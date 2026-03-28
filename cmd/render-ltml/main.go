@@ -34,8 +34,11 @@ func main() {
 	var extraFiles multiFlag
 
 	flag.StringVar(&assetsDir, "assets", "", "path to asset `directory`")
+	flag.StringVar(&assetsDir, "a", "", "path to asset `directory` (shorthand)")
 	flag.StringVar(&outputPath, "output", "", "output `file` (default: stdout)")
+	flag.StringVar(&outputPath, "o", "", "output `file` (shorthand)")
 	flag.Var(&extraFiles, "extra", "additional asset `file` (may be repeated)")
+	flag.Var(&extraFiles, "e", "additional asset `file` (shorthand)")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: render-ltml [flags] <file.ltml>\n\nFlags:\n")
 		flag.PrintDefaults()
