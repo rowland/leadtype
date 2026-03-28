@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
@@ -18,6 +19,58 @@ type TtfFonts struct {
 	FontInfos []*ttf.FontInfo
 	fonts     map[string]*ttf.Font
 	shaper    shaping.Shaper // nil unless SetShaper has been called
+}
+
+var systemFontCache struct {
+	mu     sync.Mutex
+	infos  []*ttf.FontInfo
+	err    error
+	loaded bool
+}
+
+var loadSystemFontInfos = func() ([]*ttf.FontInfo, error) {
+	var fc TtfFonts
+	var err error
+	for _, dir := range SystemFontDirs() {
+		for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC"} {
+			// Ignore errors from individual patterns (directory may not exist).
+			if err2 := fc.Add(filepath.Join(dir, ext)); err2 != nil {
+				err = err2
+			}
+		}
+	}
+	return cloneFontInfos(fc.FontInfos), err
+}
+
+func cloneFontInfos(infos []*ttf.FontInfo) []*ttf.FontInfo {
+	if len(infos) == 0 {
+		return nil
+	}
+	cloned := make([]*ttf.FontInfo, len(infos))
+	copy(cloned, infos)
+	return cloned
+}
+
+func cachedSystemFontInfos() ([]*ttf.FontInfo, error) {
+	systemFontCache.mu.Lock()
+	defer systemFontCache.mu.Unlock()
+
+	if !systemFontCache.loaded {
+		systemFontCache.infos, systemFontCache.err = loadSystemFontInfos()
+		systemFontCache.loaded = true
+	}
+	return cloneFontInfos(systemFontCache.infos), systemFontCache.err
+}
+
+// ClearCache releases the cached system font inventory used by
+// NewFromSystemFonts and AddSystemFonts. Future calls will rescan the
+// platform's standard font directories.
+func ClearCache() {
+	systemFontCache.mu.Lock()
+	defer systemFontCache.mu.Unlock()
+	systemFontCache.infos = nil
+	systemFontCache.err = nil
+	systemFontCache.loaded = false
 }
 
 // SetShaper attaches an Arabic (complex-script) shaper to this font collection.
@@ -50,13 +103,9 @@ func NewFromSystemFonts() (*TtfFonts, error) {
 // AddSystemFonts adds all TTF and TTC fonts found in the platform's standard
 // font directories.
 func (fc *TtfFonts) AddSystemFonts() error {
-	for _, dir := range SystemFontDirs() {
-		for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC"} {
-			// Ignore errors from individual patterns (directory may not exist).
-			fc.Add(filepath.Join(dir, ext))
-		}
-	}
-	return nil
+	infos, err := cachedSystemFontInfos()
+	fc.FontInfos = append(fc.FontInfos, infos...)
+	return err
 }
 
 func Families(families ...string) (fonts []*font.Font) {

@@ -5,6 +5,8 @@ package ttf_fonts
 
 import (
 	"testing"
+
+	"github.com/rowland/leadtype/ttf"
 )
 
 type ttfFontSelection struct {
@@ -102,5 +104,85 @@ func BenchmarkTtfFontCollection_Select(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		fonts.Select("Times New Roman", "Bold", "Italic", nil)
+	}
+}
+
+func TestNewFromSystemFonts_CachesInventory(t *testing.T) {
+	ClearCache()
+	originalLoader := loadSystemFontInfos
+	defer func() {
+		loadSystemFontInfos = originalLoader
+		ClearCache()
+	}()
+
+	calls := 0
+	info := &ttf.FontInfo{}
+	loadSystemFontInfos = func() ([]*ttf.FontInfo, error) {
+		calls++
+		return []*ttf.FontInfo{info}, nil
+	}
+
+	fc1, err := NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fc2, err := NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if calls != 1 {
+		t.Fatalf("expected one system font scan, got %d", calls)
+	}
+	if len(fc1.FontInfos) != 1 || fc1.FontInfos[0] != info {
+		t.Fatalf("unexpected first font inventory: %#v", fc1.FontInfos)
+	}
+	if len(fc2.FontInfos) != 1 || fc2.FontInfos[0] != info {
+		t.Fatalf("unexpected second font inventory: %#v", fc2.FontInfos)
+	}
+
+	fc1.FontInfos[0] = nil
+	if fc2.FontInfos[0] != info {
+		t.Fatal("expected each TtfFonts instance to receive its own FontInfos slice")
+	}
+}
+
+func TestClearCache_ForcesRescan(t *testing.T) {
+	ClearCache()
+	originalLoader := loadSystemFontInfos
+	defer func() {
+		loadSystemFontInfos = originalLoader
+		ClearCache()
+	}()
+
+	calls := 0
+	first := &ttf.FontInfo{}
+	second := &ttf.FontInfo{}
+	loadSystemFontInfos = func() ([]*ttf.FontInfo, error) {
+		calls++
+		if calls == 1 {
+			return []*ttf.FontInfo{first}, nil
+		}
+		return []*ttf.FontInfo{second}, nil
+	}
+
+	fc1, err := NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ClearCache()
+	fc2, err := NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if calls != 2 {
+		t.Fatalf("expected ClearCache to force a rescan, got %d scans", calls)
+	}
+	if fc1.FontInfos[0] != first {
+		t.Fatal("expected first cached inventory before ClearCache")
+	}
+	if fc2.FontInfos[0] != second {
+		t.Fatal("expected fresh inventory after ClearCache")
 	}
 }
