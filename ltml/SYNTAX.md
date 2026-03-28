@@ -641,6 +641,13 @@ Measurements can be expressed in several forms:
 
 **Supported units:** `pt` (points), `in` (inches, 72pt), `cm` (centimeters, 28.35pt).
 
+Implementation note: LTML stores and computes measurements internally in
+points. Alternate units are only used in markup attributes. `ParseMeasurement`
+converts each specified value to points using:
+
+1. the explicit unit suffix, if present, or
+2. the element's current default `units` value, if the measurement is bare.
+
 Measurements are valid wherever `width`, `height`, `margin`, `padding`,
 `corners`, positional attributes (`top`, `right`, `bottom`, `left`), and
 similar dimension values are accepted.

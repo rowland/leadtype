@@ -1,0 +1,47 @@
+<ltml units="in" margin="0.55">
+  <layout id="vbox" padding="8pt" />
+  <layout id="panel" padding="8pt" />
+
+  <page>
+    <label font.size="18" font.weight="Bold">Image placement via render-ltml</label>
+    <p>This LTML sample mirrors samples/test_014_images.go using uploaded image files rendered through either the local or remote render-ltml path.</p>
+
+    <table order="rows" cols="2" width="100%" border="thin" padding="8pt">
+      <div layout="vbox" border="thin" padding="8pt">
+        <label font.weight="Bold">JPEG width fixed to 1.8 in</label>
+        <image src="testimg.jpg" width="1.8" border="dotted" padding="3pt" />
+        <label font.size="9">height inferred from 227 x 149 px</label>
+      </div>
+
+      <div layout="vbox" border="thin" padding="8pt">
+        <label font.weight="Bold">JPEG height fixed to 1.4 in</label>
+        <image src="testimg.jpg" height="1.4" border="dotted" padding="3pt" />
+        <label font.size="9">width inferred from 227 x 149 px</label>
+      </div>
+
+      <div layout="vbox" border="thin" padding="8pt">
+        <label font.weight="Bold">JPEG native size from metadata</label>
+        <image src="testimg.jpg" border="dotted" padding="3pt" />
+        <label font.size="9">227 pt x 149 pt footprint</label>
+      </div>
+
+      <div layout="vbox" border="thin" padding="8pt">
+        <label font.weight="Bold">JPEG forced to 1.7 x 1.1 in</label>
+        <image src="testimg.jpg" width="1.7" height="1.1" border="dotted" padding="3pt" />
+        <label font.size="9">aspect ratio ignored</label>
+      </div>
+
+      <div layout="vbox" border="thin" padding="8pt">
+        <label font.weight="Bold">PNG width fixed to 2.4 in</label>
+        <image src="eidetic.png" width="2.4" border="dotted" padding="3pt" />
+        <label font.size="9">height inferred from 226 x 79 px</label>
+      </div>
+
+      <div layout="vbox" border="thin" padding="8pt">
+        <label font.weight="Bold">PNG forced to 1.7 x 1.1 in</label>
+        <image src="eidetic.png" width="1.7" height="1.1" border="dotted" padding="3pt" />
+        <label font.size="9">aspect ratio ignored</label>
+      </div>
+    </table>
+  </page>
+</ltml>

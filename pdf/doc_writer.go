@@ -125,6 +125,10 @@ func (dw *DocWriter) SetAssetFS(assetFS fs.FS) {
 	dw.assetFS = assetFS
 }
 
+func (dw *DocWriter) AssetFS() fs.FS {
+	return dw.assetFS
+}
+
 func (dw *DocWriter) readImageFile(filename string) ([]byte, error) {
 	if dw.assetFS == nil {
 		return os.ReadFile(filename)

@@ -18,7 +18,9 @@ func (dw *DocWriter) NewPage() {
 }
 
 func (dw *DocWriter) LayoutProbeWriter() interface{} {
-	return NewDocWriter()
+	probe := NewDocWriter()
+	probe.SetAssetFS(dw.AssetFS())
+	return probe
 }
 
 func (dw *DocWriter) SetLineWidth(width float64) {
