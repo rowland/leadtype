@@ -40,7 +40,7 @@ func (b *body) add(w ...genWriter) {
 func (b *body) write(w lenWriter, ss *xRefSubSection) {
 	for _, e := range b.list {
 		xe := &inUseXRefEntry{w.Len(), e.Gen()}
-		ss.add(xe)
+		ss.set(e.(seqGen).Seq(), xe)
 		e.write(w)
 	}
 }
@@ -719,6 +719,13 @@ func newXRefSubSection() *xRefSubSection {
 
 func (ss *xRefSubSection) add(w writer) {
 	ss.list = append(ss.list, w)
+}
+
+func (ss *xRefSubSection) set(index int, w writer) {
+	for len(ss.list) <= index {
+		ss.list = append(ss.list, &freeXRefEntry{0, 0, nil})
+	}
+	ss.list[index] = w
 }
 
 func (ss *xRefSubSection) len() int {

@@ -519,3 +519,30 @@ func TestXRefTable(t *testing.T) {
 	table.write(&buf)
 	expectS(t, "xref\n0 3\n0000000000 65535 f\n0000000000 00000 n\n0000000100 00001 n\n", buf.String())
 }
+
+func TestBodyWrite_XRefFillsSequenceGaps(t *testing.T) {
+	var body body
+	body.add(
+		&indirectObject{seq: 1, gen: 0, obj: str("one")},
+		&indirectObject{seq: 3, gen: 0, obj: str("three")},
+	)
+
+	var buf bytes.Buffer
+	ss := newXRefSubSection()
+	body.write(&buf, ss)
+
+	if got, want := ss.len(), 4; got != want {
+		t.Fatalf("xref length = %d, want %d", got, want)
+	}
+
+	var xref bytes.Buffer
+	ss.write(&xref)
+	expectS(t,
+		"0 4\n"+
+			"0000000000 65535 f\n"+
+			"0000000000 00000 n\n"+
+			"0000000000 00000 f\n"+
+			"0000000022 00000 n\n",
+		xref.String(),
+	)
+}
