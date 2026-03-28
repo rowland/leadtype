@@ -153,7 +153,6 @@ func (widget *StdWidget) PreferredWidth(Writer) float64 {
 }
 
 func (widget *StdWidget) Print(w Writer) error {
-	fmt.Printf("Printing %s\n", widget)
 	return nil
 }
 

@@ -5,7 +5,6 @@ package ltml
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"unicode"
 
@@ -142,7 +141,7 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 			},
 		)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "StdLabel.RichText: %v", err)
+			debugf("StdLabel.RichText: %v", err)
 		}
 		lastText = text
 	}

@@ -35,7 +35,6 @@ func (bs *BrushStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if color, ok := attrs[prefix+"color"]; ok {
 		bs.color = NamedColor(color)
 	}
-	fmt.Println("color:", bs.color)
 }
 
 func (bs *BrushStyle) String() string {

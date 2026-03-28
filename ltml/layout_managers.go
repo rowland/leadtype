@@ -2,7 +2,6 @@ package ltml
 
 import (
 	"errors"
-	"fmt"
 	"math"
 )
 
@@ -20,7 +19,7 @@ func LayoutManagerFor(name string) LayoutFunc {
 		// fmt.Printf("%#v", f)
 		return f
 	}
-	fmt.Println("couldn't find ", name)
+	debugf("couldn't find %s\n", name)
 	return LayoutVBox
 }
 

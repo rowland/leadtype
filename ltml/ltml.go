@@ -6,7 +6,6 @@ package ltml
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -79,12 +78,12 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if elem.Name.Space == DefaultSpace {
 		if alias, ok := doc.scope().AliasFor(trueTag); ok {
 			trueTag, defaultAttrs = alias.Tag, alias.Attrs
-			fmt.Fprintf(os.Stderr, "Alias %s=%s %v\n", elem.Name.Local, trueTag, defaultAttrs)
+			debugf("Alias %s=%s %v\n", elem.Name.Local, trueTag, defaultAttrs)
 		}
 	}
 	e := makeElement(elem.Name.Space, trueTag)
 	if e == nil {
-		fmt.Fprintf(os.Stderr, "Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
+		debugf("Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
 	}
 	if ws, ok := e.(WantsScope); ok {
 		ws.SetScope(doc.scope())
@@ -92,7 +91,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	var err error
 	if child, ok := e.(HasParent); ok {
 		if err = child.SetParent(doc.current()); err != nil {
-			fmt.Fprintf(os.Stderr, "Setting parent: %s\n", err)
+			debugf("Setting parent: %s\n", err)
 		}
 	}
 	if parent, ok := doc.current().(Container); ok && err == nil {
@@ -101,7 +100,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		}
 		if wc, ok := e.(WantsContainer); ok {
 			if err = wc.SetContainer(parent); err != nil {
-				fmt.Fprintf(os.Stderr, "Setting container: %s\n", err)
+				debugf("Setting container: %s\n", err)
 			}
 		}
 	}
@@ -158,7 +157,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			}
 		}
 		if err := doc.scope().AddStyle(style); err != nil {
-			fmt.Fprintf(os.Stderr, "Adding style: %s\n", err)
+			debugf("Adding style: %s\n", err)
 		}
 	}
 	if layout, ok := e.(*LayoutStyle); ok {
@@ -167,17 +166,17 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			layout.SetAttrs(attrs)
 		}
 		if err := doc.scope().AddLayout(layout); err != nil {
-			fmt.Fprintf(os.Stderr, "Adding layout: %s\n", err)
+			debugf("Adding layout: %s\n", err)
 		}
 	}
 	if alias, ok := e.(*Alias); ok {
 		if err := doc.scope().AddAlias(alias); err != nil {
-			fmt.Fprintf(os.Stderr, "Adding alias: %s\n", err)
+			debugf("Adding alias: %s\n", err)
 		}
 	}
 	if rules, ok := e.(*Rules); ok {
 		if err := doc.scope().AddRules(rules); err != nil {
-			fmt.Fprintf(os.Stderr, "Adding rules: %s\n", err)
+			debugf("Adding rules: %s\n", err)
 		}
 	}
 }
@@ -251,22 +250,22 @@ func ParseReader(r io.Reader) (*Doc, error) {
 }
 
 func traceStartElement(elem xml.StartElement) {
-	// fmt.Printf("StartElement %s:%s\n", elem.Name.Space, elem.Name.Local)
+	debugf("StartElement %s:%s\n", elem.Name.Space, elem.Name.Local)
 	for _, attr := range elem.Attr {
-		fmt.Printf("%s=%s\n", attr.Name.Local, attr.Value)
+		debugf("%s=%s\n", attr.Name.Local, attr.Value)
 	}
 }
 
 func traceEndElement(elem xml.EndElement) {
-	// fmt.Printf("EndElement %s:%s\n", elem.Name.Space, elem.Name.Local)
+	debugf("EndElement %s:%s\n", elem.Name.Space, elem.Name.Local)
 }
 
 func traceCharData(data xml.CharData) {
-	// fmt.Println("CharData")
-	fmt.Println(strings.TrimSpace(string(data)))
+	if text := strings.TrimSpace(string(data)); text != "" {
+		debugf("%s\n", text)
+	}
 }
 
 func traceComment(comment xml.Comment) {
-	// fmt.Println("Comment")
-	fmt.Println(string(comment))
+	debugf("%s\n", string(comment))
 }

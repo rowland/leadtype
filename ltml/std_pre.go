@@ -5,7 +5,6 @@ package ltml
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/rowland/leadtype/options"
@@ -166,7 +165,7 @@ func (p *StdPre) richTextForLine(line string, w Writer) (*rich_text.RichText, er
 		"underline": w.Underline(),
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "StdPre.richTextForLine: %v", err)
+		debugf("StdPre.richTextForLine: %v", err)
 		return nil, err
 	}
 	return rt, nil

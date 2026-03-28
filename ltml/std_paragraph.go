@@ -5,7 +5,6 @@ package ltml
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"unicode"
@@ -182,7 +181,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 				"strikeout": w.Strikeout(),
 				"underline": w.Underline()})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "StdParagraph.RichText: %v", err)
+			debugf("StdParagraph.RichText: %v", err)
 		}
 		lastText = text
 	}

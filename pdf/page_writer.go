@@ -1175,7 +1175,6 @@ func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options
 		case "center":
 			pw.keepOrigin = true
 			pw.loc = Location{pw.loc.X + (width-p.Width())/2, pw.loc.Y}
-			fmt.Println("center", pw.loc)
 		case "right":
 			pw.keepOrigin = true
 			pw.loc = Location{pw.loc.X + width - p.Width(), pw.loc.Y}
