@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
-	"os"
+	"io/fs"
 )
 
 var errUnsupportedImageFormat = errors.New("unsupported image format")
@@ -110,6 +110,10 @@ func imageKey(data []byte) string {
 	default:
 		return fmt.Sprintf("image:%x", sum)
 	}
+}
+
+func validAssetPath(name string) bool {
+	return name != "." && fs.ValidPath(name)
 }
 
 func isJPEG(image []byte) bool {
@@ -227,10 +231,6 @@ func pngInfo(data []byte) (imageInfo, error) {
 	}, nil
 }
 
-func readImageFile(filename string) ([]byte, error) {
-	return os.ReadFile(filename)
-}
-
 func imageInfoForData(data []byte) (imageInfo, error) {
 	if isJPEG(data) {
 		return jpegInfo(data)
@@ -247,14 +247,6 @@ func imageDimensions(data []byte) (width, height int, err error) {
 		return 0, 0, err
 	}
 	return info.width, info.height, nil
-}
-
-func imageDimensionsFromFile(filename string) (width, height int, err error) {
-	data, err := readImageFile(filename)
-	if err != nil {
-		return 0, 0, err
-	}
-	return imageDimensions(data)
 }
 
 func imageSizeInPoints(info imageInfo, units *units, width, height *float64) (float64, float64) {
@@ -358,85 +350,4 @@ func decodeImage(data []byte) (decodedImage, error) {
 		return decodePNG(data)
 	}
 	return decodedImage{}, errUnsupportedImageFormat
-}
-
-func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, error) {
-	if cached, ok := dw.images[key]; ok {
-		return cached.image, cached.name, nil
-	}
-	decoded, err := decodeImage(data)
-	if err != nil {
-		return nil, "", err
-	}
-	components := decoded.info.components
-	if len(decoded.alphaData) > 0 && (components == imageComponentsGrayAlpha || components == imageComponentsRGBA) {
-		components--
-	}
-	colorSpace, err := imageColorSpace(components)
-	if err != nil {
-		return nil, "", err
-	}
-	image := newPDFImage(dw.nextSeq(), 0, decoded.data)
-	image.setDimensions(decoded.info.width, decoded.info.height)
-	image.setBitsPerComponent(decoded.info.bitsPerComponent)
-	image.setColorSpace(colorSpace)
-	if decoded.filter == "FlateDecode" {
-		if err := image.compress(); err != nil {
-			return nil, "", err
-		}
-	} else if decoded.filter != "" {
-		image.setFilter(decoded.filter)
-	}
-	if len(decoded.alphaData) > 0 {
-		mask := newPDFImage(dw.nextSeq(), 0, decoded.alphaData)
-		mask.setDimensions(decoded.info.width, decoded.info.height)
-		mask.setBitsPerComponent(decoded.info.bitsPerComponent)
-		mask.setColorSpace("DeviceGray")
-		if err := mask.compress(); err != nil {
-			return nil, "", err
-		}
-		dw.file.body.add(mask)
-		image.setSMask(&indirectObjectRef{mask})
-	}
-
-	name := fmt.Sprintf("Im%d", len(dw.images))
-	dw.file.body.add(image)
-	dw.resources.setXObject(name, &indirectObjectRef{image})
-	dw.images[key] = &cachedImage{image: image, name: name}
-	return image, name, nil
-}
-
-func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	key := imageKey(data)
-	image, name, err := pw.dw.loadImage(data, key)
-	if err != nil {
-		return 0, 0, err
-	}
-	xpts := pw.units.toPts(x)
-	ypts := pw.units.toPts(y)
-	info := imageInfo{
-		width:            image.width,
-		height:           image.height,
-		bitsPerComponent: image.bitsPerComponent,
-	}
-	wpts, hpts := imageSizeInPoints(info, pw.units, width, height)
-	if pw.inPath {
-		pw.endPath()
-	}
-	if pw.inText {
-		pw.endText()
-	}
-	if pw.inGraph {
-		pw.endGraph()
-	}
-	writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
-	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
-}
-
-func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	data, err := readImageFile(filename)
-	if err != nil {
-		return 0, 0, err
-	}
-	return pw.PrintImage(data, x, y, width, height)
 }

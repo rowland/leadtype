@@ -3,7 +3,9 @@
 
 package ltml
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type StdImage struct {
 	StdWidget
@@ -22,7 +24,7 @@ func (img *StdImage) PreferredHeight(w Writer) float64 {
 	if img.height != 0 {
 		return img.height
 	}
-	infoWidth, infoHeight, err := w.ImageDimensionsFromFile(img.src)
+	infoWidth, infoHeight, err := img.imageDimensions(w)
 	if err != nil || infoWidth == 0 {
 		return NonContentHeight(img)
 	}
@@ -36,7 +38,7 @@ func (img *StdImage) PreferredWidth(w Writer) float64 {
 	if img.width != 0 {
 		return img.width
 	}
-	infoWidth, infoHeight, err := w.ImageDimensionsFromFile(img.src)
+	infoWidth, infoHeight, err := img.imageDimensions(w)
 	if err != nil || infoHeight == 0 {
 		return NonContentWidth(img)
 	}
@@ -44,6 +46,10 @@ func (img *StdImage) PreferredWidth(w Writer) float64 {
 		return img.height*float64(infoWidth)/float64(infoHeight) + NonContentWidth(img)
 	}
 	return float64(infoWidth) + NonContentWidth(img)
+}
+
+func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
+	return w.ImageDimensionsFromFile(img.src)
 }
 
 func (img *StdImage) SetAttrs(attrs map[string]string) {
@@ -81,3 +87,4 @@ var _ HasAttrs = (*StdImage)(nil)
 var _ Identifier = (*StdImage)(nil)
 var _ Printer = (*StdImage)(nil)
 var _ WantsContainer = (*StdImage)(nil)
+var _ WantsScope = (*StdImage)(nil)

@@ -13,9 +13,10 @@ import (
 )
 
 type Doc struct {
-	ltmls  []*StdDocument
-	stack  []interface{}
-	scopes []HasScope
+	ltmls     []*StdDocument
+	stack     []interface{}
+	scopes    []HasScope
+	rootScope Scope // per-document root scope; parent = &defaultScope
 }
 
 func (doc *Doc) Parse(b []byte) error {
@@ -226,7 +227,12 @@ func (doc *Doc) scope() HasScope {
 	if len(doc.scopes) > 0 {
 		return doc.scopes[len(doc.scopes)-1]
 	}
-	return &defaultScope
+	// Return the per-document root scope, which inherits from defaultScope.
+	// This ensures concurrent documents can carry different asset filesystems.
+	if doc.rootScope.parent == nil {
+		doc.rootScope.SetParentScope(&defaultScope)
+	}
+	return &doc.rootScope
 }
 
 func Parse(b []byte) (*Doc, error) {

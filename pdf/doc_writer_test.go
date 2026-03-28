@@ -5,8 +5,11 @@ package pdf
 
 import (
 	"bytes"
+	"image"
+	"io/fs"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/codepage"
@@ -200,6 +203,126 @@ func TestDocWriter_PageWidth(t *testing.T) {
 	UnitConversions.Add("dp", 0.072)
 	dw.SetUnits("dp")
 	expectF(t, 8500, dw.PageWidth())
+}
+
+func TestDocWriter_PrintImageFile_Integration(t *testing.T) {
+	var buf bytes.Buffer
+
+	dw := NewDocWriter()
+	dw.SetUnits("in")
+	dw.NewPage()
+	actualWidth, actualHeight, err := dw.PrintImageFile("testdata/testimg.jpg", 1, 1, floatPtr(2.0), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectFdelta(t, 2.0, actualWidth, 0.0001)
+	if actualHeight <= 0 {
+		t.Fatalf("expected positive inferred height, got %f", actualHeight)
+	}
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdf := buf.String()
+	for _, fragment := range []string{
+		"/Subtype /Image",
+		"/Filter /DCTDecode",
+		"/ColorSpace /DeviceRGB",
+		"/XObject <<",
+		"/Im0 ",
+		" cm\n",
+		"/Im0 Do\n",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
+		}
+	}
+}
+
+func TestDocWriter_PrintImageFile_PNG_Integration(t *testing.T) {
+	var buf bytes.Buffer
+
+	dw := NewDocWriter()
+	dw.SetUnits("in")
+	dw.NewPage()
+	actualWidth, actualHeight, err := dw.PrintImageFile("testdata/eidetic.png", 1, 1, floatPtr(2.0), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectFdelta(t, 2.0, actualWidth, 0.0001)
+	if actualHeight <= 0 {
+		t.Fatalf("expected positive inferred height, got %f", actualHeight)
+	}
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdf := buf.String()
+	for _, fragment := range []string{
+		"/Subtype /Image",
+		"/Filter /FlateDecode",
+		"/ColorSpace /DeviceRGB",
+		"/XObject <<",
+		"/Im0 ",
+		" cm\n",
+		"/Im0 Do\n",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected generated PDF to contain %q, got:\n%s", fragment, pdf)
+		}
+	}
+}
+
+func TestDocWriter_PrintImageFile_UsesAssetFS(t *testing.T) {
+	img := image.NewRGBA(image.Rect(0, 0, 3, 2))
+	data := mustEncodePNG(t, img)
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(fstest.MapFS{
+		"logo.png": &fstest.MapFile{Data: data},
+	})
+	dw.NewPage()
+
+	width, height, err := dw.PrintImageFile("logo.png", 1, 1, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 3 || height != 2 {
+		t.Fatalf("expected intrinsic size 3x2, got %.2fx%.2f", width, height)
+	}
+}
+
+func TestDocWriter_ImageDimensionsFromFile_UsesAssetFS(t *testing.T) {
+	img := image.NewGray(image.Rect(0, 0, 4, 3))
+	data := mustEncodePNG(t, img)
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(fstest.MapFS{
+		"nested/logo.png": &fstest.MapFile{Data: data},
+	})
+
+	width, height, err := dw.ImageDimensionsFromFile("nested/logo.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 4 || height != 3 {
+		t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+	}
+}
+
+func TestDocWriter_ImageAssetPathValidation(t *testing.T) {
+	dw := NewDocWriter()
+	dw.SetAssetFS(fstest.MapFS{
+		"logo.png": &fstest.MapFile{Data: mustEncodePNG(t, image.NewRGBA(image.Rect(0, 0, 1, 1)))},
+		"dir":      &fstest.MapFile{Mode: fs.ModeDir},
+	})
+
+	bad := []string{"", ".", "./logo.png", "a/../logo.png", "/tmp/logo.png", "dir"}
+	for _, name := range bad {
+		t.Run(name, func(t *testing.T) {
+			if _, _, err := dw.PrintImageFile(name, 1, 1, nil, nil); err == nil {
+				t.Fatalf("expected error for %q, got nil", name)
+			}
+		})
+	}
 }
 
 func TestDocWriter_SetFont_TrueType(t *testing.T) {

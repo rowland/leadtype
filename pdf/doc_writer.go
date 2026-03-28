@@ -7,6 +7,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
@@ -16,24 +18,25 @@ import (
 )
 
 type DocWriter struct {
-	pages           []*PageWriter
-	nextSeq         func() int
-	file            *file
-	catalog         *catalog
-	resources       *resources
-	pagesAcross     int
-	pagesDown       int
-	curPage         *PageWriter
-	options         options.Options
-	fontSources     font.FontSources
-	fontKeys        map[string]string
-	fontEncodings   map[string]*fontEncoding
-	glyphRecorders  map[string]*glyphRecorder  // keyed by font PostScript name
-	unicodeFonts    map[string]*font.Font      // PostScript name → font, for width lookup at Close
-	cidFonts        map[string]*cidFont        // PostScript name → CID font, for /W update at Close
-	type0Fonts      map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
-	fontDescriptors map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
-	images          map[string]*cachedImage
+	pages                 []*PageWriter
+	nextSeq               func() int
+	file                  *file
+	catalog               *catalog
+	resources             *resources
+	pagesAcross           int
+	pagesDown             int
+	curPage               *PageWriter
+	options               options.Options
+	fontSources           font.FontSources
+	fontKeys              map[string]string
+	fontEncodings         map[string]*fontEncoding
+	glyphRecorders        map[string]*glyphRecorder  // keyed by font PostScript name
+	unicodeFonts          map[string]*font.Font      // PostScript name → font, for width lookup at Close
+	cidFonts              map[string]*cidFont        // PostScript name → CID font, for /W update at Close
+	type0Fonts            map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
+	fontDescriptors       map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
+	images                map[string]*cachedImage
+	assetFS               fs.FS
 	compressPages         bool
 	compressToUnicode     bool
 	compressEmbeddedFonts bool
@@ -116,6 +119,27 @@ func (dw *DocWriter) CurPage() *PageWriter {
 
 func (dw *DocWriter) FontColor() colors.Color {
 	return dw.CurPage().FontColor()
+}
+
+func (dw *DocWriter) SetAssetFS(assetFS fs.FS) {
+	dw.assetFS = assetFS
+}
+
+func (dw *DocWriter) readImageFile(filename string) ([]byte, error) {
+	if dw.assetFS == nil {
+		return os.ReadFile(filename)
+	}
+	if !validAssetPath(filename) {
+		return nil, fmt.Errorf("invalid asset path %q", filename)
+	}
+	info, err := fs.Stat(dw.assetFS, filename)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("asset path %q is a directory", filename)
+	}
+	return fs.ReadFile(dw.assetFS, filename)
 }
 
 func useStandardEncoding(family string) bool {
@@ -525,7 +549,11 @@ func (dw *DocWriter) ImageDimensions(data []byte) (width, height int, err error)
 }
 
 func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
-	return imageDimensionsFromFile(filename)
+	data, err := dw.readImageFile(filename)
+	if err != nil {
+		return 0, 0, err
+	}
+	return imageDimensions(data)
 }
 
 func (dw *DocWriter) Path(fn func()) error {
@@ -570,6 +598,52 @@ func (dw *DocWriter) PrintImage(data []byte, x, y float64, width, height *float6
 
 func (dw *DocWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return dw.CurPage().PrintImageFile(filename, x, y, width, height)
+}
+
+func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, error) {
+	if cached, ok := dw.images[key]; ok {
+		return cached.image, cached.name, nil
+	}
+	decoded, err := decodeImage(data)
+	if err != nil {
+		return nil, "", err
+	}
+	components := decoded.info.components
+	if len(decoded.alphaData) > 0 && (components == imageComponentsGrayAlpha || components == imageComponentsRGBA) {
+		components--
+	}
+	colorSpace, err := imageColorSpace(components)
+	if err != nil {
+		return nil, "", err
+	}
+	image := newPDFImage(dw.nextSeq(), 0, decoded.data)
+	image.setDimensions(decoded.info.width, decoded.info.height)
+	image.setBitsPerComponent(decoded.info.bitsPerComponent)
+	image.setColorSpace(colorSpace)
+	if decoded.filter == "FlateDecode" {
+		if err := image.compress(); err != nil {
+			return nil, "", err
+		}
+	} else if decoded.filter != "" {
+		image.setFilter(decoded.filter)
+	}
+	if len(decoded.alphaData) > 0 {
+		mask := newPDFImage(dw.nextSeq(), 0, decoded.alphaData)
+		mask.setDimensions(decoded.info.width, decoded.info.height)
+		mask.setBitsPerComponent(decoded.info.bitsPerComponent)
+		mask.setColorSpace("DeviceGray")
+		if err := mask.compress(); err != nil {
+			return nil, "", err
+		}
+		dw.file.body.add(mask)
+		image.setSMask(&indirectObjectRef{mask})
+	}
+
+	name := fmt.Sprintf("Im%d", len(dw.images))
+	dw.file.body.add(image)
+	dw.resources.setXObject(name, &indirectObjectRef{image})
+	dw.images[key] = &cachedImage{image: image, name: name}
+	return image, name, nil
 }
 
 func (dw *DocWriter) ResetFonts() {
