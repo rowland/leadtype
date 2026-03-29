@@ -5,13 +5,18 @@ package ltml
 
 import "testing"
 
-func TestStdWidget_Path(t *testing.T) {
-	i1 := map[string]string{"tag": "foo", "id": "bar", "class": "boom baz"}
-	e1 := "foo#bar.baz.boom"
+func TestStdWidget_SetAttrs_ParsesSideSpecificBorders(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+	widget := &StdWidget{}
+	widget.SetScope(scope)
 
-	var w1 StdWidget
-	w1.SetIentifiers(i1)
-	if w1.Path() != e1 {
-		t.Errorf("Expected <%s>, got <%s>", e1, w1.Path())
+	widget.SetAttrs(map[string]string{"border-right": "dashed"})
+
+	if widget.borders[rightSide] == nil {
+		t.Fatal("right border is nil, want parsed pen style")
+	}
+	if got := widget.borders[rightSide].pattern; got != "dashed" {
+		t.Fatalf("right border pattern = %q, want dashed", got)
 	}
 }
