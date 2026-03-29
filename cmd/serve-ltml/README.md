@@ -15,12 +15,12 @@ Every flag can also be set via the corresponding environment variable.
 | Flag | Environment variable | Default | Description |
 |------|----------------------|---------|-------------|
 | `-listen <addr>` | `LISTEN` | `:8080` | Address to listen on |
-| `-base-path <dir>` | `BASE_PATH` | *(required)* | Directory of static assets available to all requests |
+| `-assets <dir>` / `-a <dir>` | `ASSETS` | *(required)* | Directory of static assets available to all requests |
 | `-max-upload-bytes <n>` | `MAX_UPLOAD_BYTES` | `33554432` (32 MiB) | Maximum request body size |
 | `-read-timeout <duration>` | `READ_TIMEOUT` | none | HTTP server read timeout (e.g. `30s`) |
 | `-write-timeout <duration>` | `WRITE_TIMEOUT` | none | HTTP server write timeout (e.g. `60s`) |
 
-`BASE_PATH` must exist and be a directory; the server refuses to start otherwise.
+`ASSETS` must exist and be a directory; the server refuses to start otherwise.
 
 ## API
 
@@ -49,20 +49,20 @@ Render an LTML document to PDF.
 
 ### Asset resolution
 
-Uploaded files form a **per-request upper layer** that shadows same-named files in the configured `base-path` for the duration of that request only. Parallel requests never share upload state. Uploaded filenames must be clean relative `fs.FS` paths such as `logo.png` or `assets/logo.png`; empty names, `.`, paths containing `.` / `..` segments, and absolute paths are rejected.
+Uploaded files form a **per-request upper layer** that shadows same-named files in the configured assets directory for the duration of that request only. Parallel requests never share upload state. Uploaded filenames must be clean relative `fs.FS` paths such as `logo.png` or `assets/logo.png`; empty names, `.`, paths containing `.` / `..` segments, and absolute paths are rejected.
 
 ## Examples
 
 Start the server:
 
 ```sh
-serve-ltml -base-path /var/lib/ltml/assets
+serve-ltml -assets /var/lib/ltml/assets
 ```
 
 Or with environment variables:
 
 ```sh
-BASE_PATH=/var/lib/ltml/assets READ_TIMEOUT=30s WRITE_TIMEOUT=60s serve-ltml
+ASSETS=/var/lib/ltml/assets READ_TIMEOUT=30s WRITE_TIMEOUT=60s serve-ltml
 ```
 
 Render a document with no uploaded assets:
@@ -73,7 +73,7 @@ curl -s \
   http://localhost:8080/render -o report.pdf
 ```
 
-Render with an asset that overrides the server's base-path copy:
+Render with an asset that overrides the server's configured asset copy:
 
 ```sh
 curl -s \

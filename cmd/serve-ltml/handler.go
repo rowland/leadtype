@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
+	"time"
 )
 
 // ltmlContentTypes lists the accepted Content-Type values for the LTML part.
@@ -26,6 +28,8 @@ var ltmlContentTypes = map[string]bool{
 	"":                true,
 }
 
+var nextRequestID uint64
+
 // renderHandler is an http.Handler for POST /render.
 type renderHandler struct {
 	cfg *Config
@@ -36,10 +40,15 @@ func newRenderHandler(cfg *Config) *renderHandler {
 }
 
 func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	requestID := newRequestID()
+	start := time.Now()
+	w.Header().Set("X-Request-Id", requestID)
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	requestLogf(requestID, "started: method=%s path=%s remote=%s", r.Method, r.URL.Path, r.RemoteAddr)
 
 	r.Body = http.MaxBytesReader(w, r.Body, h.cfg.MaxUploadBytes)
 
@@ -58,7 +67,7 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// deferred RemoveAll cleans it up regardless of how the request ends.
 	tmpDir, err := os.MkdirTemp("", "serve-ltml-*")
 	if err != nil {
-		log.Printf("serve-ltml: creating temp dir: %v", err)
+		requestLogf(requestID, "creating temp dir: %v", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -66,7 +75,7 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	uploadDir := filepath.Join(tmpDir, "uploads")
 	if err := os.Mkdir(uploadDir, 0o700); err != nil {
-		log.Printf("serve-ltml: creating upload dir: %v", err)
+		requestLogf(requestID, "creating upload dir: %v", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -107,7 +116,7 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if isMaxBytesError(err) {
 			http.Error(w, "request too large", http.StatusRequestEntityTooLarge)
 		} else {
-			log.Printf("serve-ltml: reading LTML part: %v", err)
+			requestLogf(requestID, "reading LTML part: %v", err)
 			http.Error(w, "error reading LTML", http.StatusBadRequest)
 		}
 		return
@@ -119,6 +128,7 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// --- Subsequent parts: uploaded asset files ---
+	uploadCount := 0
 	for {
 		part, err := mr.NextPart()
 		if errors.Is(err, io.EOF) {
@@ -128,7 +138,7 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if isMaxBytesError(err) {
 				http.Error(w, "request too large", http.StatusRequestEntityTooLarge)
 			} else {
-				log.Printf("serve-ltml: reading multipart: %v", err)
+				requestLogf(requestID, "reading multipart: %v", err)
 				http.Error(w, "bad multipart request", http.StatusBadRequest)
 			}
 			return
@@ -156,26 +166,29 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if isMaxBytesError(err) {
 				http.Error(w, "request too large", http.StatusRequestEntityTooLarge)
 			} else {
-				log.Printf("serve-ltml: saving upload %q: %v", filename, err)
+				requestLogf(requestID, "saving upload %q: %v", filename, err)
 				http.Error(w, "error storing uploaded file", http.StatusInternalServerError)
 			}
 			return
 		}
 		part.Close()
+		uploadCount++
 	}
+	requestLogf(requestID, "parsed ltml: bytes=%d uploads=%d", len(ltmlBytes), uploadCount)
 
 	// --- Render ---
 	baseFSys := os.DirFS(h.cfg.BasePath)
 	uploadFSys := os.DirFS(uploadDir)
 	overlay := newOverlayFS(uploadFSys, baseFSys)
+	requestLogf(requestID, "rendering ltml: bytes=%d uploads=%d", len(ltmlBytes), uploadCount)
 
 	pdfFile, err := renderLTML(ltmlBytes, overlay, tmpDir)
 	if err != nil {
-		log.Printf("serve-ltml: render: %v", err)
+		requestLogf(requestID, "render: %v", err)
 		if errors.Is(err, errInvalidLTML) {
-			http.Error(w, "invalid LTML", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		} else {
-			http.Error(w, "render failed", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -184,10 +197,22 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// --- Stream response ---
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", `inline; filename="output.pdf"`)
-	if _, err := io.Copy(w, pdfFile); err != nil {
+	n, err := io.Copy(w, pdfFile)
+	if err != nil {
 		// Headers already sent; can only log.
-		log.Printf("serve-ltml: streaming PDF: %v", err)
+		requestLogf(requestID, "streaming PDF: %v", err)
+		return
 	}
+	requestLogf(requestID, "completed: status=%d pdf_bytes=%d uploads=%d elapsed=%dms", http.StatusOK, n, uploadCount, time.Since(start).Milliseconds())
+}
+
+func newRequestID() string {
+	id := atomic.AddUint64(&nextRequestID, 1)
+	return fmt.Sprintf("%06d", id)
+}
+
+func requestLogf(requestID, format string, args ...any) {
+	log.Printf("serve-ltml: req=%s "+format, append([]any{requestID}, args...)...)
 }
 
 // validateUploadFilename checks that filename is a clean fs.FS-relative path

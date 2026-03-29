@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -84,6 +85,46 @@ func TestHandler_ValidLTMLOnly(t *testing.T) {
 	}
 	if rr.Body.Len() == 0 {
 		t.Error("response body is empty, expected PDF bytes")
+	}
+}
+
+func TestHandler_LogsSuccessfulRenderLifecycle(t *testing.T) {
+	h, _ := newHandler(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+		{"file", "logo.txt", "text/plain", "fake-asset-data"},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+
+	var logs bytes.Buffer
+	prevWriter := log.Writer()
+	log.SetOutput(&logs)
+	defer log.SetOutput(prevWriter)
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rr.Code, rr.Body.String())
+	}
+	requestID := rr.Header().Get("X-Request-Id")
+	if requestID == "" {
+		t.Fatal("X-Request-Id header is empty")
+	}
+
+	got := logs.String()
+	for _, want := range []string{
+		"serve-ltml: req=" + requestID + " started:",
+		"serve-ltml: req=" + requestID + " parsed ltml: bytes=",
+		"serve-ltml: req=" + requestID + " rendering ltml: bytes=",
+		"serve-ltml: req=" + requestID + " completed: status=200 pdf_bytes=",
+		"elapsed=",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("logs = %q, want substring %q", got, want)
+		}
 	}
 }
 
@@ -286,8 +327,9 @@ func TestHandler_MalformedLTMLReturnsBadRequest(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400; body: %s", rr.Code, rr.Body.String())
 	}
-	if !strings.Contains(rr.Body.String(), "invalid LTML") {
-		t.Fatalf("body = %q, want invalid LTML message", rr.Body.String())
+	respBody := rr.Body.String()
+	if !strings.Contains(respBody, "invalid LTML:") || !strings.Contains(respBody, "XML syntax error") {
+		t.Fatalf("body = %q, want detailed invalid LTML parse message", respBody)
 	}
 }
 

@@ -10,11 +10,11 @@ import (
 )
 
 // overlayFS is an alias for the shared overlay filesystem type. Upper is the
-// per-request upload directory; lower is the server-wide static base path.
+// per-request upload directory; lower is the server-wide static assets directory.
 type overlayFS = overlayfs.FS
 
 // newOverlayFS constructs a per-request overlay. upper is typically an
-// os.DirFS rooted at the request upload directory; lower is the base-path FS.
+// os.DirFS rooted at the request upload directory; lower is the assets FS.
 func newOverlayFS(upper, lower fs.FS) *overlayFS {
 	return overlayfs.New(upper, lower)
 }

@@ -34,7 +34,8 @@ func parseConfig() (*Config, error) {
 	)
 
 	flag.StringVar(&listen, "listen", ":8080", "address to listen on (LISTEN)")
-	flag.StringVar(&basePath, "base-path", "", "path to static asset directory (BASE_PATH, required)")
+	flag.StringVar(&basePath, "assets", "", "path to static asset directory (ASSETS, required)")
+	flag.StringVar(&basePath, "a", "", "path to static asset directory (shorthand)")
 	flag.Int64Var(&maxUploadBytes, "max-upload-bytes", 32<<20, "maximum multipart request size in bytes (MAX_UPLOAD_BYTES)")
 	flag.DurationVar(&readTimeout, "read-timeout", 0, "HTTP server read timeout, e.g. 30s (READ_TIMEOUT)")
 	flag.DurationVar(&writeTimeout, "write-timeout", 0, "HTTP server write timeout, e.g. 60s (WRITE_TIMEOUT)")
@@ -42,14 +43,14 @@ func parseConfig() (*Config, error) {
 	flag.Parse()
 
 	if basePath == "" {
-		return nil, fmt.Errorf("base-path (or BASE_PATH) is required")
+		return nil, fmt.Errorf("assets (or ASSETS) is required")
 	}
 	info, err := os.Stat(basePath)
 	if err != nil {
-		return nil, fmt.Errorf("base-path %q: %w", basePath, err)
+		return nil, fmt.Errorf("assets %q: %w", basePath, err)
 	}
 	if !info.IsDir() {
-		return nil, fmt.Errorf("base-path %q is not a directory", basePath)
+		return nil, fmt.Errorf("assets %q is not a directory", basePath)
 	}
 
 	return &Config{

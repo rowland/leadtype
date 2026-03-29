@@ -9,14 +9,14 @@
 //     application/xml, text/xml, and an empty Content-Type are also accepted.
 //   - Subsequent parts may have field name "file" and contain asset files whose
 //     multipart filename is used as the virtual path during rendering. These
-//     assets shadow same-named files in the configured base-path for the
+//     assets shadow same-named files in the configured assets directory for the
 //     duration of the request only.
 //
 // Configuration is accepted as flags or environment variables:
 //
-//	LISTEN / -listen            address to listen on (default :8080)
-//	BASE_PATH / -base-path      path to static asset directory (required)
-//	MAX_UPLOAD_BYTES / -max-upload-bytes  request size cap (default 32 MiB)
+//	LISTEN / -listen                      address to listen on (default :8080)
+//	ASSETS / -assets / -a                path to static asset directory (required)
+//	MAX_UPLOAD_BYTES / -max-upload-bytes request size cap (default 32 MiB)
 //	READ_TIMEOUT / -read-timeout         HTTP read timeout (default none)
 //	WRITE_TIMEOUT / -write-timeout       HTTP write timeout (default none)
 package main
@@ -46,7 +46,7 @@ func main() {
 		WriteTimeout: cfg.WriteTimeout,
 	}
 
-	log.Printf("serve-ltml: listening on %s (base-path=%s)", cfg.Listen, cfg.BasePath)
+	log.Printf("serve-ltml: listening on %s (assets=%s)", cfg.Listen, cfg.BasePath)
 	if err := srv.ListenAndServe(); err != nil {
 		fmt.Fprintf(os.Stderr, "serve-ltml: %v\n", err)
 		os.Exit(1)
