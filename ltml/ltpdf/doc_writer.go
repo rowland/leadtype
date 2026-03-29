@@ -6,6 +6,7 @@ package ltpdf
 import (
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
@@ -53,6 +54,7 @@ func NewDocWriter() *DocWriter {
 	if err != nil {
 		panic(err)
 	}
+	ttFonts.SetShaper(shaping.NewShaper())
 	dw.AddFontSource(ttFonts)
 
 	afmFonts, err := afm_fonts.Default()

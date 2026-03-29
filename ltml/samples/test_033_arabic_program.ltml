@@ -1,0 +1,46 @@
+<ltml>
+  <layout id="vbox" padding="10pt" />
+  <font id="body" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="12" />
+  <font id="heading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="18" weight="Bold" />
+  <font id="subheading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="14" weight="Bold" />
+  <define id="rtl" tag="p" style.text-align="right" />
+  <define id="cell" tag="p" style.text-align="right" border="solid" padding="6pt" />
+
+  <page units="in" margin="0.75in" layout="vbox" font="body">
+    <p font="heading" style.text-align="right">برنامج أمسيات الحي الثقافية</p>
+    <p font="subheading" style.text-align="right">مكتبة المدينة - ربيع عام ألفين وستة وعشرين</p>
+
+    <rtl>
+      تدعو مكتبة المدينة سكان الحي إلى برنامج أسبوعي يجمع بين القراءة
+      الإبداعية، والسينما القصيرة، والحِرَف اليدوية، واللقاءات المفتوحة مع
+      فنانين محليين. صُممت هذه الأمسيات لتكون هادئة ومرحبة ومناسبة للعائلات،
+      مع مساحة للتعارف وتبادل الخبرات بين الجيران.
+    </rtl>
+
+    <rtl>
+      جميع الفعاليات مجانية، ولا يلزم سوى التسجيل المسبق في الورش التي تتطلب
+      مواد عمل محدودة. تتوفر المداخل المهيأة للكراسي المتحركة، ويمكن طلب
+      مساعدة لغوية باللغة الإنجليزية عند التسجيل.
+    </rtl>
+
+    <p font="subheading" style.text-align="right">جدول مختصر</p>
+    <table order="rows" cols="2" border="solid" padding="4pt" width="100%">
+      <cell font.weight="Bold">التفاصيل</cell>
+      <cell font.weight="Bold">الموعد</cell>
+
+      <cell>ورشة كتابة قصيرة للشباب والبالغين في قاعة القراءة</cell>
+      <cell>مساء الثلاثاء الرابع عشر من أبريل</cell>
+
+      <cell>عرض فيلم وثائقي محلي يتبعه نقاش مفتوح مع المخرج</cell>
+      <cell>مساء الخميس السادس عشر من أبريل</cell>
+
+      <cell>سوق صغير للحِرَف مع ركن للأطفال وتجربة طباعة يدوية</cell>
+      <cell>صباح السبت الثامن عشر من أبريل</cell>
+    </table>
+
+    <rtl>
+      للاستفسار: مكتب خدمات الزوار في الطابق الأرضي، أو عبر البريد
+      الإلكتروني: community@citylibrary.example
+    </rtl>
+  </page>
+</ltml>

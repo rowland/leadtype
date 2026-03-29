@@ -46,7 +46,16 @@ go run ./cmd/render-ltml -o /tmp/rich-text.pdf ltml/samples/test_010_rich_text.l
 go run ./cmd/render-ltml -o /tmp/cjk-thai-grid.pdf ltml/samples/test_012_cjk_thai_grid.ltml
 ```
 
-There are 32 LTML sample documents under [`ltml/samples/`](ltml/samples/), covering basic pages, flow and box layout, tables, rich text, images, transforms, overflow behavior, encodings, and more.
+There are 33 LTML sample documents under [`ltml/samples/`](ltml/samples/), covering basic pages, flow and box layout, tables, rich text, images, transforms, overflow behavior, encodings, Arabic text, and more.
+
+To regenerate the sample PDFs beside their `.ltml` files:
+
+```bash
+make ltml-samples
+```
+
+That target uses the pure-Go Arabic shaper build tag so Arabic-capable samples
+render with joined right-to-left glyph shaping.
 
 ### Run the Go Samples
 

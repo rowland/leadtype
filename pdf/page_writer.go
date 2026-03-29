@@ -863,11 +863,9 @@ func (pw *PageWriter) flushText() {
 			if shaped != nil {
 				usedPositionedText = true
 				penX := 0.0
-				// Emit shaped glyphs in reverse visual order so that the
-				// left-to-right PDF text stream matches the left-to-right
-				// visual layout of the pre-shaped Arabic glyphs.
-				for i := len(shaped) - 1; i >= 0; i-- {
-					gp := shaped[i]
+				// The shaper returns glyphs in visual order, so emit them in the
+				// same order while advancing the pen explicitly.
+				for _, gp := range shaped {
 					if gr != nil {
 						if seq := glyphSequences[gp.ClusterIndex]; len(seq) > 0 {
 							gr.recordRunes(gp.GlyphID, seq)

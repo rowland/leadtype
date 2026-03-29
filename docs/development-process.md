@@ -163,6 +163,22 @@ Never regenerate silently. Always review the diff before committing updated gold
 
 ## Writing Tests for New Code
 
+## LTML Sample PDFs
+
+Normal `go test` runs should not rewrite `ltml/samples/*.pdf`; doing so creates
+side effects that interfere with test caching. The LTML sample harness therefore
+writes PDFs to temporary files by default.
+
+When you intentionally want to regenerate the checked-in LTML sample renderings
+next to their source files, run:
+
+```bash
+go test -tags arabic ./ltml -run TestSamples -write-sample-pdfs
+```
+
+You can combine that with `-open-sample-pdfs` to open the regenerated files
+after rendering.
+
 ### Phase 1 — ToUnicode CMap
 
 CMap generation is pure string/byte logic with no font file dependency. Test it as a unit:

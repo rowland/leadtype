@@ -16,10 +16,12 @@ import (
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 var openSamplePDFs = flag.Bool("open-sample-pdfs", false, "open generated LTML sample PDFs after tests run")
+var writeSamplePDFs = flag.Bool("write-sample-pdfs", false, "write LTML sample PDFs beside their .ltml files instead of to temporary test output")
 
 var (
 	sampleFontSourcesOnce sync.Once
@@ -34,6 +36,13 @@ func loadSampleFontSources() (*ttf_fonts.TtfFonts, *afm_fonts.AfmFonts, error) {
 		if sampleFontSourcesErr != nil {
 			return
 		}
+		// Include the in-repo Arabic fixture font so LTML sample regeneration
+		// does not depend on system Arabic font quality or TTC shaping support.
+		if err := sampleTTFonts.Add(filepath.Join(filepath.Dir(sampleFile("placeholder")), "..", "shaping", "testdata", "Amiri-Regular.ttf")); err != nil {
+			sampleFontSourcesErr = err
+			return
+		}
+		sampleTTFonts.SetShaper(shaping.NewShaper())
 		sampleAFMFonts, sampleFontSourcesErr = afm_fonts.Default()
 	})
 	return sampleTTFonts, sampleAFMFonts, sampleFontSourcesErr
@@ -113,6 +122,9 @@ func writeSamplePDF(name string, outputFile string, t *testing.T) {
 
 func sampleOutputFile(name string, t *testing.T) string {
 	t.Helper()
+	if *writeSamplePDFs {
+		return sampleFile(name + ".pdf")
+	}
 	if !*openSamplePDFs {
 		return filepath.Join(t.TempDir(), name+".pdf")
 	}
@@ -157,6 +169,7 @@ func TestSamples(t *testing.T) {
 		"test_029_table_split_headers_footers",
 		"test_030_encodings",
 		"test_032_label_shrink_to_fit",
+		"test_033_arabic_program",
 	}
 
 	for _, sample := range samples {
