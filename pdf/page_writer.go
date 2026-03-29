@@ -18,6 +18,7 @@ import (
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/shaping"
+	"github.com/rowland/leadtype/svg"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
@@ -27,6 +28,14 @@ const (
 	ButtCap             = LineCapStyle(iota)
 	RoundCap            = LineCapStyle(iota)
 	ProjectingSquareCap = LineCapStyle(iota)
+)
+
+type LineJoinStyle int
+
+const (
+	MiterJoin = LineJoinStyle(iota)
+	RoundJoin
+	BevelJoin
 )
 
 type PageWriter struct {
@@ -61,6 +70,11 @@ type pathState struct {
 	autoPath  bool
 	fillColor colors.Color
 	lineColor colors.Color
+	lineWidth float64
+	miter     float64
+	lineCap   LineCapStyle
+	lineJoin  LineJoinStyle
+	lineDash  string
 }
 
 func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
@@ -91,6 +105,10 @@ func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
 	pw.page.setResources(pw.dw.resources)
 	pw.dw.file.body.add(pw.page)
 	pw.autoPath = true
+	pw.lineJoinStyle = MiterJoin
+	pw.last.lineJoinStyle = MiterJoin
+	pw.miterLimit = 10
+	pw.last.miterLimit = 10
 	pw.mw = newMiscWriter(&pw.stream)
 	pw.tw = newTextWriter(&pw.stream)
 	pw.gw = newGraphWriter(&pw.stream)
@@ -212,7 +230,10 @@ func (pw *PageWriter) checkSetLineColor() {
 }
 
 func (pw *PageWriter) checkSetLineDashPattern() {
-	if pw.lineDashPattern == pw.last.lineDashPattern && pw.lineCapStyle == pw.last.lineCapStyle {
+	if pw.lineDashPattern == pw.last.lineDashPattern &&
+		pw.lineCapStyle == pw.last.lineCapStyle &&
+		pw.lineJoinStyle == pw.last.lineJoinStyle &&
+		pw.miterLimit == pw.last.miterLimit {
 		return
 	}
 	pw.startGraph()
@@ -221,6 +242,9 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 		pw.inPath = false
 	}
 	pat := LinePatterns[pw.lineDashPattern]
+	if pw.lineDashPattern == "" {
+		pat = LinePatterns["solid"]
+	}
 	scale := math.Round(pw.lineWidth)
 	if scale < 1 {
 		scale = 1
@@ -241,6 +265,14 @@ func (pw *PageWriter) checkSetLineDashPattern() {
 	pw.last.lineDashPattern = pw.lineDashPattern
 	pw.gw.setLineCapStyle(int(pw.lineCapStyle))
 	pw.last.lineCapStyle = pw.lineCapStyle
+	if pw.lineJoinStyle != pw.last.lineJoinStyle {
+		pw.gw.setLineJoinStyle(int(pw.lineJoinStyle))
+		pw.last.lineJoinStyle = pw.lineJoinStyle
+	}
+	if pw.miterLimit != pw.last.miterLimit {
+		pw.gw.setMiterLimit(pw.miterLimit)
+		pw.last.miterLimit = pw.miterLimit
+	}
 }
 
 func scaledDashPatternString(pattern string, scale float64) (string, bool) {
@@ -336,6 +368,11 @@ func (pw *PageWriter) beginManualPath() error {
 		autoPath:  pw.autoPath,
 		fillColor: pw.fillColor,
 		lineColor: pw.lineColor,
+		lineWidth: pw.lineWidth,
+		miter:     pw.miterLimit,
+		lineCap:   pw.lineCapStyle,
+		lineJoin:  pw.lineJoinStyle,
+		lineDash:  pw.lineDashPattern,
 	})
 	pw.autoPath = false
 	return nil
@@ -358,6 +395,11 @@ func (pw *PageWriter) restorePathState() {
 	pw.autoPath = last.autoPath
 	pw.fillColor = last.fillColor
 	pw.lineColor = last.lineColor
+	pw.lineWidth = last.lineWidth
+	pw.miterLimit = last.miter
+	pw.lineCapStyle = last.lineCap
+	pw.lineJoinStyle = last.lineJoin
+	pw.lineDashPattern = last.lineDash
 	pw.pathStates = pw.pathStates[:len(pw.pathStates)-1]
 }
 
@@ -1031,6 +1073,10 @@ func (pw *PageWriter) LineCapStyle() LineCapStyle {
 	return pw.lineCapStyle
 }
 
+func (pw *PageWriter) LineJoinStyle() LineJoinStyle {
+	return pw.lineJoinStyle
+}
+
 func (pw *PageWriter) LineColor() colors.Color {
 	return pw.lineColor
 }
@@ -1041,6 +1087,10 @@ func (pw *PageWriter) LineDashPattern() string {
 
 func (pw *PageWriter) LineSpacing() float64 {
 	return pw.lineSpacing
+}
+
+func (pw *PageWriter) MiterLimit() float64 {
+	return pw.miterLimit
 }
 
 func (pw *PageWriter) LineTo(x, y float64) {
@@ -1127,6 +1177,9 @@ func (pw *PageWriter) Print(text string) (err error) {
 }
 
 func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	if svg.LooksLikeSVG(data) {
+		return pw.PrintSVG(data, x, y, width, height)
+	}
 	key := imageKey(data)
 	image, name, err := pw.dw.loadImage(data, key)
 	if err != nil {
@@ -1159,6 +1212,36 @@ func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, heigh
 		return 0, 0, err
 	}
 	return pw.PrintImage(data, x, y, width, height)
+}
+
+func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	doc, warnings, err := svg.Parse(data)
+	if err != nil {
+		return 0, 0, err
+	}
+	logSVGWarnings(warnings)
+	info := imageInfo{width: int(doc.Width + 0.5), height: int(doc.Height + 0.5)}
+	wpts, hpts := imageSizeInPoints(info, pw.units, width, height)
+	xpts := pw.units.toPts(x)
+	ypts := pw.units.toPts(y)
+	prevUnits := pw.units
+	pw.units = UnitConversions["pt"]
+	defer func() {
+		pw.units = prevUnits
+	}()
+	renderer := newSVGRenderer(doc, pw, xpts, ypts, wpts, hpts)
+	if err := renderer.render(); err != nil {
+		return 0, 0, err
+	}
+	return prevUnits.fromPts(wpts), prevUnits.fromPts(hpts), nil
+}
+
+func (pw *PageWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	data, err := pw.dw.readImageFile(filename)
+	if err != nil {
+		return 0, 0, err
+	}
+	return pw.PrintSVG(data, x, y, width, height)
 }
 
 func (pw *PageWriter) print(text string) (err error) {
@@ -1438,6 +1521,12 @@ func (pw *PageWriter) SetLineCapStyle(lineCapStyle LineCapStyle) (prev LineCapSt
 	return
 }
 
+func (pw *PageWriter) SetLineJoinStyle(lineJoinStyle LineJoinStyle) (prev LineJoinStyle) {
+	prev = pw.lineJoinStyle
+	pw.lineJoinStyle = lineJoinStyle
+	return
+}
+
 func (pw *PageWriter) SetLineColor(value colors.Color) (prev colors.Color) {
 	prev = pw.lineColor
 	pw.lineColor = value
@@ -1453,6 +1542,12 @@ func (pw *PageWriter) SetLineDashPattern(lineDashPattern string) (prev string) {
 func (pw *PageWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
 	prev = pw.lineSpacing
 	pw.lineSpacing = lineSpacing
+	return
+}
+
+func (pw *PageWriter) SetMiterLimit(limit float64) (prev float64) {
+	prev = pw.miterLimit
+	pw.miterLimit = limit
 	return
 }
 

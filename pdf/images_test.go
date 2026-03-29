@@ -16,6 +16,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rowland/leadtype/afm_fonts"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 )
 
@@ -53,6 +55,25 @@ func mustEncodePNG(t *testing.T, img image.Image) []byte {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+func testSVGFixture() []byte {
+	return []byte(`
+<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip">
+      <rect x="6" y="6" width="108" height="68" rx="8" ry="8"/>
+    </clipPath>
+  </defs>
+  <rect x="0" y="0" width="120" height="80" fill="#eef5ff"/>
+  <g clip-path="url(#clip)">
+    <path d="M 10 50 A 18 18 0 0 1 46 50" stroke="#cc3300" stroke-width="3" fill="none"/>
+    <circle cx="28" cy="28" r="16" fill="#66aaff" stroke="#003366" stroke-width="2"/>
+    <polygon points="60,12 108,12 92,34 108,56 60,56" fill="#88cc66" stroke="#225522" stroke-width="2"/>
+    <path d="M 62 60 C 72 30, 98 30, 108 60" stroke="#7a32a8" stroke-width="3" fill="none"/>
+  </g>
+  <text x="60" y="70" text-anchor="middle" font-family="Helvetica" font-size="12" fill="#111111">SVG demo</text>
+</svg>`)
 }
 
 func mutatePNGInterlace(t *testing.T, data []byte, interlace byte) []byte {
@@ -306,6 +327,106 @@ func TestImageDimensions_PNG_Fixture(t *testing.T) {
 	}
 	if width != 226 || height != 79 {
 		t.Fatalf("expected dimensions 226x79, got %dx%d", width, height)
+	}
+}
+
+func TestSVGDimensions(t *testing.T) {
+	width, height, err := svgDimensions(testSVGFixture())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 120 || height != 80 {
+		t.Fatalf("expected dimensions 120x80, got %dx%d", width, height)
+	}
+}
+
+func TestPageWriter_PrintImage_SVG(t *testing.T) {
+	dw := NewDocWriter()
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afm)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+	width := 2.0
+	actualWidth, actualHeight, err := pw.PrintImage(testSVGFixture(), 1, 1, &width, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actualWidth != 2.0 {
+		t.Fatalf("actualWidth = %.2f, want 2.0", actualWidth)
+	}
+	if actualHeight <= 0 {
+		t.Fatalf("actualHeight = %.2f, want > 0", actualHeight)
+	}
+	pw.endText()
+	got := pw.stream.String()
+	for _, fragment := range []string{" m\n", " c\n", "W\n", "BT\n", "Tj\n"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected SVG rendering stream to contain %q, got:\n%s", fragment, got)
+		}
+	}
+	if strings.Contains(got, "/Im0 Do") {
+		t.Fatalf("expected SVG rendering to avoid image XObjects, got:\n%s", got)
+	}
+}
+
+func TestDocWriter_PrintSVG_Golden(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter()
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afm)
+	dw.SetUnits("in")
+	dw.NewPage()
+	width := 3.0
+	if _, _, err := dw.PrintSVG(testSVGFixture(), 1, 1, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	compareGolden(t, buf.Bytes(), goldenPath("svg_image.pdf"))
+}
+
+func TestPageWriter_PrintSVG_RestoresFontState(t *testing.T) {
+	dw := NewDocWriter()
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afm)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+	fonts, err := pw.SetFont("Helvetica", 10, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("expected initial font")
+	}
+	savedFonts := append([]*font.Font(nil), pw.Fonts()...)
+	savedSize := pw.FontSize()
+	savedColor := pw.FontColor()
+
+	data := []byte(`<svg width="80" height="20" xmlns="http://www.w3.org/2000/svg"><text x="10" y="12" font-family="Helvetica" font-size="4" fill="#333333">tiny</text></svg>`)
+	width := 1.5
+	if _, _, err := pw.PrintSVG(data, 1, 1, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := pw.FontSize(); got != savedSize {
+		t.Fatalf("font size after SVG = %v, want %v", got, savedSize)
+	}
+	if got := pw.FontColor(); got != savedColor {
+		t.Fatalf("font color after SVG = %v, want %v", got, savedColor)
+	}
+	if len(pw.Fonts()) != len(savedFonts) {
+		t.Fatalf("font count after SVG = %d, want %d", len(pw.Fonts()), len(savedFonts))
+	}
+	if len(savedFonts) > 0 && pw.Fonts()[0].PostScriptName() != savedFonts[0].PostScriptName() {
+		t.Fatalf("font after SVG = %s, want %s", pw.Fonts()[0].PostScriptName(), savedFonts[0].PostScriptName())
 	}
 }
 

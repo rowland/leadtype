@@ -1,0 +1,21 @@
+<ltml units="in" margin="0.5">
+  <page>
+    <label font.size="18" font.weight="Bold">SVG image placement</label>
+    <p>This sample exercises LTML image placement with an SVG asset rendered through the vector drawing path.</p>
+
+    <table cols="2" width="100%" order="rows">
+      <div padding="6pt">
+        <label font.weight="Bold">Width fixed to 2.4 in</label>
+        <image src="ltml/samples/test_034_scene.svg" width="2.4" border="dotted" padding="4pt" />
+      </div>
+      <div padding="6pt">
+        <label font.weight="Bold">Height fixed to 1.4 in</label>
+        <image src="ltml/samples/test_034_scene.svg" height="1.4" border="dotted" padding="4pt" />
+      </div>
+      <div padding="6pt">
+        <label font.weight="Bold">Intrinsic size from viewBox</label>
+        <image src="ltml/samples/test_034_scene.svg" border="dotted" padding="4pt" />
+      </div>
+    </table>
+  </page>
+</ltml>

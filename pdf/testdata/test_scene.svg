@@ -1,0 +1,16 @@
+<svg width="160" height="100" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="card">
+      <rect x="6" y="6" width="148" height="88" rx="10" ry="10" />
+    </clipPath>
+  </defs>
+  <rect x="0" y="0" width="160" height="100" fill="#f8fbff" />
+  <g clip-path="url(#card)">
+    <rect x="8" y="8" width="144" height="84" rx="10" ry="10" fill="#eef5ff" stroke="#335577" stroke-width="2" />
+    <circle cx="34" cy="34" r="18" fill="#77aaff" stroke="#173b6d" stroke-width="2" />
+    <path d="M 22 68 A 16 16 0 0 1 54 68" fill="none" stroke="#d45500" stroke-width="3" />
+    <polygon points="76,18 138,18 118,44 138,70 76,70" fill="#9ccc65" stroke="#335522" stroke-width="2" />
+    <path d="M 80 74 C 92 46, 124 46, 136 74" fill="none" stroke="#7a32a8" stroke-width="3" />
+  </g>
+  <text x="80" y="88" text-anchor="middle" font-family="Helvetica" font-size="12" fill="#111111">LeadType SVG</text>
+</svg>

@@ -52,9 +52,11 @@ type drawState struct {
 	fontKey         string
 	fontSize        float64
 	lineCapStyle    LineCapStyle
+	lineJoinStyle   LineJoinStyle
 	lineColor       colors.Color
 	lineDashPattern string
 	lineSpacing     float64
+	miterLimit      float64
 	lineWidth       float64
 	loc             Location
 	strikeout       bool
