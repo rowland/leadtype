@@ -1,5 +1,5 @@
-<ltml>
-  <page units="in" margin="0.5" layout="flow" overflow="true" grid="0.25in">
+<ltml units="in" margin="0.5">
+  <page layout="flow" grid="0.25in">
     <p display="always" width="100%" font.weight="Bold">Flow banner</p>
     <p display="once" width="100%">Intro text appears only once.</p>
 

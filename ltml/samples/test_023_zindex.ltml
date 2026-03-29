@@ -1,5 +1,5 @@
-<ltml>
-  <page units="in" layout="absolute" grid="0.25in">
+<ltml units="in">
+  <page layout="absolute" grid="0.25in">
     <label font.size="20" font.weight="Bold" left="0.75" top="0.6">z_index</label>
 
     <p left="0.75" top="1.1" width="2.9">Lower z_index values paint first, so higher values appear on top.</p>

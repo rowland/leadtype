@@ -1,7 +1,7 @@
-<ltml>
+<ltml units="in" margin="1">
   <layout id="vbox" padding="18" />
   <layout id="hbox" padding="5" />
-  <page units="in" margin="1">
+  <page>
     <p font.underline="true" align="top">HBox Layout</p>
     <hbox padding="5pt" border="solid">
       <p align="left" border="dotted" style.text-align="left" width="2" padding="5pt">

@@ -1,7 +1,7 @@
-<ltml>
+<ltml units="in" margin="0.5">
   <font id="bullet_font" name="Helvetica" size="12" />
   <bullet id="bstar" font="bullet_font" text="*" width="18pt" />
-  <page units="in" margin="0.5" layout="vbox" overflow="true" grid="0.25in">
+  <page layout="vbox" grid="0.25in">
     <div display="always" align="top" border="dashed" padding="6pt">
       <label display="always" font.weight="Bold">Paragraph split</label>
     </div>

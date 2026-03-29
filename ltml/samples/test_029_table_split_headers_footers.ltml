@@ -1,14 +1,16 @@
-<ltml>
+<ltml units="in" margin="0.5">
+  <define id="header" tag="p" border="dashed" padding="4pt" align="top" font.size="20" font.weight="Bold" />
+  <define id="footer" tag="p" border="dotted" padding="4pt" align="bottom" />
   <page units="in" margin="0.5" layout="vbox" overflow="true" grid="0.25in">
-    <p display="always" align="top" border="dashed" padding="4pt" font.size="20" font.weight="Bold">
+    <header display="always">
       Invoice table split
-    </p>
+    </header>
     <p display="always" align="top" border="dotted" padding="4pt">
       Table header and footer rows repeat on every fragment page while the outer page footer still follows odd/even rules.
     </p>
 
-    <p display="odd" align="bottom" border="dotted" padding="4pt">Odd invoice footer</p>
-    <p display="even" align="bottom" border="dotted" padding="4pt">Even invoice footer</p>
+    <footer display="odd">Odd invoice footer</footer>
+    <footer display="even">Even invoice footer</footer>
 
     <table order="rows" cols="2" width="100%" split="true" header-rows="1" footer-rows="1" border="dotted" padding="6pt">
       <p colspan="2" border="solid" fill="LightYellow" padding="4pt" font.weight="Bold">

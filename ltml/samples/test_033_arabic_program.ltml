@@ -5,10 +5,12 @@
   <font id="subheading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="14" weight="Bold" />
   <define id="rtl" tag="p" style.text-align="right" />
   <define id="cell" tag="p" style.text-align="right" border="solid" padding="6pt" />
-
+  <rules>
+    .rtl { style.text-align: right; }
+  </rules>
   <page units="in" margin="0.75in" layout="vbox" font="body">
-    <p font="heading" style.text-align="right">برنامج أمسيات الحي الثقافية</p>
-    <p font="subheading" style.text-align="right">مكتبة المدينة - ربيع عام ألفين وستة وعشرين</p>
+    <h font="heading" style.text-align="right">برنامج أمسيات الحي الثقافية</h>
+    <h font="subheading" style.text-align="right">مكتبة المدينة - ربيع عام ألفين وستة وعشرين</h>
 
     <rtl>
       تدعو مكتبة المدينة سكان الحي إلى برنامج أسبوعي يجمع بين القراءة
@@ -23,7 +25,7 @@
       مساعدة لغوية باللغة الإنجليزية عند التسجيل.
     </rtl>
 
-    <p font="subheading" style.text-align="right">جدول مختصر</p>
+    <h font="subheading" style.text-align="right">جدول مختصر</h>
     <table order="rows" cols="2" border="solid" padding="4pt" width="100%">
       <cell font.weight="Bold">التفاصيل</cell>
       <cell font.weight="Bold">الموعد</cell>

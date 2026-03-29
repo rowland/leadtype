@@ -2,10 +2,7 @@
   <layout id="vbox" padding="6pt" />
   <define id="cell" tag="p" border="dotted" padding="6pt" width="50%" />
   <font id="arial" name="Arial Unicode MS" size="12" />
-  <font id="han" name="Hiragino Sans GB" size="12" />
-  <font id="jp" name="Hiragino Sans" size="12" />
   <font id="kr" name="Apple SD Gothic Neo" size="12" />
-  <font id="th" name="Thonburi UI" size="12" />
   <page margin="0.75in" font="arial">
     <p font.underline="true">Chinese, Japanese, Korean and Thai Grid</p>
     <table order="rows" cols="2" border="solid" padding="6pt" width="100%">
@@ -15,7 +12,7 @@
       <cell>
         日本語の例文：朝の駅前では、通勤する人々が改札へ向かい、パン屋からは焼きたての香りが流れてきます。小さな公園では子どもたちが遊び、ベンチでは新聞を読む人の姿も見えます。季節が移り変わるたびに、同じ通りの景色にも少しずつ違う表情が生まれます。忙しい毎日の中でも、足を止めて耳を澄ませば、町のリズムや人の気配がやわらかく感じられます。
       </cell>
-      <cell font="kr">
+      <cell font="kr"> <!-- looks better with Apple SD Gothic Neo -->
         한국어 예문: 이른 오후가 되면 골목의 카페에는 사람들의 대화가 조금씩 늘어나고, 창가에 앉은 손님들은 책을 읽거나 노트를 정리합니다. 가까운 시장에서는 과일을 고르는 손길이 분주하고, 가게 주인은 익숙한 목소리로 손님을 맞이합니다. 해가 기울기 시작하면 건물 사이로 따뜻한 빛이 번지고, 하루 동안 쌓인 피로도 잠시 느슨해집니다. 평범한 장면들이 모여 도시의 분위기를 천천히 만들어 갑니다.
       </cell>
       <cell>

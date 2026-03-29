@@ -1,5 +1,5 @@
-<ltml>
-  <page units="in" margin="0.5" layout="vbox" overflow="true" grid="0.25in">
+<ltml units="in" margin="0.5">
+  <page layout="vbox" grid="0.25in">
     <div display="always" align="top" border="dashed" padding="6pt">
       <label display="always" font.weight="Bold">Repeating header</label>
       <label display="once">This boilerplate appears only on the first page.</label>

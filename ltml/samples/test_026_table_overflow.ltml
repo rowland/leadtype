@@ -1,5 +1,5 @@
-<ltml>
-  <page units="in" margin="0.5" layout="table" order="rows" cols="2" overflow="true" grid="0.25in">
+<ltml units="in" margin="0.5">
+  <page layout="table" order="rows" cols="2" grid="0.25in">
     <p colspan="2" display="always" border="dashed" padding="4pt" font.weight="Bold">Repeating table header</p>
 
     <rect height="3.4" fill="LightSkyBlue" border="thin" />

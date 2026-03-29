@@ -1,4 +1,4 @@
-<ltml>
+<ltml units="in" margin="1">
   <layout id="vbox" padding="18" />
   <pen id="blue_dash" color="Blue" width="2" pattern="dashed" />
   <pen id="red_dash" color="Red" width="2" pattern="dashed" />
@@ -7,7 +7,7 @@
       rect { width: 95%; }
     -->
   </rules>
-  <page units="in" margin="1" layout="vbox">
+  <page layout="vbox">
     <p font.underline="true" align="top">VBox Layout</p>
     <p border="dotted" style.text-align="justify" align="top" padding="5pt">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
     <p border="dashed" style.text-align="justify" padding="5pt">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
