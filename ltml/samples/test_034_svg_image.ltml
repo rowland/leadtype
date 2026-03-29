@@ -6,15 +6,15 @@
     <table cols="2" width="100%" order="rows">
       <div padding="6pt">
         <label font.weight="Bold">Width fixed to 2.4 in</label>
-        <image src="ltml/samples/test_034_scene.svg" width="2.4" border="dotted" padding="4pt" />
+        <image src="test_scene.svg" width="2.4" border="dotted" padding="4pt" />
       </div>
       <div padding="6pt">
         <label font.weight="Bold">Height fixed to 1.4 in</label>
-        <image src="ltml/samples/test_034_scene.svg" height="1.4" border="dotted" padding="4pt" />
+        <image src="test_scene.svg" height="1.4" border="dotted" padding="4pt" />
       </div>
       <div padding="6pt">
         <label font.weight="Bold">Intrinsic size from viewBox</label>
-        <image src="ltml/samples/test_034_scene.svg" border="dotted" padding="4pt" />
+        <image src="test_scene.svg" border="dotted" padding="4pt" />
       </div>
     </table>
   </page>

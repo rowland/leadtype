@@ -6,6 +6,7 @@ package ltml
 import (
 	"bytes"
 	"flag"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -108,6 +109,11 @@ func writeSamplePDF(name string, outputFile string, t *testing.T) {
 	w := &ltpdf.DocWriter{DocWriter: pdf.NewDocWriter()}
 	w.AddFontSource(ttFonts)
 	w.AddFontSource(afmFonts)
+	if assetFS, err := sampleAssetFS(); err != nil {
+		t.Fatal(err)
+	} else if assetFS != nil {
+		w.SetAssetFS(assetFS)
+	}
 
 	if err := doc.Print(w); err != nil {
 		t.Errorf("Printing sample: %v", err)
@@ -134,6 +140,16 @@ func sampleOutputFile(name string, t *testing.T) string {
 	}
 	t.Logf("opened sample PDFs are being written to %s", dir)
 	return filepath.Join(dir, name+".pdf")
+}
+
+func sampleAssetFS() (fs.FS, error) {
+	root := filepath.Dir(sampleFile("placeholder"))
+	assetDir := filepath.Join(root, "..", "..", "pdf", "testdata")
+	absAssetDir, err := filepath.Abs(assetDir)
+	if err != nil {
+		return nil, err
+	}
+	return os.DirFS(absAssetDir), nil
 }
 
 func TestSamples(t *testing.T) {
@@ -170,6 +186,7 @@ func TestSamples(t *testing.T) {
 		"test_030_encodings",
 		"test_032_label_shrink_to_fit",
 		"test_033_arabic_program",
+		"test_034_svg_image",
 	}
 
 	for _, sample := range samples {
