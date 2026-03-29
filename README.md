@@ -44,6 +44,7 @@ Render one of the checked-in LTML samples:
 go run ./cmd/render-ltml -o /tmp/hello-ltml.pdf ltml/samples/test_003_hello_world.ltml
 go run ./cmd/render-ltml -o /tmp/rich-text.pdf ltml/samples/test_010_rich_text.ltml
 go run ./cmd/render-ltml -o /tmp/cjk-thai-grid.pdf ltml/samples/test_012_cjk_thai_grid.ltml
+go run -tags arabic ./cmd/render-ltml -o /tmp/arabic-program.pdf ltml/samples/test_033_arabic_program.ltml
 ```
 
 There are 33 LTML sample documents under [`ltml/samples/`](ltml/samples/), covering basic pages, flow and box layout, tables, rich text, images, transforms, overflow behavior, encodings, Arabic text, and more.
@@ -55,7 +56,9 @@ make ltml-samples
 ```
 
 That target uses the pure-Go Arabic shaper build tag so Arabic-capable samples
-render with joined right-to-left glyph shaping.
+render with joined right-to-left glyph shaping. The local `bin/render-ltml`
+and `bin/serve-ltml` binaries built by `make binaries` use the same
+`-tags arabic` setting.
 
 ### Run the Go Samples
 

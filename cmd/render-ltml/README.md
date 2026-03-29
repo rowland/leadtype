@@ -2,6 +2,13 @@
 
 `render-ltml` converts one or more LTML documents to PDF. By default, each input writes beside itself using the same filename with a `.pdf` extension. It can also submit the LTML and explicit uploaded assets to a remote `serve-ltml` instance instead of rendering locally.
 
+Build with `-tags arabic` to enable the pure-Go Arabic shaper used by Arabic and
+other complex-script LTML samples:
+
+```sh
+go build -tags arabic ./cmd/render-ltml
+```
+
 ## Usage
 
 ```sh
