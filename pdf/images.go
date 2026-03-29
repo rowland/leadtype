@@ -12,6 +12,8 @@ import (
 	"image/color"
 	"image/png"
 	"io/fs"
+
+	"github.com/rowland/leadtype/svg"
 )
 
 var errUnsupportedImageFormat = errors.New("unsupported image format")
@@ -103,6 +105,8 @@ func imageColorSpace(components int) (string, error) {
 func imageKey(data []byte) string {
 	sum := sha1.Sum(data)
 	switch {
+	case svg.LooksLikeSVG(data):
+		return fmt.Sprintf("svg:%x", sum)
 	case isJPEG(data):
 		return fmt.Sprintf("jpeg:%x", sum)
 	case isPNG(data):
@@ -232,6 +236,13 @@ func pngInfo(data []byte) (imageInfo, error) {
 }
 
 func imageInfoForData(data []byte) (imageInfo, error) {
+	if svg.LooksLikeSVG(data) {
+		width, height, err := svgDimensions(data)
+		if err != nil {
+			return imageInfo{}, err
+		}
+		return imageInfo{width: width, height: height}, nil
+	}
 	if isJPEG(data) {
 		return jpegInfo(data)
 	}

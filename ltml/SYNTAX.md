@@ -284,9 +284,11 @@ Places an image file into the document using the PDF image API.
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
 
-The current implementation supports the same file-based JPEG workflow as the
-PDF layer. The LTML API stays format-agnostic so future PNG support can be
-added without changing the tag shape.
+The current implementation supports JPEG, PNG, and SVG files through the same
+tag shape. Raster images are embedded as PDF image XObjects. SVG files are
+parsed and rendered through the PDF vector drawing path so unsupported SVG
+features are skipped with warnings to standard error rather than aborting the
+whole document when the rest of the file can still render.
 
 ---
 

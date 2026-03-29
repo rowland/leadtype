@@ -402,6 +402,10 @@ func (dw *DocWriter) LineCapStyle() LineCapStyle {
 	return dw.CurPage().LineCapStyle()
 }
 
+func (dw *DocWriter) LineJoinStyle() LineJoinStyle {
+	return dw.CurPage().LineJoinStyle()
+}
+
 func (dw *DocWriter) LineColor() colors.Color {
 	return dw.CurPage().LineColor()
 }
@@ -412,6 +416,10 @@ func (dw *DocWriter) LineDashPattern() string {
 
 func (dw *DocWriter) LineSpacing() float64 {
 	return dw.CurPage().LineSpacing()
+}
+
+func (dw *DocWriter) MiterLimit() float64 {
+	return dw.CurPage().MiterLimit()
 }
 
 func (dw *DocWriter) LineTo(x, y float64) {
@@ -552,12 +560,24 @@ func (dw *DocWriter) ImageDimensions(data []byte) (width, height int, err error)
 	return imageDimensions(data)
 }
 
+func (dw *DocWriter) SVGDimensions(data []byte) (width, height int, err error) {
+	return svgDimensions(data)
+}
+
 func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	data, err := dw.readImageFile(filename)
 	if err != nil {
 		return 0, 0, err
 	}
 	return imageDimensions(data)
+}
+
+func (dw *DocWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
+	data, err := dw.readImageFile(filename)
+	if err != nil {
+		return 0, 0, err
+	}
+	return svgDimensions(data)
 }
 
 func (dw *DocWriter) Path(fn func()) error {
@@ -602,6 +622,14 @@ func (dw *DocWriter) PrintImage(data []byte, x, y float64, width, height *float6
 
 func (dw *DocWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return dw.CurPage().PrintImageFile(filename, x, y, width, height)
+}
+
+func (dw *DocWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return dw.CurPage().PrintSVG(data, x, y, width, height)
+}
+
+func (dw *DocWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return dw.CurPage().PrintSVGFile(filename, x, y, width, height)
 }
 
 func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, error) {
@@ -678,12 +706,20 @@ func (dw *DocWriter) SetLineColor(color colors.Color) (prev colors.Color) {
 	return dw.CurPage().SetLineColor(color)
 }
 
+func (dw *DocWriter) SetLineJoinStyle(lineJoinStyle LineJoinStyle) (prev LineJoinStyle) {
+	return dw.CurPage().SetLineJoinStyle(lineJoinStyle)
+}
+
 func (dw *DocWriter) SetLineDashPattern(lineDashPattern string) (prev string) {
 	return dw.CurPage().SetLineDashPattern(lineDashPattern)
 }
 
 func (dw *DocWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
 	return dw.CurPage().SetLineSpacing(lineSpacing)
+}
+
+func (dw *DocWriter) SetMiterLimit(limit float64) (prev float64) {
+	return dw.CurPage().SetMiterLimit(limit)
 }
 
 func (dw *DocWriter) SetStrikeout(strikeout bool) (prev bool) {
