@@ -285,6 +285,141 @@ func TestStdPage_TableOverflowDefersWholeRow(t *testing.T) {
 	}
 }
 
+func TestStdPage_VBoxOverflowDefaultsToTrue(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	var body1Pages, body2Pages []int
+
+	body1 := &flowTestWidget{name: "body1", preferredHeight: 55, printedOn: &body1Pages}
+	_ = body1.SetContainer(page)
+	page.AddChild(body1)
+
+	body2 := &flowTestWidget{name: "body2", preferredHeight: 55, printedOn: &body2Pages}
+	_ = body2.SetContainer(page)
+	page.AddChild(body2)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if len(body1Pages) != 1 || body1Pages[0] != 1 {
+		t.Fatalf("body1 pages = %v, want [1]", body1Pages)
+	}
+	if len(body2Pages) != 1 || body2Pages[0] != 2 {
+		t.Fatalf("body2 pages = %v, want [2]", body2Pages)
+	}
+}
+
+func TestStdPage_FlowOverflowDefaultsToTrue(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 100, height: 45}}
+	page.layout = defaultLayouts["flow"].Clone()
+	doc := newFlowPageDoc(page)
+
+	var firstPages, secondPages, thirdPages []int
+
+	first := &flowTestWidget{name: "first", preferredWidth: 60, preferredHeight: 20, printedOn: &firstPages}
+	_ = first.SetContainer(page)
+	page.AddChild(first)
+
+	second := &flowTestWidget{name: "second", preferredWidth: 60, preferredHeight: 20, printedOn: &secondPages}
+	_ = second.SetContainer(page)
+	page.AddChild(second)
+
+	third := &flowTestWidget{name: "third", preferredWidth: 60, preferredHeight: 20, printedOn: &thirdPages}
+	_ = third.SetContainer(page)
+	page.AddChild(third)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if len(firstPages) != 1 || firstPages[0] != 1 {
+		t.Fatalf("first pages = %v, want [1]", firstPages)
+	}
+	if len(secondPages) != 1 || secondPages[0] != 1 {
+		t.Fatalf("second pages = %v, want [1]", secondPages)
+	}
+	if len(thirdPages) != 1 || thirdPages[0] != 2 {
+		t.Fatalf("third pages = %v, want [2]", thirdPages)
+	}
+}
+
+func TestStdPage_TableOverflowDefaultsToTrue(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["table"].Clone()
+	page.order = TableOrderRows
+	page.cols = 2
+	doc := newFlowPageDoc(page)
+
+	pages := make([][]int, 6)
+	for i := 0; i < 6; i++ {
+		cell := &flowTestWidget{
+			name:            "cell",
+			preferredHeight: 45,
+			printedOn:       &pages[i],
+		}
+		_ = cell.SetContainer(page)
+		page.AddChild(cell)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	for i := 0; i < 4; i++ {
+		if len(pages[i]) != 1 || pages[i][0] != 1 {
+			t.Fatalf("cell %d pages = %v, want [1]", i, pages[i])
+		}
+	}
+	for i := 4; i < 6; i++ {
+		if len(pages[i]) != 1 || pages[i][0] != 2 {
+			t.Fatalf("cell %d pages = %v, want [2]", i, pages[i])
+		}
+	}
+}
+
+func TestStdPage_ExplicitOverflowFalseDisablesDefaultRetry(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.SetAttrs(map[string]string{"overflow": "false"})
+	doc := newFlowPageDoc(page)
+
+	var body1Pages, body2Pages []int
+
+	body1 := &flowTestWidget{name: "body1", preferredHeight: 55, printedOn: &body1Pages}
+	_ = body1.SetContainer(page)
+	page.AddChild(body1)
+
+	body2 := &flowTestWidget{name: "body2", preferredHeight: 55, printedOn: &body2Pages}
+	_ = body2.SetContainer(page)
+	page.AddChild(body2)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 1 {
+		t.Fatalf("page count = %d, want 1", w.pageCount)
+	}
+	if len(body1Pages) != 1 || body1Pages[0] != 1 {
+		t.Fatalf("body1 pages = %v, want [1]", body1Pages)
+	}
+	if len(body2Pages) != 0 {
+		t.Fatalf("body2 pages = %v, want []", body2Pages)
+	}
+}
+
 func TestSample_VBoxOverflow_PrintsHeaderOnFirstPageAndBodyAcrossPages(t *testing.T) {
 	doc, err := ParseFile(sampleFile("test_024_vbox_overflow.ltml"))
 	if err != nil {

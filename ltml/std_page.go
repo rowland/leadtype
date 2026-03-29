@@ -20,6 +20,7 @@ type StdPage struct {
 	grid           bool
 	gridStep       float64
 	overflow       bool
+	overflowSet    bool
 	flowPageIndex  int
 	flowItems      []*pageItem
 	activeChildren []Widget
@@ -133,7 +134,7 @@ func (p *StdPage) DrawContent(w Writer) error {
 	if err != nil {
 		return err
 	}
-	if !p.overflow || !p.supportsOverflowRetry() {
+	if !p.effectiveOverflow() || !p.supportsOverflowRetry() {
 		return nil
 	}
 	for printedOnce > 0 && p.hasPendingOnceChildren() {
@@ -186,6 +187,7 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if overflow, ok := attrs["overflow"]; ok {
+		p.overflowSet = true
 		p.overflow = overflow == "true"
 	}
 	for k, _ := range attrs {
@@ -311,12 +313,30 @@ func (p *StdPage) hasPendingOnceChildren() bool {
 }
 
 func (p *StdPage) supportsOverflowRetry() bool {
-	switch p.LayoutStyle().manager {
+	style := p.layout
+	if style == nil {
+		if p.scope == nil {
+			style = defaultLayouts["vbox"]
+		} else {
+			style = p.LayoutStyle()
+		}
+	}
+	if style == nil {
+		return false
+	}
+	switch style.manager {
 	case "flow", "table", "vbox":
 		return true
 	default:
 		return false
 	}
+}
+
+func (p *StdPage) effectiveOverflow() bool {
+	if p.overflowSet {
+		return p.overflow
+	}
+	return p.supportsOverflowRetry()
 }
 
 func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
@@ -433,7 +453,7 @@ func (p *StdPage) walkDisplayWidgets(root Container, fn func(Widget) bool) bool 
 func (p *StdPage) initFlowItems() {
 	p.flowItems = nil
 	p.activeChildren = nil
-	if !p.overflow {
+	if !p.effectiveOverflow() {
 		return
 	}
 	for _, child := range p.children {
