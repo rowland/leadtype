@@ -126,6 +126,34 @@ func TestRules_AddText_empty_string_adds_no_rules(t *testing.T) {
 	}
 }
 
+func TestRules_AddText_ignores_css_comments(t *testing.T) {
+	var r Rules
+	r.AddText("/* heading styles */ p { font.size: 12; } /* tail */")
+	if len(r.rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(r.rules))
+	}
+	if r.rules[0].Selector != "p" {
+		t.Errorf("expected selector %q, got %q", "p", r.rules[0].Selector)
+	}
+	if r.rules[0].Attrs["font.size"] != "12" {
+		t.Errorf("expected font.size=12, got %q", r.rules[0].Attrs["font.size"])
+	}
+}
+
+func TestRules_AddText_ignores_css_comments_inside_rule_body(t *testing.T) {
+	var r Rules
+	r.AddText("p { /* size */ font.size: 12; /* weight */ font.weight: Bold; }")
+	if len(r.rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(r.rules))
+	}
+	if r.rules[0].Attrs["font.size"] != "12" {
+		t.Errorf("expected font.size=12, got %q", r.rules[0].Attrs["font.size"])
+	}
+	if r.rules[0].Attrs["font.weight"] != "Bold" {
+		t.Errorf("expected font.weight=Bold, got %q", r.rules[0].Attrs["font.weight"])
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Rules.AddComment
 // ----------------------------------------------------------------------------

@@ -42,6 +42,7 @@ func (r *Rules) AddComment(comment string) {
 	r.AddText(comment)
 }
 
+var reCSSComment = regexp.MustCompile(`(?s)/\*.*?\*/`)
 var reRule = regexp.MustCompile(`\s*([^\{]+?)\s*\{([^\}]+)\}`)
 
 // AddText parses one or more CSS-like rule declarations from text and appends
@@ -50,8 +51,9 @@ var reRule = regexp.MustCompile(`\s*([^\{]+?)\s*\{([^\}]+)\}`)
 //	selector { key: value; key: value }
 //
 // Multiple declarations may appear in a single call. Whitespace around selectors
-// and values is trimmed automatically.
+// and values is trimmed automatically. CSS-style block comments are ignored.
 func (r *Rules) AddText(text string) {
+	text = stripCSSComments(text)
 	matches := reRule.FindAllStringSubmatch(text, -1)
 	for _, m := range matches {
 		r.rules = append(r.rules, NewRule(m[1], attrsMapFromString(m[2])))
@@ -70,6 +72,10 @@ func attrsMapFromString(s string) map[string]string {
 		attrs[pair[1]] = strings.TrimSpace(pair[2])
 	}
 	return attrs
+}
+
+func stripCSSComments(s string) string {
+	return reCSSComment.ReplaceAllString(s, "")
 }
 
 func init() {

@@ -2,19 +2,24 @@
   <font id="body" name="Arial Unicode MS" size="12" />
   <layout id="vbox" padding="6pt" />
   <rules>
+    <!--
     p { font: body }
     .en, .da, .es, .fr, .no, .pt, .fi, .sv {
+      /* English, Danish, Spanish, French, Norwegian, Portuguese, Finnish, Swedish */
     }
     .hr, .hu, .pl, .ro, .sl, .sk, .cs {
+      /* Croatian, Hungarian, Polish, Romanian, Slovenian, Slovak, Czech */
     }
     .tr {
+      /* Turkish */
     }
+    -->
   </rules>
   <page units='in' margin="0.5" layout='vbox' font="body">
     <p><u>Encodings</u></p>
     <br/>
     <p class="en"><b>English:</b> The information listed on this page reflects the assessments that have been assigned and what has been completed.</p>
-    <!--<p class="az"><b>Azerbaijani:</b> Bu səhifədə verilmiş məlumat təhkim edilmiş və artıq başa çatdırılmış qiymətləndirmələri əks etdirir.</p>-->
+    <p class="az"><b>Azerbaijani:</b> Bu səhifədə verilmiş məlumat təhkim edilmiş və artıq başa çatdırılmış qiymətləndirmələri əks etdirir.</p>
     <p class="bg"><b>Bulgarian:</b> Информацията на тази страница отразява оценките, които са възложени и завършени.</p>
     <p class="cs"><b>Czech:</b> Informace uvedené na této stránce popisují hodnotící testy, které byly přiděleny a vyplněny.</p>
     <p class="da"><b>Danish:</b> Oplysningerne på denne side afspejler de vurderinger, der er blevet tildelt, og hvad der er blevet gennemført.</p>

@@ -546,8 +546,9 @@ Rules use CSS-style selector syntax:
 | `div > p`       | `<p>` elements that are direct children of a `<div>` |
 | `p, span`       | All `<p>` and `<span>` elements |
 
-Rules inside `<!-- XML comments -->` are also parsed, allowing rules to be
-commented out with nested comment delimiters.
+CSS-style `/* ... */` comments are ignored inside `<rules>`. Rules inside
+`<!-- XML comments -->` are also parsed, allowing rules to be commented out
+with nested comment delimiters.
 
 Attribute priority (lowest to highest):
 1. Default attributes from an alias (`<define>`)
