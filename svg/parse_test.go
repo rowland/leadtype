@@ -140,6 +140,22 @@ func TestParseInternalStyleClassFill(t *testing.T) {
 	}
 }
 
+func TestParseMetadataElementsAreIgnoredWithoutWarning(t *testing.T) {
+	doc, warnings, err := Parse([]byte(`<svg width="10" height="10"><title>Example</title><desc>Details</desc><rect width="10" height="10"/></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %+v", warnings)
+	}
+	if len(doc.Children) != 1 {
+		t.Fatalf("child count = %d, want 1", len(doc.Children))
+	}
+	if _, ok := doc.Children[0].(*Rect); !ok {
+		t.Fatalf("child type = %T, want *Rect", doc.Children[0])
+	}
+}
+
 func TestParseUnsupportedElementWarning(t *testing.T) {
 	_, warnings, err := Parse([]byte(`<svg width="10" height="10"><foreignObject /></svg>`))
 	if err != nil {

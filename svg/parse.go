@@ -177,6 +177,11 @@ func parseElement(decoder *xml.Decoder, start xml.StartElement, doc *Document, v
 		}
 		parseStyleSheet(doc, css, viewport)
 		return nil, nil
+	case "title", "desc":
+		if _, err := collectText(decoder, start.Name.Local, doc); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	case "clipPath":
 		if attrs["clipPathUnits"] != "" && attrs["clipPathUnits"] != "userSpaceOnUse" {
 			doc.Warnings = append(doc.Warnings, Warning{Element: "clipPath", Attribute: "clipPathUnits", Message: "only userSpaceOnUse is supported"})
