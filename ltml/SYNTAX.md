@@ -21,10 +21,11 @@ definitions and one or more `<page>` elements.
 
 Both `<ltml>` and `<page>` establish a style scope. Style definitions
 (`<font>`, `<pen>`, `<brush>`, `<para>`, `<bullet>`, `<layout>`), aliases
-(`<define>`), and rules (`<rules>`) placed inside a `<page>` are visible only
-to that page. Definitions placed directly inside `<ltml>` are visible to all
-pages. A page can always reference definitions from its parent `<ltml>` scope,
-but other pages cannot see definitions made inside a sibling page.
+(`<define>`), and selector styles (`<style>`; legacy `<rules>`) placed inside a
+`<page>` are visible only to that page. Definitions placed directly inside
+`<ltml>` are visible to all pages. A page can always reference definitions from
+its parent `<ltml>` scope, but other pages cannot see definitions made inside a
+sibling page.
 
 ```xml
 <ltml>
@@ -523,19 +524,19 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 
 ---
 
-## Rules (CSS-like Selectors)
+## Style (CSS-like Selectors)
 
 Apply attributes to elements based on tag name, id, and class selectors.
 
 ```xml
-<rules tier="4">
+<style tier="4">
   p { font.size: 14; }
   p.intro { font.weight: Bold; style.text-align: justify; }
   div#footer { margin-top: 20; }
-</rules>
+</style>
 ```
 
-Rules use CSS-style selector syntax:
+Style blocks use CSS-style selector syntax:
 
 | Pattern         | Matches |
 |-----------------|---------|
@@ -546,15 +547,18 @@ Rules use CSS-style selector syntax:
 | `div > p`       | `<p>` elements that are direct children of a `<div>` |
 | `p, span`       | All `<p>` and `<span>` elements |
 
-CSS-style `/* ... */` comments are ignored inside `<rules>`. Rules inside
-`<!-- XML comments -->` are also parsed, allowing rules to be commented out
+CSS-style `/* ... */` comments are ignored inside `<style>`. Rules inside
+`<!-- XML comments -->` are also parsed, allowing selectors to be commented out
 with nested comment delimiters.
 
-`<rules>` also accepts an optional `tier` attribute. Higher tiers override lower
+`<style>` accepts an optional `tier` attribute. Higher tiers override lower
 tiers before specificity and source order are considered. Default tiers are:
 
-- document-scope `<ltml><rules>`: `0`
-- page-scope `<page><rules>`: `1`
+- document-scope `<ltml><style>`: `0`
+- page-scope `<page><style>`: `1`
+
+The legacy `<rules>` tag remains supported for compatibility, but `<style>` is
+the preferred tag going forward.
 
 Attribute priority (lowest to highest):
 1. Default attributes from an alias (`<define>`)

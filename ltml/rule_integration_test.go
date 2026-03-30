@@ -67,6 +67,22 @@ func TestRules_integration_tag_rule_sets_font_size(t *testing.T) {
 	}
 }
 
+func TestRules_integration_style_tag_sets_font_size(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>p { font.size: 14; }</style>
+			<page><p>hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph by style tag")
+	}
+	if p.font.size != 14 {
+		t.Errorf("expected font size 14, got %v", p.font.size)
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Font weight set by a class rule
 // ----------------------------------------------------------------------------
@@ -149,7 +165,7 @@ func TestRules_integration_page_default_tier_beats_document_default_tier(t *test
 func TestRules_integration_document_override_tier_beats_page_default_tier(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules tier="4">p { font.size: 22; }</rules>
+			<style tier="4">p { font.size: 22; }</style>
 			<page>
 				<rules>p { font.size: 18; }</rules>
 				<p>hello</p>
@@ -162,6 +178,22 @@ func TestRules_integration_document_override_tier_beats_page_default_tier(t *tes
 	}
 	if p.font.size != 22 {
 		t.Errorf("expected document override tier to win with font.size=22, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_legacy_rules_tag_remains_supported(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p { font.size: 16; }</rules>
+			<page><p>hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph by legacy rules tag")
+	}
+	if p.font.size != 16 {
+		t.Errorf("expected font size 16, got %v", p.font.size)
 	}
 }
 
