@@ -16,6 +16,7 @@ type Doc struct {
 	stack     []any
 	scopes    []HasScope
 	rootScope Scope // per-document root scope; parent = &defaultScope
+	parseErr  error
 }
 
 func (doc *Doc) Parse(b []byte) error {
@@ -58,6 +59,9 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 		case xml.Comment:
 			traceComment(t)
 			doc.comment(t)
+		}
+		if doc.parseErr != nil {
+			return doc.parseErr
 		}
 	}
 	return nil
@@ -105,7 +109,10 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		}
 	}
 	if d, ok := e.(*StdDocument); ok {
+		d.Scope.defaultRuleTier = 0
 		doc.ltmls = append(doc.ltmls, d)
+	} else if page, ok := e.(*StdPage); ok {
+		page.Scope.defaultRuleTier = 1
 	}
 	doc.push(e)
 
@@ -176,6 +183,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	}
 	if rules, ok := e.(*Rules); ok {
 		if err := doc.scope().AddRules(rules); err != nil {
+			doc.parseErr = err
 			debugf("Adding rules: %s\n", err)
 		}
 	}

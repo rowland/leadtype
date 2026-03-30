@@ -528,7 +528,7 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 Apply attributes to elements based on tag name, id, and class selectors.
 
 ```xml
-<rules>
+<rules tier="4">
   p { font.size: 14; }
   p.intro { font.weight: Bold; style.text-align: justify; }
   div#footer { margin-top: 20; }
@@ -550,9 +550,15 @@ CSS-style `/* ... */` comments are ignored inside `<rules>`. Rules inside
 `<!-- XML comments -->` are also parsed, allowing rules to be commented out
 with nested comment delimiters.
 
+`<rules>` also accepts an optional `tier` attribute. Higher tiers override lower
+tiers before specificity and source order are considered. Default tiers are:
+
+- document-scope `<ltml><rules>`: `0`
+- page-scope `<page><rules>`: `1`
+
 Attribute priority (lowest to highest):
 1. Default attributes from an alias (`<define>`)
-2. Attributes from matching rules
+2. Attributes from matching rules, ordered by tier, then specificity, then declaration order
 3. Direct XML attributes on the element
 
 ---

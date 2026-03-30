@@ -4,9 +4,27 @@
 package ltml
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
+
+type Specificity struct {
+	IDs     int
+	Classes int
+	Tags    int
+}
+
+func (s Specificity) Compare(other Specificity) int {
+	if s.IDs != other.IDs {
+		return cmpInt(s.IDs, other.IDs)
+	}
+	if s.Classes != other.Classes {
+		return cmpInt(s.Classes, other.Classes)
+	}
+	return cmpInt(s.Tags, other.Tags)
+}
 
 // Rule associates a CSS-like selector with a set of attributes. When an element's
 // path matches the selector, the attributes are applied to that element before any
@@ -15,16 +33,22 @@ type Rule struct {
 	Selector       string
 	SelectorRegexp *regexp.Regexp
 	Attrs          map[string]string
+	Tier           int
+	Specificity    Specificity
+	Order          int
 }
 
 // NewRule creates a Rule for the given selector string and attribute map. The
 // selector is compiled into a regexp once so matching during document layout is
 // fast. See selectors.go for supported selector syntax.
-func NewRule(selector string, attrs map[string]string) *Rule {
+func NewRule(selector string, attrs map[string]string, tier, order int) *Rule {
 	return &Rule{
 		Selector:       selector,
 		SelectorRegexp: regexpForSelector(selector),
 		Attrs:          attrs,
+		Tier:           tier,
+		Specificity:    specificityForSelector(selector),
+		Order:          order,
 	}
 }
 
@@ -32,7 +56,11 @@ func NewRule(selector string, attrs map[string]string) *Rule {
 // more Rule values parsed from CSS-like text and is registered with the enclosing
 // Scope so that elements can be matched against them during parsing.
 type Rules struct {
-	rules []*Rule
+	rules         []*Rule
+	tier          int
+	tierExplicit  bool
+	nextRuleOrder int
+	parseErr      error
 }
 
 // AddComment satisfies the XML comment handler interface. Rule declarations may
@@ -53,11 +81,48 @@ var reRule = regexp.MustCompile(`\s*([^\{]+?)\s*\{([^\}]+)\}`)
 // Multiple declarations may appear in a single call. Whitespace around selectors
 // and values is trimmed automatically. CSS-style block comments are ignored.
 func (r *Rules) AddText(text string) {
+	if r.parseErr != nil {
+		return
+	}
 	text = stripCSSComments(text)
 	matches := reRule.FindAllStringSubmatch(text, -1)
 	for _, m := range matches {
-		r.rules = append(r.rules, NewRule(m[1], attrsMapFromString(m[2])))
+		for _, selector := range splitRuleSelectors(m[1]) {
+			r.rules = append(r.rules, NewRule(selector, attrsMapFromString(m[2]), r.tier, r.nextRuleOrder))
+			r.nextRuleOrder++
+		}
 	}
+}
+
+func (r *Rules) SetAttrs(attrs map[string]string) {
+	tierText, ok := attrs["tier"]
+	if !ok || tierText == "" {
+		return
+	}
+	tier, err := strconv.Atoi(strings.TrimSpace(tierText))
+	if err != nil {
+		r.parseErr = fmt.Errorf("invalid rules tier %q", tierText)
+		return
+	}
+	if tier < 0 {
+		r.parseErr = fmt.Errorf("invalid rules tier %q: tier must be >= 0", tierText)
+		return
+	}
+	r.tier = tier
+	r.tierExplicit = true
+}
+
+func (r *Rules) ensureTier(defaultTier int) error {
+	if r.parseErr != nil {
+		return r.parseErr
+	}
+	if !r.tierExplicit {
+		r.tier = defaultTier
+		for _, rule := range r.rules {
+			rule.Tier = defaultTier
+		}
+	}
+	return nil
 }
 
 var reAttrs = regexp.MustCompile(`\s*([^:]+)\s*:\s*([^;]+)\s*;?`)
@@ -81,3 +146,5 @@ func stripCSSComments(s string) string {
 func init() {
 	registerTag(DefaultSpace, "rules", func() any { return &Rules{} })
 }
+
+var _ HasAttrs = (*Rules)(nil)

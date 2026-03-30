@@ -441,9 +441,10 @@ Attributes are applied to an element in this order (each overrides the previous)
 1. **Alias defaults** — `Attrs` map from the matching `*Alias`, if the tag name
    resolved through an alias.
 2. **Rule attributes** — for each `Rule` whose selector matches the element's
-   path, attributes are applied in document order (outer scope before inner).
+   path, attributes are applied in cascade order: lower `tier`, then lower
+   selector specificity, then earlier declarations.
 3. **Direct XML attributes** — the actual attributes written on the tag in the
    document.
 
-This mirrors CSS specificity: inline styles win over rules, which win over
+This mirrors a CSS-like cascade: inline styles win over rules, which win over
 defaults.

@@ -127,6 +127,61 @@ func TestRules_integration_direct_attrs_override_rule(t *testing.T) {
 	}
 }
 
+func TestRules_integration_page_default_tier_beats_document_default_tier(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p { font.size: 14; }</rules>
+			<page>
+				<rules>p { font.size: 20; }</rules>
+				<p>hello</p>
+			</page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 20 {
+		t.Errorf("expected page default tier to win with font.size=20, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_document_override_tier_beats_page_default_tier(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules tier="4">p { font.size: 22; }</rules>
+			<page>
+				<rules>p { font.size: 18; }</rules>
+				<p>hello</p>
+			</page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 22 {
+		t.Errorf("expected document override tier to win with font.size=22, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_higher_document_tier_beats_lower_document_tier(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules tier="4">p { font.size: 18; }</rules>
+			<rules tier="5">p { font.size: 24; }</rules>
+			<page><p>hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 24 {
+		t.Errorf("expected higher document tier to win with font.size=24, got %v", p.font.size)
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Rules inside XML comments are also parsed and applied
 // ----------------------------------------------------------------------------
@@ -164,6 +219,58 @@ func TestRules_integration_later_rule_wins(t *testing.T) {
 	}
 	if p.font.size != 18 {
 		t.Errorf("expected later rule (font.size=18) to win over earlier rule (font.size=10), got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_more_specific_rule_wins_within_tier(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p { font.size: 10; } p.intro { font.size: 16; }</rules>
+			<page><p class="intro">hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 16 {
+		t.Errorf("expected more specific p.intro rule to win with font.size=16, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_id_rule_wins_over_class_rule_within_tier(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p.intro { font.size: 16; } p#hero { font.size: 19; }</rules>
+			<page><p id="hero" class="intro">hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 19 {
+		t.Errorf("expected id selector to win with font.size=19, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_descendant_rule_beats_tag_rule_on_tag_count_tiebreak(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p { font.size: 10; } div p { font.size: 15; }</rules>
+			<page>
+				<div><p>nested paragraph</p></div>
+			</page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	div := page.children[0].(*StdContainer)
+	p := div.children[0].(*StdParagraph)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 15 {
+		t.Errorf("expected descendant selector to win with font.size=15, got %v", p.font.size)
 	}
 }
 
@@ -430,5 +537,31 @@ func TestRules_integration_rule_with_multiple_attrs(t *testing.T) {
 	}
 	if p.font.weight != "Bold" {
 		t.Errorf("expected font.weight=Bold, got %q", p.font.weight)
+	}
+}
+
+func TestRules_integration_grouped_selectors_apply_independently(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<rules>p, span { font.size: 13; }</rules>
+			<page><p>hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph")
+	}
+	if p.font.size != 13 {
+		t.Errorf("expected grouped selector rule to apply with font.size=13, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_invalid_tier_returns_parse_error(t *testing.T) {
+	if _, err := Parse([]byte(`
+		<ltml>
+			<rules tier="-1">p { font.size: 14; }</rules>
+			<page><p>hello</p></page>
+		</ltml>`)); err == nil {
+		t.Fatal("expected invalid tier to return parse error")
 	}
 }
