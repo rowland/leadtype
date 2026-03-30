@@ -1,4 +1,4 @@
-// Copyright 2024 Brent Rowland.
+// Copyright 2026 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
 // Package shaping provides Arabic (and complex-script) text shaping.
