@@ -2,9 +2,9 @@
   <define id="footer" tag="p" border="dotted" padding="4pt" align="bottom" />
   <define id="header" tag="p" border="dashed" padding="4pt" align="top" font.size="20" font.weight="Bold" />
   <page layout="vbox" grid="0.25in">
-    <rules>
+    <style>
       rect { height: 3.8in; }
-    </rules>
+    </style>
 
     <header display="always">Table split with headers</header>
     <p display="always" align="top" border="dotted" padding="4pt">

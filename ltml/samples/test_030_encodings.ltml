@@ -1,7 +1,7 @@
 <ltml>
   <font id="body" name="Arial Unicode MS" size="12" />
   <layout id="vbox" padding="6pt" />
-  <rules>
+  <style>
     <!--
     p { font: body }
     .en, .da, .es, .fr, .no, .pt, .fi, .sv {
@@ -14,7 +14,7 @@
       /* Turkish */
     }
     -->
-  </rules>
+  </style>
   <page units='in' margin="0.5" layout='vbox' font="body">
     <p><u>Encodings</u></p>
     <br/>
