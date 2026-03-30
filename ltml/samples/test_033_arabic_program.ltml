@@ -5,9 +5,9 @@
   <font id="subheading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="14" weight="Bold" />
   <define id="rtl" tag="p" style.text-align="right" />
   <define id="cell" tag="p" style.text-align="right" border="solid" padding="6pt" />
-  <rules>
+  <style>
     .rtl { style.text-align: right; }
-  </rules>
+  </style>
   <page units="in" margin="0.75in" layout="vbox" font="body">
     <h font="heading" style.text-align="right">برنامج أمسيات الحي الثقافية</h>
     <h font="subheading" style.text-align="right">مكتبة المدينة - ربيع عام ألفين وستة وعشرين</h>

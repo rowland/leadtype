@@ -6,15 +6,17 @@ package ltml
 import (
 	"bytes"
 	"fmt"
+	"sort"
 )
 
 type Scope struct {
-	parent     HasScope
-	aliases    map[string]*Alias
-	styles     map[string]Styler
-	layouts    map[string]*LayoutStyle
-	pageStyles map[string]*PageStyle
-	rules      []*Rules
+	parent          HasScope
+	aliases         map[string]*Alias
+	styles          map[string]Styler
+	layouts         map[string]*LayoutStyle
+	pageStyles      map[string]*PageStyle
+	rules           []*Rules
+	defaultRuleTier int
 }
 
 func (scope *Scope) AddAlias(alias *Alias) error {
@@ -53,6 +55,9 @@ func (scope *Scope) AddPageStyle(style *PageStyle) error {
 // AddRules registers a parsed Rules collection with the scope. Multiple Rules
 // sets may be added; they are consulted in the order they were added.
 func (scope *Scope) AddRules(rules *Rules) error {
+	if err := rules.ensureTier(scope.defaultRuleTier); err != nil {
+		return err
+	}
 	scope.rules = append(scope.rules, rules)
 	return nil
 }
@@ -76,22 +81,39 @@ func (scope *Scope) AliasFor(name string) (alias *Alias, ok bool) {
 	return
 }
 
-// EachRuleFor calls f for every Rule whose selector matches path. Rules from
-// ancestor scopes are yielded first (lowest specificity), followed by rules in
-// the current scope in declaration order. This mirrors the CSS cascade: inner
-// scope rules override outer scope rules, and later declarations win over
-// earlier ones at the same scope level.
+// EachRuleFor calls f for every Rule whose selector matches path in cascade
+// order: lower tiers first, then lower specificity, then earlier declarations.
+// Direct XML attributes are still applied after rules and therefore win last.
 func (scope *Scope) EachRuleFor(path string, f func(rule *Rule)) {
-	if scope.parent != nil {
-		scope.parent.EachRuleFor(path, f)
+	matched := scope.matchingRules(path)
+	sort.SliceStable(matched, func(i, j int) bool {
+		left, right := matched[i], matched[j]
+		if left.Tier != right.Tier {
+			return left.Tier < right.Tier
+		}
+		if cmp := left.Specificity.Compare(right.Specificity); cmp != 0 {
+			return cmp < 0
+		}
+		return left.Order < right.Order
+	})
+	for _, rule := range matched {
+		f(rule)
+	}
+}
+
+func (scope *Scope) matchingRules(path string) []*Rule {
+	var matched []*Rule
+	if parent, ok := scope.parent.(interface{ matchingRules(string) []*Rule }); ok {
+		matched = append(matched, parent.matchingRules(path)...)
 	}
 	for _, rz := range scope.rules {
 		for _, rule := range rz.rules {
 			if rule.SelectorRegexp.MatchString(path) {
-				f(rule)
+				matched = append(matched, rule)
 			}
 		}
 	}
+	return matched
 }
 
 func (scope *Scope) LayoutFor(id string) (style *LayoutStyle, ok bool) {
