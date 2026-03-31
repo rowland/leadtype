@@ -28,7 +28,7 @@ Doc                      — top-level parser; holds a stack and scope stack
 | Interface         | Purpose |
 |-------------------|---------|
 | `Widget`          | Any visual element: geometry, spacing, printing. |
-| `Container`       | A `Widget` that holds child widgets. |
+| `Container`       | A `Widget` that holds child widgets. Exposes `Dir()` for layout direction. |
 | `Printer`         | The four rendering hooks (`BeforePrint`, `PaintBackground`, `DrawBorder`, `DrawContent`). |
 | `Styler`          | A named, cloneable style object that can be applied to a `Writer`. |
 | `HasScope`        | An element that owns a style/layout/alias namespace. |
@@ -278,9 +278,14 @@ func MyGridLayout(c ltml.Container, style *ltml.LayoutStyle, w ltml.Writer) {
     contentLeft := ltml.ContentLeft(c)
     contentTop  := ltml.ContentTop(c)
     contentW    := ltml.ContentWidth(c)
+    rtl := ltml.IsRTL(c)   // honor the container's dir attribute
 
     for i, widget := range widgets {
-        widget.SetLeft(contentLeft + float64(i%3) * contentW/3)
+        col := float64(i % 3)
+        if rtl {
+            col = 2 - col // mirror column index for RTL
+        }
+        widget.SetLeft(contentLeft + col * contentW/3)
         widget.SetTop(contentTop  + float64(i/3) * 100)
         widget.SetWidth(contentW / 3)
         widget.LayoutWidget(w) // recurse into containers
@@ -318,6 +323,7 @@ functions:
 | `NonContentWidth(w)`   | Total horizontal margin + padding. |
 | `NonContentHeight(w)`  | Total vertical margin + padding. |
 | `MaxContentHeight(c)`  | Maximum content height available (accounts for unbounded containers). |
+| `IsRTL(c)`             | `true` if the container's resolved `dir` is `rtl`. Invalid or missing `dir` values resolve to `ltr`. |
 
 ---
 

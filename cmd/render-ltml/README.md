@@ -9,6 +9,9 @@ other complex-script LTML samples:
 go build -tags arabic ./cmd/render-ltml
 ```
 
+Without `-tags arabic` (or `-tags harfbuzz`), Arabic samples still render but use
+the no-op shaper, so visual output will not reflect the intended shaped result.
+
 ## Usage
 
 ```sh

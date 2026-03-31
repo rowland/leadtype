@@ -8,9 +8,10 @@ import (
 )
 
 type TextStyle struct {
-	id        string
-	textAlign HAlign
-	vAlign    VAlign
+	id           string
+	textAlign    HAlign
+	textAlignSet bool
+	vAlign       VAlign
 }
 
 func (ts *TextStyle) Apply(w Writer) {
@@ -26,6 +27,7 @@ func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 		ts.id = id
 	}
 	if textAlign, ok := attrs[prefix+"text-align"]; ok {
+		ts.textAlignSet = true
 		switch textAlign {
 		case "left":
 			ts.textAlign = HAlignLeft
@@ -49,6 +51,16 @@ func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 			ts.vAlign = VAlignBaseline
 		}
 	}
+}
+
+func (ts *TextStyle) ResolvedTextAlign(c Container) HAlign {
+	if ts != nil && ts.textAlignSet {
+		return ts.textAlign
+	}
+	if c != nil && IsRTL(c) {
+		return HAlignRight
+	}
+	return HAlignLeft
 }
 
 func (ts *TextStyle) String() string {

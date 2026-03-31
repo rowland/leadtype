@@ -37,6 +37,7 @@ func LayoutAbsolute(container Container, style *LayoutStyle, writer Writer) {
 
 func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 	var cx, cy, maxY float64
+	rtl := IsRTL(container)
 	containerFull := false
 	bottom := ContentTop(container) + MaxContentHeight(container)
 	widgets, remaining := printableWidgets(container, Static)
@@ -62,7 +63,11 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 			cy += maxY + style.VPadding()
 			cx, maxY = 0, 0
 		}
-		widget.SetLeft(ContentLeft(container) + cx)
+		if rtl {
+			widget.SetLeft(ContentRight(container) - cx - widget.Width())
+		} else {
+			widget.SetLeft(ContentLeft(container) + cx)
+		}
 		widget.SetTop(ContentTop(container) + cy)
 		if h := widget.Height(); h == 0 {
 			widget.SetHeight(widget.PreferredHeight(writer))
@@ -178,27 +183,52 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	right := ContentRight(container)
 	// fmt.Println("left:", left, "right:", right)
 
-	for _, widget := range lpanels {
-		if widget.Disabled() {
-			continue
+	if IsRTL(container) {
+		for _, widget := range lpanels {
+			if widget.Disabled() {
+				continue
+			}
+			widget.SetLeft(right - widget.Width())
+			right -= (widget.Width() + style.HPadding())
 		}
-		widget.SetLeft(left)
-		left += (widget.Width() + style.HPadding())
-	}
-	for i := len(rpanels) - 1; i >= 0; i-- {
-		widget := rpanels[i]
-		if widget.Disabled() {
-			continue
+		for i := len(rpanels) - 1; i >= 0; i-- {
+			widget := rpanels[i]
+			if widget.Disabled() {
+				continue
+			}
+			widget.SetLeft(left)
+			left += (widget.Width() + style.HPadding())
 		}
-		widget.SetRight(right)
-		right -= (widget.Width() + style.HPadding())
-	}
-	for _, widget := range unaligned {
-		if widget.Disabled() {
-			continue
+		for _, widget := range unaligned {
+			if widget.Disabled() {
+				continue
+			}
+			widget.SetLeft(right - widget.Width())
+			right -= (widget.Width() + style.HPadding())
 		}
-		widget.SetLeft(left)
-		left += (widget.Width() + style.HPadding())
+	} else {
+		for _, widget := range lpanels {
+			if widget.Disabled() {
+				continue
+			}
+			widget.SetLeft(left)
+			left += (widget.Width() + style.HPadding())
+		}
+		for i := len(rpanels) - 1; i >= 0; i-- {
+			widget := rpanels[i]
+			if widget.Disabled() {
+				continue
+			}
+			widget.SetRight(right)
+			right -= (widget.Width() + style.HPadding())
+		}
+		for _, widget := range unaligned {
+			if widget.Disabled() {
+				continue
+			}
+			widget.SetLeft(left)
+			left += (widget.Width() + style.HPadding())
+		}
 	}
 
 	if !container.HeightIsSet() {
@@ -492,9 +522,11 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 			externalSplit = true
 		}
 	}
+	rtl := IsRTL(container)
 	for r := 0; r < grid.Rows(); r++ {
 		maxHeight := 0.0
 		left := ContentLeft(container)
+		right := ContentRight(container)
 		for c := 0; c < grid.Cols(); c++ {
 			if widget := grid.Cell(c, r); widget != nil {
 				widget.SetVisible(!containerFull)
@@ -503,7 +535,15 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 				}
 				ss := heights.Cell(c, r)
 				widget.SetTop(top)
-				widget.SetLeft(left)
+				if rtl {
+					colWidth := widths[c].Size
+					for i := 1; i < widget.ColSpan(); i++ {
+						colWidth += widths[c+i].Size + style.HPadding()
+					}
+					widget.SetLeft(right - colWidth)
+				} else {
+					widget.SetLeft(left)
+				}
 				height := float64(ss.Span-1) * style.VPadding()
 				for rowOffset := 0; rowOffset < ss.Span; rowOffset++ {
 					height += heights.Cell(c, r+rowOffset).Size
@@ -514,6 +554,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 				}
 			}
 			left += widths[c].Size + style.HPadding()
+			right -= widths[c].Size + style.HPadding()
 		}
 		if containerFull {
 			continue
@@ -562,14 +603,20 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			unaligned = append(unaligned, widget)
 		}
 	}
+	rtl := IsRTL(container)
 	left := ContentLeft(container)
 	// fmt.Println("left:", left)
 	for _, widget := range static {
 		if !widget.WidthIsSet() {
-			pw := widget.PreferredWidth(writer)
 			// fmt.Println("pw:", pw, widget)
 			cw := ContentWidth(container)
 			// fmt.Println("cw:", cw, container)
+			pw := 0.0
+			if _, ok := widget.(*StdParagraph); ok {
+				pw = cw
+			} else {
+				pw = widget.PreferredWidth(writer)
+			}
 			if pw == 0 {
 				pw = cw
 			}
@@ -578,7 +625,11 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			// panic("foo")
 			widget.SetWidth(w)
 		}
-		widget.SetLeft(left)
+		if rtl {
+			widget.SetLeft(ContentRight(container) - widget.Width())
+		} else {
+			widget.SetLeft(left)
+		}
 	}
 	top, dy := ContentTop(container), 0.0
 	// fmt.Println("top:", top)

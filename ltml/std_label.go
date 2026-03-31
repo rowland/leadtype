@@ -14,11 +14,12 @@ import (
 
 type StdLabel struct {
 	StdContainer
-	textPieces  []textPiece
-	richText    *rich_text.RichText
-	shrinkToFit bool
-	angle       float64
-	textAlign   HAlign
+	textPieces   []textPiece
+	richText     *rich_text.RichText
+	shrinkToFit  bool
+	angle        float64
+	textAlign    HAlign
+	textAlignSet bool
 }
 
 func (l *StdLabel) AddText(text string) {
@@ -167,7 +168,9 @@ func (l *StdLabel) SetAttrs(attrs map[string]string) {
 		l.angle, _ = strconv.ParseFloat(angle, 64)
 	}
 	l.textAlign = HAlignLeft
+	l.textAlignSet = false
 	if textAlign, ok := attrs["text-align"]; ok {
+		l.textAlignSet = true
 		switch textAlign {
 		case "center":
 			l.textAlign = HAlignCenter
@@ -203,7 +206,7 @@ func (l *StdLabel) hasDynamicText() bool {
 }
 
 func (l *StdLabel) textAnchorX() float64 {
-	switch l.textAlign {
+	switch l.resolvedTextAlign() {
 	case HAlignCenter:
 		return (ContentLeft(l) + ContentRight(l)) / 2
 	case HAlignRight:
@@ -218,7 +221,7 @@ func (l *StdLabel) textAnchor(rt *rich_text.RichText) (x, y float64) {
 }
 
 func (l *StdLabel) textAnchorOffset(rt *rich_text.RichText) float64 {
-	switch l.textAlign {
+	switch l.resolvedTextAlign() {
 	case HAlignCenter:
 		return rt.Width() / 2
 	case HAlignRight:
@@ -226,6 +229,16 @@ func (l *StdLabel) textAnchorOffset(rt *rich_text.RichText) float64 {
 	default:
 		return 0
 	}
+}
+
+func (l *StdLabel) resolvedTextAlign() HAlign {
+	if l.textAlignSet {
+		return l.textAlign
+	}
+	if l.container != nil && IsRTL(l.container) {
+		return HAlignRight
+	}
+	return HAlignLeft
 }
 
 func (l *StdLabel) String() string {
