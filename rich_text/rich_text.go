@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"unicode"
@@ -419,6 +420,8 @@ func (piece *RichText) measure() *RichText {
 			}
 			piece.width += float64(piece.chars) * piece.CharSpacing
 			return piece
+		} else if err != nil {
+			fmt.Fprintf(os.Stderr, "leadtype: shaping failed during measurement for %q (%s): %v\n", piece.Text, piece.Font.PostScriptName(), err)
 		}
 	}
 	for _, rune := range piece.Text {

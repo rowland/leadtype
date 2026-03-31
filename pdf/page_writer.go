@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -877,8 +878,13 @@ func (pw *PageWriter) flushText() {
 			usePositionedGlyphs := false
 			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
 				runes = []rune(p.Text)
-				shaped, _ = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
-				glyphSequences = shapedGlyphSequences(shaped, runes)
+				var err error
+				shaped, err = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "leadtype: shaping failed during PDF emission for %q (%s): %v\n", p.Text, p.Font.PostScriptName(), err)
+				} else {
+					glyphSequences = shapedGlyphSequences(shaped, runes)
+				}
 			}
 
 			if shaped != nil {
