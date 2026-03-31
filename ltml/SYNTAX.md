@@ -73,6 +73,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`). Default: `vbox`. |
+| `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
 | `font`        | Reference to a named `<font>` style. |
@@ -151,6 +152,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | Attribute        | Description |
 |------------------|-------------|
 | `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). |
+| `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. |
 | `cols`           | Number of columns (required for `table` layout). |
 | `rows`           | Number of rows (for column-order `table` layout). |
 | `order`          | Table fill order: `rows` (default) or `cols`. |
@@ -580,12 +582,17 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 | `absolute` | Children are positioned absolutely; no automatic layout. |
 | `relative` | Children use relative positioning. |
 
+All layout managers except `absolute` and `relative` honor the `dir` attribute.
+When `dir="rtl"` is set on a container (or inherited from a parent), horizontal
+placement is mirrored so that content flows from the right edge.
+
 ### VBox Details
 
 - Children stack top to bottom.
 - Width defaults to content width of the container.
 - Use `align="top"` to pin an element to the top (header behavior).
 - Use `align="bottom"` to pin an element to the bottom (footer behavior).
+- In `dir="rtl"`, children are flush against the right edge plus padding instead of the left.
 
 ### HBox Details
 
@@ -593,6 +600,7 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 - Use `align="left"` to pin to the left side.
 - Use `align="right"` to pin to the right side.
 - Unaligned children share remaining width equally unless `width` is specified.
+- In `dir="rtl"`, stacking order reverses: children flow right to left, `align="left"` pins to the right side, and `align="right"` pins to the left side.
 
 ### Table Details
 
@@ -601,11 +609,13 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 - Use `colspan` and `rowspan` attributes on cells to span multiple slots.
 - Column widths can be fixed (`width="120pt"`), percentage (`width="40%"`), or
   automatic (equal share of remaining space).
+- In `dir="rtl"`, columns are placed right to left (column 0 at the right edge).
 
 ### Flow Details
 
 - Children are placed left to right, wrapping to the next row when the container
   width is exceeded.
+- In `dir="rtl"`, children are placed right to left, wrapping back to the right edge.
 
 ### Positioning Details
 
