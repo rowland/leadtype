@@ -122,7 +122,7 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		w.MoveTo(x+b.Width(), y)
 	}
 	w.PrintParagraph(para, options.Options{
-		"text-align": p.ParagraphStyle().textAlign.String(),
+		"text-align": p.ParagraphStyle().ResolvedTextAlign(p).String(),
 		"width":      ContentWidth(p) - indent,
 	})
 	return nil

@@ -35,6 +35,7 @@ type labelTestWriter struct {
 	underline     bool
 	moves         [][2]float64
 	printed       []*rich_text.RichText
+	paragraphOpts []options.Options
 	printedPages  []int
 	plainPrinted  []string
 	plainPages    []int
@@ -93,6 +94,7 @@ func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, h
 	return 0, 0, nil
 }
 func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {
+	w.paragraphOpts = append(w.paragraphOpts, opts)
 	for _, line := range para {
 		w.printed = append(w.printed, line)
 		w.printedPages = append(w.printedPages, w.pageCount)
@@ -287,6 +289,7 @@ func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
 			l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 			l.angle = 30
 			l.textAlign = tc.align
+			l.textAlignSet = true
 			l.SetLeft(10)
 			l.SetTop(20)
 			l.SetWidth(100)
@@ -319,6 +322,64 @@ func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
 				t.Fatalf("rotation y = %v, want %v", w.rotations[0].y, wantAnchorY)
 			}
 		})
+	}
+}
+
+func TestStdLabel_DrawContent_DefaultsToRightAlignInRTLContainer(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	l := &StdLabel{}
+	if err := l.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(100)
+	l.SetLeft(0)
+	l.SetTop(20)
+	l.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	rt := l.fittedRichText(w)
+
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.moves) != 1 {
+		t.Fatalf("MoveTo count = %d, want 1", len(w.moves))
+	}
+	wantX := ContentRight(l) - rt.Width()
+	if got := w.moves[0][0]; math.Abs(got-wantX) > 0.001 {
+		t.Fatalf("move x = %v, want %v", got, wantX)
+	}
+}
+
+func TestStdParagraph_DrawContent_DefaultsToRightAlignInRTLContainer(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.SetWidth(100)
+	p.SetLeft(0)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.paragraphOpts) != 1 {
+		t.Fatalf("paragraph opts count = %d, want 1", len(w.paragraphOpts))
+	}
+	if got := w.paragraphOpts[0]["text-align"]; got != "right" {
+		t.Fatalf("paragraph text-align = %v, want right", got)
 	}
 }
 
@@ -439,6 +500,7 @@ func TestStdLabel_DrawContent_AngleUsesFittedWidthForCenterAnchor(t *testing.T) 
 	l.shrinkToFit = true
 	l.angle = 30
 	l.textAlign = HAlignCenter
+	l.textAlignSet = true
 	l.AddText("Hello world")
 
 	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}

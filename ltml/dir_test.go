@@ -195,6 +195,27 @@ func TestLayoutVBox_RTL(t *testing.T) {
 	}
 }
 
+func TestLayoutVBox_ParagraphDefaultsToFullWidth(t *testing.T) {
+	c := positionedContainer(0, 0, 300, 200)
+	p := &StdParagraph{}
+	if err := p.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.AddText("Short heading")
+	c.AddChild(p)
+
+	LayoutVBox(c, &LayoutStyle{}, &labelTestWriter{t: t})
+
+	if got := p.Width(); got != 300 {
+		t.Fatalf("paragraph width = %v, want 300", got)
+	}
+	if got := p.Left(); got != 0 {
+		t.Fatalf("paragraph left = %v, want 0", got)
+	}
+}
+
 func TestLayoutHBox_RTL(t *testing.T) {
 	c := rtlContainer(0, 0, 300, 100)
 	style := &LayoutStyle{}

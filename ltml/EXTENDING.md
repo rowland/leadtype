@@ -323,7 +323,7 @@ functions:
 | `NonContentWidth(w)`   | Total horizontal margin + padding. |
 | `NonContentHeight(w)`  | Total vertical margin + padding. |
 | `MaxContentHeight(c)`  | Maximum content height available (accounts for unbounded containers). |
-| `IsRTL(c)`             | `true` if the container's resolved `dir` is `rtl`. |
+| `IsRTL(c)`             | `true` if the container's resolved `dir` is `rtl`. Invalid or missing `dir` values resolve to `ltr`. |
 
 ---
 

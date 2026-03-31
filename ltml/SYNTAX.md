@@ -73,7 +73,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`). Default: `vbox`. |
-| `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. |
+| `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
 | `font`        | Reference to a named `<font>` style. |
@@ -152,7 +152,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | Attribute        | Description |
 |------------------|-------------|
 | `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). |
-| `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. |
+| `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. Invalid values fall back to `ltr`. |
 | `cols`           | Number of columns (required for `table` layout). |
 | `rows`           | Number of rows (for column-order `table` layout). |
 | `order`          | Table fill order: `rows` (default) or `cols`. |
@@ -585,6 +585,9 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 All layout managers except `absolute` and `relative` honor the `dir` attribute.
 When `dir="rtl"` is set on a container (or inherited from a parent), horizontal
 placement is mirrored so that content flows from the right edge.
+This mirrors layout placement and also changes the default horizontal alignment of
+paragraphs and labels to the right unless `text-align` is set explicitly. It does
+not automatically change paragraph shaping or bidi behavior inside text widgets.
 
 ### VBox Details
 

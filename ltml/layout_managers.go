@@ -608,10 +608,15 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	// fmt.Println("left:", left)
 	for _, widget := range static {
 		if !widget.WidthIsSet() {
-			pw := widget.PreferredWidth(writer)
 			// fmt.Println("pw:", pw, widget)
 			cw := ContentWidth(container)
 			// fmt.Println("cw:", cw, container)
+			pw := 0.0
+			if _, ok := widget.(*StdParagraph); ok {
+				pw = cw
+			} else {
+				pw = widget.PreferredWidth(writer)
+			}
 			if pw == 0 {
 				pw = cw
 			}

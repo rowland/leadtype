@@ -11,10 +11,10 @@ const (
 var dirStrings = []string{"ltr", "rtl"}
 
 func (d Dir) String() string {
-	if int(d) < len(dirStrings) {
-		return dirStrings[d]
+	if int(d) < 0 || int(d) >= len(dirStrings) {
+		return "unknown"
 	}
-	return "unknown"
+	return dirStrings[d]
 }
 
 func ParseDir(value string) Dir {
