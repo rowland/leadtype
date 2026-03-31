@@ -457,8 +457,8 @@ func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *tes
 	if got := string(assignments[0]); got != "م" {
 		t.Fatalf("glyph 0 assignment = %q, want %q", got, "م")
 	}
-	if got := string(assignments[1]); got != "صُ" {
-		t.Fatalf("glyph 1 assignment = %q, want %q", got, "صُ")
+	if got := string(assignments[1]); got != "ُص" {
+		t.Fatalf("glyph 1 assignment = %q, want %q", got, "ُص")
 	}
 	if _, ok := assignments[2]; ok {
 		t.Fatalf("glyph 2 should not receive a duplicate cluster assignment, got %q", string(assignments[2]))
@@ -499,13 +499,13 @@ func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *tes
 	dw.WriteTo(&buf)
 	pdf := buf.String()
 
-	if strings.Count(pdf, "<0635064F>") != 1 {
+	if strings.Count(pdf, "<064F0635>") != 1 {
 		t.Fatalf("expected cluster text to appear once in ToUnicode, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
-	if !strings.Contains(pdf, fmt.Sprintf("<%04X> <0635064F>", gidDamma)) {
+	if !strings.Contains(pdf, fmt.Sprintf("<%04X> <064F0635>", gidDamma)) {
 		t.Fatalf("expected first glyph in cluster to carry the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
-	if strings.Contains(pdf, fmt.Sprintf("<%04X> <0635064F>", gidS)) {
+	if strings.Contains(pdf, fmt.Sprintf("<%04X> <064F0635>", gidS)) {
 		t.Fatalf("expected secondary glyph in cluster not to duplicate the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
 	if !strings.Contains(extractSection(pdf, "/CIDFontType2", 600), fmt.Sprintf("%d", gidS)) {

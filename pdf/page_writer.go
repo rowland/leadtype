@@ -1050,7 +1050,7 @@ func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) ma
 			end = sortedStarts[i+1]
 		}
 		if start < end {
-			clusterSequences[start] = append([]rune(nil), runes[start:end]...)
+			clusterSequences[start] = reverseRunes(append([]rune(nil), runes[start:end]...))
 		}
 	}
 
@@ -1066,6 +1066,13 @@ func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) ma
 		}
 	}
 	return assignments
+}
+
+func reverseRunes(runes []rune) []rune {
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return runes
 }
 
 func (pw *PageWriter) FontColor() colors.Color {
