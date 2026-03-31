@@ -15,6 +15,8 @@ type StdContainer struct {
 	StdWidget
 	Children
 	cols            int
+	dir             Dir
+	dirExplicit     bool
 	layout          *LayoutStyle
 	order           TableOrder
 	paragraphStyle  *ParagraphStyle
@@ -34,6 +36,13 @@ func (c *StdContainer) Cols() int {
 
 func (c *StdContainer) Container() Container {
 	return c.container
+}
+
+func (c *StdContainer) Dir() Dir {
+	if !c.dirExplicit && c.container != nil {
+		return c.container.Dir()
+	}
+	return c.dir
 }
 
 func (c *StdContainer) DrawContent(w Writer) error {
@@ -101,6 +110,10 @@ func (c *StdContainer) Rows() int {
 
 func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	c.StdWidget.SetAttrs(attrs)
+	if dirVal, ok := attrs["dir"]; ok {
+		c.dirExplicit = true
+		c.dir = ParseDir(dirVal)
+	}
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
 	}

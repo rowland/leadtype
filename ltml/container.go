@@ -17,6 +17,7 @@ type Container interface {
 	AddChild(value Widget)
 	Cols() int
 	Container() Container
+	Dir() Dir
 	LayoutStyle() *LayoutStyle
 	Order() TableOrder
 	ParagraphStyle() *ParagraphStyle
