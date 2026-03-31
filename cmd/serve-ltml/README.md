@@ -9,6 +9,10 @@ rendering of Arabic and other complex-script text:
 go build -tags arabic ./cmd/serve-ltml
 ```
 
+Without `-tags arabic` (or `-tags harfbuzz`), Arabic documents still render but
+use the no-op shaper, so the output is not a valid visual verification of Arabic
+text layout.
+
 ## Usage
 
 ```

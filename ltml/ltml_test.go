@@ -185,7 +185,6 @@ func TestSamples(t *testing.T) {
 		"test_029_table_split_headers_footers",
 		"test_030_encodings",
 		"test_032_label_shrink_to_fit",
-		"test_033_arabic_program",
 		"test_034_svg_image",
 	}
 

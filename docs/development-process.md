@@ -169,11 +169,21 @@ Normal `go test` runs should not rewrite `ltml/samples/*.pdf`; doing so creates
 side effects that interfere with test caching. The LTML sample harness therefore
 writes PDFs to temporary files by default.
 
+The default LTML sample test run covers the general samples only. Arabic shaping
+samples are verified through a separate tagged test so the default suite does not
+silently pass with the no-op shaper.
+
 When you intentionally want to regenerate the checked-in LTML sample renderings
 next to their source files, run:
 
 ```bash
 go test -tags arabic ./ltml -run TestSamples -write-sample-pdfs
+```
+
+To verify the Arabic sample specifically with shaping enabled, run:
+
+```bash
+go test -tags arabic ./ltml -run TestArabicSamples -write-sample-pdfs
 ```
 
 You can combine that with `-open-sample-pdfs` to open the regenerated files
