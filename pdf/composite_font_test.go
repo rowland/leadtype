@@ -6,6 +6,7 @@ package pdf
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -443,6 +444,72 @@ func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	}
 	if !strings.Contains(pdf, "<") || !strings.Contains(pdf, " Tj\n") {
 		t.Fatalf("expected individual shaped glyph hex output, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
+	}
+}
+
+func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *testing.T) {
+	assignments := shapedGlyphRuneAssignments([]shaping.GlyphPosition{
+		{GlyphID: 10, ClusterIndex: 2},
+		{GlyphID: 20, ClusterIndex: 0},
+		{GlyphID: 21, ClusterIndex: 0},
+	}, []rune("صُم"))
+
+	if got := string(assignments[0]); got != "م" {
+		t.Fatalf("glyph 0 assignment = %q, want %q", got, "م")
+	}
+	if got := string(assignments[1]); got != "صُ" {
+		t.Fatalf("glyph 1 assignment = %q, want %q", got, "صُ")
+	}
+	if _, ok := assignments[2]; ok {
+		t.Fatalf("glyph 2 should not receive a duplicate cluster assignment, got %q", string(assignments[2]))
+	}
+}
+
+func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont: %v", err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("SetFont returned no fonts")
+	}
+	gidM := fonts[0].GlyphIndex('م')
+	gidS := fonts[0].GlyphIndex('ص')
+	gidDamma := fonts[0].GlyphIndex('ُ')
+	fonts[0].Shaper = offsetShaper{glyphs: []shaping.GlyphPosition{
+		{GlyphID: gidM, XAdvance: 8 * 64, ClusterIndex: 2},
+		{GlyphID: gidDamma, XAdvance: 0, ClusterIndex: 0},
+		{GlyphID: gidS, XAdvance: 8 * 64, ClusterIndex: 0},
+	}}
+
+	pw.MoveTo(72, 720)
+	pw.Print("صُم")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if strings.Count(pdf, "<0635064F>") != 1 {
+		t.Fatalf("expected cluster text to appear once in ToUnicode, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if !strings.Contains(pdf, fmt.Sprintf("<%04X> <0635064F>", gidDamma)) {
+		t.Fatalf("expected first glyph in cluster to carry the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if strings.Contains(pdf, fmt.Sprintf("<%04X> <0635064F>", gidS)) {
+		t.Fatalf("expected secondary glyph in cluster not to duplicate the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if !strings.Contains(extractSection(pdf, "/CIDFontType2", 600), fmt.Sprintf("%d", gidS)) {
+		t.Fatalf("expected secondary glyph to remain in /W widths for subsetting, got pdf excerpt:\n%s", extractSection(pdf, "/CIDFontType2", 600))
 	}
 }
 

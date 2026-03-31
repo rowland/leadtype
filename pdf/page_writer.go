@@ -874,7 +874,7 @@ func (pw *PageWriter) flushText() {
 
 			var shaped []shaping.GlyphPosition
 			var runes []rune // allocated only when shaping is attempted
-			var glyphSequences map[int][]rune
+			var glyphRuneAssignments map[int][]rune
 			usePositionedGlyphs := false
 			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
 				runes = []rune(p.Text)
@@ -883,7 +883,7 @@ func (pw *PageWriter) flushText() {
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "leadtype: shaping failed during PDF emission for %q (%s): %v\n", p.Text, p.Font.PostScriptName(), err)
 				} else {
-					glyphSequences = shapedGlyphSequences(shaped, runes)
+					glyphRuneAssignments = shapedGlyphRuneAssignments(shaped, runes)
 				}
 			}
 
@@ -913,12 +913,12 @@ func (pw *PageWriter) flushText() {
 				penX := 0.0
 				// The shaper returns glyphs in visual order, so emit them in the
 				// same order while advancing the pen explicitly.
-				for _, gp := range shaped {
+				for i, gp := range shaped {
 					if gr != nil {
-						if seq := glyphSequences[gp.ClusterIndex]; len(seq) > 0 {
+						if seq := glyphRuneAssignments[i]; len(seq) > 0 {
 							gr.recordRunes(gp.GlyphID, seq)
 						} else {
-							gr.record(gp.GlyphID, runes[gp.ClusterIndex])
+							gr.use(gp.GlyphID)
 						}
 					}
 					buf.WriteByte(byte(gp.GlyphID >> 8))
@@ -1022,7 +1022,7 @@ func (pw *PageWriter) flushText() {
 	pw.flushing = false
 }
 
-func shapedGlyphSequences(glyphs []shaping.GlyphPosition, runes []rune) map[int][]rune {
+func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) map[int][]rune {
 	if len(glyphs) == 0 || len(runes) == 0 {
 		return nil
 	}
@@ -1043,17 +1043,29 @@ func shapedGlyphSequences(glyphs []shaping.GlyphPosition, runes []rune) map[int]
 	}
 	sort.Ints(sortedStarts)
 
-	sequences := make(map[int][]rune, len(sortedStarts))
+	clusterSequences := make(map[int][]rune, len(sortedStarts))
 	for i, start := range sortedStarts {
 		end := len(runes)
 		if i+1 < len(sortedStarts) {
 			end = sortedStarts[i+1]
 		}
 		if start < end {
-			sequences[start] = append([]rune(nil), runes[start:end]...)
+			clusterSequences[start] = append([]rune(nil), runes[start:end]...)
 		}
 	}
-	return sequences
+
+	assignments := make(map[int][]rune, len(glyphs))
+	seenClusters := make(map[int]struct{}, len(clusterSequences))
+	for i, gp := range glyphs {
+		if _, seen := seenClusters[gp.ClusterIndex]; seen {
+			continue
+		}
+		if seq := clusterSequences[gp.ClusterIndex]; len(seq) > 0 {
+			assignments[i] = seq
+			seenClusters[gp.ClusterIndex] = struct{}{}
+		}
+	}
+	return assignments
 }
 
 func (pw *PageWriter) FontColor() colors.Color {

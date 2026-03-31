@@ -305,15 +305,16 @@ func subsetTag() string {
 func (dw *DocWriter) flushUnicodeFonts() {
 	for psName, gr := range dw.glyphRecorders {
 		mapping := gr.mapping()
-		if len(mapping) == 0 {
+		glyphIDs := gr.glyphIDs()
+		if len(glyphIDs) == 0 {
 			continue
 		}
 		f := dw.unicodeFonts[psName]
 		upm := f.UnitsPerEm()
 
 		// Build /W width array from recorded glyph IDs.
-		glyphWidths := make(map[uint16]int, len(mapping))
-		for gid := range mapping {
+		glyphWidths := make(map[uint16]int, len(glyphIDs))
+		for _, gid := range glyphIDs {
 			w := f.AdvanceWidthForGlyph(gid)
 			if upm > 0 {
 				w = w * 1000 / upm
@@ -336,10 +337,6 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
 
 		// Embed a font subset as /FontFile2 in the descriptor.
-		glyphIDs := make([]uint16, 0, len(mapping))
-		for gid := range mapping {
-			glyphIDs = append(glyphIDs, gid)
-		}
 		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
 			fontStream := newStream(dw.nextSeq(), 0, subsetData)
 			fontStream.setLength1(len(subsetData))
