@@ -5,6 +5,9 @@ package pdf
 
 import (
 	"bytes"
+	"errors"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -367,6 +370,41 @@ func (s offsetShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shapin
 	return s.glyphs, nil
 }
 
+type errorShaper struct {
+	err error
+}
+
+func (s errorShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping.GlyphPosition, error) {
+	return nil, s.err
+}
+
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+
+	prev := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = prev
+	}()
+
+	fn()
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
 func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
 	if err != nil || len(fc.FontInfos) == 0 {
@@ -405,6 +443,39 @@ func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	}
 	if !strings.Contains(pdf, "<") || !strings.Contains(pdf, " Tj\n") {
 		t.Fatalf("expected individual shaped glyph hex output, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
+	}
+}
+
+func TestUnicodeMode_ShapingFailureWarnsDuringEmission(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont: %v", err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("SetFont returned no fonts")
+	}
+	fonts[0].Shaper = errorShaper{err: errors.New("boom")}
+
+	pw.MoveTo(72, 720)
+	pw.Print("مرحبا")
+
+	warnings := captureStderr(t, func() {
+		var buf bytes.Buffer
+		dw.WriteTo(&buf)
+	})
+
+	if !strings.Contains(warnings, "shaping failed during PDF emission") {
+		t.Fatalf("expected PDF emission shaping warning, got %q", warnings)
 	}
 }
 

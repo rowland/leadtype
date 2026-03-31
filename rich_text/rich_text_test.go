@@ -4,7 +4,11 @@
 package rich_text
 
 import (
+	"errors"
+	"io"
 	"math"
+	"os"
+	"strings"
 	"testing"
 	"unicode"
 
@@ -13,12 +17,62 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/ttf"
 	"github.com/rowland/leadtype/ttf_fonts"
 	"github.com/rowland/leadtype/wordbreaking"
 )
 
 // import "fmt"
+
+type errorShaper struct {
+	err error
+}
+
+func (s errorShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping.GlyphPosition, error) {
+	return nil, s.err
+}
+
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+
+	prev := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = prev
+	}()
+
+	fn()
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func amiriFixtureFont(t *testing.T) *font.Font {
+	t.Helper()
+
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	f, err := font.New(fc.FontInfos[0].Family(), options.Options{}, font.FontSources{fc})
+	if err != nil {
+		t.Fatalf("font.New: %v", err)
+	}
+	return f
+}
 
 func TestNewRichText_English(t *testing.T) {
 	skipIfNoTTFFonts(t)
@@ -753,6 +807,23 @@ func TestRichText_Width(t *testing.T) {
 	st.AlmostEqual(60.024414, p.Width(), 0.001)
 }
 
+func TestRichText_measure_LogsShapingFailure(t *testing.T) {
+	p := &RichText{
+		Text:     "مرحبا",
+		Font:     amiriFixtureFont(t),
+		FontSize: 12,
+	}
+	p.Font.Shaper = errorShaper{err: errors.New("boom")}
+
+	warnings := captureStderr(t, func() {
+		p.measure()
+	})
+
+	if !strings.Contains(warnings, "shaping failed during measurement") {
+		t.Fatalf("expected measurement shaping warning, got %q", warnings)
+	}
+}
+
 func TestRichText_WordsToWidth_empty(t *testing.T) {
 	st := SuperTest{t}
 	p := new(RichText)
@@ -826,6 +897,29 @@ func TestRichText_WordsToWidth_zero(t *testing.T) {
 	st.MustNot(remainder == nil, "There should be text left over.")
 	st.Equal("upercalifragilisticexpialidocious", remainder.String())
 	st.Equal(33, len(remainderFlags))
+}
+
+func TestRichText_WordsToWidth_LogsShapingFailure(t *testing.T) {
+	p := &RichText{
+		Text:     "مرحبا بالعالم",
+		Font:     amiriFixtureFont(t),
+		FontSize: 12,
+	}
+	p.Font.Shaper = errorShaper{err: errors.New("boom")}
+
+	flags := make([]wordbreaking.Flags, p.Len())
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+
+	warnings := captureStderr(t, func() {
+		line, _, _ := p.WordsToWidth(100, flags, false)
+		if line == nil {
+			t.Fatal("expected a wrapped line")
+		}
+	})
+
+	if !strings.Contains(warnings, "shaping failed during line breaking") {
+		t.Fatalf("expected line-breaking shaping warning, got %q", warnings)
+	}
 }
 
 func TestRichText_WrapToWidth_hyphenated(t *testing.T) {

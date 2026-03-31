@@ -778,6 +778,9 @@ func (piece *RichText) WordsToWidth(
 					for _, g := range glyphs {
 						shapedAdv[g.ClusterIndex] += float64(g.XAdvance) / 64.0
 					}
+				} else if err != nil {
+					fmt.Fprintf(os.Stderr, "leadtype: shaping failed during line breaking for %q (%s): %v\n", p.Text, p.Font.PostScriptName(), err)
+					shapedAdv = nil
 				} else {
 					shapedAdv = nil
 				}
