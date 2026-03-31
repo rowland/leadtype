@@ -21,6 +21,7 @@ import (
 	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/svg"
 	"github.com/rowland/leadtype/wordbreaking"
+	xbidi "golang.org/x/text/unicode/bidi"
 )
 
 type LineCapStyle int
@@ -858,12 +859,10 @@ func (pw *PageWriter) flushText() {
 	usedPositionedText := false
 	var buf bytes.Buffer
 	merged := pw.line.Merge()
+	displayPieces := bidiDisplayPieces(merged)
 	// Iterate leaf pieces directly. TrueType leaves are encoded as big-endian
 	// uint16 glyph ID pairs. AFM/Type1 leaves use codepage-based encoding.
-	merged.VisitAll(func(p *rich_text.RichText) {
-		if !p.IsLeaf() || p.Text == "" || p.Font == nil {
-			return
-		}
+	for _, p := range displayPieces {
 		leafStart := textLoc
 		textLoc.X += p.Width()
 		if p.Font.SubType() == "TrueType" {
@@ -989,7 +988,7 @@ func (pw *PageWriter) flushText() {
 				pw.tw.show(buf.Bytes())
 			})
 		}
-	})
+	}
 	if usedPositionedText {
 		pw.tw.setMatrix(1, 0, 0, 1, pw.loc.X, pw.loc.Y)
 	}
@@ -1073,6 +1072,171 @@ func reverseRunes(runes []rune) []rune {
 		runes[i], runes[j] = runes[j], runes[i]
 	}
 	return runes
+}
+
+type leafSlice struct {
+	piece     *rich_text.RichText
+	leafStart int
+	leafEnd   int
+	clipStart int
+	clipEnd   int
+}
+
+func bidiDisplayPieces(text *rich_text.RichText) []*rich_text.RichText {
+	merged := text.Merge()
+	logical := merged.String()
+	if logical == "" {
+		return nil
+	}
+
+	leaves := flattenLeafSlices(merged)
+	if len(leaves) == 0 {
+		return leafPieces(leaves)
+	}
+
+	var paragraph xbidi.Paragraph
+	if _, err := paragraph.SetString(logical); err != nil {
+		return leafPieces(leaves)
+	}
+	order, err := paragraph.Order()
+	if err != nil || order.NumRuns() == 0 {
+		return leafPieces(leaves)
+	}
+
+	runIndexes := make([]int, 0, order.NumRuns())
+	if firstStrongDirection(logical) == xbidi.RightToLeft {
+		for i := order.NumRuns() - 1; i >= 0; i-- {
+			runIndexes = append(runIndexes, i)
+		}
+	} else {
+		for i := 0; i < order.NumRuns(); i++ {
+			runIndexes = append(runIndexes, i)
+		}
+	}
+
+	out := make([]*rich_text.RichText, 0, len(leaves))
+	for _, runIndex := range runIndexes {
+		run := order.Run(runIndex)
+		start, end := run.Pos()
+		end++
+		segments := intersectingLeafSlices(leaves, start, end)
+		if run.Direction() == xbidi.RightToLeft {
+			for i, j := 0, len(segments)-1; i < j; i, j = i+1, j-1 {
+				segments[i], segments[j] = segments[j], segments[i]
+			}
+		}
+		out = append(out, slicePieces(segments)...)
+	}
+	if len(out) == 0 {
+		return leafPieces(leaves)
+	}
+	return out
+}
+
+func flattenLeafSlices(text *rich_text.RichText) []leafSlice {
+	slices := []leafSlice{}
+	runePos := 0
+	text.VisitAll(func(p *rich_text.RichText) {
+		if !p.IsLeaf() || p.Text == "" || p.Font == nil {
+			return
+		}
+		runeLen := len([]rune(p.Text))
+		slices = append(slices, leafSlice{
+			piece:     p,
+			leafStart: runePos,
+			leafEnd:   runePos + runeLen,
+			clipStart: runePos,
+			clipEnd:   runePos + runeLen,
+		})
+		runePos += runeLen
+	})
+	return slices
+}
+
+func leafPieces(slices []leafSlice) []*rich_text.RichText {
+	out := make([]*rich_text.RichText, 0, len(slices))
+	for _, s := range slices {
+		out = append(out, s.piece)
+	}
+	return out
+}
+
+func intersectingLeafSlices(slices []leafSlice, start, end int) []leafSlice {
+	out := make([]leafSlice, 0, len(slices))
+	for _, s := range slices {
+		if s.leafEnd <= start || s.leafStart >= end {
+			continue
+		}
+		out = append(out, leafSlice{
+			piece:     s.piece,
+			leafStart: s.leafStart,
+			leafEnd:   s.leafEnd,
+			clipStart: maxInt(s.leafStart, start),
+			clipEnd:   minInt(s.leafEnd, end),
+		})
+	}
+	return out
+}
+
+func slicePieces(slices []leafSlice) []*rich_text.RichText {
+	out := make([]*rich_text.RichText, 0, len(slices))
+	for _, s := range slices {
+		text := sliceRunes(s.piece.Text, s.clipStart-s.leafStart, s.clipEnd-s.leafStart)
+		if text == "" {
+			continue
+		}
+		if text == s.piece.Text {
+			out = append(out, s.piece)
+			continue
+		}
+		clone := s.piece.Clone()
+		clone.Text = text
+		out = append(out, clone)
+	}
+	return out
+}
+
+func sliceRunes(s string, start, end int) string {
+	if start == 0 && end >= len([]rune(s)) {
+		return s
+	}
+	runes := []rune(s)
+	if start < 0 {
+		start = 0
+	}
+	if end > len(runes) {
+		end = len(runes)
+	}
+	if start >= end {
+		return ""
+	}
+	return string(runes[start:end])
+}
+
+func firstStrongDirection(text string) xbidi.Direction {
+	var paragraph xbidi.Paragraph
+	if _, err := paragraph.SetString(text); err == nil {
+		if order, err := paragraph.Order(); err == nil && order.NumRuns() > 0 {
+			if dir := paragraph.Direction(); dir == xbidi.LeftToRight || dir == xbidi.RightToLeft {
+				return dir
+			}
+		}
+	}
+	return xbidi.LeftToRight
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func (pw *PageWriter) FontColor() colors.Color {
