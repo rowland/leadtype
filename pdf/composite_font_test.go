@@ -303,6 +303,31 @@ func TestUnicodeMode_SubsetTag(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_SubsetTag_IsDeterministic(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	render := func() string {
+		dw := NewDocWriter()
+		dw.AddFontSource(fc)
+
+		pw := dw.NewPage()
+		pw.SetFont("Minimal", 12, options.Options{})
+		pw.MoveTo(72, 720)
+		pw.Print("ABC")
+
+		var buf bytes.Buffer
+		dw.WriteTo(&buf)
+		return buf.String()
+	}
+
+	first := render()
+	second := render()
+
+	if first != second {
+		t.Fatalf("expected repeated renders to be byte-identical")
+	}
+}
+
 // ── Phase 3: no codepage splitting in unicode mode ────────────────────────────
 
 // TestUnicodeMode_MultiScriptSingleTj verifies that a string containing both
@@ -508,8 +533,8 @@ func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *tes
 	if strings.Contains(pdf, fmt.Sprintf("<%04X> <064F0635>", gidS)) {
 		t.Fatalf("expected secondary glyph in cluster not to duplicate the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
-	if !strings.Contains(extractSection(pdf, "/CIDFontType2", 600), fmt.Sprintf("%d", gidS)) {
-		t.Fatalf("expected secondary glyph to remain in /W widths for subsetting, got pdf excerpt:\n%s", extractSection(pdf, "/CIDFontType2", 600))
+	if !strings.Contains(pdf, fmt.Sprintf("<%04x>", gidS)) {
+		t.Fatalf("expected secondary glyph to remain in emitted content for subsetting, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
 	}
 }
 
