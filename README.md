@@ -172,6 +172,8 @@ go install github.com/rowland/leadtype/ttdump@latest
 - [`cmd/render-ltml/README.md`](cmd/render-ltml/README.md): local and remote LTML rendering CLI usage.
 - [`cmd/serve-ltml/README.md`](cmd/serve-ltml/README.md): HTTP rendering service API and configuration.
 - [`docs/development-process.md`](docs/development-process.md): workflow, testing strategy, and fixture guidance.
+- [`docs/curved-text.md`](docs/curved-text.md): staged curved-text API roadmap for the PDF layer.
+- [`docs/curved-text-ltml.md`](docs/curved-text-ltml.md): LTML planning note for future curved-text syntax.
 - [`docs/unicode-pdf-rendering.md`](docs/unicode-pdf-rendering.md): design overview for Unicode and composite-font PDF output.
 - [`docs/unicode-pdf-rendering-todo.md`](docs/unicode-pdf-rendering-todo.md): implementation checklist for the Unicode workstream.
 

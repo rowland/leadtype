@@ -244,6 +244,27 @@ the rendered text instead. Unlike the generic widget `rotate` attribute, label
 
 ---
 
+### Planned Curved Text
+
+Curved text is planned, but not yet implemented in LTML. The current direction
+is to add a dedicated curved-text element, likely `<textpath>`, after the PDF
+API for circle and ellipse text has stabilized.
+
+The planned LTML concepts mirror the PDF roadmap:
+
+| Concept | Planned Values |
+|---------|----------------|
+| curve kind | `circle`, `ellipse`, later `path` |
+| horizontal anchor | `left`, `center`, `right` |
+| vertical anchor | `top`, `above`, `middle`, `baseline`, `below` |
+| orientation | geometric or reader-friendly/upright |
+| geometry | circle radius, ellipse `rx`/`ry`, later path control points |
+
+SVG `textPath` may inform terminology, but LTML is not currently targeting full
+SVG text-on-path compatibility.
+
+---
+
 ### `<pre>` — Preformatted Text
 
 Draws literal multiline text without paragraph reflow. This is intended for
