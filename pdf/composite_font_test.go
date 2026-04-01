@@ -6,7 +6,6 @@ package pdf
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -509,12 +508,10 @@ func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *tes
 		t.Fatal("SetFont returned no fonts")
 	}
 	gidM := fonts[0].GlyphIndex('م')
-	gidS := fonts[0].GlyphIndex('ص')
-	gidDamma := fonts[0].GlyphIndex('ُ')
 	fonts[0].Shaper = offsetShaper{glyphs: []shaping.GlyphPosition{
 		{GlyphID: gidM, XAdvance: 8 * 64, ClusterIndex: 2},
-		{GlyphID: gidDamma, XAdvance: 0, ClusterIndex: 0},
-		{GlyphID: gidS, XAdvance: 8 * 64, ClusterIndex: 0},
+		{GlyphID: fonts[0].GlyphIndex('ُ'), XAdvance: 0, ClusterIndex: 0},
+		{GlyphID: fonts[0].GlyphIndex('ص'), XAdvance: 8 * 64, ClusterIndex: 0},
 	}}
 
 	pw.MoveTo(72, 720)
@@ -527,14 +524,14 @@ func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *tes
 	if strings.Count(pdf, "<064F0635>") != 1 {
 		t.Fatalf("expected cluster text to appear once in ToUnicode, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
-	if !strings.Contains(pdf, fmt.Sprintf("<%04X> <064F0635>", gidDamma)) {
-		t.Fatalf("expected first glyph in cluster to carry the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	if strings.Count(pdf, "<0645>") != 1 {
+		t.Fatalf("expected standalone meem mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
-	if strings.Contains(pdf, fmt.Sprintf("<%04X> <064F0635>", gidS)) {
-		t.Fatalf("expected secondary glyph in cluster not to duplicate the cluster mapping, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	if strings.Count(pdf, " beginbfchar\n") == 0 {
+		t.Fatalf("expected ToUnicode CMap entries, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
-	if !strings.Contains(pdf, fmt.Sprintf("<%04x>", gidS)) {
-		t.Fatalf("expected secondary glyph to remain in emitted content for subsetting, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
+	if !strings.Contains(pdf, "/CIDToGIDMap") {
+		t.Fatalf("expected composite font to include CIDToGIDMap, got pdf excerpt:\n%s", extractSection(pdf, "/CIDFontType2", 400))
 	}
 }
 

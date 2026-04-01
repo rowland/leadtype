@@ -912,15 +912,16 @@ func (pw *PageWriter) flushText() {
 				// The shaper returns glyphs in visual order, so emit them in the
 				// same order while advancing the pen explicitly.
 				for i, gp := range shaped {
+					code := gp.GlyphID
 					if gr != nil {
 						if seq := glyphRuneAssignments[i]; len(seq) > 0 {
-							gr.recordRunes(gp.GlyphID, seq)
+							code = gr.recordRunes(gp.GlyphID, seq)
 						} else {
-							gr.use(gp.GlyphID)
+							code = gr.use(gp.GlyphID)
 						}
 					}
-					buf.WriteByte(byte(gp.GlyphID >> 8))
-					buf.WriteByte(byte(gp.GlyphID & 0xFF))
+					buf.WriteByte(byte(code >> 8))
+					buf.WriteByte(byte(code & 0xFF))
 					pw.tw.setMatrix(
 						1, 0, 0, 1,
 						leafStart.X+penX+(float64(gp.XOffset)/64.0),
@@ -936,12 +937,13 @@ func (pw *PageWriter) flushText() {
 				fsize := p.FontSize / float64(p.Font.UnitsPerEm())
 				for _, r := range p.Text {
 					gid := p.Font.GlyphIndex(r)
+					code := gid
 					if gr != nil {
-						gr.record(gid, r)
+						code = gr.record(gid, r)
 					}
 					advanceWidth, _ := p.Font.AdvanceWidth(r)
-					buf.WriteByte(byte(gid >> 8))
-					buf.WriteByte(byte(gid & 0xFF))
+					buf.WriteByte(byte(code >> 8))
+					buf.WriteByte(byte(code & 0xFF))
 					pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+penX, leafStart.Y)
 					pw.tw.showHex(buf.Bytes())
 					buf.Reset()
@@ -953,11 +955,12 @@ func (pw *PageWriter) flushText() {
 			} else {
 				for _, r := range p.Text {
 					gid := p.Font.GlyphIndex(r)
+					code := gid
 					if gr != nil {
-						gr.record(gid, r)
+						code = gr.record(gid, r)
 					}
-					buf.WriteByte(byte(gid >> 8))
-					buf.WriteByte(byte(gid & 0xFF))
+					buf.WriteByte(byte(code >> 8))
+					buf.WriteByte(byte(code & 0xFF))
 				}
 				pw.tw.show(buf.Bytes())
 			}

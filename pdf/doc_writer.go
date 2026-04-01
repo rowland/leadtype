@@ -329,18 +329,23 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		f := dw.unicodeFonts[psName]
 		upm := f.UnitsPerEm()
 
-		// Build /W width array from recorded glyph IDs.
-		glyphWidths := make(map[uint16]int, len(glyphIDs))
-		for _, gid := range glyphIDs {
+		// Build /W width array from emitted CIDs.
+		cids := gr.cids()
+		sort.Slice(cids, func(i, j int) bool { return cids[i] < cids[j] })
+		cidWidths := make(map[uint16]int, len(cids))
+		cidToGID := make(map[uint16]uint16, len(cids))
+		for _, cid := range cids {
+			gid := gr.glyphIDForCID(cid)
+			cidToGID[cid] = gid
 			w := f.AdvanceWidthForGlyph(gid)
 			if upm > 0 {
 				w = w * 1000 / upm
 			}
-			glyphWidths[gid] = w
+			cidWidths[cid] = w
 		}
-		defWidth := mostCommonWidth(glyphWidths)
+		defWidth := mostCommonWidth(cidWidths)
 		dw.cidFonts[psName].setDefaultWidth(defWidth)
-		dw.cidFonts[psName].setWidths(buildCIDWidthArray(glyphWidths, defWidth))
+		dw.cidFonts[psName].setWidths(buildCIDWidthArray(cidWidths, defWidth))
 
 		// Build ToUnicode CMap stream.
 		tuData := toUnicodeCMapDataComposite(mapping)
@@ -352,6 +357,10 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		}
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
+
+		cidMapStream := newStream(dw.nextSeq(), 0, cidToGIDMapData(cidToGID))
+		dw.file.body.add(cidMapStream)
+		dw.cidFonts[psName].setCIDToGIDMap(&indirectObjectRef{cidMapStream})
 
 		// Embed a font subset as /FontFile2 in the descriptor.
 		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
