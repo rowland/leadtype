@@ -8,32 +8,107 @@ package pdf
 // It is used in Unicode mode to build the /W width array and the ToUnicode
 // CMap stream at document close.
 type glyphRecorder struct {
-	glyphToRunes map[uint16][]rune
+	keyToCID map[glyphUseKey]uint16
+	cidUses  map[uint16]glyphUse
+	nextCID  uint16
+}
+
+type glyphUseKey struct {
+	glyphID uint16
+	text    string
+	mapped  bool
+}
+
+type glyphUse struct {
+	glyphID uint16
+	runes   []rune
+	mapped  bool
 }
 
 func newGlyphRecorder() *glyphRecorder {
-	return &glyphRecorder{glyphToRunes: make(map[uint16][]rune)}
+	return &glyphRecorder{
+		keyToCID: make(map[glyphUseKey]uint16),
+		cidUses:  make(map[uint16]glyphUse),
+		nextCID:  1, // reserve CID 0 for .notdef
+	}
 }
 
 // record notes that glyphID was used to render the given rune.
-// If glyphID is already recorded it is silently ignored (first rune wins).
-func (gr *glyphRecorder) record(glyphID uint16, r rune) {
-	gr.recordRunes(glyphID, []rune{r})
+func (gr *glyphRecorder) record(glyphID uint16, r rune) uint16 {
+	return gr.recordRunes(glyphID, []rune{r})
 }
 
 // recordRunes notes that glyphID was used to render the given Unicode sequence.
-// If glyphID is already recorded it is silently ignored (first sequence wins).
-func (gr *glyphRecorder) recordRunes(glyphID uint16, runes []rune) {
-	if _, ok := gr.glyphToRunes[glyphID]; !ok {
-		gr.glyphToRunes[glyphID] = append([]rune(nil), runes...)
-	}
+func (gr *glyphRecorder) recordRunes(glyphID uint16, runes []rune) uint16 {
+	return gr.cidFor(glyphID, runes, true)
 }
 
-// mapping returns a copy of the glyph-ID → Unicode-sequence map.
+// use notes that glyphID was used during rendering even if it has no direct
+// Unicode mapping in the ToUnicode CMap (for example, a secondary glyph in a
+// shaped cluster).
+func (gr *glyphRecorder) use(glyphID uint16) uint16 {
+	return gr.cidFor(glyphID, nil, false)
+}
+
+func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint16 {
+	key := glyphUseKey{
+		glyphID: glyphID,
+		text:    string(runes),
+		mapped:  mapped,
+	}
+	if cid, ok := gr.keyToCID[key]; ok {
+		return cid
+	}
+	cid := gr.nextCID
+	gr.nextCID++
+	gr.keyToCID[key] = cid
+	gr.cidUses[cid] = glyphUse{
+		glyphID: glyphID,
+		runes:   append([]rune(nil), runes...),
+		mapped:  mapped,
+	}
+	return cid
+}
+
+// mapping returns a copy of the CID → Unicode-sequence map.
 func (gr *glyphRecorder) mapping() map[uint16][]rune {
-	m := make(map[uint16][]rune, len(gr.glyphToRunes))
-	for k, v := range gr.glyphToRunes {
-		m[k] = append([]rune(nil), v...)
+	m := make(map[uint16][]rune, len(gr.cidUses))
+	for cid, use := range gr.cidUses {
+		if !use.mapped || len(use.runes) == 0 {
+			continue
+		}
+		m[cid] = append([]rune(nil), use.runes...)
 	}
 	return m
+}
+
+// glyphIDs returns all source glyph IDs used during rendering.
+func (gr *glyphRecorder) glyphIDs() []uint16 {
+	seen := make(map[uint16]struct{}, len(gr.cidUses))
+	glyphIDs := make([]uint16, 0, len(gr.cidUses))
+	for _, use := range gr.cidUses {
+		if _, ok := seen[use.glyphID]; ok {
+			continue
+		}
+		seen[use.glyphID] = struct{}{}
+		glyphIDs = append(glyphIDs, use.glyphID)
+	}
+	return glyphIDs
+}
+
+// cids returns all PDF character codes used during rendering.
+func (gr *glyphRecorder) cids() []uint16 {
+	cids := make([]uint16, 0, len(gr.cidUses))
+	for cid := range gr.cidUses {
+		cids = append(cids, cid)
+	}
+	return cids
+}
+
+// glyphIDForCID reports the source glyph ID for a emitted PDF CID.
+func (gr *glyphRecorder) glyphIDForCID(cid uint16) uint16 {
+	if use, ok := gr.cidUses[cid]; ok {
+		return use.glyphID
+	}
+	return 0
 }

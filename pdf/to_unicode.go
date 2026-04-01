@@ -114,3 +114,22 @@ func compositeDestinationHex(runes []rune) string {
 	}
 	return sb.String()
 }
+
+func cidToGIDMapData(cidToGID map[uint16]uint16) []byte {
+	if len(cidToGID) == 0 {
+		return nil
+	}
+	maxCID := uint16(0)
+	for cid := range cidToGID {
+		if cid > maxCID {
+			maxCID = cid
+		}
+	}
+	data := make([]byte, int(maxCID+1)*2)
+	for cid, gid := range cidToGID {
+		offset := int(cid) * 2
+		data[offset] = byte(gid >> 8)
+		data[offset+1] = byte(gid)
+	}
+	return data
+}

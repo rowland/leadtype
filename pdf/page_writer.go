@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -857,12 +858,10 @@ func (pw *PageWriter) flushText() {
 	usedPositionedText := false
 	var buf bytes.Buffer
 	merged := pw.line.Merge()
+	displayPieces := bidiDisplayPieces(merged)
 	// Iterate leaf pieces directly. TrueType leaves are encoded as big-endian
 	// uint16 glyph ID pairs. AFM/Type1 leaves use codepage-based encoding.
-	merged.VisitAll(func(p *rich_text.RichText) {
-		if !p.IsLeaf() || p.Text == "" || p.Font == nil {
-			return
-		}
+	for _, p := range displayPieces {
 		leafStart := textLoc
 		textLoc.X += p.Width()
 		if p.Font.SubType() == "TrueType" {
@@ -873,12 +872,17 @@ func (pw *PageWriter) flushText() {
 
 			var shaped []shaping.GlyphPosition
 			var runes []rune // allocated only when shaping is attempted
-			var glyphSequences map[int][]rune
+			var glyphRuneAssignments map[int][]rune
 			usePositionedGlyphs := false
 			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
 				runes = []rune(p.Text)
-				shaped, _ = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
-				glyphSequences = shapedGlyphSequences(shaped, runes)
+				var err error
+				shaped, err = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "leadtype: shaping failed during PDF emission for %q (%s): %v\n", p.Text, p.Font.PostScriptName(), err)
+				} else {
+					glyphRuneAssignments = shapedGlyphRuneAssignments(shaped, runes)
+				}
 			}
 
 			if shaped != nil {
@@ -907,16 +911,17 @@ func (pw *PageWriter) flushText() {
 				penX := 0.0
 				// The shaper returns glyphs in visual order, so emit them in the
 				// same order while advancing the pen explicitly.
-				for _, gp := range shaped {
+				for i, gp := range shaped {
+					code := gp.GlyphID
 					if gr != nil {
-						if seq := glyphSequences[gp.ClusterIndex]; len(seq) > 0 {
-							gr.recordRunes(gp.GlyphID, seq)
+						if seq := glyphRuneAssignments[i]; len(seq) > 0 {
+							code = gr.recordRunes(gp.GlyphID, seq)
 						} else {
-							gr.record(gp.GlyphID, runes[gp.ClusterIndex])
+							code = gr.use(gp.GlyphID)
 						}
 					}
-					buf.WriteByte(byte(gp.GlyphID >> 8))
-					buf.WriteByte(byte(gp.GlyphID & 0xFF))
+					buf.WriteByte(byte(code >> 8))
+					buf.WriteByte(byte(code & 0xFF))
 					pw.tw.setMatrix(
 						1, 0, 0, 1,
 						leafStart.X+penX+(float64(gp.XOffset)/64.0),
@@ -932,12 +937,13 @@ func (pw *PageWriter) flushText() {
 				fsize := p.FontSize / float64(p.Font.UnitsPerEm())
 				for _, r := range p.Text {
 					gid := p.Font.GlyphIndex(r)
+					code := gid
 					if gr != nil {
-						gr.record(gid, r)
+						code = gr.record(gid, r)
 					}
 					advanceWidth, _ := p.Font.AdvanceWidth(r)
-					buf.WriteByte(byte(gid >> 8))
-					buf.WriteByte(byte(gid & 0xFF))
+					buf.WriteByte(byte(code >> 8))
+					buf.WriteByte(byte(code & 0xFF))
 					pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+penX, leafStart.Y)
 					pw.tw.showHex(buf.Bytes())
 					buf.Reset()
@@ -949,11 +955,12 @@ func (pw *PageWriter) flushText() {
 			} else {
 				for _, r := range p.Text {
 					gid := p.Font.GlyphIndex(r)
+					code := gid
 					if gr != nil {
-						gr.record(gid, r)
+						code = gr.record(gid, r)
 					}
-					buf.WriteByte(byte(gid >> 8))
-					buf.WriteByte(byte(gid & 0xFF))
+					buf.WriteByte(byte(code >> 8))
+					buf.WriteByte(byte(code & 0xFF))
 				}
 				pw.tw.show(buf.Bytes())
 			}
@@ -983,7 +990,7 @@ func (pw *PageWriter) flushText() {
 				pw.tw.show(buf.Bytes())
 			})
 		}
-	})
+	}
 	if usedPositionedText {
 		pw.tw.setMatrix(1, 0, 0, 1, pw.loc.X, pw.loc.Y)
 	}
@@ -1016,7 +1023,7 @@ func (pw *PageWriter) flushText() {
 	pw.flushing = false
 }
 
-func shapedGlyphSequences(glyphs []shaping.GlyphPosition, runes []rune) map[int][]rune {
+func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) map[int][]rune {
 	if len(glyphs) == 0 || len(runes) == 0 {
 		return nil
 	}
@@ -1037,17 +1044,36 @@ func shapedGlyphSequences(glyphs []shaping.GlyphPosition, runes []rune) map[int]
 	}
 	sort.Ints(sortedStarts)
 
-	sequences := make(map[int][]rune, len(sortedStarts))
+	clusterSequences := make(map[int][]rune, len(sortedStarts))
 	for i, start := range sortedStarts {
 		end := len(runes)
 		if i+1 < len(sortedStarts) {
 			end = sortedStarts[i+1]
 		}
 		if start < end {
-			sequences[start] = append([]rune(nil), runes[start:end]...)
+			clusterSequences[start] = reverseRunes(append([]rune(nil), runes[start:end]...))
 		}
 	}
-	return sequences
+
+	assignments := make(map[int][]rune, len(glyphs))
+	seenClusters := make(map[int]struct{}, len(clusterSequences))
+	for i, gp := range glyphs {
+		if _, seen := seenClusters[gp.ClusterIndex]; seen {
+			continue
+		}
+		if seq := clusterSequences[gp.ClusterIndex]; len(seq) > 0 {
+			assignments[i] = seq
+			seenClusters[gp.ClusterIndex] = struct{}{}
+		}
+	}
+	return assignments
+}
+
+func reverseRunes(runes []rune) []rune {
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return runes
 }
 
 func (pw *PageWriter) FontColor() colors.Color {

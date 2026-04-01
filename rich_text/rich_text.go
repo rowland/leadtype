@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"unicode"
@@ -419,6 +420,8 @@ func (piece *RichText) measure() *RichText {
 			}
 			piece.width += float64(piece.chars) * piece.CharSpacing
 			return piece
+		} else if err != nil {
+			fmt.Fprintf(os.Stderr, "leadtype: shaping failed during measurement for %q (%s): %v\n", piece.Text, piece.Font.PostScriptName(), err)
 		}
 	}
 	for _, rune := range piece.Text {
@@ -775,6 +778,9 @@ func (piece *RichText) WordsToWidth(
 					for _, g := range glyphs {
 						shapedAdv[g.ClusterIndex] += float64(g.XAdvance) / 64.0
 					}
+				} else if err != nil {
+					fmt.Fprintf(os.Stderr, "leadtype: shaping failed during line breaking for %q (%s): %v\n", p.Text, p.Font.PostScriptName(), err)
+					shapedAdv = nil
 				} else {
 					shapedAdv = nil
 				}

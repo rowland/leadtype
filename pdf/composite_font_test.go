@@ -5,6 +5,9 @@ package pdf
 
 import (
 	"bytes"
+	"errors"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -299,6 +302,31 @@ func TestUnicodeMode_SubsetTag(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_SubsetTag_IsDeterministic(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	render := func() string {
+		dw := NewDocWriter()
+		dw.AddFontSource(fc)
+
+		pw := dw.NewPage()
+		pw.SetFont("Minimal", 12, options.Options{})
+		pw.MoveTo(72, 720)
+		pw.Print("ABC")
+
+		var buf bytes.Buffer
+		dw.WriteTo(&buf)
+		return buf.String()
+	}
+
+	first := render()
+	second := render()
+
+	if first != second {
+		t.Fatalf("expected repeated renders to be byte-identical")
+	}
+}
+
 // ── Phase 3: no codepage splitting in unicode mode ────────────────────────────
 
 // TestUnicodeMode_MultiScriptSingleTj verifies that a string containing both
@@ -367,6 +395,41 @@ func (s offsetShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shapin
 	return s.glyphs, nil
 }
 
+type errorShaper struct {
+	err error
+}
+
+func (s errorShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping.GlyphPosition, error) {
+	return nil, s.err
+}
+
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+
+	prev := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = prev
+	}()
+
+	fn()
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
 func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
 	if err != nil || len(fc.FontInfos) == 0 {
@@ -405,6 +468,103 @@ func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	}
 	if !strings.Contains(pdf, "<") || !strings.Contains(pdf, " Tj\n") {
 		t.Fatalf("expected individual shaped glyph hex output, got pdf excerpt:\n%s", extractSection(pdf, "BT", 400))
+	}
+}
+
+func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *testing.T) {
+	assignments := shapedGlyphRuneAssignments([]shaping.GlyphPosition{
+		{GlyphID: 10, ClusterIndex: 2},
+		{GlyphID: 20, ClusterIndex: 0},
+		{GlyphID: 21, ClusterIndex: 0},
+	}, []rune("صُم"))
+
+	if got := string(assignments[0]); got != "م" {
+		t.Fatalf("glyph 0 assignment = %q, want %q", got, "م")
+	}
+	if got := string(assignments[1]); got != "ُص" {
+		t.Fatalf("glyph 1 assignment = %q, want %q", got, "ُص")
+	}
+	if _, ok := assignments[2]; ok {
+		t.Fatalf("glyph 2 should not receive a duplicate cluster assignment, got %q", string(assignments[2]))
+	}
+}
+
+func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont: %v", err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("SetFont returned no fonts")
+	}
+	gidM := fonts[0].GlyphIndex('م')
+	fonts[0].Shaper = offsetShaper{glyphs: []shaping.GlyphPosition{
+		{GlyphID: gidM, XAdvance: 8 * 64, ClusterIndex: 2},
+		{GlyphID: fonts[0].GlyphIndex('ُ'), XAdvance: 0, ClusterIndex: 0},
+		{GlyphID: fonts[0].GlyphIndex('ص'), XAdvance: 8 * 64, ClusterIndex: 0},
+	}}
+
+	pw.MoveTo(72, 720)
+	pw.Print("صُم")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if strings.Count(pdf, "<064F0635>") != 1 {
+		t.Fatalf("expected cluster text to appear once in ToUnicode, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if strings.Count(pdf, "<0645>") != 1 {
+		t.Fatalf("expected standalone meem mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if strings.Count(pdf, " beginbfchar\n") == 0 {
+		t.Fatalf("expected ToUnicode CMap entries, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if !strings.Contains(pdf, "/CIDToGIDMap") {
+		t.Fatalf("expected composite font to include CIDToGIDMap, got pdf excerpt:\n%s", extractSection(pdf, "/CIDFontType2", 400))
+	}
+}
+
+func TestUnicodeMode_ShapingFailureWarnsDuringEmission(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont: %v", err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("SetFont returned no fonts")
+	}
+	fonts[0].Shaper = errorShaper{err: errors.New("boom")}
+
+	pw.MoveTo(72, 720)
+	pw.Print("مرحبا")
+
+	warnings := captureStderr(t, func() {
+		var buf bytes.Buffer
+		dw.WriteTo(&buf)
+	})
+
+	if !strings.Contains(warnings, "shaping failed during PDF emission") {
+		t.Fatalf("expected PDF emission shaping warning, got %q", warnings)
 	}
 }
 

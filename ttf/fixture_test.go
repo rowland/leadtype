@@ -139,3 +139,26 @@ func TestMinimalTTC_LoadFontAtOffset(t *testing.T) {
 		}
 	}
 }
+
+func TestMinimalTTC_BytesReturnsShapeableTTF(t *testing.T) {
+	infos, err := LoadFontInfosFromTTC("testdata/minimal.ttc")
+	if err != nil {
+		t.Fatalf("LoadFontInfosFromTTC: %v", err)
+	}
+	if len(infos) == 0 {
+		t.Fatal("expected TTC fixture to contain fonts")
+	}
+
+	font, err := LoadFontAtOffset(infos[0].Filename(), infos[0].TTCOffset())
+	if err != nil {
+		t.Fatalf("LoadFontAtOffset: %v", err)
+	}
+
+	data := font.Bytes()
+	if len(data) == 0 {
+		t.Fatal("Bytes() returned no data for TTC member")
+	}
+	if _, err := LoadFontFromBytes(data); err != nil {
+		t.Fatalf("LoadFontFromBytes(Bytes()) = %v, want valid standalone TTF", err)
+	}
+}

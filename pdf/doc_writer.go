@@ -4,11 +4,13 @@
 package pdf
 
 import (
-	"crypto/rand"
+	"crypto/sha1"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"sort"
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
@@ -286,16 +288,23 @@ func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
 	return key
 }
 
-// subsetTag generates a 6-character random uppercase tag for a font subset,
-// per PDF spec §9.6.4: the tag is prefixed to the PostScript name as
-// "ABCDEF+FontName" to signal an embedded subset.
-func subsetTag() string {
-	b := make([]byte, 6)
-	rand.Read(b)
-	for i := range b {
-		b[i] = 'A' + b[i]%26
+// subsetTag generates a deterministic 6-character uppercase tag for a font
+// subset, per PDF spec §9.6.4. Deriving the tag from stable inputs keeps PDF
+// output reproducible for the same document content.
+func subsetTag(psName string, glyphIDs []uint16) string {
+	h := sha1.New()
+	h.Write([]byte(psName))
+	var buf [2]byte
+	for _, gid := range glyphIDs {
+		binary.BigEndian.PutUint16(buf[:], gid)
+		h.Write(buf[:])
 	}
-	return string(b)
+	sum := h.Sum(nil)
+	tag := make([]byte, 6)
+	for i := range tag {
+		tag[i] = 'A' + (sum[i] % 26)
+	}
+	return string(tag)
 }
 
 // flushUnicodeFonts is called from WriteTo before serialising the PDF.
@@ -303,26 +312,40 @@ func subsetTag() string {
 // subset font streams for every Type0 composite font that was used during
 // rendering.
 func (dw *DocWriter) flushUnicodeFonts() {
-	for psName, gr := range dw.glyphRecorders {
+	psNames := make([]string, 0, len(dw.glyphRecorders))
+	for psName := range dw.glyphRecorders {
+		psNames = append(psNames, psName)
+	}
+	sort.Strings(psNames)
+
+	for _, psName := range psNames {
+		gr := dw.glyphRecorders[psName]
 		mapping := gr.mapping()
-		if len(mapping) == 0 {
+		glyphIDs := gr.glyphIDs()
+		if len(glyphIDs) == 0 {
 			continue
 		}
+		sort.Slice(glyphIDs, func(i, j int) bool { return glyphIDs[i] < glyphIDs[j] })
 		f := dw.unicodeFonts[psName]
 		upm := f.UnitsPerEm()
 
-		// Build /W width array from recorded glyph IDs.
-		glyphWidths := make(map[uint16]int, len(mapping))
-		for gid := range mapping {
+		// Build /W width array from emitted CIDs.
+		cids := gr.cids()
+		sort.Slice(cids, func(i, j int) bool { return cids[i] < cids[j] })
+		cidWidths := make(map[uint16]int, len(cids))
+		cidToGID := make(map[uint16]uint16, len(cids))
+		for _, cid := range cids {
+			gid := gr.glyphIDForCID(cid)
+			cidToGID[cid] = gid
 			w := f.AdvanceWidthForGlyph(gid)
 			if upm > 0 {
 				w = w * 1000 / upm
 			}
-			glyphWidths[gid] = w
+			cidWidths[cid] = w
 		}
-		defWidth := mostCommonWidth(glyphWidths)
+		defWidth := mostCommonWidth(cidWidths)
 		dw.cidFonts[psName].setDefaultWidth(defWidth)
-		dw.cidFonts[psName].setWidths(buildCIDWidthArray(glyphWidths, defWidth))
+		dw.cidFonts[psName].setWidths(buildCIDWidthArray(cidWidths, defWidth))
 
 		// Build ToUnicode CMap stream.
 		tuData := toUnicodeCMapDataComposite(mapping)
@@ -335,11 +358,11 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
 
+		cidMapStream := newStream(dw.nextSeq(), 0, cidToGIDMapData(cidToGID))
+		dw.file.body.add(cidMapStream)
+		dw.cidFonts[psName].setCIDToGIDMap(&indirectObjectRef{cidMapStream})
+
 		// Embed a font subset as /FontFile2 in the descriptor.
-		glyphIDs := make([]uint16, 0, len(mapping))
-		for gid := range mapping {
-			glyphIDs = append(glyphIDs, gid)
-		}
 		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
 			fontStream := newStream(dw.nextSeq(), 0, subsetData)
 			fontStream.setLength1(len(subsetData))
@@ -353,7 +376,7 @@ func (dw *DocWriter) flushUnicodeFonts() {
 
 			// Apply the 6-char subset tag to all three name occurrences:
 			// FontDescriptor/FontName, CIDFont/BaseFont, Type0/BaseFont.
-			taggedName := subsetTag() + "+" + psName
+			taggedName := subsetTag(psName, glyphIDs) + "+" + psName
 			dw.fontDescriptors[psName].dict["FontName"] = name(taggedName)
 			dw.cidFonts[psName].setBaseFont(taggedName)
 			dw.type0Fonts[psName].setBaseFont(taggedName)

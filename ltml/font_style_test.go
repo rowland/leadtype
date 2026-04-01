@@ -255,6 +255,7 @@ func TestFontStyle_Apply_UsesFirstAvailableFontInChain(t *testing.T) {
 	w := &mockWriter{
 		t:           t,
 		setFontErrs: map[string]error{"Missing Primary": errors.New("not found")},
+		addFontErrs: map[string]error{"Missing Primary": errors.New("not found")},
 	}
 
 	fs.Apply(w)
@@ -265,8 +266,32 @@ func TestFontStyle_Apply_UsesFirstAvailableFontInChain(t *testing.T) {
 	if w.setFontName != "Helvetica" {
 		t.Fatalf("final SetFont name = %q, want %q", w.setFontName, "Helvetica")
 	}
-	if len(w.addFontCalls) != 1 || w.addFontCalls[0] != "Courier" {
-		t.Fatalf("AddFont calls = %v, want [Courier]", w.addFontCalls)
+	if len(w.addFontCalls) != 2 || w.addFontCalls[0] != "Missing Primary" || w.addFontCalls[1] != "Courier" {
+		t.Fatalf("AddFont calls = %v, want [Missing Primary Courier]", w.addFontCalls)
+	}
+}
+
+func TestFontStyle_Apply_TwoPassFallbackPrefersExactBeforeRelaxed(t *testing.T) {
+	fs := &FontStyle{
+		entries: []fontEntry{
+			{name: "Primary"},
+			{name: "Earlier Fallback"},
+			{name: "Later Exact"},
+		},
+		size:   12,
+		weight: "Bold",
+	}
+	w := &mockWriter{
+		t: t,
+		addFontErrs: map[string]error{
+			"Earlier Fallback": errors.New("bold not found"),
+		},
+	}
+
+	fs.Apply(w)
+
+	if len(w.addFontCalls) != 3 || w.addFontCalls[0] != "Earlier Fallback" || w.addFontCalls[1] != "Later Exact" || w.addFontCalls[2] != "Earlier Fallback" {
+		t.Fatalf("AddFont calls = %v, want [Earlier Fallback Later Exact Earlier Fallback]", w.addFontCalls)
 	}
 }
 

@@ -138,6 +138,10 @@ func (f *cidFont) setBaseFont(n string) {
 	f.dict["BaseFont"] = name(n)
 }
 
+func (f *cidFont) setCIDToGIDMap(ref *indirectObjectRef) {
+	f.dict["CIDToGIDMap"] = ref
+}
+
 // ── Type0 (composite) font ────────────────────────────────────────────────────
 
 type type0Font struct {

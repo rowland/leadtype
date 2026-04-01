@@ -38,8 +38,20 @@ func (font *Font) Bytes() []byte {
 	if font.rawBytes != nil {
 		return font.rawBytes // LoadFontFromBytes path: already in memory
 	}
-	if font.ttcOffset != 0 || font.filename == "" || font.filename == "<bytes>" {
+	if font.filename == "" || font.filename == "<bytes>" {
 		return nil
+	}
+	if font.ttcOffset != 0 {
+		glyphIDs := make([]uint16, font.NumGlyphs())
+		for i := range glyphIDs {
+			glyphIDs[i] = uint16(i)
+		}
+		data, err := font.Subset(glyphIDs)
+		if err != nil {
+			return nil
+		}
+		font.rawBytes = data
+		return data
 	}
 	data, _ := os.ReadFile(font.filename)
 	return data
