@@ -962,7 +962,10 @@ func (pw *PageWriter) flushText() {
 					buf.WriteByte(byte(code >> 8))
 					buf.WriteByte(byte(code & 0xFF))
 				}
-				pw.tw.show(buf.Bytes())
+				// Composite-font CIDs are arbitrary binary bytes. Emit them as a
+				// hex string instead of a literal PDF string so control-byte CIDs
+				// do not rely on reader-specific string parsing behavior.
+				pw.tw.showHex(buf.Bytes())
 			}
 			if usePositionedGlyphs {
 				pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+p.Width(), leafStart.Y)
@@ -994,16 +997,27 @@ func (pw *PageWriter) flushText() {
 	if usedPositionedText {
 		pw.tw.setMatrix(1, 0, 0, 1, pw.loc.X, pw.loc.Y)
 	}
+	// Link rectangles are derived from the final laid-out leaf pieces, so a
+	// wrapped or bidi-reordered link naturally becomes one annotation per line.
 	pw.line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
 			return
 		}
+		rise := pw.textRiseForPiece(p, savedVTextAlign)
 		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
 		if p.Underline {
 			pw.drawUnderline(loc1, loc2, p.UnderlinePosition, p.UnderlineThickness)
 		}
 		if p.Strikeout {
 			pw.drawUnderline(loc1, loc2, p.StrikeoutPosition, p.StrikeoutThickness)
+		}
+		if p.LinkURI != "" || p.LinkTarget != "" {
+			pw.addTextLinkAnnotation(rectangle{
+				x1: loc1.X,
+				y1: loc1.Y + rise + p.Descent(),
+				x2: loc2.X,
+				y2: loc1.Y + rise + p.Ascent(),
+			}, p.LinkURI, p.LinkTarget)
 		}
 		loc1 = loc2
 	})
@@ -1021,6 +1035,33 @@ func (pw *PageWriter) flushText() {
 	pw.vTextAlignPts = savedVTextAlignPts
 	pw.line = nil
 	pw.flushing = false
+}
+
+func (pw *PageWriter) textRiseForPiece(p *rich_text.RichText, vTextAlign VerticalTextAlign) float64 {
+	if p == nil || p.Font == nil {
+		return 0
+	}
+	scale := p.FontSize * 0.001
+	if upm := p.Font.UnitsPerEm(); upm > 0 {
+		scale = p.FontSize / float64(upm)
+	}
+	top := float64(p.Font.CapHeight()) * scale
+	if top == 0 {
+		top = float64(p.Font.Ascent()) * scale
+	}
+	descent := float64(p.Font.Descent()) * scale
+	switch vTextAlign {
+	case VTextAlignAbove:
+		return -(top - descent)
+	case VTextAlignTop:
+		return -top
+	case VTextAlignMiddle:
+		return -((top + descent) / 2.0)
+	case VTextAlignBelow:
+		return -descent
+	default:
+		return 0
+	}
 }
 
 func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) map[int][]rune {
@@ -1354,6 +1395,60 @@ func (pw *PageWriter) PrintWithOptions(text string, options options.Options) (er
 	}
 	pw.PrintParagraph(para, options)
 	return nil
+}
+
+var errEmptyLinkURI = errors.New("uri link requires a non-empty URI")
+var errEmptyLinkTarget = errors.New("target link requires a non-empty destination name")
+
+func (pw *PageWriter) RegisterDestination(name string, x, y float64) {
+	if name == "" {
+		return
+	}
+	xpts := pw.units.toPts(x)
+	ypts := pw.translate(pw.units.toPts(y))
+	pw.dw.registerDestination(name, pw.page, xpts, ypts)
+}
+
+func (pw *PageWriter) AddURILink(x, y, width, height float64, uri string) error {
+	if uri == "" {
+		return errEmptyLinkURI
+	}
+	pw.addTextLinkAnnotation(pw.annotationRect(x, y, width, height), uri, "")
+	return nil
+}
+
+func (pw *PageWriter) AddTargetLink(x, y, width, height float64, target string) error {
+	if target == "" {
+		return errEmptyLinkTarget
+	}
+	pw.addTextLinkAnnotation(pw.annotationRect(x, y, width, height), "", target)
+	return nil
+}
+
+func (pw *PageWriter) annotationRect(x, y, width, height float64) rectangle {
+	xpts := pw.units.toPts(x)
+	wpts := pw.units.toPts(width)
+	yTop := pw.translate(pw.units.toPts(y))
+	hpts := pw.units.toPts(height)
+	return rectangle{x1: xpts, y1: yTop - hpts, x2: xpts + wpts, y2: yTop}
+}
+
+func (pw *PageWriter) addTextLinkAnnotation(rect rectangle, uri, target string) {
+	if rect.x2 <= rect.x1 || rect.y2 <= rect.y1 {
+		return
+	}
+	annot := newLinkAnnotation(pw.dw.nextSeq(), 0, rect)
+	switch {
+	case uri != "":
+		annot.setURI(uri)
+	case target != "":
+		annot.setTarget(target)
+		pw.dw.registerPendingTargetLink(annot)
+	default:
+		return
+	}
+	pw.dw.file.body.add(annot)
+	pw.page.addAnnot(annot)
 }
 
 func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {

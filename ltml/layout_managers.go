@@ -49,6 +49,19 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 		if containerFull {
 			continue
 		}
+		if widgetZeroFootprint(widget) {
+			widget.SetWidth(0)
+			widget.SetHeight(0)
+			if rtl {
+				widget.SetLeft(ContentRight(container))
+			} else {
+				widget.SetLeft(ContentLeft(container) + cx)
+			}
+			widget.SetTop(ContentTop(container) + cy)
+			widget.LayoutWidget(writer)
+			widget.SetVisible(widget.Top() <= bottom)
+			continue
+		}
 		//   widget.before_layout
 		if w := widget.Width(); w == 0 {
 			pw := widget.PreferredWidth(writer)
@@ -641,6 +654,10 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		if !widget.HeightIsSet() {
 			widget.SetHeight(widget.PreferredHeight(writer))
 		}
+		if widgetZeroFootprint(widget) {
+			widget.SetVisible(widget.Top() <= bottom)
+			continue
+		}
 		top += widget.Height() + style.VPadding()
 		dy += widget.Height()
 		if i > 0 {
@@ -658,6 +675,10 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			}
 			widget.SetBottom(footerBottom)
 			widget.LayoutWidget(writer)
+			if widgetZeroFootprint(widget) {
+				widget.SetVisible(widget.Top() >= top)
+				continue
+			}
 			footerBottom = widget.Top() - style.VPadding()
 			widget.SetVisible(widget.Top() >= top)
 		}
@@ -673,6 +694,10 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		widget.LayoutWidget(writer)
 		if !widget.HeightIsSet() {
 			widget.SetHeight(widget.PreferredHeight(writer))
+		}
+		if widgetZeroFootprint(widget) {
+			widget.SetVisible(widget.Top() <= bottom)
+			continue
 		}
 		top += widget.Height()
 		dy += widget.Height()

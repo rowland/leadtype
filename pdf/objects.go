@@ -348,6 +348,7 @@ func (o *outlines) write(w io.Writer) {
 type page struct {
 	pageBase
 	contents []*stream
+	annots   []*linkAnnotation
 }
 
 func (p *page) init(seq, gen int, parent seqGen) *page {
@@ -362,6 +363,10 @@ func newPage(seq, gen int, parent seqGen) *page {
 
 func (p *page) add(s *stream) {
 	p.contents = append(p.contents, s)
+}
+
+func (p *page) addAnnot(a *linkAnnotation) {
+	p.annots = append(p.annots, a)
 }
 
 func (p *page) contentLength() (result int) {
@@ -379,9 +384,6 @@ func (p *page) contentRefs() (result array) {
 	return
 }
 
-// TODO: setAnnots
-// TODO: setBeads
-
 func (p *page) setThumb(thumb seqGen) {
 	p.dict["Thumb"] = &indirectObjectRef{thumb}
 }
@@ -397,6 +399,13 @@ func (p *page) writeBody(w io.Writer) {
 		p.dict["Contents"] = p.contentRefs()
 	} else if len(p.contents) == 1 {
 		p.dict["Contents"] = &indirectObjectRef{p.contents[0]}
+	}
+	if len(p.annots) > 0 {
+		annotsRefs := make(array, len(p.annots))
+		for i, a := range p.annots {
+			annotsRefs[i] = &indirectObjectRef{a}
+		}
+		p.dict["Annots"] = annotsRefs
 	}
 	p.dict["Length"] = integer(p.contentLength())
 	p.dict.write(w)

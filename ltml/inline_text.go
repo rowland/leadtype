@@ -1,6 +1,10 @@
 package ltml
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rowland/leadtype/options"
+)
 
 type inlineText interface {
 	Resolve(*StdDocument) string
@@ -10,6 +14,12 @@ type inlineText interface {
 type inlineTextWithFont interface {
 	inlineText
 	Font() *FontStyle
+}
+
+type inlineTextWithLink interface {
+	inlineText
+	LinkURI() string
+	LinkTarget() string
 }
 
 type staticInlineText string
@@ -47,6 +57,30 @@ func (p textPiece) Font(fallback *FontStyle) *FontStyle {
 		}
 	}
 	return fallback
+}
+
+func (p textPiece) RichTextOptions(base options.Options) options.Options {
+	if base == nil {
+		base = options.Options{}
+	}
+	linker, ok := p.content.(inlineTextWithLink)
+	if !ok {
+		return base
+	}
+	if linker.LinkURI() == "" && linker.LinkTarget() == "" {
+		return base
+	}
+	opts := make(options.Options, len(base)+2)
+	for k, v := range base {
+		opts[k] = v
+	}
+	if uri := linker.LinkURI(); uri != "" {
+		opts["link_uri"] = uri
+	}
+	if target := linker.LinkTarget(); target != "" {
+		opts["link_target"] = target
+	}
+	return opts
 }
 
 type AddTextWithFonter interface {

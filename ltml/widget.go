@@ -81,6 +81,10 @@ const (
 	DisplayOdd        DisplayMode = "odd"
 )
 
+type ZeroFootprint interface {
+	ZeroFootprint() bool
+}
+
 func ParseDisplayMode(value string) DisplayMode {
 	switch DisplayMode(value) {
 	case DisplayAlways, DisplayFirst, DisplaySucceeding, DisplayEven, DisplayOdd:
@@ -114,6 +118,13 @@ func widgetDisplayForRender(widget Widget, parentRepeats bool, flowPageIndex int
 
 func ContentHeight(widget Widget) float64 {
 	return widget.Height() - NonContentHeight(widget)
+}
+
+func widgetZeroFootprint(widget Widget) bool {
+	if zero, ok := widget.(ZeroFootprint); ok {
+		return zero.ZeroFootprint()
+	}
+	return false
 }
 
 func ContentWidth(widget Widget) float64 {
@@ -151,6 +162,13 @@ func Print(widget Widget, writer Writer) error {
 	if err := widget.BeforePrint(writer); err != nil {
 		return err
 	}
+	if err := registerPrintedWidgetMetadata(widget, writer); err != nil {
+		return err
+	}
+	if shouldSkipRenderForPreflight(widget) {
+		widget.SetPrinted(true)
+		return nil
+	}
 	render := func() error {
 		if err := widget.PaintBackground(writer); err != nil {
 			return err
@@ -174,4 +192,22 @@ func Print(widget Widget, writer Writer) error {
 	}
 	widget.SetPrinted(true)
 	return nil
+}
+
+func shouldSkipRenderForPreflight(widget Widget) bool {
+	containerWidget, ok := widget.(interface{ Container() Container })
+	if !ok {
+		return false
+	}
+	doc := documentForContainer(containerWidget.Container())
+	if doc == nil || doc.renderContext == nil || !doc.renderContext.preflight {
+		return false
+	}
+	switch widget.(type) {
+	case *StdA, *StdIndex, *StdIndexEntry, *StdLabel, *StdPageNo, *StdParagraph, *StdPre, *StdSpan, *StdTarget:
+		return true
+	default:
+		_, isContainer := widget.(Container)
+		return !isContainer
+	}
 }

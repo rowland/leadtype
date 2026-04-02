@@ -357,6 +357,30 @@ func TestUnicodeMode_MultiScriptSingleTj(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_UsesHexStringsForCompositeText(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	pw.SetFont("Minimal", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("Hello ΑΒΓΔ")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+	section := extractSection(pdf, "BT", 200)
+
+	if strings.Contains(section, "(\x00") {
+		t.Fatalf("expected composite text to avoid binary literal strings, got section:\n%s", section)
+	}
+	if !strings.Contains(section, "<") || !strings.Contains(section, " Tj\n") {
+		t.Fatalf("expected composite text to be emitted as hex Tj, got section:\n%s", section)
+	}
+}
+
 // TestUnicodeMode_MultiScriptTwoFonts verifies that when a string requires two
 // fonts (e.g. one font for Latin, a fallback for extra glyphs) each font still
 // produces its own Tj — the per-font boundary is preserved.

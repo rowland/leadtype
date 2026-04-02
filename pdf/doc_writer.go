@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
@@ -42,11 +43,19 @@ type DocWriter struct {
 	compressPages         bool
 	compressToUnicode     bool
 	compressEmbeddedFonts bool
+	destinations          map[string]namedDestination
+	pendingTargetLinks    []*linkAnnotation
 }
 
 type cachedImage struct {
 	image *pdfImage
 	name  string
+}
+
+type namedDestination struct {
+	page *page
+	x    float64
+	y    float64
 }
 
 func NewDocWriter() *DocWriter {
@@ -78,6 +87,7 @@ func NewDocWriter() *DocWriter {
 		type0Fonts:      make(map[string]*type0Font),
 		fontDescriptors: make(map[string]*fontDescriptor),
 		images:          make(map[string]*cachedImage),
+		destinations:    make(map[string]namedDestination),
 	}
 }
 
@@ -411,6 +421,59 @@ func (dw *DocWriter) indexOfPage(pw *PageWriter) int {
 
 func (dw *DocWriter) inPage() bool {
 	return dw.curPage != nil
+}
+
+func (dw *DocWriter) registerDestination(name string, page *page, x, y float64) {
+	if name == "" || page == nil {
+		return
+	}
+	if _, exists := dw.destinations[name]; exists {
+		return
+	}
+	dw.destinations[name] = namedDestination{page: page, x: x, y: y}
+}
+
+func (dw *DocWriter) registerPendingTargetLink(a *linkAnnotation) {
+	if a == nil || a.targetName == "" {
+		return
+	}
+	dw.pendingTargetLinks = append(dw.pendingTargetLinks, a)
+}
+
+func (dw *DocWriter) RegisterDestination(name string, x, y float64) {
+	dw.CurPage().RegisterDestination(name, x, y)
+}
+
+func (dw *DocWriter) AddURILink(x, y, width, height float64, uri string) error {
+	return dw.CurPage().AddURILink(x, y, width, height, uri)
+}
+
+func (dw *DocWriter) AddTargetLink(x, y, width, height float64, target string) error {
+	return dw.CurPage().AddTargetLink(x, y, width, height, target)
+}
+
+func (dw *DocWriter) resolveTargetLinks() error {
+	if len(dw.pendingTargetLinks) == 0 {
+		return nil
+	}
+	var unresolved []string
+	seen := make(map[string]struct{})
+	for _, link := range dw.pendingTargetLinks {
+		dest, ok := dw.destinations[link.targetName]
+		if !ok {
+			if _, added := seen[link.targetName]; !added {
+				seen[link.targetName] = struct{}{}
+				unresolved = append(unresolved, link.targetName)
+			}
+			continue
+		}
+		link.setDestination(dest.page, dest.x, dest.y)
+	}
+	if len(unresolved) > 0 {
+		sort.Strings(unresolved)
+		return fmt.Errorf("unresolved pdf link target(s): %s", strings.Join(unresolved, ", "))
+	}
+	return nil
 }
 
 func (dw *DocWriter) insertPage(pw *PageWriter, index int) {
@@ -812,6 +875,9 @@ func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
 		pw.close()
 	}
 	dw.curPage = nil
+	if err := dw.resolveTargetLinks(); err != nil {
+		return 0, err
+	}
 	dw.flushUnicodeFonts()
 	dw.file.write(wr)
 	return 0, nil

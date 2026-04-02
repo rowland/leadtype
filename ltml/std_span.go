@@ -25,11 +25,12 @@ func (s *StdSpan) AddInlineWithFont(content inlineText, font *FontStyle) {
 
 func (s *StdSpan) SetContainer(container Container) error {
 	switch container.(type) {
+	case *StdA:
 	case *StdSpan:
 	case *StdParagraph:
 	case *StdLabel:
 	default:
-		return fmt.Errorf("span must be child of p, label or another span")
+		return fmt.Errorf("span must be child of p, label, a or another span")
 	}
 	s.container = container
 	return nil

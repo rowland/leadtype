@@ -288,7 +288,7 @@ func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 			item.Done = true
 			item.Current = nil
 		}
-		if child.Display() == DisplayOnce && !wasPrinted && child.Printed() {
+		if child.Display() == DisplayOnce && !wasPrinted && child.Printed() && !widgetZeroFootprint(child) {
 			printedOnce++
 		}
 	}
@@ -298,14 +298,14 @@ func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 func (p *StdPage) hasPendingOnceChildren() bool {
 	if len(p.flowItems) > 0 {
 		for _, item := range p.flowItems {
-			if !item.Done && item.Current != nil {
+			if !item.Done && item.Current != nil && !widgetZeroFootprint(item.Current) {
 				return true
 			}
 		}
 		return false
 	}
 	for _, child := range p.children {
-		if child.Display() == DisplayOnce && !child.Printed() {
+		if child.Display() == DisplayOnce && !child.Printed() && !widgetZeroFootprint(child) {
 			return true
 		}
 	}
@@ -389,7 +389,7 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 func (p *StdPage) countVisibleOnceChildren() int {
 	count := 0
 	for _, child := range p.Widgets() {
-		if child.Visible() && !child.Disabled() && child.Display() == DisplayOnce && !child.Printed() {
+		if child.Visible() && !child.Disabled() && child.Display() == DisplayOnce && !child.Printed() && !widgetZeroFootprint(child) {
 			count++
 		}
 	}
@@ -532,7 +532,7 @@ func (p *StdPage) availableHeightForChild(child Widget) float64 {
 
 func (p *StdPage) hasSplittableOnceProgress(w Writer) bool {
 	for _, child := range p.Widgets() {
-		if child.Display() != DisplayOnce || child.Visible() || child.Disabled() {
+		if child.Display() != DisplayOnce || child.Visible() || child.Disabled() || widgetZeroFootprint(child) {
 			continue
 		}
 		item := p.pageItemForCurrent(child)

@@ -177,7 +177,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 			text,
 			w.Fonts(),
 			w.FontSize(),
-			font.RichTextOptions(),
+			piece.RichTextOptions(font.RichTextOptions()),
 		)
 		if err != nil {
 			debugf("StdParagraph.RichText: %v", err)

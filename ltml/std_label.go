@@ -148,7 +148,7 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 			text,
 			w.Fonts(),
 			w.FontSize(),
-			font.RichTextOptions(),
+			piece.RichTextOptions(font.RichTextOptions()),
 		)
 		if err != nil {
 			debugf("StdLabel.RichText: %v", err)
