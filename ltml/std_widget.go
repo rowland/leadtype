@@ -52,6 +52,10 @@ func (widget *StdWidget) ColSpan() int {
 	return widget.colSpan
 }
 
+func (widget *StdWidget) Container() Container {
+	return widget.container
+}
+
 func (widget *StdWidget) RowSpan() int {
 	if widget.rowSpan < 1 {
 		return 1
@@ -65,6 +69,10 @@ func (widget *StdWidget) Disabled() bool {
 
 func (widget *StdWidget) DrawContent(w Writer) error {
 	return nil
+}
+
+func (widget *StdWidget) GetID() string {
+	return widget.ID
 }
 
 func (widget *StdWidget) DrawBorder(w Writer) error {

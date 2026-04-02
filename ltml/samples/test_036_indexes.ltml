@@ -1,0 +1,23 @@
+<ltml units="in" margin="1">
+  <layout id="vbox" vpadding="6pt" />
+  <page layout="vbox">
+    <label font.size="18" font.weight="Bold">Contents</label>
+    <index id="main_toc" />
+    <p align="bottom" style.text-align="center"><pageno hidden="true" reset="1" /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="intro" font.size="16" font.weight="Bold">Introduction</label>
+    <index_entry index="main_toc" target="intro">Introduction</index_entry>
+    <p>Leadtype can now collect explicit index entries and resolve them into a table of contents after layout stabilizes.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <target id="appendix_a" />
+    <label font.size="16" font.weight="Bold">Appendix A</label>
+    <index_entry index="main_toc" target="appendix_a">Appendix A</index_entry>
+    <p>This page demonstrates an explicit target element that does not render visible content on the destination page.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+</ltml>

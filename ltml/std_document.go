@@ -17,6 +17,7 @@ type StdDocument struct {
 	compressPages         bool
 	compressToUnicode     bool
 	compressEmbeddedFonts bool
+	renderContext         *documentRenderContext
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -69,10 +70,7 @@ func (d *StdDocument) SetPendingStart(start int) {
 
 func (d *StdDocument) Print(w Writer) error {
 	d.applyWriterCompression(w)
-	d.documentPageNo = 0
-	d.physicalPageNo = 0
-	d.pendingStart = nil
-	return d.DrawContent(w)
+	return d.printWithIndexes(w)
 }
 
 func (d *StdDocument) SetAttrs(attrs map[string]string) {

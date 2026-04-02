@@ -186,6 +186,8 @@ func TestSamples(t *testing.T) {
 		"test_030_encodings",
 		"test_032_label_shrink_to_fit",
 		"test_034_svg_image",
+		"test_035_links",
+		"test_036_indexes",
 	}
 
 	for _, sample := range samples {

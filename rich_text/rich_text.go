@@ -23,10 +23,14 @@ import (
 
 // Hierarchical structure of text and attributes, allowing text to be described, measured and wrapped.
 type RichText struct {
-	Text               string
-	Font               *font.Font
-	FontSize           float64
-	Color              colors.Color
+	Text     string
+	Font     *font.Font
+	FontSize float64
+	Color    colors.Color
+	// Link metadata lives on leaf pieces so wrapping/splitting can emit one
+	// annotation rectangle per rendered fragment without changing callers.
+	LinkURI            string
+	LinkTarget         string
 	Underline          bool
 	Strikeout          bool
 	ascent             float64
@@ -73,6 +77,8 @@ func New(s string, fonts []*font.Font, fontSize float64, options options.Options
 		Text:        s,
 		FontSize:    fontSize,
 		Color:       options.ColorDefault("color", colors.Black),
+		LinkURI:     options.StringDefault("link_uri", ""),
+		LinkTarget:  options.StringDefault("link_target", ""),
 		Underline:   options.BoolDefault("underline", false),
 		Strikeout:   options.BoolDefault("strikeout", false),
 		CharSpacing: options.FloatDefault("char_spacing", 0),
@@ -379,6 +385,8 @@ func (piece *RichText) MatchesAttributes(other *RichText) bool {
 	return (piece.Font != nil && other.Font != nil) && (piece.Font == other.Font || piece.Font.Matches(other.Font)) &&
 		piece.FontSize == other.FontSize &&
 		piece.Color == other.Color &&
+		piece.LinkURI == other.LinkURI &&
+		piece.LinkTarget == other.LinkTarget &&
 		piece.Underline == other.Underline &&
 		piece.Strikeout == other.Strikeout &&
 		piece.CharSpacing == other.CharSpacing &&
@@ -696,6 +704,8 @@ func (piece *RichText) scaleClone(scale float64) *RichText {
 		Font:        piece.Font,
 		FontSize:    piece.FontSize,
 		Color:       piece.Color,
+		LinkURI:     piece.LinkURI,
+		LinkTarget:  piece.LinkTarget,
 		Underline:   piece.Underline,
 		Strikeout:   piece.Strikeout,
 		CharSpacing: piece.CharSpacing,

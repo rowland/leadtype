@@ -1,0 +1,16 @@
+<ltml units="in" margin="1">
+  <layout id="vbox" vpadding="6pt" />
+  <page layout="vbox">
+    <label font.size="18" font.weight="Bold" id="intro">Leadtype Links</label>
+    <p><a uri="https://example.com">External link to example.com</a></p>
+    <p><a target="details">Jump to the details page</a></p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="details" font.size="16" font.weight="Bold">Details</label>
+    <p>This page is the internal destination for the first sample link.</p>
+    <p><a target="intro">Jump back to the introduction</a></p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+</ltml>
