@@ -74,6 +74,43 @@ func runTest017CurvedText() (string, error) {
 			return err
 		}
 
+		if _, err := doc.SetFont("Helvetica", 18, options.Options{}); err != nil {
+			return err
+		}
+
+		doc.SetLineColor(colors.LightGray)
+		doc.SetLineWidth(1, "pt")
+		_ = doc.Circle(3.5, 3.9, 0.75, true, false, false)
+
+		doc.SetFontColor(colors.Black)
+		if err := doc.DrawTextOnCircle("Fortune", 3.5, 3.9, 0.75, 90, pdf.CurvedTextOptions{
+			Align:       pdf.CurvedTextAlignCenter,
+			Direction:   pdf.CurvedTextClockwise,
+			Orientation: pdf.CurvedTextOrientationOutside,
+			Facing:      pdf.CurvedTextFacingUpright,
+		}); err != nil {
+			return err
+		}
+
+		doc.SetFontColor(colors.Black)
+		if err := doc.DrawTextOnCircle("Favors the Prepared Mind", 3.5, 3.9, 0.75, 270, pdf.CurvedTextOptions{
+			Align:       pdf.CurvedTextAlignCenter,
+			VAlign:      pdf.VTextAlignTop,
+			Direction:   pdf.CurvedTextCounterClockwise,
+			Orientation: pdf.CurvedTextOrientationOutside,
+			Facing:      pdf.CurvedTextFacingUpsideDown,
+		}); err != nil {
+			return err
+		}
+
+		doc.SetLineColor(colors.LightGray)
+		doc.SetLineWidth(1, "pt")
+		metrics, err := doc.MeasureText("X")
+		if err != nil {
+			return err
+		}
+		_ = doc.Circle(3.5, 3.9, 0.75+metrics.Height, true, false, false)
+
 		return nil
 	})
 }
