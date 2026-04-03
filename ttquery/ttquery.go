@@ -27,6 +27,13 @@ var capabilities = map[string]capability{
 			return supportsArabic(fi.CharRanges())
 		},
 	},
+	"arabic-shaping": {
+		name:        "arabic-shaping",
+		description: "fonts with Arabic Unicode coverage and OpenType shaping tables",
+		matches: func(fi *ttf.FontInfo) bool {
+			return supportsArabic(fi.CharRanges()) && fi.HasOpenTypeShaping()
+		},
+	},
 }
 
 type fontMatch struct {

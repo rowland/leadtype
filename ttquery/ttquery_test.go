@@ -39,7 +39,11 @@ func TestPrintCapabilitiesSorted(t *testing.T) {
 	var buf bytes.Buffer
 	printCapabilities(&buf)
 	got := strings.TrimSpace(buf.String())
-	if got != "arabic\tfonts whose OS/2 Unicode ranges indicate Arabic support" {
+	want := strings.Join([]string{
+		"arabic\tfonts whose OS/2 Unicode ranges indicate Arabic support",
+		"arabic-shaping\tfonts with Arabic Unicode coverage and OpenType shaping tables",
+	}, "\n")
+	if got != want {
 		t.Fatalf("unexpected capabilities output: %q", got)
 	}
 }
