@@ -169,6 +169,8 @@ func (font *Font) UnitsPerEm() int {
 	return 1000
 }
 
+func (font *Font) SupportsArabic() bool { return false }
+
 // GlyphIndex is not meaningful for AFM/Type1 fonts; always returns 0.
 func (font *Font) GlyphIndex(r rune) uint16 { return 0 }
 

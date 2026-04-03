@@ -22,6 +22,8 @@ type Font struct {
 	vheaTable vheaTable
 	vmtxTable vmtxTable
 	rawBytes  []byte // non-nil only when loaded via LoadFontFromBytes
+
+	supportsArabic bool
 }
 
 // FontKey returns a stable string identifying this font, used as a cache key
@@ -89,6 +91,7 @@ func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
 	if err = font.FontInfo.init(file, offset); err != nil {
 		return
 	}
+	font.supportsArabic = font.detectArabicSupport()
 
 	if entry := font.tableDir.table("cmap"); entry != nil {
 		if err = font.cmapTable.init(file, entry); err != nil {
@@ -156,6 +159,31 @@ func (font *Font) GlyphIndex(r rune) uint16 {
 // glyph-space units (unscaled by unitsPerEm).
 func (font *Font) AdvanceWidthForGlyph(glyphID uint16) int {
 	return int(font.hmtxTable.lookupAdvanceWidth(int(glyphID)))
+}
+
+func (font *Font) SupportsArabic() bool {
+	return font.supportsArabic
+}
+
+var arabicCodepointRanges = []string{
+	"Arabic",
+	"Arabic Supplement",
+	"Arabic Presentation Forms-A",
+	"Arabic Presentation Forms-B",
+}
+
+func (font *Font) detectArabicSupport() bool {
+	ranges := font.CharRanges()
+	if ranges == nil {
+		return false
+	}
+	for _, name := range arabicCodepointRanges {
+		cpr := CodepointRangesByName[name]
+		if cpr != nil && ranges.IsSet(int(cpr.Bit)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (font *Font) Ascent() int {

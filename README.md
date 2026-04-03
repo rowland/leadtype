@@ -44,7 +44,7 @@ Render one of the checked-in LTML samples:
 go run ./cmd/render-ltml -o /tmp/hello-ltml.pdf ltml/samples/test_003_hello_world.ltml
 go run ./cmd/render-ltml -o /tmp/rich-text.pdf ltml/samples/test_010_rich_text.ltml
 go run ./cmd/render-ltml -o /tmp/cjk-thai-grid.pdf ltml/samples/test_012_cjk_thai_grid.ltml
-go run -tags arabic ./cmd/render-ltml -o /tmp/arabic-program.pdf ltml/samples/test_033_arabic_program.ltml
+go run ./cmd/render-ltml -o /tmp/arabic-program.pdf ltml/samples/test_033_arabic_program.ltml
 ```
 
 There are 33 LTML sample documents under [`ltml/samples/`](ltml/samples/), covering basic pages, flow and box layout, tables, rich text, images, transforms, overflow behavior, encodings, Arabic text, and more.
@@ -55,10 +55,10 @@ To regenerate the sample PDFs beside their `.ltml` files:
 make ltml-samples
 ```
 
-That target uses the pure-Go Arabic shaper build tag so Arabic-capable samples
-render with joined right-to-left glyph shaping. The local `bin/render-ltml`
-and `bin/serve-ltml` binaries built by `make binaries` use the same
-`-tags arabic` setting.
+That target renders Arabic-capable samples with the built-in pure-Go shaper so
+joined right-to-left glyph shaping is exercised by default. The local
+`bin/render-ltml` and `bin/serve-ltml` binaries built by `make binaries` use
+the same default behavior.
 
 ### Run the Go Samples
 
@@ -172,6 +172,8 @@ go install github.com/rowland/leadtype/ttdump@latest
 - [`cmd/render-ltml/README.md`](cmd/render-ltml/README.md): local and remote LTML rendering CLI usage.
 - [`cmd/serve-ltml/README.md`](cmd/serve-ltml/README.md): HTTP rendering service API and configuration.
 - [`docs/development-process.md`](docs/development-process.md): workflow, testing strategy, and fixture guidance.
+- [`docs/curved-text.md`](docs/curved-text.md): staged curved-text API roadmap for the PDF layer.
+- [`docs/curved-text-ltml.md`](docs/curved-text-ltml.md): LTML planning note for future curved-text syntax.
 - [`docs/unicode-pdf-rendering.md`](docs/unicode-pdf-rendering.md): design overview for Unicode and composite-font PDF output.
 - [`docs/unicode-pdf-rendering-todo.md`](docs/unicode-pdf-rendering-todo.md): implementation checklist for the Unicode workstream.
 

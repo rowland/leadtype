@@ -33,6 +33,12 @@ func (s errorShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping
 	return nil, s.err
 }
 
+type panicShaper struct{}
+
+func (panicShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping.GlyphPosition, error) {
+	panic("shaper should not be called")
+}
+
 func captureStderr(t *testing.T, fn func()) string {
 	t.Helper()
 
@@ -74,6 +80,20 @@ func amiriFixtureFont(t *testing.T) *font.Font {
 	return f
 }
 
+func minimalFixtureFont(t *testing.T) *font.Font {
+	t.Helper()
+
+	fc, err := ttf_fonts.New("../ttf/testdata/minimal.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Latin fixture font not found: %v", err)
+	}
+	f, err := font.New(fc.FontInfos[0].Family(), options.Options{}, font.FontSources{fc})
+	if err != nil {
+		t.Fatalf("font.New: %v", err)
+	}
+	return f
+}
+
 func TestNewRichText_English(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
@@ -89,6 +109,41 @@ func TestNewRichText_English(t *testing.T) {
 	st.True(rt.Strikeout)
 	st.True(rt.NoBreak)
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
+}
+
+func TestMeasure_ArabicTextWithLatinOnlyFontSkipsShaper(t *testing.T) {
+	p := &RichText{
+		Text:     "مرحبا",
+		Font:     minimalFixtureFont(t),
+		FontSize: 12,
+	}
+	p.Font.Shaper = panicShaper{}
+
+	p.measure()
+}
+
+func TestMeasure_LatinTextWithArabicCapableFontSkipsShaper(t *testing.T) {
+	p := &RichText{
+		Text:     "Hello",
+		Font:     amiriFixtureFont(t),
+		FontSize: 12,
+	}
+	p.Font.Shaper = panicShaper{}
+
+	p.measure()
+}
+
+func TestWordsToWidth_ArabicTextWithLatinOnlyFontSkipsShaper(t *testing.T) {
+	p := &RichText{
+		Text:     "مرحبا",
+		Font:     minimalFixtureFont(t),
+		FontSize: 12,
+	}
+	p.Font.Shaper = panicShaper{}
+
+	flags := make([]wordbreaking.Flags, len(p.String()))
+	wordbreaking.MarkRuneAttributes(p.String(), flags)
+	p.WordsToWidth(100, flags, false)
 }
 
 func TestNewRichText_EnglishAndChinese_Fail(t *testing.T) {

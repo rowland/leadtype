@@ -15,6 +15,7 @@ import (
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
@@ -79,6 +80,37 @@ func TestDocWriter_CompressPages(t *testing.T) {
 	if !strings.Contains(pdf, "/Filter /FlateDecode") {
 		t.Fatalf("expected compressed page stream, got pdf excerpt:\n%s", pdf)
 	}
+}
+
+func TestDocWriter_MeasureText(t *testing.T) {
+	dw := NewDocWriter()
+	fonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fonts)
+	dw.SetUnits("cm")
+	dw.NewPage()
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics, err := dw.MeasureText("Hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rt, err := rich_text.New("Hello", dw.Fonts(), dw.FontSize(), options.Options{
+		"color": dw.FontColor(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectFdelta(t, UnitConversions["cm"].fromPts(rt.Width()), metrics.Width, 0.0001)
+	expectFdelta(t, UnitConversions["cm"].fromPts(rt.Height()), metrics.Height, 0.0001)
+	expectFdelta(t, UnitConversions["cm"].fromPts(rt.Ascent()), metrics.Ascent, 0.0001)
+	expectFdelta(t, UnitConversions["cm"].fromPts(rt.Descent()), metrics.Descent, 0.0001)
 }
 
 func TestDocWriter_fontKey(t *testing.T) {

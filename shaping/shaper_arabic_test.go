@@ -1,8 +1,6 @@
 // Copyright 2026 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-//go:build arabic || harfbuzz
-
 package shaping_test
 
 import (

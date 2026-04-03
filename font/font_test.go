@@ -4,8 +4,11 @@
 package font
 
 import (
-	"github.com/rowland/leadtype/ttf"
 	"testing"
+
+	"github.com/rowland/leadtype/afm"
+	"github.com/rowland/leadtype/shaping"
+	"github.com/rowland/leadtype/ttf"
 )
 
 func TestFont_HasRune(t *testing.T) {
@@ -32,6 +35,33 @@ func TestFont_Matches(t *testing.T) {
 	f2 := &Font{metrics: arial2}
 
 	check(t, f1.Matches(f2), "Fonts should match.")
+}
+
+func TestFont_SupportsArabic_TTFArabic(t *testing.T) {
+	amiri, err := ttf.LoadFont("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil {
+		t.Skip(err)
+	}
+	f := &Font{metrics: amiri, Shaper: shaping.NewShaper()}
+	check(t, f.SupportsArabic(), "Amiri should report Arabic support.")
+}
+
+func TestFont_SupportsArabic_TTFLatinOnly(t *testing.T) {
+	minimal, err := ttf.LoadFont("../ttf/testdata/minimal.ttf")
+	if err != nil {
+		t.Skip(err)
+	}
+	f := &Font{metrics: minimal}
+	check(t, !f.SupportsArabic(), "minimal.ttf should not report Arabic support.")
+}
+
+func TestFont_SupportsArabic_AFMFalse(t *testing.T) {
+	metrics, err := afm.LoadFont("data/fonts/Helvetica.afm")
+	if err != nil {
+		t.Skip(err)
+	}
+	f := &Font{metrics: metrics}
+	check(t, !f.SupportsArabic(), "AFM font should not report Arabic support.")
 }
 
 // 55.2 ns

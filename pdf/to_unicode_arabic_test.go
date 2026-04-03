@@ -1,8 +1,6 @@
 // Copyright 2026 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-//go:build arabic
-
 package pdf
 
 import (
@@ -16,7 +14,6 @@ import (
 
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
@@ -25,7 +22,6 @@ func TestGlyphRecorder_AssignsDistinctCIDsForGlyphReuse(t *testing.T) {
 	if err != nil || len(fc.FontInfos) == 0 {
 		t.Skipf("Arabic fixture font not found: %v", err)
 	}
-	fc.SetShaper(shaping.NewShaper())
 	f, err := font.New(fc.FontInfos[0].Family(), options.Options{}, font.FontSources{fc})
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +94,6 @@ func TestUnicodeMode_ArabicExtractionPreservesDistinctSequences(t *testing.T) {
 	if err != nil || len(fc.FontInfos) == 0 {
 		t.Skipf("Arabic fixture font not found: %v", err)
 	}
-	fc.SetShaper(shaping.NewShaper())
 	family := fc.FontInfos[0].Family()
 
 	dw := NewDocWriter()
