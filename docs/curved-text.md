@@ -44,6 +44,112 @@ Expected deferred surface:
 
 - `DrawTextOnPath(...)`
 
+## Proposed Go API
+
+The first implementation should expose dedicated circle and ellipse helpers on
+both `DocWriter` and `PageWriter`, mirroring the existing pattern for other PDF
+helpers such as `Circle`, `Ellipse`, `Arc`, and `PrintWithOptions`.
+
+```go
+type CurvedTextHAlign uint8
+
+const (
+    CurvedTextAlignLeft CurvedTextHAlign = iota
+    CurvedTextAlignCenter
+    CurvedTextAlignRight
+)
+
+type CurvedTextDirection uint8
+
+const (
+    CurvedTextClockwise CurvedTextDirection = iota
+    CurvedTextCounterClockwise
+)
+
+type CurvedTextOrientation uint8
+
+const (
+    CurvedTextOrientationUpright CurvedTextOrientation = iota
+    CurvedTextOrientationGeometric
+)
+
+type CurvedTextOptions struct {
+    Align       CurvedTextHAlign
+    VAlign      VerticalTextAlign
+    Direction   CurvedTextDirection
+    Orientation CurvedTextOrientation
+}
+
+func (dw *DocWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts CurvedTextOptions) error
+func (pw *PageWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts CurvedTextOptions) error
+
+func (dw *DocWriter) DrawTextOnEllipse(text string, x, y, rx, ry, startAngle float64, opts CurvedTextOptions) error
+func (pw *PageWriter) DrawTextOnEllipse(text string, x, y, rx, ry, startAngle float64, opts CurvedTextOptions) error
+```
+
+Notes:
+
+- `x`, `y` follow the existing shape-helper convention and represent the center
+  of the circle or ellipse.
+- `startAngle` is the angular anchor location for the text span. The beginning,
+  middle, or end of the text lands there depending on `Align`.
+- The first version intentionally uses `text string`, not `*rich_text.RichText`,
+  to keep the initial API small. Styled rich-text variants can be considered
+  later once the placement engine is proven out.
+- The first version should not add a sweep-extent parameter. Text advances
+  naturally from `startAngle` in the chosen `Direction`, with total consumed arc
+  length determined by glyph advances and font metrics.
+- `CurvedTextOptions` should be a plain struct rather than `options.Options` so
+  the API stays typed and discoverable.
+
+## Option Defaults
+
+Zero-value `CurvedTextOptions` should be usable:
+
+- `Align`: `CurvedTextAlignLeft`
+- `VAlign`: `VTextAlignBase`
+- `Direction`: `CurvedTextClockwise`
+- `Orientation`: `CurvedTextOrientationUpright`
+
+Callers can therefore write:
+
+```go
+err := doc.DrawTextOnCircle("HELLO", 3.5, 4.0, 1.25, -90, pdf.CurvedTextOptions{})
+```
+
+## Geometric Semantics
+
+- `startAngle` uses the same degree system as the existing shape APIs.
+- `0` degrees is the rightmost point of the curve.
+- Positive angular travel follows the existing arc helpers; `Direction` defines
+  whether the text advances clockwise or counterclockwise from `startAngle`.
+- The text anchor point is sampled on the curve first. Horizontal alignment is
+  then resolved around that point:
+  - `left`: first glyph starts at `startAngle`
+  - `center`: text midpoint lands at `startAngle`
+  - `right`: text endpoint lands at `startAngle`
+- `VAlign` is interpreted relative to the local curve normal, using the same
+  metric anchors already used by the straight-text path:
+  - `base`
+  - `above`
+  - `top`
+  - `middle`
+  - `below`
+- In upright mode, the renderer may flip the local text frame by 180 degrees to
+  keep glyphs comfortable to read; the path anchor itself does not move.
+
+## Deferred API Choices
+
+To keep issue [#42](https://github.com/rowland/leadtype/issues/42) bounded, the
+following choices are deferred rather than silently improvised during
+implementation:
+
+- rich-text or shaped-run overloads
+- path-side or inside/outside explicit knobs beyond `VAlign`
+- caller-supplied sweep extents
+- arbitrary path arguments
+- LTML syntax and attribute names
+
 ## Default Semantics
 
 - The `origin` for circle and ellipse text is the anchor point on the curve

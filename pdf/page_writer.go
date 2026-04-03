@@ -1041,15 +1041,22 @@ func (pw *PageWriter) textRiseForPiece(p *rich_text.RichText, vTextAlign Vertica
 	if p == nil || p.Font == nil {
 		return 0
 	}
-	scale := p.FontSize * 0.001
-	if upm := p.Font.UnitsPerEm(); upm > 0 {
-		scale = p.FontSize / float64(upm)
+	return textRiseForFont(p.Font, p.FontSize, vTextAlign)
+}
+
+func textRiseForFont(f *font.Font, fontSize float64, vTextAlign VerticalTextAlign) float64 {
+	if f == nil {
+		return 0
 	}
-	top := float64(p.Font.CapHeight()) * scale
+	scale := fontSize * 0.001
+	if upm := f.UnitsPerEm(); upm > 0 {
+		scale = fontSize / float64(upm)
+	}
+	top := float64(f.CapHeight()) * scale
 	if top == 0 {
-		top = float64(p.Font.Ascent()) * scale
+		top = float64(f.Ascent()) * scale
 	}
-	descent := float64(p.Font.Descent()) * scale
+	descent := float64(f.Descent()) * scale
 	switch vTextAlign {
 	case VTextAlignAbove:
 		return -(top - descent)
