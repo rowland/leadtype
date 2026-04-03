@@ -6,6 +6,7 @@ package ttf_fonts
 import (
 	"testing"
 
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/ttf"
 )
 
@@ -185,5 +186,29 @@ func TestClearCache_ForcesRescan(t *testing.T) {
 	}
 	if fc2.FontInfos[0] != second {
 		t.Fatal("expected fresh inventory after ClearCache")
+	}
+}
+
+func TestShaper_SharedAcrossFontsFromSameSource(t *testing.T) {
+	fc, err := New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	first, err := font.New(family, nil, font.FontSources{fc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := font.New(family, nil, font.FontSources{fc})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if first.Shaper == nil || second.Shaper == nil {
+		t.Fatal("expected shared default shaper to be attached")
+	}
+	if first.Shaper != second.Shaper {
+		t.Fatal("expected fonts from the same TtfFonts source to share one shaper")
 	}
 }

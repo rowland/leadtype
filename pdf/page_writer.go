@@ -48,30 +48,31 @@ type TextMetrics struct {
 
 type PageWriter struct {
 	drawState
-	autoPath      bool
-	dw            *DocWriter
-	fonts         []*font.Font
-	gw            *graphWriter
-	inGraph       bool
-	inPath        bool
-	inText        bool
-	isClosed      bool
-	keepOrigin    bool
-	last          drawState
-	line          *rich_text.RichText
-	lineHeight    float64
-	mw            *miscWriter
-	options       options.Options
-	origin        Location
-	page          *page
-	pageHeight    float64
-	pageWidth     float64
-	pathStates    []pathState
-	stream        bytes.Buffer
-	tw            *textWriter
-	units         *units
-	vTextAlignPts float64
-	flushing      boolean
+	autoPath              bool
+	dw                    *DocWriter
+	fonts                 []*font.Font
+	gw                    *graphWriter
+	inGraph               bool
+	inPath                bool
+	inText                bool
+	isClosed              bool
+	keepOrigin            bool
+	last                  drawState
+	line                  *rich_text.RichText
+	lineHeight            float64
+	mw                    *miscWriter
+	options               options.Options
+	origin                Location
+	page                  *page
+	pageHeight            float64
+	pageWidth             float64
+	pathStates            []pathState
+	supportsArabicShaping bool
+	stream                bytes.Buffer
+	tw                    *textWriter
+	units                 *units
+	vTextAlignPts         float64
+	flushing              boolean
 }
 
 type pathState struct {
@@ -94,6 +95,7 @@ func clonePageWriter(opw *PageWriter) *PageWriter {
 	pw.drawState = opw.drawState
 	pw.units = opw.units
 	pw.fonts = append(pw.fonts, opw.fonts...)
+	pw.supportsArabicShaping = opw.supportsArabicShaping
 	return pw
 }
 
@@ -134,7 +136,19 @@ func (pw *PageWriter) AddFont(family string, options options.Options) ([]*font.F
 
 func (pw *PageWriter) addFont(font *font.Font) []*font.Font {
 	pw.fonts = append(pw.fonts, font)
+	if font.SupportsArabic() {
+		pw.supportsArabicShaping = true
+	}
 	return pw.fonts
+}
+
+func fontsSupportArabicShaping(fonts []*font.Font) bool {
+	for _, font := range fonts {
+		if font.SupportsArabic() {
+			return true
+		}
+	}
+	return false
 }
 
 func (pw *PageWriter) autoStrokeAndFill(stroke bool, fill bool) {
@@ -881,7 +895,9 @@ func (pw *PageWriter) flushText() {
 			var runes []rune // allocated only when shaping is attempted
 			var glyphRuneAssignments map[int][]rune
 			usePositionedGlyphs := false
-			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
+			if pw.supportsArabicShaping &&
+				p.Font.SupportsArabic() &&
+				shaping.ContainsArabic(p.Text) {
 				runes = []rune(p.Text)
 				var err error
 				shaped, err = p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
@@ -1518,6 +1534,7 @@ func (pw *PageWriter) rectanglePath(x, y, width, height float64, reverse bool) {
 
 func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
+	pw.supportsArabicShaping = false
 }
 
 func (pw *PageWriter) MeasureText(text string) (metrics TextMetrics, err error) {

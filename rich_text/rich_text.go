@@ -411,7 +411,7 @@ func (piece *RichText) measure() *RichText {
 	piece.StrikeoutThickness = float64(metrics.StrikeoutThickness()) * fsize
 	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
 	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
-	if piece.Font.Shaper != nil && shaping.ContainsArabic(piece.Text) {
+	if piece.Font.SupportsArabic() && shaping.ContainsArabic(piece.Text) {
 		runes := []rune(piece.Text)
 		if shaped, err := piece.Font.Shaper.Shape(runes, piece.Font, float32(piece.FontSize)); err == nil && shaped != nil {
 			for _, r := range runes {
@@ -781,7 +781,7 @@ func (piece *RichText) WordsToWidth(
 			leafRuneIdx = 0
 			// Pre-shape Arabic leaves so word widths reflect contextual forms
 			// and ligatures rather than individual unshaped glyph metrics.
-			if p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
+			if p.Font.SupportsArabic() && shaping.ContainsArabic(p.Text) {
 				leafRunes := []rune(p.Text)
 				if glyphs, err := p.Font.Shaper.Shape(leafRunes, p.Font, float32(p.FontSize)); err == nil && glyphs != nil {
 					shapedAdv = make([]float64, len(leafRunes))

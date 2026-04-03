@@ -16,9 +16,10 @@ import (
 )
 
 type TtfFonts struct {
-	FontInfos []*ttf.FontInfo
-	fonts     map[string]*ttf.Font
-	shaper    shaping.Shaper // nil unless SetShaper has been called
+	FontInfos  []*ttf.FontInfo
+	fonts      map[string]*ttf.Font
+	shaper     shaping.Shaper // optional override
+	shaperOnce sync.Once
 }
 
 var systemFontCache struct {
@@ -73,14 +74,21 @@ func ClearCache() {
 	systemFontCache.loaded = false
 }
 
-// SetShaper attaches a complex-script shaper to this font collection. Fonts
-// subsequently selected from this collection will have their Shaper field set
-// to s, enabling shaped measurement and rendering for Arabic text.
+// SetShaper attaches a complex-script shaper override to this font collection.
+// Fonts subsequently selected from this collection will share s instead of the
+// default lazily-created shaper.
 func (fc *TtfFonts) SetShaper(s shaping.Shaper) { fc.shaper = s }
 
 // Shaper implements font.ShaperSource, allowing font.New to automatically
-// propagate the shaper to each Font it creates from this collection.
-func (fc *TtfFonts) Shaper() shaping.Shaper { return fc.shaper }
+// propagate a shared shaper to each Font it creates from this collection.
+func (fc *TtfFonts) Shaper() shaping.Shaper {
+	fc.shaperOnce.Do(func() {
+		if fc.shaper == nil {
+			fc.shaper = shaping.NewShaper()
+		}
+	})
+	return fc.shaper
+}
 
 func New(pattern string) (*TtfFonts, error) {
 	var fc TtfFonts

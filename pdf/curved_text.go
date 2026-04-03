@@ -365,7 +365,9 @@ func (pw *PageWriter) curvedTextGlyphsForRichText(text *rich_text.RichText) ([]c
 		if p == nil || p.Font == nil {
 			continue
 		}
-		if p.Font.SubType() == "TrueType" && p.Font.Shaper != nil && shaping.ContainsArabic(p.Text) {
+		if pw.supportsArabicShaping &&
+			p.Font.SupportsArabic() &&
+			shaping.ContainsArabic(p.Text) {
 			runes := []rune(p.Text)
 			shaped, err := p.Font.Shaper.Shape(runes, p.Font, float32(p.FontSize))
 			if err == nil && shaped != nil {

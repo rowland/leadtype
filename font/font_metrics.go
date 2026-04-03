@@ -37,6 +37,9 @@ type FontMetrics interface {
 	StrikeoutPosition() int
 	StrikeoutThickness() int
 	Style() string
+	// SupportsArabic reports whether the font plausibly supports Arabic shaping
+	// based on its own internal coverage metadata.
+	SupportsArabic() bool
 	// Trademark() string
 	UnderlinePosition() int
 	UnderlineThickness() int

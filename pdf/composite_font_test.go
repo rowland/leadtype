@@ -8,9 +8,11 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/shaping"
 	"github.com/rowland/leadtype/ttf_fonts"
@@ -427,6 +429,12 @@ func (s errorShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping
 	return nil, s.err
 }
 
+type panicShaper struct{}
+
+func (panicShaper) Shape(_ []rune, _ shaping.FontReader, _ float32) ([]shaping.GlyphPosition, error) {
+	panic("shaper should not be called")
+}
+
 func captureStderr(t *testing.T, fn func()) string {
 	t.Helper()
 
@@ -589,6 +597,59 @@ func TestUnicodeMode_ShapingFailureWarnsDuringEmission(t *testing.T) {
 
 	if !strings.Contains(warnings, "shaping failed during PDF emission") {
 		t.Fatalf("expected PDF emission shaping warning, got %q", warnings)
+	}
+}
+
+func TestFontsSupportArabicShaping_FalseForLatinOnlyChain(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+	latin, err := font.New("Minimal", options.Options{}, font.FontSources{fc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fontsSupportArabicShaping([]*font.Font{latin}) {
+		t.Fatal("expected Latin-only chain to report no Arabic shaping support")
+	}
+}
+
+func TestFontsSupportArabicShaping_TrueForMixedChain(t *testing.T) {
+	latinSource := testFontSource(t, "../ttf/testdata/minimal.ttf")
+	latin, err := font.New("Minimal", options.Options{}, font.FontSources{latinSource})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	arabicSource, err := ttf_fonts.New(filepath.Join("..", "shaping", "testdata", "Amiri-Regular.ttf"))
+	if err != nil || len(arabicSource.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	arabic, err := font.New(arabicSource.FontInfos[0].Family(), options.Options{}, font.FontSources{arabicSource})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !fontsSupportArabicShaping([]*font.Font{latin, arabic}) {
+		t.Fatal("expected mixed chain to report Arabic shaping support")
+	}
+}
+
+func TestUnicodeMode_ArabicTextWithLatinOnlyFontSkipsShaper(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont("Minimal", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fonts[0].Shaper = panicShaper{}
+	pw.MoveTo(72, 720)
+	pw.Print("مرحبا")
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo: %v", err)
 	}
 }
 

@@ -163,6 +163,13 @@ func (font *Font) StemV() int {
 	return font.metrics.StemV()
 }
 
+func (font *Font) SupportsArabic() bool {
+	if font == nil || font.metrics == nil {
+		return false
+	}
+	return font.Shaper != nil && font.metrics.SupportsArabic()
+}
+
 func (font *Font) StrikeoutPosition() int {
 	return font.metrics.StrikeoutPosition()
 }
