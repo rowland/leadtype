@@ -2,16 +2,7 @@
 
 `serve-ltml` is an HTTP server that renders LTML documents to PDF on demand. Clients submit an LTML document and optional asset files in a single `multipart/form-data` request and receive a PDF response.
 
-Build with `-tags arabic` to enable the pure-Go Arabic shaper for server-side
-rendering of Arabic and other complex-script text:
-
-```sh
-go build -tags arabic ./cmd/serve-ltml
-```
-
-Without `-tags arabic` (or `-tags harfbuzz`), Arabic documents still render but
-use the no-op shaper, so the output is not a valid visual verification of Arabic
-text layout.
+Arabic and other complex-script text use the built-in pure-Go shaper, so normal server builds render shaped right-to-left output.
 
 ## Usage
 

@@ -1,16 +1,8 @@
 // Copyright 2026 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
-// Package shaping provides Arabic (and complex-script) text shaping.
-//
-// Three implementations are available, selected at build time:
-//
-//   - Default (no tags): no-op stub; callers receive nil and must fall back
-//     to unshaped glyph metrics from the font.
-//   - -tags arabic: pure-Go shaping via github.com/go-text/typesetting.
-//   - -tags harfbuzz: CGO shaping via the system libharfbuzz.
-//
-// The harfbuzz tag supersedes arabic; do not combine them.
+// Package shaping provides Arabic (and complex-script) text shaping using a
+// pure-Go backend based on github.com/go-text/typesetting.
 package shaping
 
 // FontReader is the interface through which the shaper accesses a font.
@@ -49,8 +41,6 @@ type GlyphPosition struct {
 //     points for PDF output). It is used to scale the returned metrics.
 //
 // The returned slice is in visual order (already reordered for RTL text).
-// A nil slice with a nil error indicates the no-op stub build; callers should
-// fall back to standard font metrics in that case.
 type Shaper interface {
 	Shape(text []rune, font FontReader, ppem float32) ([]GlyphPosition, error)
 }

@@ -21,12 +21,14 @@ type emptyFontReader struct{}
 func (emptyFontReader) FontKey() string { return "empty" }
 func (emptyFontReader) Bytes() []byte   { return nil }
 
-// TestShape_emptyFont verifies behaviour on empty font data across all builds.
-// The stub returns nil, nil; active shapers should return an error.
+// TestShape_emptyFont verifies behavior on empty font data.
 func TestShape_emptyFont(t *testing.T) {
 	s := shaping.NewShaper()
 	glyphs, err := s.Shape([]rune("مرحبا"), emptyFontReader{}, 12)
-	if err == nil && glyphs != nil {
+	if err == nil {
+		t.Fatal("expected error for empty font data, got nil")
+	}
+	if glyphs != nil {
 		t.Errorf("expected nil glyphs for empty font data, got %d glyphs", len(glyphs))
 	}
 }

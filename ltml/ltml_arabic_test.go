@@ -1,5 +1,3 @@
-//go:build arabic || harfbuzz
-
 package ltml
 
 import "testing"

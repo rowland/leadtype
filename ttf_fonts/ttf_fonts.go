@@ -73,9 +73,9 @@ func ClearCache() {
 	systemFontCache.loaded = false
 }
 
-// SetShaper attaches an Arabic (complex-script) shaper to this font collection.
-// Fonts subsequently selected from this collection will have their Shaper field
-// set to s, enabling shaped measurement and rendering for Arabic text.
+// SetShaper attaches a complex-script shaper to this font collection. Fonts
+// subsequently selected from this collection will have their Shaper field set
+// to s, enabling shaped measurement and rendering for Arabic text.
 func (fc *TtfFonts) SetShaper(s shaping.Shaper) { fc.shaper = s }
 
 // Shaper implements font.ShaperSource, allowing font.New to automatically

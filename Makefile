@@ -3,7 +3,6 @@
 SAMPLES := $(sort $(wildcard samples/*/*.go))
 BIN_DIR := bin
 BINARY_PKGS := ./cmd/render-ltml ./cmd/serve-ltml ./ttdump
-ARABIC_BINARY_PKGS := ./cmd/render-ltml ./cmd/serve-ltml
 LTML_IMAGE_SAMPLE := ltml/samples/test_031_render_ltml_images.ltml
 LTML_IMAGE_JPEG := pdf/testdata/testimg.jpg
 LTML_IMAGE_PNG := pdf/testdata/eidetic.png
@@ -13,12 +12,7 @@ LTML_SERVER_ADDR ?= 127.0.0.1:18080
 
 binaries:
 	@mkdir -p $(BIN_DIR)
-	@for pkg in $(ARABIC_BINARY_PKGS); do \
-		name=$$(basename $$pkg); \
-		echo "==> go build -tags arabic -o $(BIN_DIR)/$$name $$pkg"; \
-		go build -tags arabic -o $(BIN_DIR)/$$name $$pkg || exit $$?; \
-	done
-	@for pkg in $(filter-out $(ARABIC_BINARY_PKGS),$(BINARY_PKGS)); do \
+	@for pkg in $(BINARY_PKGS); do \
 		name=$$(basename $$pkg); \
 		echo "==> go build -o $(BIN_DIR)/$$name $$pkg"; \
 		go build -o $(BIN_DIR)/$$name $$pkg || exit $$?; \
@@ -34,10 +28,10 @@ samples:
 	done
 
 ltml-samples:
-	go test -tags arabic ./ltml -run TestSamples -write-sample-pdfs
+	go test ./ltml -run TestSamples -write-sample-pdfs
 
 ltml-samples-open:
-	go test -tags arabic ./ltml -run TestSamples -args -open-sample-pdfs
+	go test ./ltml -run TestSamples -args -open-sample-pdfs
 
 ltml-image-sample-local: binaries
 	@echo "==> rendering $(LTML_IMAGE_SAMPLE) locally"
