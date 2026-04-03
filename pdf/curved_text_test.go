@@ -9,6 +9,7 @@ import (
 
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 )
 
 type curvedTextTestLinePath struct {
@@ -327,4 +328,45 @@ func TestPageWriter_DrawTextOnCircle_BottomOutsideTopAlign(t *testing.T) {
 	if !strings.Contains(pw.stream.String(), matrix) {
 		t.Fatalf("expected matrix %q in output:\n%s", matrix, pw.stream.String())
 	}
+}
+
+func TestPageWriter_DrawRichTextOnCircle_MatchesStringPath(t *testing.T) {
+	dw := NewDocWriter()
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatalf("Default AFM fonts returned error: %v", err)
+	}
+	dw.AddFontSource(afm)
+
+	pwText := newPageWriter(dw, options.Options{})
+	if _, err := pwText.SetFont("Courier", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
+	}
+	opts := CurvedTextOptions{
+		Align:       CurvedTextAlignCenter,
+		Direction:   CurvedTextClockwise,
+		Orientation: CurvedTextOrientationOutside,
+		Facing:      CurvedTextFacingUpright,
+	}
+	if err := pwText.DrawTextOnCircle("Hello", 50, 50, 20, 90, opts); err != nil {
+		t.Fatalf("DrawTextOnCircle returned error: %v", err)
+	}
+
+	pwRich := newPageWriter(dw, options.Options{})
+	if _, err := pwRich.SetFont("Courier", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
+	}
+	rt, err := rich_text.New("Hello", pwRich.Fonts(), pwRich.FontSize(), options.Options{
+		"color": pwRich.FontColor(),
+		"strikeout": pwRich.strikeout,
+		"underline": pwRich.underline,
+	})
+	if err != nil {
+		t.Fatalf("rich_text.New returned error: %v", err)
+	}
+	if err := pwRich.DrawRichTextOnCircle(rt, 50, 50, 20, 90, opts); err != nil {
+		t.Fatalf("DrawRichTextOnCircle returned error: %v", err)
+	}
+
+	expectS(t, pwText.stream.String(), pwRich.stream.String())
 }

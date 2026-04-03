@@ -10,7 +10,6 @@ import (
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
-	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/shaping"
 )
@@ -272,12 +271,20 @@ func curvedTextFrame(tangent, desiredNormal Location, facing CurvedTextFacing) (
 }
 
 func (pw *PageWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts CurvedTextOptions) error {
+	piece, err := pw.richTextForString(text)
+	if err != nil {
+		return err
+	}
+	return pw.DrawRichTextOnCircle(piece, x, y, r, startAngle, opts)
+}
+
+func (pw *PageWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts CurvedTextOptions) error {
 	pw.flushText()
-	if text == "" {
+	if text == nil {
 		return nil
 	}
 
-	glyphs, err := pw.curvedTextGlyphsForString(text)
+	glyphs, err := pw.curvedTextGlyphsForRichText(text)
 	if err != nil {
 		return err
 	}
@@ -343,14 +350,16 @@ func (dw *DocWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, 
 	return dw.CurPage().DrawTextOnCircle(text, x, y, r, startAngle, opts)
 }
 
-func (pw *PageWriter) curvedTextGlyphsForString(text string) ([]curvedTextRenderGlyph, error) {
-	piece, err := rich_text.New(text, pw.fonts, pw.fontSize, options.Options{
-		"color": pw.fontColor, "strikeout": pw.strikeout, "underline": pw.underline})
-	if err != nil {
-		return nil, err
+func (dw *DocWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts CurvedTextOptions) error {
+	return dw.CurPage().DrawRichTextOnCircle(text, x, y, r, startAngle, opts)
+}
+
+func (pw *PageWriter) curvedTextGlyphsForRichText(text *rich_text.RichText) ([]curvedTextRenderGlyph, error) {
+	if text == nil {
+		return nil, nil
 	}
 
-	displayPieces := bidiDisplayPieces(piece.Merge())
+	displayPieces := bidiDisplayPieces(text.Merge())
 	glyphs := []curvedTextRenderGlyph{}
 	for _, p := range displayPieces {
 		if p == nil || p.Font == nil {
