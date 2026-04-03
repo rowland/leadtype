@@ -128,6 +128,36 @@ func TestPageWriter_checkSetLineWidth(t *testing.T) {
 	// TODO: test for autoPath behavior
 }
 
+func TestPageWriter_MeasureText(t *testing.T) {
+	dw := NewDocWriter()
+	fonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fonts)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+
+	rt, err := rich_text.New("Hello", pw.Fonts(), pw.FontSize(), options.Options{
+		"color": pw.fontColor, "strikeout": pw.strikeout, "underline": pw.underline,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	metrics, err := pw.MeasureText("Hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectFdelta(t, UnitConversions["in"].fromPts(rt.Width()), metrics.Width, 0.0001)
+	expectFdelta(t, UnitConversions["in"].fromPts(rt.Height()), metrics.Height, 0.0001)
+	expectFdelta(t, UnitConversions["in"].fromPts(rt.Ascent()), metrics.Ascent, 0.0001)
+	expectFdelta(t, UnitConversions["in"].fromPts(rt.Descent()), metrics.Descent, 0.0001)
+}
+
 func TestClonePageWriter(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

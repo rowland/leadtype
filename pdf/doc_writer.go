@@ -768,6 +768,10 @@ func (dw *DocWriter) ResetFonts() {
 	dw.CurPage().ResetFonts()
 }
 
+func (dw *DocWriter) MeasureText(text string) (TextMetrics, error) {
+	return dw.CurPage().MeasureText(text)
+}
+
 func (dw *DocWriter) SetFillColor(color any) (prev colors.Color) {
 	return dw.CurPage().SetFillColor(color)
 }

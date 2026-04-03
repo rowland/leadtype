@@ -39,6 +39,13 @@ const (
 	BevelJoin
 )
 
+type TextMetrics struct {
+	Width   float64
+	Height  float64
+	Ascent  float64
+	Descent float64
+}
+
 type PageWriter struct {
 	drawState
 	autoPath      bool
@@ -1511,6 +1518,23 @@ func (pw *PageWriter) rectanglePath(x, y, width, height float64, reverse bool) {
 
 func (pw *PageWriter) ResetFonts() {
 	pw.fonts = nil
+}
+
+func (pw *PageWriter) MeasureText(text string) (metrics TextMetrics, err error) {
+	piece, err := pw.richTextForString(text)
+	if err != nil {
+		return metrics, err
+	}
+	if piece == nil {
+		return metrics, nil
+	}
+	metrics = TextMetrics{
+		Width:   pw.units.fromPts(piece.Width()),
+		Height:  pw.units.fromPts(piece.Height()),
+		Ascent:  pw.units.fromPts(piece.Ascent()),
+		Descent: pw.units.fromPts(piece.Descent()),
+	}
+	return metrics, nil
 }
 
 func (pw *PageWriter) richTextForString(text string) (piece *rich_text.RichText, err error) {
