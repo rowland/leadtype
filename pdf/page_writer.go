@@ -673,6 +673,54 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	return nil
 }
 
+func (pw *PageWriter) appendCurvePoints(points []Location) error {
+	if len(points) < 4 {
+		return errTooFewPoints
+	}
+	if !pw.loc.equal(points[0]) {
+		pw.LineTo(points[0].X, points[0].Y)
+	}
+	if !pw.inPath {
+		pw.startGraph()
+		pw.checkSetLineColor()
+		pw.checkSetLineWidth()
+		pw.checkSetLineDashPattern()
+		pw.gw.moveTo(pw.loc.X, pw.loc.Y)
+		pw.inPath = true
+		pw.last.loc = pw.loc
+	}
+	i := 1
+	for i+2 < len(points) {
+		pw.gw.curveTo(
+			pw.units.toPts(points[i].X), pw.pageHeight-pw.units.toPts(points[i].Y),
+			pw.units.toPts(points[i+1].X), pw.pageHeight-pw.units.toPts(points[i+1].Y),
+			pw.units.toPts(points[i+2].X), pw.pageHeight-pw.units.toPts(points[i+2].Y))
+		pw.MoveTo(points[i+2].X, points[i+2].Y)
+		pw.last.loc = pw.loc
+		i += 3
+	}
+	pw.inPath = true
+	return nil
+}
+
+func (pw *PageWriter) annularArcPath(x, y, r1, r2, startAngle, endAngle float64) error {
+	arc1 := pw.PointsForArc(x, y, r1, startAngle, endAngle)
+	arc2 := pw.PointsForArc(x, y, r2, endAngle, startAngle)
+	if len(arc1) == 0 || len(arc2) == 0 {
+		return nil
+	}
+	pw.MoveTo(arc1[0].X, arc1[0].Y)
+	if err := pw.appendCurvePoints(arc1); err != nil {
+		return err
+	}
+	pw.LineTo(arc2[0].X, arc2[0].Y)
+	if err := pw.appendCurvePoints(arc2); err != nil {
+		return err
+	}
+	pw.LineTo(arc1[0].X, arc1[0].Y)
+	return nil
+}
+
 func (pw *PageWriter) drawClosedShape(border, fill bool, build func()) (err error) {
 	if border && fill {
 		err = pw.Path(func() {
@@ -807,17 +855,8 @@ func (pw *PageWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, f
 	if reverse {
 		startAngle, endAngle = endAngle, startAngle
 	}
-	arc1 := pw.PointsForArc(x, y, r1, startAngle, endAngle)
-	arc2 := pw.PointsForArc(x, y, r2, endAngle, startAngle)
-	if len(arc1) == 0 || len(arc2) == 0 {
-		return nil
-	}
 	return pw.drawClosedShape(border, fill, func() {
-		pw.MoveTo(arc1[0].X, arc1[0].Y)
-		_ = pw.CurvePoints(arc1)
-		pw.LineTo(arc2[0].X, arc2[0].Y)
-		_ = pw.CurvePoints(arc2)
-		pw.LineTo(arc1[0].X, arc1[0].Y)
+		_ = pw.annularArcPath(x, y, r1, r2, startAngle, endAngle)
 	})
 }
 

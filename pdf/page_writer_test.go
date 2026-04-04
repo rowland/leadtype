@@ -1494,3 +1494,118 @@ func TestPageWriter_PathRestoresGradientStateAfterClip(t *testing.T) {
 	check(t, strings.Contains(s, "q\nW\nn\n"), "clip should save graphics state, clip, and clear the path")
 	check(t, strings.Contains(s, "sh\nQ\n"), "clip should paint shading and restore graphics state")
 }
+
+func TestPageWriter_PaintSweepBandConstantColorSegment(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Segments: []SweepBandSegment{
+			{StartAngle: 0, EndAngle: 45, StartColor: colors.Red, EndColor: colors.Red},
+		},
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "q\nW\nn\n"), "constant-color segment should clip before painting")
+	check(t, strings.Contains(s, "sh\nQ\n"), "constant-color segment should use the same shading paint path and restore graphics state")
+}
+
+func TestPageWriter_PaintSweepBandGradientSegment(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Segments: []SweepBandSegment{
+			{StartAngle: 45, EndAngle: 135, StartColor: colors.Red, EndColor: colors.Blue},
+		},
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "q\nW\nn\n"), "gradient segment should clip before painting")
+	check(t, strings.Contains(s, "sh\nQ\n"), "gradient segment should paint shading and restore graphics state")
+}
+
+func TestPageWriter_PaintSweepBandDoesNotLeakState(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetFillLinearGradient(testLinearGradient()) == nil, "outer fill gradient should be set")
+	check(t, pw.SetLineLinearGradient(testLinearGradient()) == nil, "outer line gradient should be set")
+	savedState := pw.drawState
+	savedLast := pw.last
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Segments: []SweepBandSegment{
+			{StartAngle: 0, EndAngle: 45, StartColor: colors.Red, EndColor: colors.Red},
+			{StartAngle: 45, EndAngle: 90, StartColor: colors.Red, EndColor: colors.Yellow},
+		},
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+	expectV(t, savedState, pw.drawState)
+	expectV(t, savedLast, pw.last)
+}
+
+func TestPageWriter_PaintSweepBandGradientCoords(t *testing.T) {
+	dw := NewDocWriter()
+	pw := dw.NewPage()
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Segments: []SweepBandSegment{
+			{StartAngle: 45, EndAngle: 135, StartColor: colors.Red, EndColor: colors.Blue},
+			{StartAngle: -45, EndAngle: 45, StartColor: colors.Yellow, EndColor: colors.Green},
+			{StartAngle: 135, EndAngle: 180, StartColor: colors.Blue, EndColor: colors.Red},
+		},
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+
+	var buf bytes.Buffer
+	_, err = dw.WriteTo(&buf)
+	check(t, err == nil, "WriteTo should succeed")
+	pdf := buf.String()
+	check(t, strings.Contains(pdf, "/Coords [12.1213 784.1213 7.8787 784.1213 ]"), "top segment should use a horizontal gradient axis")
+	check(t, strings.Contains(pdf, "/Coords [12.1213 779.8787 12.1213 784.1213 ]"), "right segment should use a vertical gradient axis")
+	check(t, strings.Contains(pdf, "/Coords [7.8787 784.1213 7 782 ]"), "corner segment should use a diagonal gradient axis")
+}
+
+func TestPageWriter_PaintSweepBandStepsEmitMultipleShadings(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Segments: []SweepBandSegment{
+			{StartAngle: 0, EndAngle: 90, StartColor: colors.Red, EndColor: colors.Blue, Steps: 4},
+		},
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+	s := pw.stream.String()
+	expectI(t, 4, strings.Count(s, "q\nW\nn\n"))
+	expectI(t, 4, strings.Count(s, "sh\nQ\n"))
+}
+
+func TestPageWriter_PaintSweepBandStepsPreserveCoverage(t *testing.T) {
+	seg := SweepBandSegment{
+		StartAngle: 45,
+		EndAngle:   135,
+		StartColor: colors.Red,
+		EndColor:   colors.Blue,
+		Steps:      3,
+	}
+	expanded := seg.expand()
+	expectFdelta(t, 45, expanded[0].StartAngle, 0.0001)
+	expectFdelta(t, 135, expanded[len(expanded)-1].EndAngle, 0.0001)
+}

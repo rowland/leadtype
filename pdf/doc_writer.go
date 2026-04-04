@@ -892,6 +892,14 @@ func (dw *DocWriter) PaintRadialGradient(rg *RadialGradient) error {
 	return dw.CurPage().PaintRadialGradient(rg)
 }
 
+func (dw *DocWriter) PaintSweepBand(sb *SweepBand) error {
+	return dw.CurPage().PaintSweepBand(sb)
+}
+
+func (dw *DocWriter) PaintSweepArc(x, y, innerRadius, outerRadius float64, segments []SweepBandSegment) error {
+	return dw.CurPage().PaintSweepArc(x, y, innerRadius, outerRadius, segments)
+}
+
 func (dw *DocWriter) ResetFonts() {
 	dw.CurPage().ResetFonts()
 }

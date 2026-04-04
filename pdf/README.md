@@ -58,4 +58,41 @@ if err := doc.Path(func() {
 
 Use fill/stroke gradients when the gradient should behave like the current drawing color for later path operations. Use `Paint*Gradient` when the gradient should fill the current clip immediately.
 
+## Pseudo-Sweep Bands
+
+Leadtype also supports sweep-like annular bands built from explicit angular
+segments and clipped linear paints.
+
+Use `PaintSweepBand` when you want to compose a ring from solid wedges and
+gradient wedges without introducing a new PDF shading type:
+
+```go
+err := doc.PaintSweepBand(&pdf.SweepBand{
+	X: 6.25, Y: 8.5,
+	InnerRadius: 0.58,
+	OuterRadius: 1.02,
+	Segments: []pdf.SweepBandSegment{
+		{StartAngle: -22.5, EndAngle: 22.5, StartColor: colors.Red, EndColor: colors.Red},
+		{StartAngle: 22.5, EndAngle: 67.5, StartColor: colors.Red, EndColor: colors.Yellow, Steps: 12},
+	},
+})
+if err != nil {
+	panic(err)
+}
+```
+
+Each segment is clipped to its annular slice. Gradient segments use a linear
+gradient whose axis follows the chord between the segment's start-angle and
+end-angle points at the midpoint radius, which gives horizontal, vertical, or
+diagonal blends depending on the slice. If `StartColor` and `EndColor` are the
+same, the segment renders as a visually solid band while still using the same
+gradient paint path.
+
+Set `Steps` on a segment to subdivide it into that many equal-angle painted
+subsegments. This makes it practical to approximate the older “many thin arches”
+look without manually authoring every slice. `Steps <= 0` defaults to one
+painted segment.
+
+`PaintSweepArc` provides the same behavior through a convenience parameter list.
+
 For a runnable end-to-end example, see [`../samples/test_021_gradients.go`](../samples/test_021_gradients.go).

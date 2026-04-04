@@ -16,6 +16,13 @@ func init() {
 
 func runTest021Gradients() (string, error) {
 	return writeDoc("test_021_gradients.pdf", func(doc *pdf.DocWriter) error {
+		const (
+			discRed    = colors.Color(0xE06556)
+			discYellow = colors.Color(0xEDD468)
+			discGreen  = colors.Color(0x8DB967)
+			discBlue   = colors.Color(0x608FAA)
+		)
+
 		afmfc, err := afm_fonts.Default()
 		if err != nil {
 			return err
@@ -111,25 +118,34 @@ func runTest021Gradients() (string, error) {
 		doc.Rectangle(1, 7, 3, 1, true, false)
 		doc.ClearLineGradient()
 
-		// Thick circle border with a repeating multi-stop line gradient.
-		label(5, 7.4, "Circle border with repeating line gradient")
-		if err := doc.SetLineLinearGradient(&pdf.LinearGradient{
-			X0: 5, Y0: 8.5, X1: 7.5, Y1: 8.5,
-			Stops: []pdf.GradientStop{
-				{Position: 0, Color: colors.Red},
-				{Position: 0.25, Color: colors.Yellow},
-				{Position: 0.5, Color: colors.Green},
-				{Position: 0.75, Color: colors.Blue},
-				{Position: 1, Color: colors.Red},
-			},
+		// Pseudo-sweep annular band built from explicit solid and gradient slices.
+		label(4.7, 7.35, "Pseudo-sweep annular band")
+		if err := doc.PaintSweepBand(&pdf.SweepBand{
+			X:           6.25,
+			Y:           8.5,
+			InnerRadius: 0.58,
+			OuterRadius: 1.02,
+			Segments: segmentsForCircle(22.5, []colorSteps{
+				{startColor: discRed, endColor: discRed, steps: 0},
+				{startColor: discRed, endColor: discBlue, steps: 12},
+				{startColor: discBlue, endColor: discBlue, steps: 0},
+				{startColor: discBlue, endColor: discGreen, steps: 12},
+				{startColor: discGreen, endColor: discGreen, steps: 0},
+				{startColor: discGreen, endColor: discYellow, steps: 12},
+				{startColor: discYellow, endColor: discYellow, steps: 0},
+				{startColor: discYellow, endColor: discRed, steps: 12},
+			}),
 		}); err != nil {
 			return err
 		}
-		doc.SetLineWidth(18, "pt")
-		if err := doc.Circle(6.25, 8.5, 0.85, true, false, false); err != nil {
+		doc.SetLineColor(colors.Gray)
+		doc.SetLineWidth(2, "pt")
+		if err := doc.Circle(6.25, 8.5, 1.02, true, false, false); err != nil {
 			return err
 		}
-		doc.ClearLineGradient()
+		if err := doc.Circle(6.25, 8.5, 0.58, true, false, false); err != nil {
+			return err
+		}
 
 		// Direct shading into a clipped region.
 		label(5, 5.3, "Clipped direct shading")
@@ -160,4 +176,27 @@ func runTest021Gradients() (string, error) {
 
 		return nil
 	})
+}
+
+type colorSteps struct {
+	startColor colors.Color
+	endColor   colors.Color
+	steps      int
+}
+
+func segmentsForCircle(startAngle float64, colorSteps []colorSteps) []pdf.SweepBandSegment {
+	angleStep := 360.0 / float64(len(colorSteps))
+	segments := make([]pdf.SweepBandSegment, 0, len(colorSteps))
+	for i := range colorSteps {
+		startAngle := startAngle + (angleStep * float64(i))
+		endAngle := startAngle + angleStep
+		segments = append(segments, pdf.SweepBandSegment{
+			StartAngle: startAngle,
+			EndAngle:   endAngle,
+			StartColor: colorSteps[i].startColor,
+			EndColor:   colorSteps[i].endColor,
+			Steps:      colorSteps[i].steps,
+		})
+	}
+	return segments
 }
