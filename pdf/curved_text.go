@@ -27,7 +27,8 @@ const (
 type CurvedTextDirection uint8
 
 const (
-	CurvedTextClockwise CurvedTextDirection = iota
+	CurvedTextDirectionAuto CurvedTextDirection = iota
+	CurvedTextClockwise
 	CurvedTextCounterClockwise
 )
 
@@ -41,7 +42,8 @@ const (
 type CurvedTextFacing uint8
 
 const (
-	CurvedTextFacingUpright CurvedTextFacing = iota
+	CurvedTextFacingAuto CurvedTextFacing = iota
+	CurvedTextFacingUpright
 	CurvedTextFacingUpsideDown
 )
 
@@ -243,6 +245,60 @@ func (opts CurvedTextOptions) clockwise() bool {
 	return opts.Direction != CurvedTextCounterClockwise
 }
 
+func (opts CurvedTextOptions) resolveCircleAuto(glyphs []curvedTextRenderGlyph, center Location, radius, startAngle float64) (CurvedTextDirection, CurvedTextFacing) {
+	if opts.Direction != CurvedTextDirectionAuto && opts.Facing != CurvedTextFacingAuto {
+		return opts.Direction, opts.Facing
+	}
+
+	inputs := make([]curvedTextGlyph, 0, len(glyphs))
+	for _, glyph := range glyphs {
+		inputs = append(inputs, glyph.curvedTextGlyph)
+	}
+	placements, err := placeCurvedTextGlyphs(curvedTextCirclePath{
+		center:     center,
+		radius:     radius,
+		startAngle: startAngle,
+		clockwise:  true,
+	}, inputs, 0, opts.curvedAlign(), 0)
+	if err != nil {
+		return opts.Direction, opts.Facing
+	}
+
+	totalAdvance := 0.0
+	weightedY := 0.0
+	for _, placement := range placements {
+		totalAdvance += placement.Advance
+		weightedY += placement.Point.Y * placement.Advance
+	}
+	if totalAdvance == 0 {
+		return opts.Direction, opts.Facing
+	}
+	// Keep top/left/right spans upright by default and flip only when the text
+	// span's weighted center is clearly below the circle midline.
+	centroidY := weightedY / totalAdvance
+	mostlyBelow := centroidY < (center.Y - (radius * 0.05))
+
+	direction := opts.Direction
+	if direction == CurvedTextDirectionAuto {
+		if mostlyBelow {
+			direction = CurvedTextCounterClockwise
+		} else {
+			direction = CurvedTextClockwise
+		}
+	}
+
+	facing := opts.Facing
+	if facing == CurvedTextFacingAuto {
+		if mostlyBelow {
+			facing = CurvedTextFacingUpsideDown
+		} else {
+			facing = CurvedTextFacingUpright
+		}
+	}
+
+	return direction, facing
+}
+
 func orientCurvedTextPlacement(p curvedTextGlyphPlacement, orientation CurvedTextOrientation) curvedTextGlyphPlacement {
 	if orientation == CurvedTextOrientationInside {
 		p.Normal.X = -p.Normal.X
@@ -295,11 +351,12 @@ func (pw *PageWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, st
 	xpts := pw.units.toPts(x)
 	ypts := pw.translate(pw.units.toPts(y))
 	rpts := pw.units.toPts(r)
+	resolvedDirection, resolvedFacing := opts.resolveCircleAuto(glyphs, Location{xpts, ypts}, rpts, startAngle)
 	path := curvedTextCirclePath{
 		center:     Location{xpts, ypts},
 		radius:     rpts,
 		startAngle: startAngle,
-		clockwise:  opts.clockwise(),
+		clockwise:  resolvedDirection != CurvedTextCounterClockwise,
 	}
 
 	inputs := make([]curvedTextGlyph, 0, len(glyphs))
@@ -339,7 +396,7 @@ func (pw *PageWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, st
 		glyph := glyphs[i]
 		placement.BaselineOffset = textRiseForFont(glyph.font, glyph.fontSize, opts.VAlign)
 		placement = orientCurvedTextPlacement(placement, opts.Orientation)
-		if err := pw.showCurvedTextGlyph(glyph, placement, opts.Facing); err != nil {
+		if err := pw.showCurvedTextGlyph(glyph, placement, resolvedFacing); err != nil {
 			return err
 		}
 	}
