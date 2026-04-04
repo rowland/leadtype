@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"io"
+	"strings"
 	"testing"
 )
 
@@ -363,6 +364,52 @@ func TestResources_XObject(t *testing.T) {
 	r.write(&buf)
 
 	expectS(t, "1 0 obj\n<<\n/Font <<\n>>\n\n/XObject <<\n/Im1 2 0 R \n>>\n\n>>\nendobj\n", buf.String())
+}
+
+func TestResources_Shading(t *testing.T) {
+	var buf bytes.Buffer
+	r := newResources(1, 0)
+	obj := &indirectObject{2, 0, nil}
+	ref := &indirectObjectRef{obj}
+	r.setShading("Sh1", ref)
+	r.write(&buf)
+	s := buf.String()
+	check(t, strings.Contains(s, "/Shading"), "should contain /Shading")
+	check(t, strings.Contains(s, "/Sh1 2 0 R"), "should contain shading reference")
+}
+
+func TestResources_Pattern(t *testing.T) {
+	var buf bytes.Buffer
+	r := newResources(1, 0)
+	obj := &indirectObject{2, 0, nil}
+	ref := &indirectObjectRef{obj}
+	r.setPattern("P1", ref)
+	r.write(&buf)
+	s := buf.String()
+	check(t, strings.Contains(s, "/Pattern"), "should contain /Pattern")
+	check(t, strings.Contains(s, "/P1 2 0 R"), "should contain pattern reference")
+}
+
+func TestResources_ExtGState(t *testing.T) {
+	var buf bytes.Buffer
+	r := newResources(1, 0)
+	obj := &indirectObject{2, 0, nil}
+	ref := &indirectObjectRef{obj}
+	r.setExtGState("GS1", ref)
+	r.write(&buf)
+	s := buf.String()
+	check(t, strings.Contains(s, "/ExtGState"), "should contain /ExtGState")
+	check(t, strings.Contains(s, "/GS1 2 0 R"), "should contain ExtGState reference")
+}
+
+func TestResources_EmptyGradient(t *testing.T) {
+	var buf bytes.Buffer
+	r := newResources(1, 0)
+	r.write(&buf)
+	s := buf.String()
+	check(t, !strings.Contains(s, "/Shading"), "empty resources should not contain /Shading")
+	check(t, !strings.Contains(s, "/Pattern"), "empty resources should not contain /Pattern")
+	check(t, !strings.Contains(s, "/ExtGState"), "empty resources should not contain /ExtGState")
 }
 
 var arial1252Widths = []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0

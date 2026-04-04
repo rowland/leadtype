@@ -39,6 +39,8 @@ type DocWriter struct {
 	type0Fonts            map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
 	fontDescriptors       map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 	images                map[string]*cachedImage
+	gradientShadings      map[string]string // gradient key → shading resource name
+	gradientPatterns      map[string]string // gradient key → pattern resource name
 	assetFS               fs.FS
 	compressPages         bool
 	compressToUnicode     bool
@@ -86,7 +88,9 @@ func NewDocWriter() *DocWriter {
 		cidFonts:        make(map[string]*cidFont),
 		type0Fonts:      make(map[string]*type0Font),
 		fontDescriptors: make(map[string]*fontDescriptor),
-		images:          make(map[string]*cachedImage),
+		images:           make(map[string]*cachedImage),
+		gradientShadings: make(map[string]string),
+		gradientPatterns: make(map[string]string),
 		destinations:    make(map[string]namedDestination),
 	}
 }
@@ -762,6 +766,130 @@ func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, erro
 	dw.resources.setXObject(name, &indirectObjectRef{image})
 	dw.images[key] = &cachedImage{image: image, name: name}
 	return image, name, nil
+}
+
+func (dw *DocWriter) gradientKey(prefix string, coords []float64, stops []GradientStop) string {
+	h := sha1.New()
+	fmt.Fprintf(h, "%s:", prefix)
+	for _, c := range coords {
+		fmt.Fprintf(h, "%s,", g(c))
+	}
+	for _, s := range stops {
+		fmt.Fprintf(h, "%s:%06x,", g(s.Position), int32(s.Color))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (dw *DocWriter) registerLinearGradient(lg *LinearGradient, u *units, pageHeight float64) (string, error) {
+	x0, y0 := u.toPts(lg.X0), pageHeight-u.toPts(lg.Y0)
+	x1, y1 := u.toPts(lg.X1), pageHeight-u.toPts(lg.Y1)
+	coords := []float64{x0, y0, x1, y1}
+	return dw.registerGradientPattern("axial", coords, lg.Stops, func(fn seqGen) genWriter {
+		return newAxialShading(dw.nextSeq(), 0, x0, y0, x1, y1, fn)
+	})
+}
+
+func (dw *DocWriter) registerRadialGradient(rg *RadialGradient, u *units, pageHeight float64) (string, error) {
+	x0, y0 := u.toPts(rg.X0), pageHeight-u.toPts(rg.Y0)
+	x1, y1 := u.toPts(rg.X1), pageHeight-u.toPts(rg.Y1)
+	r0, r1 := u.toPts(rg.R0), u.toPts(rg.R1)
+	coords := []float64{x0, y0, r0, x1, y1, r1}
+	return dw.registerGradientPattern("radial", coords, rg.Stops, func(fn seqGen) genWriter {
+		return newRadialShading(dw.nextSeq(), 0, x0, y0, r0, x1, y1, r1, fn)
+	})
+}
+
+func (dw *DocWriter) registerGradientPattern(prefix string, coords []float64, stops []GradientStop, makeShading func(seqGen) genWriter) (string, error) {
+	key := dw.gradientKey(prefix, coords, stops)
+	if patName, ok := dw.gradientPatterns[key]; ok {
+		return patName, nil
+	}
+	fn, fnObjs := buildGradientFunction(dw.nextSeq, stops)
+	for _, obj := range fnObjs {
+		dw.file.body.add(obj)
+	}
+	sh := makeShading(fn)
+	shObj := sh.(seqGen)
+	dw.file.body.add(sh.(genWriter))
+	shName := fmt.Sprintf("Sh%d", len(dw.gradientShadings))
+	dw.resources.setShading(shName, &indirectObjectRef{shObj})
+	dw.gradientShadings[key] = shName
+
+	pat := newShadingPattern(dw.nextSeq(), 0, shObj)
+	dw.file.body.add(pat)
+	patName := fmt.Sprintf("P%d", len(dw.gradientPatterns))
+	dw.resources.setPattern(patName, &indirectObjectRef{pat})
+	dw.gradientPatterns[key] = patName
+	return patName, nil
+}
+
+func (dw *DocWriter) registerLinearShading(lg *LinearGradient, u *units, pageHeight float64) (string, error) {
+	x0, y0 := u.toPts(lg.X0), pageHeight-u.toPts(lg.Y0)
+	x1, y1 := u.toPts(lg.X1), pageHeight-u.toPts(lg.Y1)
+	coords := []float64{x0, y0, x1, y1}
+	return dw.registerShadingOnly("axial", coords, lg.Stops, func(fn seqGen) genWriter {
+		return newAxialShading(dw.nextSeq(), 0, x0, y0, x1, y1, fn)
+	})
+}
+
+func (dw *DocWriter) registerRadialShading(rg *RadialGradient, u *units, pageHeight float64) (string, error) {
+	x0, y0 := u.toPts(rg.X0), pageHeight-u.toPts(rg.Y0)
+	x1, y1 := u.toPts(rg.X1), pageHeight-u.toPts(rg.Y1)
+	r0, r1 := u.toPts(rg.R0), u.toPts(rg.R1)
+	coords := []float64{x0, y0, r0, x1, y1, r1}
+	return dw.registerShadingOnly("radial", coords, rg.Stops, func(fn seqGen) genWriter {
+		return newRadialShading(dw.nextSeq(), 0, x0, y0, r0, x1, y1, r1, fn)
+	})
+}
+
+func (dw *DocWriter) registerShadingOnly(prefix string, coords []float64, stops []GradientStop, makeShading func(seqGen) genWriter) (string, error) {
+	key := dw.gradientKey(prefix+"_sh", coords, stops)
+	if shName, ok := dw.gradientShadings[key]; ok {
+		return shName, nil
+	}
+	fn, fnObjs := buildGradientFunction(dw.nextSeq, stops)
+	for _, obj := range fnObjs {
+		dw.file.body.add(obj)
+	}
+	sh := makeShading(fn)
+	shObj := sh.(seqGen)
+	dw.file.body.add(sh.(genWriter))
+	shName := fmt.Sprintf("Sh%d", len(dw.gradientShadings))
+	dw.resources.setShading(shName, &indirectObjectRef{shObj})
+	dw.gradientShadings[key] = shName
+	return shName, nil
+}
+
+func (dw *DocWriter) SetFillLinearGradient(lg *LinearGradient) error {
+	return dw.CurPage().SetFillLinearGradient(lg)
+}
+
+func (dw *DocWriter) SetFillRadialGradient(rg *RadialGradient) error {
+	return dw.CurPage().SetFillRadialGradient(rg)
+}
+
+func (dw *DocWriter) ClearFillGradient() {
+	dw.CurPage().ClearFillGradient()
+}
+
+func (dw *DocWriter) SetLineLinearGradient(lg *LinearGradient) error {
+	return dw.CurPage().SetLineLinearGradient(lg)
+}
+
+func (dw *DocWriter) SetLineRadialGradient(rg *RadialGradient) error {
+	return dw.CurPage().SetLineRadialGradient(rg)
+}
+
+func (dw *DocWriter) ClearLineGradient() {
+	dw.CurPage().ClearLineGradient()
+}
+
+func (dw *DocWriter) PaintLinearGradient(lg *LinearGradient) error {
+	return dw.CurPage().PaintLinearGradient(lg)
+}
+
+func (dw *DocWriter) PaintRadialGradient(rg *RadialGradient) error {
+	return dw.CurPage().PaintRadialGradient(rg)
 }
 
 func (dw *DocWriter) ResetFonts() {

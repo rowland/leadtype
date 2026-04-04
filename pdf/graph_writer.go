@@ -114,6 +114,12 @@ func (gw *graphWriter) setMiterLimit(miterLimit float64) {
 	fmt.Fprintf(gw.wr, "%s M\n", g(miterLimit))
 }
 
+// paintShading paints the named shading, filling the current clipping
+// region (sh operator, PDF spec 8.7.4.3).
+func (gw *graphWriter) paintShading(name string) {
+	fmt.Fprintf(gw.wr, "/%s sh\n", name)
+}
+
 func (gw *graphWriter) stroke() {
 	fmt.Fprintf(gw.wr, "S\n")
 }

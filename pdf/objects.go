@@ -501,8 +501,11 @@ func (r *rectangle) write(w io.Writer) {
 
 type resources struct {
 	dictionaryObject
-	fonts    dictionary
-	xObjects dictionary
+	fonts      dictionary
+	xObjects   dictionary
+	shadings   dictionary
+	patterns   dictionary
+	extGStates dictionary
 }
 
 func (r *resources) init(seq, gen int) *resources {
@@ -534,6 +537,30 @@ func (r *resources) setXObject(name string, ref *indirectObjectRef) {
 		r.dict["XObject"] = r.xObjects
 	}
 	r.xObjects[name] = ref
+}
+
+func (r *resources) setShading(name string, ref *indirectObjectRef) {
+	if r.shadings == nil {
+		r.shadings = dictionary{}
+		r.dict["Shading"] = r.shadings
+	}
+	r.shadings[name] = ref
+}
+
+func (r *resources) setPattern(name string, ref *indirectObjectRef) {
+	if r.patterns == nil {
+		r.patterns = dictionary{}
+		r.dict["Pattern"] = r.patterns
+	}
+	r.patterns[name] = ref
+}
+
+func (r *resources) setExtGState(name string, ref *indirectObjectRef) {
+	if r.extGStates == nil {
+		r.extGStates = dictionary{}
+		r.dict["ExtGState"] = r.extGStates
+	}
+	r.extGStates[name] = ref
 }
 
 type seqGen interface {

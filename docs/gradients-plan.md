@@ -112,12 +112,12 @@ For a two-stop gradient, a single Type 2 function with `N=1` maps `t` linearly f
 
 ### Checklist
 
-- [ ] Define `GradientStop`, `LinearGradient`, `RadialGradient` in `pdf/gradient.go`
-- [ ] Add `validate()` methods that return descriptive errors
-- [ ] Implement `exponentialFunction` (Type 2 PDF function)
-- [ ] Implement `stitchingFunction` (Type 3 PDF function) for multi-stop gradients
-- [ ] Implement `shadingDict` construction for axial (Type 2) and radial (Type 3)
-- [ ] Unit tests in `pdf/gradient_test.go`: serialise each object type and compare expected PDF syntax
+- [x] Define `GradientStop`, `LinearGradient`, `RadialGradient` in `pdf/gradient.go`
+- [x] Add `validate()` methods that return descriptive errors
+- [x] Implement `exponentialFunction` (Type 2 PDF function)
+- [x] Implement `stitchingFunction` (Type 3 PDF function) for multi-stop gradients
+- [x] Implement `shadingDict` construction for axial (Type 2) and radial (Type 3)
+- [x] Unit tests in `pdf/gradient_test.go`: serialise each object type and compare expected PDF syntax
 
 ---
 
@@ -177,10 +177,10 @@ Fields: `/PatternType 2`, `/Shading <ref>`, optional `/Matrix`.
 
 ### Checklist
 
-- [ ] Add `shadings`, `patterns`, `extGStates` fields to `resources`
-- [ ] Add `setShading`, `setPattern`, `setExtGState` methods
-- [ ] Implement `shadingPattern` (Type 2 pattern) in `pdf/gradient.go`
-- [ ] Unit tests: verify resource dictionary serialisation includes `/Shading`, `/Pattern`, `/ExtGState` entries only when populated
+- [x] Add `shadings`, `patterns`, `extGStates` fields to `resources`
+- [x] Add `setShading`, `setPattern`, `setExtGState` methods
+- [x] Implement `shadingPattern` (Type 2 pattern) in `pdf/gradient.go`
+- [x] Unit tests: verify resource dictionary serialisation includes `/Shading`, `/Pattern`, `/ExtGState` entries only when populated
 
 ---
 
@@ -222,11 +222,11 @@ func (gw *graphWriter) paintShading(name string) {
 
 ### Checklist
 
-- [ ] Add `setColorFillPattern` and `setColorStrokePattern` to `miscWriter`
-- [ ] Add `setExtGState` to `miscWriter`
-- [ ] Add `paintShading` to `graphWriter`
-- [ ] Update TODO comment at `misc_writer.go:43` (remove or mark done)
-- [ ] Unit tests in `pdf/misc_writer_test.go` and `pdf/graph_writer_test.go` for each new operator
+- [x] Add `setColorFillPattern` and `setColorStrokePattern` to `miscWriter`
+- [x] Add `setExtGState` to `miscWriter`
+- [x] Add `paintShading` to `graphWriter`
+- [x] Update TODO comment at `misc_writer.go:43` (remove or mark done)
+- [x] Unit tests in `pdf/misc_writer_test.go` and `pdf/graph_writer_test.go` for each new operator
 
 ---
 
@@ -340,19 +340,19 @@ Gradient coordinates must be converted from the caller's unit system to PDF poin
 
 ### Checklist
 
-- [ ] Add `fillGradient`, `lineGradient` to `drawState`
-- [ ] Add `gradientState` type
-- [ ] Add `SetFillLinearGradient`, `SetFillRadialGradient` to `PageWriter`
-- [ ] Add `SetLineLinearGradient`, `SetLineRadialGradient` to `PageWriter`
-- [ ] Add `ClearFillGradient`, `ClearLineGradient` to `PageWriter`
-- [ ] Add `PaintLinearGradient`, `PaintRadialGradient` to `PageWriter`
-- [ ] Implement `checkSetFillGradient` and `checkSetLineGradient`
-- [ ] Integrate gradient checks into existing draw paths (`Fill`, `FillAndStroke`, `Path`, etc.)
-- [ ] Add `cachedGradient` map and `registerGradient` to `DocWriter`
-- [ ] Add forwarding methods to `DocWriter`
-- [ ] Handle unit conversion and Y-axis flip for gradient coordinates
-- [ ] Unit tests: state transitions, operator emission, gradient-to-solid revert
-- [ ] Unit tests: gradient caching and deduplication in `DocWriter`
+- [x] Add `fillGradient`, `lineGradient` to `drawState`
+- [x] Add `gradientState` type (simplified to pattern name string)
+- [x] Add `SetFillLinearGradient`, `SetFillRadialGradient` to `PageWriter`
+- [x] Add `SetLineLinearGradient`, `SetLineRadialGradient` to `PageWriter`
+- [x] Add `ClearFillGradient`, `ClearLineGradient` to `PageWriter`
+- [x] Add `PaintLinearGradient`, `PaintRadialGradient` to `PageWriter`
+- [x] Implement `checkSetFillGradient` and `checkSetLineGradient`
+- [x] Integrate gradient checks into existing draw paths (`Fill`, `FillAndStroke`, `Path`, etc.)
+- [x] Add `cachedGradient` map and `registerGradient` to `DocWriter`
+- [x] Add forwarding methods to `DocWriter`
+- [x] Handle unit conversion and Y-axis flip for gradient coordinates
+- [x] Unit tests: state transitions, operator emission, gradient-to-solid revert
+- [x] Unit tests: gradient caching and deduplication in `DocWriter`
 
 ---
 
@@ -503,14 +503,14 @@ func runTest021Gradients() (string, error) {
 
 ### Checklist
 
-- [ ] Unit tests for gradient type validation
-- [ ] Unit tests for PDF object serialisation (shading, function, pattern)
-- [ ] Unit tests for new `miscWriter` and `graphWriter` operators
-- [ ] Unit tests for resource dictionary extensions
-- [ ] State management tests in `page_writer_test.go`
+- [x] Unit tests for gradient type validation
+- [x] Unit tests for PDF object serialisation (shading, function, pattern)
+- [x] Unit tests for new `miscWriter` and `graphWriter` operators
+- [x] Unit tests for resource dictionary extensions
+- [x] State management tests in `page_writer_test.go`
 - [ ] Golden file tests for linear and radial gradients
-- [ ] Sample `test_021_gradients.go` demonstrating all gradient types
-- [ ] Verify all existing tests pass (`go test ./...`)
+- [x] Sample `test_021_gradients.go` demonstrating all gradient types
+- [x] Verify all existing tests pass (`go test ./...`)
 
 ---
 
@@ -576,9 +576,9 @@ Supply more than two stops to create multi-colour transitions:
 
 ### Checklist
 
-- [ ] Godoc comments on all exported types and methods in `gradient.go`
-- [ ] Godoc comments on new `PageWriter` methods
-- [ ] Godoc comments on new `miscWriter` and `graphWriter` methods
+- [x] Godoc comments on all exported types and methods in `gradient.go`
+- [x] Godoc comments on new `PageWriter` methods
+- [x] Godoc comments on new `miscWriter` and `graphWriter` methods
 - [ ] User documentation with examples for linear, radial, multi-stop, and clearing
 
 ---
@@ -647,46 +647,46 @@ None. The implementation uses only the standard library, consistent with the pro
 ## Master checklist
 
 ### Phase 1 — Gradient types and shading objects
-- [ ] `GradientStop`, `LinearGradient`, `RadialGradient` types
-- [ ] `validate()` methods with descriptive errors
-- [ ] `exponentialFunction` (PDF Type 2 function)
-- [ ] `stitchingFunction` (PDF Type 3 function)
-- [ ] `shadingDict` for axial and radial shadings
-- [ ] Unit tests for all new types and serialisation
+- [x] `GradientStop`, `LinearGradient`, `RadialGradient` types
+- [x] `validate()` methods with descriptive errors
+- [x] `exponentialFunction` (PDF Type 2 function)
+- [x] `stitchingFunction` (PDF Type 3 function)
+- [x] `shadingDict` for axial and radial shadings
+- [x] Unit tests for all new types and serialisation
 
 ### Phase 2 — Resource dictionary extensions
-- [ ] `shadings`, `patterns`, `extGStates` on `resources`
-- [ ] `setShading`, `setPattern`, `setExtGState` methods
-- [ ] `shadingPattern` (PDF Type 2 pattern)
-- [ ] Unit tests for resource serialisation
+- [x] `shadings`, `patterns`, `extGStates` on `resources`
+- [x] `setShading`, `setPattern`, `setExtGState` methods
+- [x] `shadingPattern` (PDF Type 2 pattern)
+- [x] Unit tests for resource serialisation
 
 ### Phase 3 — Content stream operators
-- [ ] `setColorFillPattern` (`scn`) on `miscWriter`
-- [ ] `setColorStrokePattern` (`SCN`) on `miscWriter`
-- [ ] `setExtGState` (`gs`) on `miscWriter`
-- [ ] `paintShading` (`sh`) on `graphWriter`
-- [ ] Remove/resolve TODO comment at `misc_writer.go:43`
-- [ ] Unit tests for each new operator
+- [x] `setColorFillPattern` (`scn`) on `miscWriter`
+- [x] `setColorStrokePattern` (`SCN`) on `miscWriter`
+- [x] `setExtGState` (`gs`) on `miscWriter`
+- [x] `paintShading` (`sh`) on `graphWriter`
+- [x] Remove/resolve TODO comment at `misc_writer.go:43`
+- [x] Unit tests for each new operator
 
 ### Phase 4 — PageWriter integration
-- [ ] `fillGradient`, `lineGradient` on `drawState`
-- [ ] `SetFillLinearGradient`, `SetFillRadialGradient` on `PageWriter`
-- [ ] `SetLineLinearGradient`, `SetLineRadialGradient` on `PageWriter`
-- [ ] `ClearFillGradient`, `ClearLineGradient` on `PageWriter`
-- [ ] `PaintLinearGradient`, `PaintRadialGradient` on `PageWriter`
-- [ ] `checkSetFillGradient`, `checkSetLineGradient`
-- [ ] Integrate gradient checks into existing draw paths
-- [ ] `cachedGradient` map and `registerGradient` on `DocWriter`
-- [ ] Forwarding methods on `DocWriter`
-- [ ] Unit conversion and Y-axis flip for gradient coordinates
-- [ ] Unit tests for state transitions and caching
+- [x] `fillGradient`, `lineGradient` on `drawState`
+- [x] `SetFillLinearGradient`, `SetFillRadialGradient` on `PageWriter`
+- [x] `SetLineLinearGradient`, `SetLineRadialGradient` on `PageWriter`
+- [x] `ClearFillGradient`, `ClearLineGradient` on `PageWriter`
+- [x] `PaintLinearGradient`, `PaintRadialGradient` on `PageWriter`
+- [x] `checkSetFillGradient`, `checkSetLineGradient`
+- [x] Integrate gradient checks into existing draw paths
+- [x] `cachedGradient` map and `registerGradient` on `DocWriter`
+- [x] Forwarding methods on `DocWriter`
+- [x] Unit conversion and Y-axis flip for gradient coordinates
+- [x] Unit tests for state transitions and caching
 
 ### Phase 5 — Tests and samples
 - [ ] Golden file tests for linear and radial gradients
-- [ ] Integration sample `test_021_gradients.go`
-- [ ] Verify all existing tests pass (`go test ./...`)
+- [x] Integration sample `test_021_gradients.go`
+- [x] Verify all existing tests pass (`go test ./...`)
 
 ### Phase 6 — Code comments and user documentation
-- [ ] Godoc comments on all exported gradient types and methods
-- [ ] Godoc comments on new operator methods
+- [x] Godoc comments on all exported gradient types and methods
+- [x] Godoc comments on new operator methods
 - [ ] User-facing documentation with examples
