@@ -642,6 +642,61 @@ func TestParse_LabelAndBrAlias(t *testing.T) {
 	}
 }
 
+func TestParse_PredefinedInlineSpanAliases(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <label><i>italic</i><u>underline</u><s>strike</s></label>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.ltmls[0].Page(0)
+	if page == nil {
+		t.Fatal("page is nil")
+	}
+	label, ok := page.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("first child type = %T, want *StdLabel", page.children[0])
+	}
+	if len(label.textPieces) != 3 {
+		t.Fatalf("text piece count = %d, want 3", len(label.textPieces))
+	}
+
+	cases := []struct {
+		index      int
+		text       string
+		style      string
+		underline  bool
+		strikeout  bool
+	}{
+		{index: 0, text: "italic", style: "Italic"},
+		{index: 1, text: "underline", underline: true},
+		{index: 2, text: "strike", strikeout: true},
+	}
+
+	for _, tc := range cases {
+		piece := label.textPieces[tc.index]
+		if got := piece.ResolvedText(nil); got != tc.text {
+			t.Fatalf("piece %d text = %q, want %q", tc.index, got, tc.text)
+		}
+		if piece.font == nil {
+			t.Fatalf("piece %d font is nil", tc.index)
+		}
+		if piece.font.style != tc.style {
+			t.Fatalf("piece %d style = %q, want %q", tc.index, piece.font.style, tc.style)
+		}
+		if piece.font.underline != tc.underline {
+			t.Fatalf("piece %d underline = %v, want %v", tc.index, piece.font.underline, tc.underline)
+		}
+		if piece.font.strikeout != tc.strikeout {
+			t.Fatalf("piece %d strikeout = %v, want %v", tc.index, piece.font.strikeout, tc.strikeout)
+		}
+	}
+}
+
 func leafFontSizes(rt *rich_text.RichText) []float64 {
 	var sizes []float64
 	rt.VisitAll(func(p *rich_text.RichText) {
