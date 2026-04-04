@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -115,6 +116,49 @@ func TestMostCommonWidth_Empty(t *testing.T) {
 }
 
 // ── Type0 / Unicode mode integration ─────────────────────────────────────────
+
+func systemFontSourceSupportingRune(t *testing.T, r rune, preferredFamilies ...string) (font.FontSource, string) {
+	t.Helper()
+
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Skipf("system fonts unavailable: %v", err)
+	}
+
+	tryFamily := func(family string) bool {
+		f, err := font.New(family, options.Options{}, font.FontSources{fc})
+		if err != nil {
+			return false
+		}
+		return f.GlyphIndex(r) != 0
+	}
+
+	for _, family := range preferredFamilies {
+		if tryFamily(family) {
+			return fc, family
+		}
+	}
+
+	seen := make(map[string]bool, len(fc.FontInfos))
+	families := make([]string, 0, len(fc.FontInfos))
+	for _, fi := range fc.FontInfos {
+		family := fi.Family()
+		if family == "" || seen[family] {
+			continue
+		}
+		seen[family] = true
+		families = append(families, family)
+	}
+	sort.Strings(families)
+	for _, family := range families {
+		if tryFamily(family) {
+			return fc, family
+		}
+	}
+
+	t.Skipf("no system font found with glyph for %U", r)
+	return nil, ""
+}
 
 // TestUnicodeMode_Type0FontInOutput verifies that NewDocWriterUnicode produces
 // a /Type0 composite font instead of a simple TrueType font.
@@ -356,6 +400,44 @@ func TestUnicodeMode_MultiScriptSingleTj(t *testing.T) {
 	if tjCount != 1 {
 		t.Errorf("expected 1 Tj operator for single-font multi-script string, got %d\npdf excerpt:\n%s",
 			tjCount, extractSection(pdf, "BT", 300))
+	}
+}
+
+func TestUnicodeMode_RenderEmoji_SystemFont(t *testing.T) {
+	fc, family := systemFontSourceSupportingRune(t, '😀', "Apple Color Emoji", "Apple Color Emoji UI")
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont(%q): %v", family, err)
+	}
+	if len(fonts) == 0 || fonts[0].GlyphIndex('😀') == 0 {
+		t.Fatalf("font %q does not expose a glyph for U+1F600 after selection", family)
+	}
+	pw.MoveTo(72, 720)
+	pw.Print("😀")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if !strings.Contains(pdf, "/Type0") {
+		t.Fatalf("expected /Type0 in emoji PDF, got excerpt:\n%s", extractSection(pdf, "/Type0", 300))
+	}
+	if !strings.Contains(pdf, "/ToUnicode") {
+		t.Fatalf("expected /ToUnicode in emoji PDF, got excerpt:\n%s", extractSection(pdf, "/ToUnicode", 300))
+	}
+	if !strings.Contains(pdf, "<D83DDE00>") {
+		t.Fatalf("expected emoji ToUnicode mapping via UTF-16 surrogate pair, got CMap:\n%s", extractCMapSection(pdf))
+	}
+	if !strings.Contains(pdf, "/CIDToGIDMap") {
+		t.Fatalf("expected composite font CIDToGIDMap in emoji PDF, got excerpt:\n%s", extractSection(pdf, "/CIDFontType2", 400))
+	}
+	if got := strings.Count(extractSection(pdf, "BT", 300), " Tj\n"); got != 1 {
+		t.Fatalf("expected a single glyph show operation for emoji render, got %d", got)
 	}
 }
 

@@ -18,6 +18,7 @@ Run a sample and write its PDF into `samples/`:
 
 ```bash
 go run ./samples test_003_hello_world
+go run ./samples test_022_emoji
 ```
 
 Open the generated PDF after writing it:

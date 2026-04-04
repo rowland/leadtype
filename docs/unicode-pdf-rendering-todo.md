@@ -119,7 +119,7 @@ See [development-process.md](development-process.md) for testing strategy and fi
 - [x] Integration test: render ASCII text in Unicode mode, verify output matches simple-font path
 - [ ] Integration test: render Greek + Cyrillic mixed string in a single font call
 - [ ] Integration test: render a sample of CJK characters (requires a CJK font on disk)
-- [ ] Integration test: render emoji (requires a color/emoji font — may be stretch goal)
+- [x] Integration test: render emoji (system font, skips cleanly when unavailable)
 - [x] Verify existing simple-font tests still pass unchanged
 
 ---

@@ -42,6 +42,7 @@ func TestPrintCapabilitiesSorted(t *testing.T) {
 	want := strings.Join([]string{
 		"arabic\tfonts whose OS/2 Unicode ranges indicate Arabic support",
 		"arabic-shaping\tfonts with Arabic Unicode coverage and OpenType shaping tables",
+		"emoji\tfonts with outline glyph coverage for representative emoji-style symbols",
 	}, "\n")
 	if got != want {
 		t.Fatalf("unexpected capabilities output: %q", got)

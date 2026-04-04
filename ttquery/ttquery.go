@@ -34,6 +34,13 @@ var capabilities = map[string]capability{
 			return supportsArabic(fi.CharRanges()) && fi.HasOpenTypeShaping()
 		},
 	},
+	"emoji": {
+		name:        "emoji",
+		description: "fonts with outline glyph coverage for representative emoji-style symbols",
+		matches: func(fi *ttf.FontInfo) bool {
+			return supportsEmoji(fi)
+		},
+	},
 }
 
 type fontMatch struct {
@@ -141,6 +148,39 @@ func supportsArabic(ranges *ttf.CharRanges) bool {
 		return false
 	}
 	return ranges.IsSet(13) || ranges.IsSet(63) || ranges.IsSet(67)
+}
+
+var emojiProbeRunes = []rune{
+	'☺', // U+263A white smiling face
+	'❤', // U+2764 heavy black heart
+	'✈', // U+2708 airplane
+	'✉', // U+2709 envelope
+	'☀', // U+2600 black sun with rays
+}
+
+func supportsEmoji(fi *ttf.FontInfo) bool {
+	if fi == nil {
+		return false
+	}
+	if !fi.HasTable("glyf") || !fi.HasTable("loca") {
+		return false
+	}
+	for _, tag := range []string{"CBDT", "CBLC", "sbix", "COLR", "CPAL", "SVG "} {
+		if fi.HasTable(tag) {
+			return false
+		}
+	}
+
+	font, err := ttf.LoadFontAtOffset(fi.Filename(), fi.TTCOffset())
+	if err != nil {
+		return false
+	}
+	for _, r := range emojiProbeRunes {
+		if font.GlyphIndex(r) == 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func printCapabilities(w io.Writer) {

@@ -68,6 +68,7 @@ Leadtype also includes Go-based samples that exercise the lower-level PDF and fo
 go run ./samples -list
 go run ./samples test_003_hello_world
 go run ./samples test_009_unicode_ttf
+go run ./samples test_022_emoji
 ```
 
 Run the standard project checks:
@@ -138,6 +139,7 @@ Leadtype includes a few focused utilities:
 - [`cmd/render-ltml`](cmd/render-ltml): render an LTML document to PDF locally or submit it to a remote render service.
 - [`cmd/serve-ltml`](cmd/serve-ltml): run an HTTP service that accepts LTML plus uploaded assets and returns PDFs.
 - [`ttdump/`](ttdump/): inspect TrueType font metadata.
+- [`ttquery/`](ttquery/): query installed TrueType fonts for capabilities such as Arabic shaping or emoji coverage.
 
 You can run them from the repository:
 
@@ -145,6 +147,8 @@ You can run them from the repository:
 go run ./cmd/render-ltml -h
 go run ./cmd/serve-ltml -h
 go run ./ttdump -h
+go run ./ttquery capabilities
+go run ./ttquery emoji
 ```
 
 Or install them:
@@ -153,6 +157,7 @@ Or install them:
 go install github.com/rowland/leadtype/cmd/render-ltml@latest
 go install github.com/rowland/leadtype/cmd/serve-ltml@latest
 go install github.com/rowland/leadtype/ttdump@latest
+go install github.com/rowland/leadtype/ttquery@latest
 ```
 
 ## Project Layout
