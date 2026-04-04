@@ -21,7 +21,7 @@ definitions and one or more `<page>` elements.
 
 Both `<ltml>` and `<page>` establish a style scope. Style definitions
 (`<font>`, `<pen>`, `<brush>`, `<para>`, `<bullet>`, `<layout>`), aliases
-(`<define>`), and selector styles (`<style>`; legacy `<rules>`) placed inside a
+(`<define>`), and selector styles (`<style>`) placed inside a
 `<page>` are visible only to that page. Definitions placed directly inside
 `<ltml>` are visible to all pages. A page can always reference definitions from
 its parent `<ltml>` scope, but other pages cannot see definitions made inside a
@@ -599,9 +599,6 @@ tiers before specificity and source order are considered. Default tiers are:
 - document-scope `<ltml><style>`: `0`
 - page-scope `<page><style>`: `1`
 
-The legacy `<rules>` tag remains supported for compatibility, but `<style>` is
-the preferred tag going forward.
-
 Attribute priority (lowest to highest):
 1. Default attributes from an alias (`<define>`)
 2. Attributes from matching rules, ordered by tier, then specificity, then declaration order
@@ -847,10 +844,10 @@ Hexadecimal color notation (e.g., `#ff0000`) is also accepted.
 
 ```xml
 <ltml units="in" margin="1">
-  <rules>
+  <style>
     p.heading { font.size: 18; font.weight: Bold; style.text-align: center; }
     p.body    { font.size: 11; style.text-align: justify; }
-  </rules>
+  </style>
   <page>
     <p class="heading">Section Title</p>
     <p class="body">Body text goes here.</p>

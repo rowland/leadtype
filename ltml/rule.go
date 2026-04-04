@@ -52,10 +52,9 @@ func NewRule(selector string, attrs map[string]string, tier, order int) *Rule {
 	}
 }
 
-// Rules is the in-memory representation of a <style> or legacy <rules> block.
-// It holds zero or more Rule values parsed from CSS-like text and is registered
-// with the enclosing Scope so that elements can be matched against them during
-// parsing.
+// Rules is the in-memory representation of a <style> block. It holds zero or
+// more Rule values parsed from CSS-like text and is registered with the
+// enclosing Scope so that elements can be matched against them during parsing.
 type Rules struct {
 	rules         []*Rule
 	tier          int
@@ -102,11 +101,11 @@ func (r *Rules) SetAttrs(attrs map[string]string) {
 	}
 	tier, err := strconv.Atoi(strings.TrimSpace(tierText))
 	if err != nil {
-		r.parseErr = fmt.Errorf("invalid rules tier %q", tierText)
+		r.parseErr = fmt.Errorf("invalid style tier %q", tierText)
 		return
 	}
 	if tier < 0 {
-		r.parseErr = fmt.Errorf("invalid rules tier %q: tier must be >= 0", tierText)
+		r.parseErr = fmt.Errorf("invalid style tier %q: tier must be >= 0", tierText)
 		return
 	}
 	r.tier = tier
@@ -146,7 +145,6 @@ func stripCSSComments(s string) string {
 
 func init() {
 	registerTag(DefaultSpace, "style", func() any { return &Rules{} })
-	registerTag(DefaultSpace, "rules", func() any { return &Rules{} })
 }
 
 var _ HasAttrs = (*Rules)(nil)

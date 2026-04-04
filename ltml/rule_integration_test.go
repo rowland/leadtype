@@ -54,7 +54,7 @@ func firstParagraph(t *testing.T, doc *Doc) *StdParagraph {
 func TestRules_integration_tag_rule_sets_font_size(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 14; }</rules>
+			<style>p { font.size: 14; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
@@ -90,7 +90,7 @@ func TestRules_integration_style_tag_sets_font_size(t *testing.T) {
 func TestRules_integration_class_rule_sets_font_weight(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p.bold { font.weight: Bold; }</rules>
+			<style>p.bold { font.weight: Bold; }</style>
 			<page>
 				<p class="bold">bold text</p>
 			</page>
@@ -112,7 +112,7 @@ func TestRules_integration_class_rule_sets_font_weight(t *testing.T) {
 func TestRules_integration_class_rule_does_not_affect_unmatched_element(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p.special { font.size: 20; }</rules>
+			<style>p.special { font.size: 20; }</style>
 			<page><p>plain paragraph</p></page>
 		</ltml>`)
 
@@ -130,7 +130,7 @@ func TestRules_integration_class_rule_does_not_affect_unmatched_element(t *testi
 func TestRules_integration_direct_attrs_override_rule(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 14; }</rules>
+			<style>p { font.size: 14; }</style>
 			<page><p font.size="20">hello</p></page>
 		</ltml>`)
 
@@ -146,9 +146,9 @@ func TestRules_integration_direct_attrs_override_rule(t *testing.T) {
 func TestRules_integration_page_default_tier_beats_document_default_tier(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 14; }</rules>
+			<style>p { font.size: 14; }</style>
 			<page>
-				<rules>p { font.size: 20; }</rules>
+				<style>p { font.size: 20; }</style>
 				<p>hello</p>
 			</page>
 		</ltml>`)
@@ -167,7 +167,7 @@ func TestRules_integration_document_override_tier_beats_page_default_tier(t *tes
 		<ltml>
 			<style tier="4">p { font.size: 22; }</style>
 			<page>
-				<rules>p { font.size: 18; }</rules>
+				<style>p { font.size: 18; }</style>
 				<p>hello</p>
 			</page>
 		</ltml>`)
@@ -181,27 +181,33 @@ func TestRules_integration_document_override_tier_beats_page_default_tier(t *tes
 	}
 }
 
-func TestRules_integration_legacy_rules_tag_remains_supported(t *testing.T) {
+func TestRules_integration_style_tag_sets_font_size_without_tier(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 16; }</rules>
+			<style>p { font.size: 16; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
 	p := firstParagraph(t, doc)
 	if p.font == nil {
-		t.Fatal("font was not set on paragraph by legacy rules tag")
+		t.Fatal("font was not set on paragraph by style tag")
 	}
 	if p.font.size != 16 {
 		t.Errorf("expected font size 16, got %v", p.font.size)
 	}
 }
 
+func TestRules_integration_rules_tag_is_not_registered(t *testing.T) {
+	if got := makeElement(DefaultSpace, "rules"); got != nil {
+		t.Fatalf("makeElement(%q, %q) = %T, want nil", DefaultSpace, "rules", got)
+	}
+}
+
 func TestRules_integration_higher_document_tier_beats_lower_document_tier(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules tier="4">p { font.size: 18; }</rules>
-			<rules tier="5">p { font.size: 24; }</rules>
+			<style tier="4">p { font.size: 18; }</style>
+			<style tier="5">p { font.size: 24; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
@@ -221,7 +227,7 @@ func TestRules_integration_higher_document_tier_beats_lower_document_tier(t *tes
 func TestRules_integration_comment_rule_applies(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules><!-- p { font.size: 16; } --></rules>
+			<style><!-- p { font.size: 16; } --></style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
@@ -241,7 +247,7 @@ func TestRules_integration_comment_rule_applies(t *testing.T) {
 func TestRules_integration_later_rule_wins(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 10; } p { font.size: 18; }</rules>
+			<style>p { font.size: 10; } p { font.size: 18; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
@@ -257,7 +263,7 @@ func TestRules_integration_later_rule_wins(t *testing.T) {
 func TestRules_integration_more_specific_rule_wins_within_tier(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 10; } p.intro { font.size: 16; }</rules>
+			<style>p { font.size: 10; } p.intro { font.size: 16; }</style>
 			<page><p class="intro">hello</p></page>
 		</ltml>`)
 
@@ -273,7 +279,7 @@ func TestRules_integration_more_specific_rule_wins_within_tier(t *testing.T) {
 func TestRules_integration_id_rule_wins_over_class_rule_within_tier(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p.intro { font.size: 16; } p#hero { font.size: 19; }</rules>
+			<style>p.intro { font.size: 16; } p#hero { font.size: 19; }</style>
 			<page><p id="hero" class="intro">hello</p></page>
 		</ltml>`)
 
@@ -289,7 +295,7 @@ func TestRules_integration_id_rule_wins_over_class_rule_within_tier(t *testing.T
 func TestRules_integration_descendant_rule_beats_tag_rule_on_tag_count_tiebreak(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 10; } div p { font.size: 15; }</rules>
+			<style>p { font.size: 10; } div p { font.size: 15; }</style>
 			<page>
 				<div><p>nested paragraph</p></div>
 			</page>
@@ -314,7 +320,7 @@ func TestRules_integration_descendant_rule_applies(t *testing.T) {
 	// The rule targets "div p" — a <p> inside a <div>.
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>div p { font.size: 15; }</rules>
+			<style>div p { font.size: 15; }</style>
 			<page>
 				<div><p>nested paragraph</p></div>
 			</page>
@@ -347,7 +353,7 @@ func TestRules_integration_descendant_rule_does_not_apply_without_ancestor(t *te
 	// The rule targets "div p" — a bare <p> at page level should not match.
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>div p { font.size: 15; }</rules>
+			<style>div p { font.size: 15; }</style>
 			<page><p>bare paragraph</p></page>
 		</ltml>`)
 
@@ -365,7 +371,7 @@ func TestRules_integration_descendant_rule_does_not_apply_without_ancestor(t *te
 func TestRules_integration_direct_child_rule_applies_to_immediate_child(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>div>p { font.size: 17; }</rules>
+			<style>div>p { font.size: 17; }</style>
 			<page>
 				<div><p>direct child</p></div>
 			</page>
@@ -396,7 +402,7 @@ func TestRules_integration_direct_child_rule_does_not_match_p_inside_p(t *testin
 	// one (path div/p/p) should be unaffected.
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>div>p { font.size: 17; }</rules>
+			<style>div>p { font.size: 17; }</style>
 			<page>
 				<div><p>outer<p>inner</p></p></div>
 			</page>
@@ -435,7 +441,7 @@ func TestRules_integration_direct_child_rule_does_not_match_p_inside_p(t *testin
 func TestRules_integration_id_and_class_selector_matches_exact_element(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p#intro.highlight { font.size: 22; }</rules>
+			<style>p#intro.highlight { font.size: 22; }</style>
 			<page>
 				<p id="intro" class="highlight">targeted</p>
 			</page>
@@ -454,7 +460,7 @@ func TestRules_integration_id_and_class_selector_requires_both(t *testing.T) {
 	// Same rule but the element only has the id, not the class — should not match.
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p#intro.highlight { font.size: 22; }</rules>
+			<style>p#intro.highlight { font.size: 22; }</style>
 			<page>
 				<p id="intro">id only, no class</p>
 			</page>
@@ -480,7 +486,7 @@ func TestRules_integration_builtin_alias_targeted_by_alias_name(t *testing.T) {
 	// <h> is a built-in alias for <p>. The rule uses "h", not "p".
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>h { font.size: 24; }</rules>
+			<style>h { font.size: 24; }</style>
 			<page><h>heading text</h></page>
 		</ltml>`)
 
@@ -506,7 +512,7 @@ func TestRules_integration_underlying_type_rule_does_not_apply_to_alias(t *testi
 	// <h> is an alias for <p>, but a rule for "p" should not match <h>.
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 14; }</rules>
+			<style>p { font.size: 14; }</style>
 			<page><h>heading text</h></page>
 		</ltml>`)
 
@@ -529,7 +535,7 @@ func TestRules_integration_user_defined_alias_targeted_by_alias_name(t *testing.
 	doc := parseDoc(t, `
 		<ltml>
 			<define id="caption" tag="p" />
-			<rules>caption { font.size: 10; }</rules>
+			<style>caption { font.size: 10; }</style>
 			<page><caption>fig. 1</caption></page>
 		</ltml>`)
 
@@ -556,7 +562,7 @@ func TestRules_integration_user_defined_alias_targeted_by_alias_name(t *testing.
 func TestRules_integration_rule_with_multiple_attrs(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p { font.size: 13; font.weight: Bold; }</rules>
+			<style>p { font.size: 13; font.weight: Bold; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
@@ -575,7 +581,7 @@ func TestRules_integration_rule_with_multiple_attrs(t *testing.T) {
 func TestRules_integration_grouped_selectors_apply_independently(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<rules>p, span { font.size: 13; }</rules>
+			<style>p, span { font.size: 13; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)
 
@@ -591,7 +597,7 @@ func TestRules_integration_grouped_selectors_apply_independently(t *testing.T) {
 func TestRules_integration_invalid_tier_returns_parse_error(t *testing.T) {
 	if _, err := Parse([]byte(`
 		<ltml>
-			<rules tier="-1">p { font.size: 14; }</rules>
+			<style tier="-1">p { font.size: 14; }</style>
 			<page><p>hello</p></page>
 		</ltml>`)); err == nil {
 		t.Fatal("expected invalid tier to return parse error")

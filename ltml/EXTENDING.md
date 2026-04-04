@@ -123,7 +123,7 @@ Custom page sizes can be defined in LTML markup using the `<pagestyle>` tag
 (registered as `"std:pagestyle"`). After its attributes are applied the
 element is registered in the current scope via `AddPageStyle`, making the
 named size available to subsequent `<page style="...">` elements — the same
-pattern used by `<layoutstyle>`, `<define>`, and `<rules>`.
+pattern used by `<layoutstyle>`, `<define>`, and `<style>`.
 
 ---
 
@@ -445,7 +445,7 @@ Attributes are applied to an element in this order (each overrides the previous)
 1. **Alias defaults** — `Attrs` map from the matching `*Alias`, if the tag name
    resolved through an alias.
 2. **Rule attributes** — for each `Rule` whose selector matches the element's
-   path, attributes from `<style>` blocks (and legacy `<rules>` blocks) are
+   path, attributes from `<style>` blocks are
    applied in cascade order: lower `tier`, then lower selector specificity,
    then earlier declarations.
 3. **Direct XML attributes** — the actual attributes written on the tag in the
