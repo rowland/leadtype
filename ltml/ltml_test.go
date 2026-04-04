@@ -186,6 +186,7 @@ func TestSamples(t *testing.T) {
 		"test_034_svg_image",
 		"test_035_links",
 		"test_036_indexes",
+		"test_037_relative_layout",
 	}
 
 	for _, sample := range samples {
