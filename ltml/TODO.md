@@ -72,14 +72,14 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
 
 - [x] Add widget transform/placement attrs
   - [x] `rotate`
-  - [x] `origin_x`
-  - [x] `origin_y`
+  - [x] `origin-x`
+  - [x] `origin-y`
   - [x] `shift`
-  - [x] `z_index`
+  - [x] `z-index`
 - [x] define how transforms interact with layout bounds and printing order
 - [x] implement graphics-state handling through the PDF writer
 - [x] add tests for rotated and shifted widgets
-- [x] define whether `z_index` is true stacking order or best-effort ordering and document it
+- [x] define whether `z-index` is true stacking order or best-effort ordering and document it
 
 ### StdDocument Writer Configuration ([#18](https://github.com/rowland/leadtype/issues/18))
 

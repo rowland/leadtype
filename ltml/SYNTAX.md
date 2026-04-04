@@ -111,8 +111,8 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `border`           | Reference to a named `<pen>` style. |
 | `fill`             | Reference to a named `<brush>` style. |
 | `rotate`           | Rotate the widget around its origin by the given degrees. |
-| `origin_x`         | Rotation origin on the x axis: `left`, `center`, `right`, or a measurement. |
-| `origin_y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
+| `origin-x`         | Rotation origin on the x axis: `left`, `center`, `right`, or a measurement. |
+| `origin-y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
 | `shift`            | Offset the widget after layout using `x,y` measurements. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
 | `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`. |
@@ -190,7 +190,7 @@ boxes.
 ```xml
 <circle width="1.5in" height="1.5in" border="solid" fill="LightBlue" />
 <polygon width="1.5in" height="1.5in" sides="6" rotation="30" border="solid" fill="Gold" />
-<pie width="1.5in" height="1.5in" start_angle="30" end_angle="150" border="solid" fill="Pink" />
+<pie width="1.5in" height="1.5in" start-angle="30" end-angle="150" border="solid" fill="Pink" />
 ```
 
 Shared attributes:
@@ -211,9 +211,9 @@ Shape-specific attributes:
 | `<ellipse>` | `rx`, `ry` for explicit radii. Otherwise radii are inferred from width and height. |
 | `<polygon>` | `r`, `sides`, `rotation`. |
 | `<star>` | `r` or `r1` for outer radius, `r2` for inner radius, `points`, `rotation`. |
-| `<arc>` | `r`, `start_angle`, `end_angle`. |
-| `<pie>` | `r`, `start_angle`, `end_angle`. |
-| `<arch>` | `r1`, `r2`, `start_angle`, `end_angle`. |
+| `<arc>` | `r`, `start-angle`, `end-angle`. |
+| `<pie>` | `r`, `start-angle`, `end-angle`. |
+| `<arch>` | `r1`, `r2`, `start-angle`, `end-angle`. |
 
 ---
 
@@ -677,11 +677,11 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - `shift="x,y"` applies after layout and is especially useful for nudging
   layout-managed widgets.
 - `rotate` wraps the widget's normal background/content/border rendering.
-- `origin_x` defaults to the widget's left edge; `origin_y` defaults to the
+- `origin-x` defaults to the widget's left edge; `origin-y` defaults to the
   widget's top edge.
-- `z_index="N"` controls paint order among siblings in the same container.
+- `z-index="N"` controls paint order among siblings in the same container.
   Lower values paint first, higher values paint later and appear on top.
-  Equal `z_index` values preserve source order.
+  Equal `z-index` values preserve source order.
 
 ### Page Flow Details
 

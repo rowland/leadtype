@@ -236,10 +236,10 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.rotate = &value
 		}
 	}
-	if originX, ok := attrs["origin_x"]; ok {
+	if originX, ok := attrs["origin-x"]; ok {
 		widget.originX = strings.TrimSpace(originX)
 	}
-	if originY, ok := attrs["origin_y"]; ok {
+	if originY, ok := attrs["origin-y"]; ok {
 		widget.originY = strings.TrimSpace(originY)
 	}
 	if shift, ok := attrs["shift"]; ok {
@@ -247,7 +247,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		widget.shiftX = ParseMeasurement(strings.TrimSpace(x), widget.Units())
 		widget.shiftY = ParseMeasurement(strings.TrimSpace(y), widget.Units())
 	}
-	if zIndex, ok := attrs["z_index"]; ok {
+	if zIndex, ok := attrs["z-index"]; ok {
 		widget.zIndex, _ = strconv.Atoi(strings.TrimSpace(zIndex))
 	}
 	if display, ok := attrs["display"]; ok {

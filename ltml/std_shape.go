@@ -369,10 +369,10 @@ func (a *StdArc) SetAttrs(attrs map[string]string) {
 	if r, ok := attrs["r"]; ok {
 		a.r = ParseMeasurement(r, a.Units())
 	}
-	if startAngle, ok := attrs["start_angle"]; ok {
+	if startAngle, ok := attrs["start-angle"]; ok {
 		a.startAngle, _ = strconv.ParseFloat(startAngle, 64)
 	}
-	if endAngle, ok := attrs["end_angle"]; ok {
+	if endAngle, ok := attrs["end-angle"]; ok {
 		a.endAngle, _ = strconv.ParseFloat(endAngle, 64)
 	}
 }
@@ -442,10 +442,10 @@ func (a *StdArch) SetAttrs(attrs map[string]string) {
 	if r2, ok := attrs["r2"]; ok {
 		a.r2 = ParseMeasurement(r2, a.Units())
 	}
-	if startAngle, ok := attrs["start_angle"]; ok {
+	if startAngle, ok := attrs["start-angle"]; ok {
 		a.startAngle, _ = strconv.ParseFloat(startAngle, 64)
 	}
-	if endAngle, ok := attrs["end_angle"]; ok {
+	if endAngle, ok := attrs["end-angle"]; ok {
 		a.endAngle, _ = strconv.ParseFloat(endAngle, 64)
 	}
 }

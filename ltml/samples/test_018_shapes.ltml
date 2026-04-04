@@ -18,9 +18,9 @@
       <star width="1.5in" height="1.5in" points="5" border="DarkSlateGray" fill="Gold" />
     </hbox>
     <hbox>
-      <arc width="1.5in" height="1.5in" border="solid" start_angle="20" end_angle="300" />
-      <pie width="1.5in" height="1.5in" border="solid" fill="bg" start_angle="30" end_angle="150" />
-      <arch width="1.75in" height="1.5in" r2="0.35in" border="ForestGreen" fill="bg" start_angle="210" end_angle="30" />
+      <arc width="1.5in" height="1.5in" border="solid" start-angle="20" end-angle="300" />
+      <pie width="1.5in" height="1.5in" border="solid" fill="bg" start-angle="30" end-angle="150" />
+      <arch width="1.75in" height="1.5in" r2="0.35in" border="ForestGreen" fill="bg" start-angle="210" end-angle="30" />
     </hbox>
   </page>
 </ltml>

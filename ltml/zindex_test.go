@@ -15,9 +15,9 @@ func (w *zIndexWidget) DrawContent(Writer) error {
 
 func TestStdWidget_SetAttrs_ZIndex(t *testing.T) {
 	var widget StdWidget
-	widget.SetAttrs(map[string]string{"z_index": "-2"})
+	widget.SetAttrs(map[string]string{"z-index": "-2"})
 	if widget.ZIndex() != -2 {
-		t.Fatalf("expected z_index -2, got %d", widget.ZIndex())
+		t.Fatalf("expected z-index -2, got %d", widget.ZIndex())
 	}
 }
 
@@ -31,11 +31,11 @@ func TestStdContainer_DrawContent_OrdersChildrenByZIndex(t *testing.T) {
 	tie1 := &zIndexWidget{name: "tie1", order: &order}
 	tie2 := &zIndexWidget{name: "tie2", order: &order}
 
-	back.SetAttrs(map[string]string{"z_index": "-1"})
-	middle.SetAttrs(map[string]string{"z_index": "0"})
-	front.SetAttrs(map[string]string{"z_index": "2"})
-	tie1.SetAttrs(map[string]string{"z_index": "1"})
-	tie2.SetAttrs(map[string]string{"z_index": "1"})
+	back.SetAttrs(map[string]string{"z-index": "-1"})
+	middle.SetAttrs(map[string]string{"z-index": "0"})
+	front.SetAttrs(map[string]string{"z-index": "2"})
+	tie1.SetAttrs(map[string]string{"z-index": "1"})
+	tie2.SetAttrs(map[string]string{"z-index": "1"})
 
 	container.AddChild(front)
 	container.AddChild(tie1)
