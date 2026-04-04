@@ -69,7 +69,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 			if pw == 0 {
 				pw = cw
 			}
-			w = math.Min(pw, cw)
+			w = min(pw, cw)
 			widget.SetWidth(w)
 		}
 		if cx != 0 && (cx+widget.Width()) > ContentWidth(container) {
@@ -93,7 +93,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 		}
 		//   container.root_page.positioned_widgets[widget.position] += 1
 		cx += widget.Width() + style.HPadding()
-		maxY = math.Max(maxY, widget.Height())
+		maxY = max(maxY, widget.Height())
 	}
 	// container.more(true) if container_full and container.overflow
 	if container.Height() == 0 && maxY > 0 {
@@ -413,18 +413,18 @@ func allocatePercentWidths(widthAvail float64, percents SpecifiedSizes, style *L
 	if widthAvail-(float64(len(percents)-1))*style.HPadding() >= float64(len(percents)) {
 		widthAvail -= float64((len(percents) - 1)) * style.HPadding()
 		totalPercents := 0.0
-		for i := 0; i < len(percents); i++ {
+		for i := range percents {
 			totalPercents += percents[i].Size
 		}
 		ratio := widthAvail / totalPercents
-		for i := 0; i < len(percents); i++ {
+		for i := range percents {
 			if ratio < 1.0 {
 				percents[i].Size *= ratio
 			}
 			widthAvail -= percents[i].Size
 		}
 	} else {
-		for i := 0; i < len(percents); i++ {
+		for i := range percents {
 			percents[i].Size = 0
 		}
 	}
@@ -437,11 +437,11 @@ func allocateOtherWidths(widthAvail float64, others SpecifiedSizes, style *Layou
 	if widthAvail-(float64(len(others)-1))*style.HPadding() >= float64(len(others)) {
 		widthAvail -= float64(len(others)-1) * style.HPadding()
 		othersWidth := widthAvail / float64(len(others))
-		for i := 0; i < len(others); i++ {
+		for i := range others {
 			others[i].Size = othersWidth
 		}
 	} else {
-		for i := 0; i < len(others); i++ {
+		for i := range others {
 			others[i].Size = 0
 		}
 	}
@@ -520,7 +520,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		for c := 0; c < heights.Cols(); c++ {
 			ss := heights.Cell(c, r)
 			if ss.Span > minRowSpan {
-				heights.SetCell(c, r+1, SpanSize{Span: ss.Span - 1, Size: math.Max(ss.Size-maxHeight, 0)})
+				heights.SetCell(c, r+1, SpanSize{Span: ss.Span - 1, Size: max(ss.Size-maxHeight, 0)})
 			}
 			ss.Size = maxHeight
 			heights.SetCell(c, r, ss)
@@ -633,7 +633,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			if pw == 0 {
 				pw = cw
 			}
-			w := math.Min(pw, cw)
+			w := min(pw, cw)
 			// fmt.Println("w:", w)
 			// panic("foo")
 			widget.SetWidth(w)
@@ -716,20 +716,20 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 	if !container.HeightIsSet() {
 		contentHeight := dy
 		if len(headers) > 0 {
-			contentHeight = math.Max(contentHeight, top-ContentTop(container)-style.VPadding())
+			contentHeight = max(contentHeight, top-ContentTop(container)-style.VPadding())
 		}
 		if len(footers) > 0 {
 			footerTop := bottom
 			for _, widget := range footers {
 				if widget.Visible() {
-					footerTop = math.Min(footerTop, widget.Top())
+					footerTop = min(footerTop, widget.Top())
 				}
 			}
 			if footerTop < bottom {
-				contentHeight = math.Max(contentHeight, footerTop-ContentTop(container))
+				contentHeight = max(contentHeight, footerTop-ContentTop(container))
 			}
 		}
-		container.SetHeight(math.Max(contentHeight, 0) + NonContentHeight(container))
+		container.SetHeight(max(contentHeight, 0) + NonContentHeight(container))
 	}
 	layoutPositionedChildren(container, writer)
 }

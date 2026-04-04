@@ -22,7 +22,7 @@ func TestMarkRuneAttributes(t *testing.T) {
 	var flags [len(quick)]Flags
 
 	MarkRuneAttributes(quick, flags[:])
-	for i := 0; i < len(quick); i++ {
+	for i := range flags {
 		if flags[i] != quickFlags[i] {
 			t.Errorf("Expecting %d, got %d at index %d", quickFlags[i], flags[i], i)
 		}
@@ -44,7 +44,7 @@ func TestMarkRuneAttributes_with_hyphens(t *testing.T) {
 	var flags [len(hyphenTest)]Flags
 
 	MarkRuneAttributes(hyphenTest, flags[:])
-	for i := 0; i < len(hyphenTest); i++ {
+	for i := range flags {
 		if flags[i] != hyphenFlags[i] {
 			t.Errorf("Expecting %d, got %d at index %d", hyphenFlags[i], flags[i], i)
 		}
@@ -79,7 +79,7 @@ func BenchmarkMarkRunAttributes(b *testing.B) {
 	const quick = "The quick red fox jumps over the lazy brown dog."
 	var flags [len(quick)]Flags
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		MarkRuneAttributes(quick, flags[:])
 	}
 }

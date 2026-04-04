@@ -1045,7 +1045,7 @@ func (pw *PageWriter) flushText() {
 		loc1 = loc2
 	})
 	pw.last.loc = pw.loc
-	pw.lineHeight = math.Max(pw.lineHeight, pw.line.Leading()*pw.lineSpacing)
+	pw.lineHeight = max(pw.lineHeight, pw.line.Leading()*pw.lineSpacing)
 	pw.loc.X += pw.line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
 

@@ -96,7 +96,7 @@ var arialTableNames = []string{
 //	169,796 ns go1.7.3
 
 func BenchmarkLoadFontInfo(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		LoadFontInfo("/Library/Fonts/Arial.ttf")
 	}
 }

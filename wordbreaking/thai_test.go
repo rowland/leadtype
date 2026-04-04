@@ -85,7 +85,7 @@ func TestMarkRuneAttributes_thaiWithoutInsertedZWS(t *testing.T) {
 
 func BenchmarkSegmentThai(b *testing.B) {
 	const text = "ภาษาไทยเป็นภาษาที่ใช้ในประเทศไทย"
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		SegmentThai(text)
 	}
 }

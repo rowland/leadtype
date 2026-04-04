@@ -228,7 +228,7 @@ func (table *nameTable) write(wr io.Writer) {
 	fmt.Fprintf(wr, "count = %d\n", table.count)
 	fmt.Fprintf(wr, "stringOffset = %d\n", table.stringOffset)
 	fmt.Fprintln(wr, "platformID\tplatformSpecificID\tlanguageID\tnameID\tlength\toffset")
-	for i := 0; i < len(table.nameRecords); i++ {
+	for i := range table.nameRecords {
 		table.nameRecords[i].write(wr)
 	}
 	fmt.Fprintf(wr, "copyrightNotice       = %s\n", table.copyrightNotice)

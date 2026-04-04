@@ -53,7 +53,7 @@ func (font *Font) init(file *bufio.Reader) (err error) {
 	font.CharMetrics = NewCharMetrics(font.numGlyphs)
 	var line []byte
 	line, err = file.ReadSlice('\n')
-	for i := 0; err == nil; i += 1 {
+	for i := 0; err == nil; i++ {
 		if m := reEndCharMetrics.Find(line); m != nil {
 			break
 		}

@@ -83,7 +83,7 @@ func TestTtfFonts(t *testing.T) {
 // 33,674,155 ns go1.4.2
 // 13,663,640 ns go1.7.3 mbp
 func BenchmarkTtfFontCollection_Add(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		var fonts TtfFonts
 		fonts.Add("/Library/Fonts/*.ttf")
 	}
@@ -104,7 +104,7 @@ func BenchmarkTtfFontCollection_Select(b *testing.B) {
 	}
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		fonts.Select("Times New Roman", "Bold", "Italic", nil)
 	}
 }

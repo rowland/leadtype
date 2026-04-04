@@ -77,7 +77,7 @@ func BenchmarkFont_HasRune(b *testing.B) {
 	}
 	f := &Font{metrics: arial}
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		f.HasRune('A')
 	}
 }

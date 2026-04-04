@@ -17,7 +17,7 @@ func (corners *Corners) SetAll(value string, units Units) {
 	switch len(values) {
 	case 8, 4, 2, 1:
 		*corners = make([]float64, len(values))
-		for i := 0; i < len(values); i++ {
+		for i := range values {
 			(*corners)[i] = ParseMeasurement(values[i], units)
 		}
 	}

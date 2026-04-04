@@ -241,8 +241,8 @@ var CodepointRanges CodepointRangeList
 var CodepointRangesByName map[string]*CodepointRange
 
 func init() {
-	for i := 0; i < len(NestedCodepointRanges); i++ {
-		for j := 0; j < len(NestedCodepointRanges[i]); j++ {
+	for i := range NestedCodepointRanges {
+		for j := range NestedCodepointRanges[i] {
 			cpr := &NestedCodepointRanges[i][j]
 			if cpr.High > 0 {
 				CodepointRanges = append(CodepointRanges, cpr)
@@ -251,7 +251,7 @@ func init() {
 	}
 	sort.Sort(CodepointRanges)
 	CodepointRangesByName = make(map[string]*CodepointRange, len(CodepointRanges))
-	for i := 0; i < len(CodepointRanges); i++ {
+	for i := range CodepointRanges {
 		CodepointRangesByName[CodepointRanges[i].Name] = CodepointRanges[i]
 	}
 }

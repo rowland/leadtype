@@ -170,7 +170,7 @@ func (piece *RichText) Count() int {
 func (piece *RichText) DeepClone() *RichText {
 	p := piece.Clone()
 	p.pieces = make([]*RichText, len(piece.pieces))
-	for i := 0; i < len(piece.pieces); i++ {
+	for i := range piece.pieces {
 		p.pieces[i] = piece.pieces[i].DeepClone()
 	}
 	return p
