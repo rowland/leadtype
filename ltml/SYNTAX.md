@@ -683,6 +683,37 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
   Lower values paint first, higher values paint later and appear on top.
   Equal `z-index` values preserve source order.
 
+#### Relative Layout
+
+Use `layout="relative"` on a container when you want a local coordinate system
+for overlays, callouts, badges, image annotations, or other composed in-page
+regions.
+
+- All children are treated as `position="relative"`, even if they do not set
+  `position` explicitly.
+- Child coordinates are measured from the container's own box, not from the
+  page origin.
+- Missing horizontal/vertical anchors default to `left="0"` and `top="0"`.
+- Width and height can still come from preferred size, percentages, or paired
+  sides such as `left` + `right`.
+- Negative `right` and `bottom` values anchor inward from the far edge of the
+  container.
+- Relative-positioned children do not consume space in normal `vbox`, `hbox`,
+  or `flow` placement.
+- The same behavior also works at page scope when you intentionally want the
+  page itself to act as the container.
+
+Example:
+
+```xml
+<div left="1in" top="2in" width="4in" height="2in" border="thin" layout="relative">
+  <label left="0.2in" top="0.2in">Top-left note</label>
+  <rect right="-0.25in" bottom="-0.25in" width="1in" height="0.5in" fill="Gold" />
+</div>
+```
+
+For a fuller example, see `ltml/samples/test_037_relative_layout.ltml`.
+
 ### Page Flow Details
 
 - `display` defaults to `once`.
