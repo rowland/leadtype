@@ -71,7 +71,7 @@ func TestLoadFont_Zapf(t *testing.T) {
 //	539,770 ns          go1.7.3
 
 func BenchmarkLoadFont(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		LoadFont("data/fonts/Helvetica.afm")
 	}
 }

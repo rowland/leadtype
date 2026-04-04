@@ -6,7 +6,6 @@ package rich_text
 import (
 	"errors"
 	"io"
-	"math"
 	"os"
 	"strings"
 	"testing"
@@ -398,8 +397,8 @@ func TestRichText_Height(t *testing.T) {
 	descent0 := p.pieces[0].Descent()
 	ascent1 := p.pieces[1].Ascent()
 	descent1 := p.pieces[1].Descent()
-	maxAscent := math.Max(ascent0, ascent1)
-	minDecent := math.Min(descent0, descent1)
+	maxAscent := max(ascent0, ascent1)
+	minDecent := min(descent0, descent1)
 	expected := maxAscent + -minDecent
 	st.AlmostEqual(expected, p.Height(), 0.001, "Where baselines do not match, Height should allow for the tallest Ascent and Descent.")
 	st.AlmostEqual(11.6029296875, p.Height(), 0.001)
@@ -1069,7 +1068,7 @@ func TestRichText_WrapToWidth_mixed(t *testing.T) {
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
 	lines := p.WrapToWidth(60, flags, false)
 	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
-	for i := 0; i < len(expected); i++ {
+	for i := range expected {
 		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
 	}
 }
@@ -1138,7 +1137,7 @@ func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
 	wordbreaking.MarkRuneAttributes(p.String(), flags)
 	lines := p.WrapToWidth(60, flags, true)
 	st.Must(len(lines) == len(expected), "Unexpected number of lines.")
-	for i := 0; i < len(expected); i++ {
+	for i := range expected {
 		st.Equal(expected[i], lines[i].String(), "Unexpected text.")
 	}
 }
@@ -1225,7 +1224,7 @@ func BenchmarkNewRichText(b *testing.B) {
 	fonts := append(afmFonts, ttfFonts...)
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := New(englishRussianChinese, fonts, 10, options.Options{})
 		if err != nil {
 			b.Fatal(err)
@@ -1249,7 +1248,7 @@ func BenchmarkRichText_IsWhiteSpace(b *testing.B) {
 	}
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		piece.IsWhiteSpace()
 	}
 }
@@ -1265,7 +1264,7 @@ func BenchmarkRichText_measure(b *testing.B) {
 	piece := arialText("Lorem")
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		piece.measure()
 	}
 }
@@ -1279,7 +1278,7 @@ func BenchmarkRichText_Ascent(b *testing.B) {
 	text := mixedText()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		text.ascent = 0
 		text.pieces[0].ascent = 0
 		text.pieces[1].ascent = 0
@@ -1299,7 +1298,7 @@ func BenchmarkRichText_Chars(b *testing.B) {
 	text := mixedText()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		text.chars = 0
 		text.pieces[0].chars = 0
 		text.pieces[1].chars = 0
@@ -1319,7 +1318,7 @@ func BenchmarkRichText_Descent(b *testing.B) {
 	text := mixedText()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		text.descent = 0
 		text.pieces[0].descent = 0
 		text.pieces[1].descent = 0
@@ -1339,7 +1338,7 @@ func BenchmarkRichText_Height(b *testing.B) {
 	text := mixedText()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		text.height = 0
 		text.pieces[0].height = 0
 		text.pieces[1].height = 0
@@ -1359,7 +1358,7 @@ func BenchmarkRichText_Len(b *testing.B) {
 	text := mixedText()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		text.Len()
 	}
 }
@@ -1373,7 +1372,7 @@ func BenchmarkRichText_Width(b *testing.B) {
 	text := mixedText()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		text.width = 0
 		text.pieces[0].width = 0
 		text.pieces[1].width = 0

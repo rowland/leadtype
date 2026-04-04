@@ -54,7 +54,7 @@ func TestLoadFont(t *testing.T) {
 // 1,464,970 ns go1.6.2 mbp
 // 1,214,725 ns go1.7.3
 func BenchmarkLoadFont(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		LoadFont("/Library/Fonts/Arial.ttf")
 	}
 }

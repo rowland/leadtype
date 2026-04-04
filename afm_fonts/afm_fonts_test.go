@@ -168,7 +168,7 @@ func TestFamilies(t *testing.T) {
 //  1,460,074 ns go1.25.5 M1
 
 func BenchmarkAfmFontCollection_Add(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		var fc AfmFonts
 		if err := fc.AddDefault(); err != nil {
 			b.Fatal(err)
@@ -195,7 +195,7 @@ func BenchmarkAfmFontCollection_Select(b *testing.B) {
 	}
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		fc.Select("Times", "Bold", "Italic", nil)
 	}
 }

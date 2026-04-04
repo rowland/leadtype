@@ -32,7 +32,7 @@ func (sides *Sides) SetAll(value string, units Units) {
 	values := strings.SplitN(value, " ", len(sides))
 	switch len(values) {
 	case 4, 3:
-		for i := 0; i < len(values); i++ {
+		for i := range values {
 			sides[i].Set(ParseMeasurement(values[i], units))
 		}
 	case 2:
@@ -43,7 +43,7 @@ func (sides *Sides) SetAll(value string, units Units) {
 		sides[leftSide].Set(rightLeft)
 	case 1:
 		all := ParseMeasurement(values[0], units)
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			sides[i].Set(all)
 		}
 	}
@@ -62,7 +62,7 @@ func (sides *Sides) SetAttrs(prefix string, attrs map[string]string, units Units
 func (sides *Sides) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("[")
-	for i := 0; i < len(sides); i++ {
+	for i := range sides {
 		if i > 0 {
 			buf.WriteString(" ")
 		}

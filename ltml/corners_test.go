@@ -21,7 +21,7 @@ func TestCorners_SetAll_1(t *testing.T) {
 	if len(corners) != len(expected) {
 		t.Errorf("Expected %d, got %d", len(expected), len(corners))
 	}
-	for i := 0; i < len(corners); i++ {
+	for i := range corners {
 		if corners[i] != expected[i] {
 			t.Errorf("Expected %f, got %f", expected[i], corners[i])
 		}
@@ -35,7 +35,7 @@ func TestCorners_SetAll_2(t *testing.T) {
 	if len(corners) != len(expected) {
 		t.Errorf("Expected %d, got %d", len(expected), len(corners))
 	}
-	for i := 0; i < len(corners); i++ {
+	for i := range corners {
 		if corners[i] != expected[i] {
 			t.Errorf("Expected %f, got %f", expected[i], corners[i])
 		}
@@ -49,7 +49,7 @@ func TestCorners_SetAll_4(t *testing.T) {
 	if len(corners) != len(expected) {
 		t.Errorf("Expected %d, got %d", len(expected), len(corners))
 	}
-	for i := 0; i < len(corners); i++ {
+	for i := range corners {
 		if corners[i] != expected[i] {
 			t.Errorf("Expected %f, got %f", expected[i], corners[i])
 		}
@@ -63,7 +63,7 @@ func TestCorners_SetAll_8(t *testing.T) {
 	if len(corners) != len(expected) {
 		t.Errorf("Expected %d, got %d", len(expected), len(corners))
 	}
-	for i := 0; i < len(corners); i++ {
+	for i := range corners {
 		if corners[i] != expected[i] {
 			t.Errorf("Expected %f, got %f", expected[i], corners[i])
 		}
