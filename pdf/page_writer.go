@@ -76,14 +76,16 @@ type PageWriter struct {
 }
 
 type pathState struct {
-	autoPath  bool
-	fillColor colors.Color
-	lineColor colors.Color
-	lineWidth float64
-	miter     float64
-	lineCap   LineCapStyle
-	lineJoin  LineJoinStyle
-	lineDash  string
+	autoPath     bool
+	fillColor    colors.Color
+	fillGradient string
+	lineColor    colors.Color
+	lineGradient string
+	lineWidth    float64
+	miter        float64
+	lineCap      LineCapStyle
+	lineJoin     LineJoinStyle
+	lineDash     string
 }
 
 func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
@@ -252,7 +254,7 @@ func (pw *PageWriter) checkSetVTextAlign(force bool) {
 }
 
 func (pw *PageWriter) checkSetFontColor() {
-	if pw.fontColor == pw.last.fillColor {
+	if pw.last.fillGradient == "" && pw.fontColor == pw.last.fillColor {
 		return
 	}
 	if pw.inPath && pw.autoPath {
@@ -261,6 +263,7 @@ func (pw *PageWriter) checkSetFontColor() {
 	}
 	pw.mw.setRgbColorFill(pw.fontColor.RGB64())
 	pw.last.fillColor = pw.fontColor
+	pw.last.fillGradient = ""
 }
 
 func (pw *PageWriter) checkSetLineColor() {
@@ -434,14 +437,16 @@ func (pw *PageWriter) beginManualPath() error {
 	}
 	pw.flushText()
 	pw.pathStates = append(pw.pathStates, pathState{
-		autoPath:  pw.autoPath,
-		fillColor: pw.fillColor,
-		lineColor: pw.lineColor,
-		lineWidth: pw.lineWidth,
-		miter:     pw.miterLimit,
-		lineCap:   pw.lineCapStyle,
-		lineJoin:  pw.lineJoinStyle,
-		lineDash:  pw.lineDashPattern,
+		autoPath:     pw.autoPath,
+		fillColor:    pw.fillColor,
+		fillGradient: pw.fillGradient,
+		lineColor:    pw.lineColor,
+		lineGradient: pw.lineGradient,
+		lineWidth:    pw.lineWidth,
+		miter:        pw.miterLimit,
+		lineCap:      pw.lineCapStyle,
+		lineJoin:     pw.lineJoinStyle,
+		lineDash:     pw.lineDashPattern,
 	})
 	pw.autoPath = false
 	return nil
@@ -463,7 +468,9 @@ func (pw *PageWriter) restorePathState() {
 	last := pw.pathStates[len(pw.pathStates)-1]
 	pw.autoPath = last.autoPath
 	pw.fillColor = last.fillColor
+	pw.fillGradient = last.fillGradient
 	pw.lineColor = last.lineColor
+	pw.lineGradient = last.lineGradient
 	pw.lineWidth = last.lineWidth
 	pw.miterLimit = last.miter
 	pw.lineCapStyle = last.lineCap

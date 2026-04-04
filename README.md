@@ -129,6 +129,8 @@ For more involved examples, see [`samples/test_003_hello_world.go`](samples/test
 
 If you want to start from LTML instead of Go code, browse [`ltml/samples/`](ltml/samples/) and render them with [`cmd/render-ltml`](cmd/render-ltml).
 
+The `pdf` package also includes gradient fills, stroke gradients, clipping-based shading paints, and related drawing APIs. See [`pdf/README.md`](pdf/README.md) for package-specific usage notes.
+
 ## Command-Line Tools
 
 Leadtype includes a few focused utilities:

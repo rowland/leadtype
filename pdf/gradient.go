@@ -22,10 +22,13 @@ type GradientStop struct {
 type LinearGradient struct {
 	X0, Y0 float64        // start point
 	X1, Y1 float64        // end point
-	Stops  []GradientStop // at least two stops required
+	Stops  []GradientStop // must start at 0, end at 1, and be strictly increasing
 }
 
 func (lg *LinearGradient) validate() error {
+	if lg == nil {
+		return errors.New("linear gradient must not be nil")
+	}
 	return validateStops(lg.Stops)
 }
 
@@ -34,10 +37,13 @@ func (lg *LinearGradient) validate() error {
 type RadialGradient struct {
 	X0, Y0, R0 float64        // start circle centre and radius
 	X1, Y1, R1 float64        // end circle centre and radius
-	Stops      []GradientStop // at least two stops required
+	Stops      []GradientStop // must start at 0, end at 1, and be strictly increasing
 }
 
 func (rg *RadialGradient) validate() error {
+	if rg == nil {
+		return errors.New("radial gradient must not be nil")
+	}
 	if rg.R0 < 0 || rg.R1 < 0 {
 		return errors.New("gradient radii must be non-negative")
 	}
@@ -52,9 +58,15 @@ func validateStops(stops []GradientStop) error {
 		if s.Position < 0 || s.Position > 1 {
 			return fmt.Errorf("stop %d position %g out of range [0,1]", i, s.Position)
 		}
-		if i > 0 && s.Position < stops[i-1].Position {
-			return fmt.Errorf("stop %d position %g precedes stop %d position %g", i, s.Position, i-1, stops[i-1].Position)
+		if i > 0 && s.Position <= stops[i-1].Position {
+			return fmt.Errorf("stop %d position %g must be greater than stop %d position %g", i, s.Position, i-1, stops[i-1].Position)
 		}
+	}
+	if stops[0].Position != 0 {
+		return fmt.Errorf("first stop position must be 0, got %g", stops[0].Position)
+	}
+	if stops[len(stops)-1].Position != 1 {
+		return fmt.Errorf("last stop position must be 1, got %g", stops[len(stops)-1].Position)
 	}
 	return nil
 }

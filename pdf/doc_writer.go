@@ -75,23 +75,23 @@ func NewDocWriter() *DocWriter {
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
-		nextSeq:         nextSeq,
-		file:            file,
-		catalog:         catalog,
-		resources:       resources,
-		options:         options.Options{},
-		fontSources:     fontSources,
-		fontKeys:        fontKeys,
-		fontEncodings:   fontEncodings,
-		glyphRecorders:  make(map[string]*glyphRecorder),
-		unicodeFonts:    make(map[string]*font.Font),
-		cidFonts:        make(map[string]*cidFont),
-		type0Fonts:      make(map[string]*type0Font),
-		fontDescriptors: make(map[string]*fontDescriptor),
+		nextSeq:          nextSeq,
+		file:             file,
+		catalog:          catalog,
+		resources:        resources,
+		options:          options.Options{},
+		fontSources:      fontSources,
+		fontKeys:         fontKeys,
+		fontEncodings:    fontEncodings,
+		glyphRecorders:   make(map[string]*glyphRecorder),
+		unicodeFonts:     make(map[string]*font.Font),
+		cidFonts:         make(map[string]*cidFont),
+		type0Fonts:       make(map[string]*type0Font),
+		fontDescriptors:  make(map[string]*fontDescriptor),
 		images:           make(map[string]*cachedImage),
 		gradientShadings: make(map[string]string),
 		gradientPatterns: make(map[string]string),
-		destinations:    make(map[string]namedDestination),
+		destinations:     make(map[string]namedDestination),
 	}
 }
 
@@ -810,7 +810,7 @@ func (dw *DocWriter) registerGradientPattern(prefix string, coords []float64, st
 	}
 	sh := makeShading(fn)
 	shObj := sh.(seqGen)
-	dw.file.body.add(sh.(genWriter))
+	dw.file.body.add(sh)
 	shName := fmt.Sprintf("Sh%d", len(dw.gradientShadings))
 	dw.resources.setShading(shName, &indirectObjectRef{shObj})
 	dw.gradientShadings[key] = shName
@@ -853,7 +853,7 @@ func (dw *DocWriter) registerShadingOnly(prefix string, coords []float64, stops 
 	}
 	sh := makeShading(fn)
 	shObj := sh.(seqGen)
-	dw.file.body.add(sh.(genWriter))
+	dw.file.body.add(sh)
 	shName := fmt.Sprintf("Sh%d", len(dw.gradientShadings))
 	dw.resources.setShading(shName, &indirectObjectRef{shObj})
 	dw.gradientShadings[key] = shName

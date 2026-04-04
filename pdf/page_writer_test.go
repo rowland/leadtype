@@ -61,6 +61,27 @@ func TestPageWriter_checkSetFontColor(t *testing.T) {
 	// TODO: test for autoPath behavior
 }
 
+func testLinearGradient() *LinearGradient {
+	return &LinearGradient{
+		X0: 0, Y0: 0, X1: 100, Y1: 0,
+		Stops: []GradientStop{
+			{Position: 0, Color: colors.Red},
+			{Position: 1, Color: colors.Blue},
+		},
+	}
+}
+
+func testRadialGradient() *RadialGradient {
+	return &RadialGradient{
+		X0: 50, Y0: 50, R0: 0,
+		X1: 50, Y1: 50, R1: 50,
+		Stops: []GradientStop{
+			{Position: 0, Color: colors.White},
+			{Position: 1, Color: colors.Black},
+		},
+	}
+}
+
 func TestPageWriter_checkSetLineColor(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
@@ -1247,13 +1268,7 @@ func TestPageWriter_checkSetFillGradient(t *testing.T) {
 	pw := newPageWriter(dw, options.Options{})
 
 	check(t, pw.fillGradient == "", "fillGradient should default to empty")
-	err := pw.SetFillLinearGradient(&LinearGradient{
-		X0: 0, Y0: 0, X1: 100, Y1: 0,
-		Stops: []GradientStop{
-			{Position: 0, Color: colors.Red},
-			{Position: 1, Color: colors.Blue},
-		},
-	})
+	err := pw.SetFillLinearGradient(testLinearGradient())
 	check(t, err == nil, "SetFillLinearGradient should not return error")
 	check(t, pw.fillGradient != "", "fillGradient should be set")
 
@@ -1267,13 +1282,7 @@ func TestPageWriter_FillGradientRevertToSolid(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	pw.SetFillLinearGradient(&LinearGradient{
-		X0: 0, Y0: 0, X1: 100, Y1: 0,
-		Stops: []GradientStop{
-			{Position: 0, Color: colors.Red},
-			{Position: 1, Color: colors.Blue},
-		},
-	})
+	pw.SetFillLinearGradient(testLinearGradient())
 	pw.checkSetFillColor()
 
 	// Now clear and set solid color
@@ -1285,17 +1294,27 @@ func TestPageWriter_FillGradientRevertToSolid(t *testing.T) {
 	check(t, strings.Contains(s, "rg"), "should revert to rg operator for solid color")
 }
 
+func TestPageWriter_FillGradientAfterFontColorReset(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetFillLinearGradient(testLinearGradient()) == nil, "gradient should be set")
+	pw.checkSetFillColor()
+	pw.SetFontColor(colors.Green)
+	pw.checkSetFontColor()
+	pw.checkSetFillColor()
+
+	s := pw.stream.String()
+	expectI(t, 2, strings.Count(s, "/Pattern cs"))
+	expectI(t, 2, strings.Count(s, "scn"))
+	expectI(t, 1, strings.Count(s, " rg\n"))
+}
+
 func TestPageWriter_checkSetLineGradient(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	err := pw.SetLineLinearGradient(&LinearGradient{
-		X0: 0, Y0: 0, X1: 100, Y1: 0,
-		Stops: []GradientStop{
-			{Position: 0, Color: colors.Red},
-			{Position: 1, Color: colors.Blue},
-		},
-	})
+	err := pw.SetLineLinearGradient(testLinearGradient())
 	check(t, err == nil, "SetLineLinearGradient should not return error")
 	check(t, pw.lineGradient != "", "lineGradient should be set")
 
@@ -1305,18 +1324,29 @@ func TestPageWriter_checkSetLineGradient(t *testing.T) {
 	check(t, strings.Contains(s, "SCN"), "should use SCN operator")
 }
 
+func TestPageWriter_LineGradientAfterSolidStrokeReset(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetLineLinearGradient(testLinearGradient()) == nil, "gradient should be set")
+	pw.checkSetLineColor()
+	pw.ClearLineGradient()
+	pw.SetLineColor(colors.Green)
+	pw.checkSetLineColor()
+	check(t, pw.SetLineLinearGradient(testLinearGradient()) == nil, "gradient should be set again")
+	pw.checkSetLineColor()
+
+	s := pw.stream.String()
+	expectI(t, 2, strings.Count(s, "/Pattern CS"))
+	expectI(t, 2, strings.Count(s, "SCN"))
+	expectI(t, 1, strings.Count(s, " RG\n"))
+}
+
 func TestPageWriter_SetFillRadialGradient(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	err := pw.SetFillRadialGradient(&RadialGradient{
-		X0: 50, Y0: 50, R0: 0,
-		X1: 50, Y1: 50, R1: 50,
-		Stops: []GradientStop{
-			{Position: 0, Color: colors.White},
-			{Position: 1, Color: colors.Black},
-		},
-	})
+	err := pw.SetFillRadialGradient(testRadialGradient())
 	check(t, err == nil, "SetFillRadialGradient should not return error")
 	check(t, pw.fillGradient != "", "fillGradient should be set for radial")
 }
@@ -1338,13 +1368,7 @@ func TestPageWriter_PaintLinearGradient(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	err := pw.PaintLinearGradient(&LinearGradient{
-		X0: 0, Y0: 0, X1: 100, Y1: 0,
-		Stops: []GradientStop{
-			{Position: 0, Color: colors.Red},
-			{Position: 1, Color: colors.Blue},
-		},
-	})
+	err := pw.PaintLinearGradient(testLinearGradient())
 	check(t, err == nil, "PaintLinearGradient should not return error")
 	s := pw.stream.String()
 	check(t, strings.Contains(s, "sh"), "should contain sh operator")
@@ -1354,17 +1378,119 @@ func TestPageWriter_GradientCaching(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	lg := &LinearGradient{
-		X0: 0, Y0: 0, X1: 100, Y1: 0,
-		Stops: []GradientStop{
-			{Position: 0, Color: colors.Red},
-			{Position: 1, Color: colors.Blue},
-		},
-	}
+	lg := testLinearGradient()
 	pw.SetFillLinearGradient(lg)
 	name1 := pw.fillGradient
 	pw.ClearFillGradient()
 	pw.SetFillLinearGradient(lg)
 	name2 := pw.fillGradient
 	expectS(t, name1, name2)
+}
+
+func TestPageWriter_SetGradient_NilErrors(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetFillLinearGradient(nil) != nil, "nil fill linear gradient should error")
+	check(t, pw.SetFillRadialGradient(nil) != nil, "nil fill radial gradient should error")
+	check(t, pw.SetLineLinearGradient(nil) != nil, "nil line linear gradient should error")
+	check(t, pw.SetLineRadialGradient(nil) != nil, "nil line radial gradient should error")
+	check(t, pw.PaintLinearGradient(nil) != nil, "nil linear shading should error")
+	check(t, pw.PaintRadialGradient(nil) != nil, "nil radial shading should error")
+}
+
+func TestPageWriter_PathRestoresGradientStateAfterFill(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetFillLinearGradient(testLinearGradient()) == nil, "outer gradient should be set")
+	outer := pw.fillGradient
+
+	err := pw.Path(func() {
+		check(t, pw.SetFillRadialGradient(testRadialGradient()) == nil, "inner gradient should be set")
+		pw.MoveTo(0, 0)
+		pw.LineTo(10, 0)
+		pw.LineTo(10, 10)
+		pw.LineTo(0, 10)
+		pw.LineTo(0, 0)
+		check(t, pw.Fill() == nil, "Fill should succeed")
+	})
+	check(t, err == nil, "Path should succeed")
+	expectS(t, outer, pw.fillGradient)
+}
+
+func TestPageWriter_PathRestoresGradientStateAfterStroke(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetLineLinearGradient(testLinearGradient()) == nil, "outer line gradient should be set")
+	outer := pw.lineGradient
+
+	err := pw.Path(func() {
+		pw.ClearLineGradient()
+		pw.SetLineColor(colors.Green)
+		pw.MoveTo(0, 0)
+		pw.LineTo(10, 10)
+		check(t, pw.Stroke() == nil, "Stroke should succeed")
+	})
+	check(t, err == nil, "Path should succeed")
+	expectS(t, outer, pw.lineGradient)
+}
+
+func TestPageWriter_PathRestoresGradientStateAfterFillAndStroke(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetFillLinearGradient(testLinearGradient()) == nil, "outer fill gradient should be set")
+	check(t, pw.SetLineLinearGradient(testLinearGradient()) == nil, "outer line gradient should be set")
+	outerFill := pw.fillGradient
+	outerLine := pw.lineGradient
+
+	err := pw.Path(func() {
+		pw.ClearFillGradient()
+		pw.SetFillColor(colors.LightGray)
+		pw.ClearLineGradient()
+		pw.SetLineColor(colors.Black)
+		pw.MoveTo(0, 0)
+		pw.LineTo(10, 0)
+		pw.LineTo(10, 10)
+		pw.LineTo(0, 10)
+		pw.LineTo(0, 0)
+		check(t, pw.FillAndStroke() == nil, "FillAndStroke should succeed")
+	})
+	check(t, err == nil, "Path should succeed")
+	expectS(t, outerFill, pw.fillGradient)
+	expectS(t, outerLine, pw.lineGradient)
+}
+
+func TestPageWriter_PathRestoresGradientStateAfterClip(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	check(t, pw.SetFillLinearGradient(testLinearGradient()) == nil, "outer fill gradient should be set")
+	check(t, pw.SetLineLinearGradient(testLinearGradient()) == nil, "outer line gradient should be set")
+	outerFill := pw.fillGradient
+	outerLine := pw.lineGradient
+
+	err := pw.Path(func() {
+		pw.ClearFillGradient()
+		pw.SetFillColor(colors.Green)
+		pw.ClearLineGradient()
+		pw.SetLineColor(colors.Black)
+		pw.MoveTo(0, 0)
+		pw.LineTo(10, 0)
+		pw.LineTo(10, 10)
+		pw.LineTo(0, 10)
+		pw.LineTo(0, 0)
+		check(t, pw.Clip(func() {
+			check(t, pw.PaintLinearGradient(testLinearGradient()) == nil, "PaintLinearGradient should succeed")
+		}) == nil, "Clip should succeed")
+	})
+	check(t, err == nil, "Path should succeed")
+	expectS(t, outerFill, pw.fillGradient)
+	expectS(t, outerLine, pw.lineGradient)
+
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "q\nW\nn\n"), "clip should save graphics state, clip, and clear the path")
+	check(t, strings.Contains(s, "sh\nQ\n"), "clip should paint shading and restore graphics state")
 }

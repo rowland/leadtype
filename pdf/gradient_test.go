@@ -46,6 +46,34 @@ func TestLinearGradient_Validate(t *testing.T) {
 		},
 	}
 	check(t, unsorted.validate() != nil, "unsorted positions should fail validation")
+
+	missingStart := &LinearGradient{
+		X0: 0, Y0: 0, X1: 100, Y1: 0,
+		Stops: []GradientStop{
+			{Position: 0.25, Color: colors.Red},
+			{Position: 1, Color: colors.Blue},
+		},
+	}
+	check(t, missingStart.validate() != nil, "first stop must be at 0")
+
+	missingEnd := &LinearGradient{
+		X0: 0, Y0: 0, X1: 100, Y1: 0,
+		Stops: []GradientStop{
+			{Position: 0, Color: colors.Red},
+			{Position: 0.75, Color: colors.Blue},
+		},
+	}
+	check(t, missingEnd.validate() != nil, "last stop must be at 1")
+
+	repeated := &LinearGradient{
+		X0: 0, Y0: 0, X1: 100, Y1: 0,
+		Stops: []GradientStop{
+			{Position: 0, Color: colors.Red},
+			{Position: 0, Color: colors.White},
+			{Position: 1, Color: colors.Blue},
+		},
+	}
+	check(t, repeated.validate() != nil, "equal adjacent positions should fail validation")
 }
 
 func TestRadialGradient_Validate(t *testing.T) {
@@ -68,6 +96,16 @@ func TestRadialGradient_Validate(t *testing.T) {
 		},
 	}
 	check(t, negRadius.validate() != nil, "negative radius should fail validation")
+
+	missingEnd := &RadialGradient{
+		X0: 50, Y0: 50, R0: 0,
+		X1: 50, Y1: 50, R1: 50,
+		Stops: []GradientStop{
+			{Position: 0, Color: colors.White},
+			{Position: 0.8, Color: colors.Black},
+		},
+	}
+	check(t, missingEnd.validate() != nil, "last stop must be at 1")
 }
 
 func TestExponentialFunction_Serialisation(t *testing.T) {
