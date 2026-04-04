@@ -39,6 +39,8 @@ func (ps *PageStyle) SetAttrs(attrs map[string]string) {
 	if id, ok := attrs["id"]; ok {
 		ps.id = id
 	}
+	var units Units = "pt"
+	units.SetAttrs(attrs)
 	if orientation, ok := attrs["orientation"]; ok {
 		switch orientation {
 		case "portrait":
@@ -57,10 +59,10 @@ func (ps *PageStyle) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if height, ok := attrs["height"]; ok {
-		ps.height = ParseMeasurement(height, "pt")
+		ps.height = ParseMeasurement(height, units)
 	}
 	if width, ok := attrs["width"]; ok {
-		ps.width = ParseMeasurement(width, "pt")
+		ps.width = ParseMeasurement(width, units)
 	}
 }
 
@@ -81,5 +83,5 @@ func init() {
 	for id, sz := range PageSizes {
 		defaultPageStyles[id] = &PageStyle{id: id, width: sz[0], height: sz[1]}
 	}
-	registerTag(DefaultSpace, "page", func() any { return &PageStyle{} })
+	registerTag(DefaultSpace, "pagestyle", func() any { return &PageStyle{} })
 }

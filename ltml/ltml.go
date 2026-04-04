@@ -176,6 +176,11 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			debugf("Adding layout: %s\n", err)
 		}
 	}
+	if pageStyle, ok := e.(*PageStyle); ok {
+		if err := doc.scope().AddPageStyle(pageStyle); err != nil {
+			debugf("Adding page style: %s\n", err)
+		}
+	}
 	if alias, ok := e.(*Alias); ok {
 		if err := doc.scope().AddAlias(alias); err != nil {
 			debugf("Adding alias: %s\n", err)
