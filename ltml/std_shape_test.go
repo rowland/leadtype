@@ -173,14 +173,14 @@ func TestStdArcAndArch_DrawContent(t *testing.T) {
 	arc.SetTop(0)
 	arc.SetWidth(80)
 	arc.SetHeight(80)
-	arc.SetAttrs(map[string]string{"start_angle": "45", "end_angle": "180"})
+	arc.SetAttrs(map[string]string{"start-angle": "45", "end-angle": "180"})
 
 	arch := &StdArch{}
 	arch.SetLeft(0)
 	arch.SetTop(0)
 	arch.SetWidth(120)
 	arch.SetHeight(120)
-	arch.SetAttrs(map[string]string{"r2": "20", "start_angle": "0", "end_angle": "270"})
+	arch.SetAttrs(map[string]string{"r2": "20", "start-angle": "0", "end-angle": "270"})
 	arch.border = &PenStyle{id: "solid", width: 1}
 	w := &shapeTestWriter{}
 
@@ -212,9 +212,9 @@ func TestParse_ShapeTags(t *testing.T) {
     <ellipse width="2in" height="1in" rx="0.75in" />
     <polygon width="1in" height="1in" sides="5" rotation="36" />
     <star width="1in" height="1in" points="7" r2="0.2in" />
-    <arc width="1in" height="1in" start_angle="0" end_angle="180" />
-    <pie width="1in" height="1in" start_angle="45" end_angle="135" />
-    <arch width="1in" height="1in" r2="0.2in" start_angle="90" end_angle="270" />
+    <arc width="1in" height="1in" start-angle="0" end-angle="180" />
+    <pie width="1in" height="1in" start-angle="45" end-angle="135" />
+    <arch width="1in" height="1in" r2="0.2in" start-angle="90" end-angle="270" />
   </page>
 </ltml>`))
 	if err != nil {

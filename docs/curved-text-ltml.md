@@ -27,7 +27,7 @@ The LTML surface should map directly onto the PDF helper concepts:
   - circle: center plus radius
   - ellipse: center plus `rx` / `ry`
   - future path: explicit control points or path data
-- `start_angle`
+- `start-angle`
 - direction / sweep
 - horizontal anchor: `left`, `center`, `right`
 - vertical anchor: `top`, `above`, `middle`, `baseline`, `below`

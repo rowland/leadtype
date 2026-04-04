@@ -42,7 +42,7 @@
     <label left="0.75" top="6.45" width="2.6" padding="6pt" border="thin" fill="LemonChiffon" font.size="14" text-align="center" angle="30">
       Angle Text
     </label>
-    <label left="4.2" top="6.45" width="2.6" padding="6pt" border="thin" fill="Lavender" font.size="14" text-align="center" rotate="30" origin_x="center" origin_y="middle">
+    <label left="4.2" top="6.45" width="2.6" padding="6pt" border="thin" fill="Lavender" font.size="14" text-align="center" rotate="30" origin-x="center" origin-y="middle">
       Rotate Box
     </label>
 
