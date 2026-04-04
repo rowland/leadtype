@@ -29,7 +29,27 @@ func TestMiscWriter_setColorFill(t *testing.T) {
 	expectS(t, "0.1 0.2 0.3 0.4 sc\n", buf.String())
 }
 
-// TODO: scn, SCN: patterns and separations
+func TestMiscWriter_setColorFillPattern(t *testing.T) {
+	var buf bytes.Buffer
+	mw := newMiscWriter(&buf)
+	mw.setColorFillPattern("P1")
+	expectS(t, "/P1 scn\n", buf.String())
+}
+
+func TestMiscWriter_setColorStrokePattern(t *testing.T) {
+	var buf bytes.Buffer
+	mw := newMiscWriter(&buf)
+	mw.setColorStrokePattern("P1")
+	expectS(t, "/P1 SCN\n", buf.String())
+}
+
+func TestMiscWriter_setExtGState(t *testing.T) {
+	var buf bytes.Buffer
+	mw := newMiscWriter(&buf)
+	mw.setExtGState("GS1")
+	expectS(t, "/GS1 gs\n", buf.String())
+}
+
 func TestMiscWriter_setColorRenderingIntent(t *testing.T) {
 	var buf bytes.Buffer
 	mw := newMiscWriter(&buf)

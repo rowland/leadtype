@@ -76,14 +76,16 @@ type PageWriter struct {
 }
 
 type pathState struct {
-	autoPath  bool
-	fillColor colors.Color
-	lineColor colors.Color
-	lineWidth float64
-	miter     float64
-	lineCap   LineCapStyle
-	lineJoin  LineJoinStyle
-	lineDash  string
+	autoPath     bool
+	fillColor    colors.Color
+	fillGradient string
+	lineColor    colors.Color
+	lineGradient string
+	lineWidth    float64
+	miter        float64
+	lineCap      LineCapStyle
+	lineJoin     LineJoinStyle
+	lineDash     string
 }
 
 func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
@@ -172,6 +174,17 @@ func (pw *PageWriter) carriageReturn() {
 }
 
 func (pw *PageWriter) checkSetFillColor() {
+	if pw.fillGradient != "" {
+		pw.checkSetFillGradient()
+		return
+	}
+	if pw.last.fillGradient != "" {
+		// Reverting from gradient to solid color.
+		pw.mw.setRgbColorFill(pw.fillColor.RGB64())
+		pw.last.fillColor = pw.fillColor
+		pw.last.fillGradient = ""
+		return
+	}
 	if pw.fillColor == pw.last.fillColor {
 		return
 	}
@@ -181,6 +194,19 @@ func (pw *PageWriter) checkSetFillColor() {
 	}
 	pw.mw.setRgbColorFill(pw.fillColor.RGB64())
 	pw.last.fillColor = pw.fillColor
+}
+
+func (pw *PageWriter) checkSetFillGradient() {
+	if pw.fillGradient == pw.last.fillGradient {
+		return
+	}
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	pw.mw.setColorSpaceFill("Pattern")
+	pw.mw.setColorFillPattern(pw.fillGradient)
+	pw.last.fillGradient = pw.fillGradient
 }
 
 func (pw *PageWriter) checkSetFont() {
@@ -228,7 +254,7 @@ func (pw *PageWriter) checkSetVTextAlign(force bool) {
 }
 
 func (pw *PageWriter) checkSetFontColor() {
-	if pw.fontColor == pw.last.fillColor {
+	if pw.last.fillGradient == "" && pw.fontColor == pw.last.fillColor {
 		return
 	}
 	if pw.inPath && pw.autoPath {
@@ -237,9 +263,20 @@ func (pw *PageWriter) checkSetFontColor() {
 	}
 	pw.mw.setRgbColorFill(pw.fontColor.RGB64())
 	pw.last.fillColor = pw.fontColor
+	pw.last.fillGradient = ""
 }
 
 func (pw *PageWriter) checkSetLineColor() {
+	if pw.lineGradient != "" {
+		pw.checkSetLineGradient()
+		return
+	}
+	if pw.last.lineGradient != "" {
+		pw.mw.setRgbColorStroke(pw.lineColor.RGB64())
+		pw.last.lineColor = pw.lineColor
+		pw.last.lineGradient = ""
+		return
+	}
 	if pw.lineColor == pw.last.lineColor {
 		return
 	}
@@ -249,6 +286,19 @@ func (pw *PageWriter) checkSetLineColor() {
 	}
 	pw.mw.setRgbColorStroke(pw.lineColor.RGB64())
 	pw.last.lineColor = pw.lineColor
+}
+
+func (pw *PageWriter) checkSetLineGradient() {
+	if pw.lineGradient == pw.last.lineGradient {
+		return
+	}
+	if pw.inPath && pw.autoPath {
+		pw.gw.stroke()
+		pw.inPath = false
+	}
+	pw.mw.setColorSpaceStroke("Pattern")
+	pw.mw.setColorStrokePattern(pw.lineGradient)
+	pw.last.lineGradient = pw.lineGradient
 }
 
 func (pw *PageWriter) checkSetLineDashPattern() {
@@ -387,14 +437,16 @@ func (pw *PageWriter) beginManualPath() error {
 	}
 	pw.flushText()
 	pw.pathStates = append(pw.pathStates, pathState{
-		autoPath:  pw.autoPath,
-		fillColor: pw.fillColor,
-		lineColor: pw.lineColor,
-		lineWidth: pw.lineWidth,
-		miter:     pw.miterLimit,
-		lineCap:   pw.lineCapStyle,
-		lineJoin:  pw.lineJoinStyle,
-		lineDash:  pw.lineDashPattern,
+		autoPath:     pw.autoPath,
+		fillColor:    pw.fillColor,
+		fillGradient: pw.fillGradient,
+		lineColor:    pw.lineColor,
+		lineGradient: pw.lineGradient,
+		lineWidth:    pw.lineWidth,
+		miter:        pw.miterLimit,
+		lineCap:      pw.lineCapStyle,
+		lineJoin:     pw.lineJoinStyle,
+		lineDash:     pw.lineDashPattern,
 	})
 	pw.autoPath = false
 	return nil
@@ -416,7 +468,9 @@ func (pw *PageWriter) restorePathState() {
 	last := pw.pathStates[len(pw.pathStates)-1]
 	pw.autoPath = last.autoPath
 	pw.fillColor = last.fillColor
+	pw.fillGradient = last.fillGradient
 	pw.lineColor = last.lineColor
+	pw.lineGradient = last.lineGradient
 	pw.lineWidth = last.lineWidth
 	pw.miterLimit = last.miter
 	pw.lineCapStyle = last.lineCap
@@ -1633,6 +1687,100 @@ func (pw *PageWriter) SetFillColor(value any) (prev colors.Color) {
 	}
 
 	return
+}
+
+// SetFillLinearGradient sets the fill to a linear gradient. Coordinates are
+// in the current unit system.
+func (pw *PageWriter) SetFillLinearGradient(lg *LinearGradient) error {
+	if err := lg.validate(); err != nil {
+		return err
+	}
+	patName, err := pw.dw.registerLinearGradient(lg, pw.units, pw.pageHeight)
+	if err != nil {
+		return err
+	}
+	pw.fillGradient = patName
+	return nil
+}
+
+// SetFillRadialGradient sets the fill to a radial gradient. Coordinates are
+// in the current unit system.
+func (pw *PageWriter) SetFillRadialGradient(rg *RadialGradient) error {
+	if err := rg.validate(); err != nil {
+		return err
+	}
+	patName, err := pw.dw.registerRadialGradient(rg, pw.units, pw.pageHeight)
+	if err != nil {
+		return err
+	}
+	pw.fillGradient = patName
+	return nil
+}
+
+// ClearFillGradient reverts the fill to solid color.
+func (pw *PageWriter) ClearFillGradient() {
+	pw.fillGradient = ""
+}
+
+// SetLineLinearGradient sets the stroke to a linear gradient.
+func (pw *PageWriter) SetLineLinearGradient(lg *LinearGradient) error {
+	if err := lg.validate(); err != nil {
+		return err
+	}
+	patName, err := pw.dw.registerLinearGradient(lg, pw.units, pw.pageHeight)
+	if err != nil {
+		return err
+	}
+	pw.lineGradient = patName
+	return nil
+}
+
+// SetLineRadialGradient sets the stroke to a radial gradient.
+func (pw *PageWriter) SetLineRadialGradient(rg *RadialGradient) error {
+	if err := rg.validate(); err != nil {
+		return err
+	}
+	patName, err := pw.dw.registerRadialGradient(rg, pw.units, pw.pageHeight)
+	if err != nil {
+		return err
+	}
+	pw.lineGradient = patName
+	return nil
+}
+
+// ClearLineGradient reverts the stroke to solid color.
+func (pw *PageWriter) ClearLineGradient() {
+	pw.lineGradient = ""
+}
+
+// PaintLinearGradient paints a linear gradient directly into the current
+// clipping region using the sh operator.
+func (pw *PageWriter) PaintLinearGradient(lg *LinearGradient) error {
+	if err := lg.validate(); err != nil {
+		return err
+	}
+	shName, err := pw.dw.registerLinearShading(lg, pw.units, pw.pageHeight)
+	if err != nil {
+		return err
+	}
+	pw.startGraph()
+	pw.gw.paintShading(shName)
+	return nil
+}
+
+// PaintRadialGradient paints a radial gradient directly into the current
+// clipping region using the sh operator.
+func (pw *PageWriter) PaintRadialGradient(rg *RadialGradient) error {
+	if err := rg.validate(); err != nil {
+		return err
+	}
+	shName, err := pw.dw.registerRadialShading(rg, pw.units, pw.pageHeight)
+	if err != nil {
+		return err
+	}
+	pw.startGraph()
+	pw.gw.paintShading(shName)
+	return nil
 }
 
 func (pw *PageWriter) SetFontColor(value any) (prev colors.Color) {

@@ -40,7 +40,25 @@ func (mw *miscWriter) setColorStroke(colors []float64) {
 	fmt.Fprintf(mw.wr, "%s SC\n", float64Slice(colors).join(" "))
 }
 
-// TODO: scn, SCN: patterns and separations
+// setColorFillPattern sets the fill color to a named pattern using the
+// scn operator (PDF spec 8.6.8). Requires the /Pattern color space to be
+// active via setColorSpaceFill.
+func (mw *miscWriter) setColorFillPattern(name string) {
+	fmt.Fprintf(mw.wr, "/%s scn\n", name)
+}
+
+// setColorStrokePattern sets the stroke color to a named pattern using the
+// SCN operator (PDF spec 8.6.8).
+func (mw *miscWriter) setColorStrokePattern(name string) {
+	fmt.Fprintf(mw.wr, "/%s SCN\n", name)
+}
+
+// setExtGState activates a named extended graphics state (gs operator,
+// PDF spec 8.4.4).
+func (mw *miscWriter) setExtGState(name string) {
+	fmt.Fprintf(mw.wr, "/%s gs\n", name)
+}
+
 func (mw *miscWriter) setColorRenderingIntent(intent string) {
 	fmt.Fprintf(mw.wr, "/%s ri\n", intent)
 }

@@ -176,6 +176,13 @@ func TestGraphWriter_setMiterLimit(t *testing.T) {
 	expectS(t, "3.6 M\n", buf.String())
 }
 
+func TestGraphWriter_paintShading(t *testing.T) {
+	var buf bytes.Buffer
+	gw := newGraphWriter(&buf)
+	gw.paintShading("Sh1")
+	expectS(t, "/Sh1 sh\n", buf.String())
+}
+
 func TestGraphWriter_stroke(t *testing.T) {
 	var buf bytes.Buffer
 	gw := newGraphWriter(&buf)
