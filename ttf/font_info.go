@@ -108,6 +108,14 @@ func (fi *FontInfo) Family() string {
 	return fi.nameTable.fontFamily
 }
 
+func (fi *FontInfo) HasTable(tag string) bool {
+	return fi.tableDir.table(tag) != nil
+}
+
+func (fi *FontInfo) HasOpenTypeShaping() bool {
+	return fi.HasTable("GSUB") || fi.HasTable("GPOS")
+}
+
 func (fi *FontInfo) Filename() string {
 	return fi.filename
 }

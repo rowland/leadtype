@@ -142,18 +142,19 @@ func TestPageWriter_DrawTextOnCircle_CardinalAnchors(t *testing.T) {
 		name        string
 		startAngle float64
 		direction  CurvedTextDirection
+		facing     CurvedTextFacing
 	}{
-		{name: "top", startAngle: 90, direction: CurvedTextClockwise},
-		{name: "right", startAngle: 0, direction: CurvedTextClockwise},
-		{name: "bottom", startAngle: -90, direction: CurvedTextCounterClockwise},
-		{name: "left", startAngle: 180, direction: CurvedTextCounterClockwise},
+		{name: "top", startAngle: 90, direction: CurvedTextClockwise, facing: CurvedTextFacingUpright},
+		{name: "right", startAngle: 0, direction: CurvedTextClockwise, facing: CurvedTextFacingUpright},
+		{name: "bottom", startAngle: -90, direction: CurvedTextCounterClockwise, facing: CurvedTextFacingUpright},
+		{name: "left", startAngle: 180, direction: CurvedTextCounterClockwise, facing: CurvedTextFacingUpright},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pw.stream.Reset()
 			pw.inText = false
-			opts := CurvedTextOptions{Align: CurvedTextAlignCenter, Direction: tt.direction}
+			opts := CurvedTextOptions{Align: CurvedTextAlignCenter, Direction: tt.direction, Facing: tt.facing}
 			if err := pw.DrawTextOnCircle("A", 50, 50, 20, tt.startAngle, opts); err != nil {
 				t.Fatalf("DrawTextOnCircle returned error: %v", err)
 			}
@@ -168,7 +169,7 @@ func TestPageWriter_DrawTextOnCircle_CardinalAnchors(t *testing.T) {
 				t.Fatalf("placeCurvedTextGlyphs returned error: %v", err)
 			}
 			placement := orientCurvedTextPlacement(placements[0], CurvedTextOrientationOutside)
-			xAxis, yAxis := curvedTextFrame(placement.Tangent, placement.Normal, CurvedTextFacingUpright)
+			xAxis, yAxis := curvedTextFrame(placement.Tangent, placement.Normal, tt.facing)
 			origin := placement.originPointWithAxes(xAxis, yAxis, placement.BaselineOffset)
 			matrix := g(xAxis.X) + " " + g(xAxis.Y) + " " + g(yAxis.X) + " " + g(yAxis.Y) + " " + g(origin.X) + " " + g(origin.Y) + " Tm\n"
 			if !strings.Contains(pw.stream.String(), matrix) {
@@ -369,4 +370,121 @@ func TestPageWriter_DrawRichTextOnCircle_MatchesStringPath(t *testing.T) {
 	}
 
 	expectS(t, pwText.stream.String(), pwRich.stream.String())
+}
+
+func TestCurvedTextOptions_ResolveCircleAuto_TopPrefersClockwiseUpright(t *testing.T) {
+	opts := CurvedTextOptions{
+		Align:     CurvedTextAlignCenter,
+		Direction: CurvedTextDirectionAuto,
+		Facing:    CurvedTextFacingAuto,
+	}
+	glyphs := []curvedTextRenderGlyph{
+		{curvedTextGlyph: curvedTextGlyph{Text: "A", Advance: 12}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "B", Advance: 12}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "C", Advance: 12}},
+	}
+
+	direction, facing := opts.resolveCircleAuto(glyphs, Location{X: 0, Y: 0}, 40, 90)
+
+	if direction != CurvedTextClockwise {
+		t.Fatalf("direction = %v, want %v", direction, CurvedTextClockwise)
+	}
+	if facing != CurvedTextFacingUpright {
+		t.Fatalf("facing = %v, want %v", facing, CurvedTextFacingUpright)
+	}
+}
+
+func TestCurvedTextOptions_ResolveCircleAuto_BottomPrefersCounterClockwiseUpsideDown(t *testing.T) {
+	opts := CurvedTextOptions{
+		Align:     CurvedTextAlignCenter,
+		Direction: CurvedTextDirectionAuto,
+		Facing:    CurvedTextFacingAuto,
+	}
+	glyphs := []curvedTextRenderGlyph{
+		{curvedTextGlyph: curvedTextGlyph{Text: "A", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "B", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "C", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "D", Advance: 18}},
+	}
+
+	direction, facing := opts.resolveCircleAuto(glyphs, Location{X: 0, Y: 0}, 40, -90)
+
+	if direction != CurvedTextCounterClockwise {
+		t.Fatalf("direction = %v, want %v", direction, CurvedTextCounterClockwise)
+	}
+	if facing != CurvedTextFacingUpsideDown {
+		t.Fatalf("facing = %v, want %v", facing, CurvedTextFacingUpsideDown)
+	}
+}
+
+func TestCurvedTextOptions_ResolveCircleAuto_RightPrefersClockwiseUpright(t *testing.T) {
+	opts := CurvedTextOptions{
+		Align:     CurvedTextAlignCenter,
+		Direction: CurvedTextDirectionAuto,
+		Facing:    CurvedTextFacingAuto,
+	}
+	glyphs := []curvedTextRenderGlyph{
+		{curvedTextGlyph: curvedTextGlyph{Text: "A", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "B", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "C", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "D", Advance: 18}},
+	}
+
+	direction, facing := opts.resolveCircleAuto(glyphs, Location{X: 0, Y: 0}, 40, 0)
+
+	if direction != CurvedTextClockwise {
+		t.Fatalf("direction = %v, want %v", direction, CurvedTextClockwise)
+	}
+	if facing != CurvedTextFacingUpright {
+		t.Fatalf("facing = %v, want %v", facing, CurvedTextFacingUpright)
+	}
+}
+
+func TestCurvedTextOptions_ResolveCircleAuto_ExplicitDirectionStillResolvesFacing(t *testing.T) {
+	opts := CurvedTextOptions{
+		Align:     CurvedTextAlignCenter,
+		Direction: CurvedTextClockwise,
+		Facing:    CurvedTextFacingAuto,
+	}
+	glyphs := []curvedTextRenderGlyph{
+		{curvedTextGlyph: curvedTextGlyph{Text: "A", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "B", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "C", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "D", Advance: 18}},
+	}
+
+	direction, facing := opts.resolveCircleAuto(glyphs, Location{X: 0, Y: 0}, 40, -90)
+
+	if direction != CurvedTextClockwise {
+		t.Fatalf("direction = %v, want %v", direction, CurvedTextClockwise)
+	}
+	if facing != CurvedTextFacingUpsideDown {
+		t.Fatalf("facing = %v, want %v", facing, CurvedTextFacingUpsideDown)
+	}
+}
+
+func TestCurvedTextOptions_ZeroValueUsesAutoForDirectionAndFacing(t *testing.T) {
+	opts := CurvedTextOptions{Align: CurvedTextAlignCenter}
+	glyphs := []curvedTextRenderGlyph{
+		{curvedTextGlyph: curvedTextGlyph{Text: "A", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "B", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "C", Advance: 18}},
+		{curvedTextGlyph: curvedTextGlyph{Text: "D", Advance: 18}},
+	}
+
+	topDirection, topFacing := opts.resolveCircleAuto(glyphs, Location{X: 0, Y: 0}, 40, 90)
+	if topDirection != CurvedTextClockwise {
+		t.Fatalf("top direction = %v, want %v", topDirection, CurvedTextClockwise)
+	}
+	if topFacing != CurvedTextFacingUpright {
+		t.Fatalf("top facing = %v, want %v", topFacing, CurvedTextFacingUpright)
+	}
+
+	bottomDirection, bottomFacing := opts.resolveCircleAuto(glyphs, Location{X: 0, Y: 0}, 40, -90)
+	if bottomDirection != CurvedTextCounterClockwise {
+		t.Fatalf("bottom direction = %v, want %v", bottomDirection, CurvedTextCounterClockwise)
+	}
+	if bottomFacing != CurvedTextFacingUpsideDown {
+		t.Fatalf("bottom facing = %v, want %v", bottomFacing, CurvedTextFacingUpsideDown)
+	}
 }

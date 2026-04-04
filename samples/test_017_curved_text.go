@@ -29,7 +29,6 @@ func runTest017CurvedText() (string, error) {
 		if err != nil {
 			return err
 		}
-		// ttFonts.SetShaper(shaping.NewShaper())
 		doc.AddFontSource(ttFonts)
 
 		cx, cy := 3.5, 3.9

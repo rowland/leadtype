@@ -27,6 +27,15 @@ func TestLoadFontInfo(t *testing.T) {
 		if fi.tableDir.table(tag) == nil {
 			t.Fatalf("Table for tag %s not found", tag)
 		}
+		if !fi.HasTable(tag) {
+			t.Fatalf("HasTable(%q) = false, want true", tag)
+		}
+	}
+	if fi.HasTable("ZZZZ") {
+		t.Fatal("HasTable for unknown tag = true, want false")
+	}
+	if !fi.HasOpenTypeShaping() {
+		t.Fatal("HasOpenTypeShaping = false, want true for Arial")
 	}
 
 	expectI(t, "AvgWidth", 904, fi.AvgWidth())

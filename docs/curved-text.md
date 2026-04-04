@@ -18,10 +18,10 @@ but deferred until the lower-level API has stabilized.
   angle.
 - `horizontal anchor`: How the text span is aligned along the path:
   `left`, `center`, `right`.
-- `vertical anchor`: How the text baseline is offset relative to the path:
-  `top`, `above`, `middle`, `baseline`, `below`.
-- `readable orientation`: A policy that may flip glyph orientation to keep text
-  comfortable to read in common business-graphics layouts.
+- `vertical anchor`: Which part of the rendered text intersects the sampled
+  path point: `top`, `above`, `middle`, `baseline`, `below`.
+- `facing`: Whether glyphs are rendered upright relative to the local text
+  frame or rotated 180 degrees.
 
 ## API Family
 
@@ -62,15 +62,24 @@ const (
 type CurvedTextDirection uint8
 
 const (
-    CurvedTextClockwise CurvedTextDirection = iota
+    CurvedTextDirectionAuto CurvedTextDirection = iota
+    CurvedTextClockwise
     CurvedTextCounterClockwise
 )
 
 type CurvedTextOrientation uint8
 
 const (
-    CurvedTextOrientationUpright CurvedTextOrientation = iota
-    CurvedTextOrientationGeometric
+    CurvedTextOrientationOutside CurvedTextOrientation = iota
+    CurvedTextOrientationInside
+)
+
+type CurvedTextFacing uint8
+
+const (
+    CurvedTextFacingAuto CurvedTextFacing = iota
+    CurvedTextFacingUpright
+    CurvedTextFacingUpsideDown
 )
 
 type CurvedTextOptions struct {
@@ -78,10 +87,13 @@ type CurvedTextOptions struct {
     VAlign      VerticalTextAlign
     Direction   CurvedTextDirection
     Orientation CurvedTextOrientation
+    Facing      CurvedTextFacing
 }
 
 func (dw *DocWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts CurvedTextOptions) error
 func (pw *PageWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts CurvedTextOptions) error
+func (dw *DocWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts CurvedTextOptions) error
+func (pw *PageWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts CurvedTextOptions) error
 
 func (dw *DocWriter) DrawTextOnEllipse(text string, x, y, rx, ry, startAngle float64, opts CurvedTextOptions) error
 func (pw *PageWriter) DrawTextOnEllipse(text string, x, y, rx, ry, startAngle float64, opts CurvedTextOptions) error
@@ -93,9 +105,9 @@ Notes:
   of the circle or ellipse.
 - `startAngle` is the angular anchor location for the text span. The beginning,
   middle, or end of the text lands there depending on `Align`.
-- The first version intentionally uses `text string`, not `*rich_text.RichText`,
-  to keep the initial API small. Styled rich-text variants can be considered
-  later once the placement engine is proven out.
+- `DrawTextOnCircle` remains the convenience entry point, while
+  `DrawRichTextOnCircle` reuses the same curved placement path for callers that
+  already have styled or shaped text.
 - The first version should not add a sweep-extent parameter. Text advances
   naturally from `startAngle` in the chosen `Direction`, with total consumed arc
   length determined by glyph advances and font metrics.
@@ -108,8 +120,9 @@ Zero-value `CurvedTextOptions` should be usable:
 
 - `Align`: `CurvedTextAlignLeft`
 - `VAlign`: `VTextAlignBase`
-- `Direction`: `CurvedTextClockwise`
-- `Orientation`: `CurvedTextOrientationUpright`
+- `Direction`: `CurvedTextDirectionAuto`
+- `Orientation`: `CurvedTextOrientationOutside`
+- `Facing`: `CurvedTextFacingAuto`
 
 Callers can therefore write:
 
@@ -128,15 +141,32 @@ err := doc.DrawTextOnCircle("HELLO", 3.5, 4.0, 1.25, -90, pdf.CurvedTextOptions{
   - `left`: first glyph starts at `startAngle`
   - `center`: text midpoint lands at `startAngle`
   - `right`: text endpoint lands at `startAngle`
-- `VAlign` is interpreted relative to the local curve normal, using the same
-  metric anchors already used by the straight-text path:
+- `Orientation` selects which side of the curve the text is placed on.
+- `Facing` controls whether glyphs use the upright local frame or are rotated
+  180 degrees relative to it.
+- `VAlign` is interpreted against the rendered text frame, so the sampled curve
+  point intersects the chosen text anchor:
   - `base`
   - `above`
   - `top`
   - `middle`
   - `below`
-- In upright mode, the renderer may flip the local text frame by 180 degrees to
-  keep glyphs comfortable to read; the path anchor itself does not move.
+
+## Baseline-First Guidance
+
+The vertical-alignment defaults should remain baseline-oriented.
+
+- `base` is the most natural default when curved text needs to behave like
+  normal text and remain compatible with mixed fonts or scripts.
+- `top` is the natural alternative for hanging-style layouts.
+- `middle` is useful as an explicit manual choice but is not a strong candidate
+  for automatic selection.
+- `above` and `below` are most useful when callers need containment, such as
+  keeping text clear of table or box boundaries.
+
+That means any future `Auto` behavior should optimize first for ordinary text
+flow, not containment-heavy layouts. Callers that care primarily about
+containment should continue to override `VAlign` explicitly.
 
 ## Deferred API Choices
 
@@ -149,6 +179,7 @@ implementation:
 - caller-supplied sweep extents
 - arbitrary path arguments
 - LTML syntax and attribute names
+- auto-selection heuristics for direction, facing, or vertical alignment
 
 ## Default Semantics
 
@@ -156,8 +187,8 @@ implementation:
   after horizontal and vertical anchoring are applied.
 - Horizontal anchors default to `left`.
 - Vertical anchors default to `baseline`.
-- Readable orientation defaults to an upright, reader-friendly mode rather than
-  strict geometric orientation.
+- Circle text defaults to the outside of the curve with automatic direction and
+  facing selection.
 - Glyphs are rotated and positioned along the path; glyph outlines are not
   warped to match curvature.
 
