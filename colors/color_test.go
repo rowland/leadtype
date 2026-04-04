@@ -4,6 +4,7 @@
 package colors
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -46,6 +47,34 @@ func TestColor_String(t *testing.T) {
 	}
 	if Color(0xABCDEF).String() != "ABCDEF" {
 		t.Errorf("Expecting <%s>, got <%s>.", "ABCDEF", Color(0xABCDEF).String())
+	}
+}
+
+func TestNamedColorEntries(t *testing.T) {
+	if len(NamedColorEntries) != len(NamedColors) {
+		t.Fatalf("NamedColorEntries len = %d, want %d", len(NamedColorEntries), len(NamedColors))
+	}
+
+	foundAliceBlue := false
+	foundGrey := false
+	for _, entry := range NamedColorEntries {
+		key := strings.ToLower(entry.Name)
+		if NamedColors[key] != entry.Color {
+			t.Fatalf("NamedColors[%q] = %v, want %v", key, NamedColors[key], entry.Color)
+		}
+		switch entry.Name {
+		case "AliceBlue":
+			foundAliceBlue = true
+		case "Grey":
+			foundGrey = true
+		}
+	}
+
+	if !foundAliceBlue {
+		t.Fatal("NamedColorEntries missing AliceBlue")
+	}
+	if !foundGrey {
+		t.Fatal("NamedColorEntries missing Grey alias")
 	}
 }
 
