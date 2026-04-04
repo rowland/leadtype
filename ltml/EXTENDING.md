@@ -119,13 +119,11 @@ func init() {
 }
 ```
 
-**Known issue:** `page_style.go` and `std_page.go` both register `"std:page"`.
-Because Go runs `init()` functions in alphabetical source file order,
-`std_page.go` fires last and wins, so `<page>` always creates a `StdPage`.
-The `PageStyle` factory in `page_style.go` is effectively dead code, and
-user-defined page styles cannot be created from LTML markup. The `AddPageStyle`
-method on `Scope` and the `HasScope` interface are present but unused by the
-parser.
+Custom page sizes can be defined in LTML markup using the `<pagestyle>` tag
+(registered as `"std:pagestyle"`). After its attributes are applied the
+element is registered in the current scope via `AddPageStyle`, making the
+named size available to subsequent `<page style="...">` elements — the same
+pattern used by `<layoutstyle>`, `<define>`, and `<rules>`.
 
 ---
 
@@ -349,7 +347,7 @@ defaultScope (global)
 | `dotted`  | `*PenStyle` | Black, hairline, dotted |
 | `dashed`  | `*PenStyle` | Black, hairline, dashed |
 | `fixed`   | `*FontStyle`| Courier New 12pt |
-| `letter`, `legal`, `A4`, `B5`, `C5` | `*PageStyle` | Standard page sizes (read-only; cannot be extended from markup) |
+| `letter`, `legal`, `A4`, `B5`, `C5` | `*PageStyle` | Standard page sizes; custom sizes can be added via `<pagestyle>` |
 | `vbox`, `hbox`, `table`, `flow`, `absolute`, `relative` | `*LayoutStyle` | Default layouts |
 | `h`, `b`, `i`, `u`, `s`, `hbox`, `vbox`, `table`, `layer`, `br` | `*Alias` | Built-in tag aliases |
 
