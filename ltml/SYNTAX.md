@@ -488,16 +488,6 @@ Pre-defines a named layout configuration that can be referenced by containers.
 
 ### Page Size and Orientation
 
-Page size and orientation cannot be defined via custom styles in LTML markup.
-The `style` attribute on `<page>` accepts only the built-in size names listed
-below. Orientation must be set directly on the `<page>` element.
-
-```xml
-<page style="A4" orientation="landscape" units="cm" margin="2">
-  <!-- content -->
-</page>
-```
-
 **Built-in page sizes** (set via `style` on `<page>`):
 
 | Name     | Width × Height (pt) |
@@ -509,8 +499,37 @@ below. Orientation must be set directly on the `<page>` element.
 | `C5`     | 459 × 649 |
 
 The `orientation` attribute (`portrait` or `landscape`) swaps width and height
-when combined with `style`. Explicit `width` and `height` values (in points)
-can also be set directly on `<page>` to use a custom page size.
+when combined with `style`. Explicit `width` and `height` values can also be
+set directly on `<page>` to use a one-off custom page size.
+
+```xml
+<page style="A4" orientation="landscape" units="cm" margin="2">
+  <!-- content -->
+</page>
+```
+
+#### Custom named page sizes (`<pagestyle>`)
+
+Use `<pagestyle>` to define a reusable named page size anywhere a `<page>` has
+not yet been opened (typically at the top of the document):
+
+```xml
+<pagestyle id="book" units="in" width="6" height="9"/>
+<page style="book" margin="0.75in">
+  <!-- content -->
+</page>
+```
+
+| Attribute     | Description |
+|---------------|-------------|
+| `id`          | Name used in the `style` attribute of `<page>`. Required. |
+| `width`       | Page width. |
+| `height`      | Page height. |
+| `units`       | Unit for `width` and `height`: `pt` (default), `in`, `cm`, `mm`. |
+| `orientation` | `portrait` (default) or `landscape`. |
+
+Once defined, the name is available to all subsequent `<page>` elements in the
+same scope, just like the built-in size names.
 
 ---
 
