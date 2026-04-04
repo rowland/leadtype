@@ -1259,7 +1259,7 @@ func TestPageWriter_checkSetFillGradient(t *testing.T) {
 
 	pw.checkSetFillColor()
 	s := pw.stream.String()
-	check(t, strings.Contains(s, "/Pattern cs"), "should set Pattern colour space")
+	check(t, strings.Contains(s, "/Pattern cs"), "should set Pattern color space")
 	check(t, strings.Contains(s, "scn"), "should use scn operator")
 }
 
@@ -1276,13 +1276,13 @@ func TestPageWriter_FillGradientRevertToSolid(t *testing.T) {
 	})
 	pw.checkSetFillColor()
 
-	// Now clear and set solid colour
+	// Now clear and set solid color
 	pw.ClearFillGradient()
 	pw.SetFillColor(colors.Green)
 	pw.checkSetFillColor()
 
 	s := pw.stream.String()
-	check(t, strings.Contains(s, "rg"), "should revert to rg operator for solid colour")
+	check(t, strings.Contains(s, "rg"), "should revert to rg operator for solid color")
 }
 
 func TestPageWriter_checkSetLineGradient(t *testing.T) {
@@ -1301,7 +1301,7 @@ func TestPageWriter_checkSetLineGradient(t *testing.T) {
 
 	pw.checkSetLineColor()
 	s := pw.stream.String()
-	check(t, strings.Contains(s, "/Pattern CS"), "should set Pattern colour space for stroke")
+	check(t, strings.Contains(s, "/Pattern CS"), "should set Pattern color space for stroke")
 	check(t, strings.Contains(s, "SCN"), "should use SCN operator")
 }
 

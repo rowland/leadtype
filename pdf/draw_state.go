@@ -48,14 +48,14 @@ func (v VerticalTextAlign) String() string {
 type drawState struct {
 	charSpacing     float64
 	fillColor       colors.Color
-	fillGradient    string // pattern resource name, empty = solid colour
+	fillGradient    string // pattern resource name, empty = solid color
 	fontColor       colors.Color
 	fontKey         string
 	fontSize        float64
 	lineCapStyle    LineCapStyle
 	lineJoinStyle   LineJoinStyle
 	lineColor       colors.Color
-	lineGradient    string // pattern resource name, empty = solid colour
+	lineGradient    string // pattern resource name, empty = solid color
 	lineDashPattern string
 	lineSpacing     float64
 	miterLimit      float64

@@ -177,7 +177,7 @@ func (pw *PageWriter) checkSetFillColor() {
 		return
 	}
 	if pw.last.fillGradient != "" {
-		// Reverting from gradient to solid colour.
+		// Reverting from gradient to solid color.
 		pw.mw.setRgbColorFill(pw.fillColor.RGB64())
 		pw.last.fillColor = pw.fillColor
 		pw.last.fillGradient = ""
@@ -1710,7 +1710,7 @@ func (pw *PageWriter) SetFillRadialGradient(rg *RadialGradient) error {
 	return nil
 }
 
-// ClearFillGradient reverts the fill to solid colour.
+// ClearFillGradient reverts the fill to solid color.
 func (pw *PageWriter) ClearFillGradient() {
 	pw.fillGradient = ""
 }
@@ -1741,7 +1741,7 @@ func (pw *PageWriter) SetLineRadialGradient(rg *RadialGradient) error {
 	return nil
 }
 
-// ClearLineGradient reverts the stroke to solid colour.
+// ClearLineGradient reverts the stroke to solid color.
 func (pw *PageWriter) ClearLineGradient() {
 	pw.lineGradient = ""
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 )
 
-// GradientStop defines a colour at a position along the gradient axis.
+// GradientStop defines a color at a position along the gradient axis.
 // Position must be in the range [0,1].
 type GradientStop struct {
 	Position float64
@@ -126,8 +126,8 @@ func newRadialShading(seq, gen int, x0, y0, r0, x1, y1, r1 float64, fn seqGen) *
 }
 
 // shadingPattern is a PDF Type 2 (shading) pattern that wraps a shading
-// dictionary so it can be used as a fill or stroke colour via the Pattern
-// colour space.
+// dictionary so it can be used as a fill or stroke color via the Pattern
+// color space.
 type shadingPattern struct {
 	dictionaryObject
 }

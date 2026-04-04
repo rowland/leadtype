@@ -11,16 +11,16 @@ PDF supports two gradient types via **shading dictionaries** (PDF spec 8.7):
 - **Type 2 (Axial)**: linear gradient along a line between two points.
 - **Type 3 (Radial)**: radial gradient between two circles.
 
-Both are driven by a **function** (Type 2 exponential interpolation or Type 3 stitching) that maps a parameter `t ∈ [0,1]` to colour values.
+Both are driven by a **function** (Type 2 exponential interpolation or Type 3 stitching) that maps a parameter `t ∈ [0,1]` to color values.
 
-This plan adds gradient fill and stroke support to `PageWriter`, following the same architecture as existing colour and image handling: public setters on `PageWriter`, deferred state emission via `checkSet*` methods, shared resources registered on `DocWriter`, and low-level PDF operators emitted through the specialised writer types.
+This plan adds gradient fill and stroke support to `PageWriter`, following the same architecture as existing color and image handling: public setters on `PageWriter`, deferred state emission via `checkSet*` methods, shared resources registered on `DocWriter`, and low-level PDF operators emitted through the specialised writer types.
 
 ### Two rendering strategies
 
 The PDF spec offers two ways to paint a gradient:
 
-1. **`sh` operator** — paints the shading directly into the current clipping region. Simple, but the gradient always fills the entire clip; it cannot be used as a path fill colour.
-2. **Pattern colour space** — wraps a shading in a Type 2 (shading) pattern, selects the `/Pattern` colour space with `cs`/`CS`, then references the pattern via `scn`/`SCN`. The gradient becomes the fill or stroke colour for any subsequent path operation.
+1. **`sh` operator** — paints the shading directly into the current clipping region. Simple, but the gradient always fills the entire clip; it cannot be used as a path fill color.
+2. **Pattern color space** — wraps a shading in a Type 2 (shading) pattern, selects the `/Pattern` color space with `cs`/`CS`, then references the pattern via `scn`/`SCN`. The gradient becomes the fill or stroke color for any subsequent path operation.
 
 Strategy 2 is more flexible and integrates cleanly with the existing `checkSetFillColor` / `checkSetLineColor` state model, so it is the primary approach. Strategy 1 (`sh`) is exposed as a convenience for full-clip gradient paints.
 
@@ -48,7 +48,7 @@ master
 Define the public-facing gradient types and the internal PDF shading objects.
 
 ```go
-// GradientStop defines a colour at a position along the gradient axis.
+// GradientStop defines a color at a position along the gradient axis.
 // Position is in the range [0,1].
 type GradientStop struct {
     Position float64
@@ -164,7 +164,7 @@ func (r *resources) setExtGState(name string, ref *indirectObjectRef) {
 
 ### Shading pattern (internal)
 
-A Type 2 shading pattern wraps a shading dictionary so it can be used as a pattern colour space fill:
+A Type 2 shading pattern wraps a shading dictionary so it can be used as a pattern color space fill:
 
 ```go
 // shadingPattern is a PDF Type 2 pattern that references a shading dictionary.
@@ -191,14 +191,14 @@ Fields: `/PatternType 2`, `/Shading <ref>`, optional `/Matrix`.
 Implement the `scn`/`SCN` operators (resolving the existing TODO at line 43) and the `gs` operator:
 
 ```go
-// setColorFillPattern sets the fill colour to a named pattern (scn operator
-// with Pattern colour space).
+// setColorFillPattern sets the fill color to a named pattern (scn operator
+// with Pattern color space).
 func (mw *miscWriter) setColorFillPattern(name string) {
     fmt.Fprintf(mw.wr, "/%s scn\n", name)
 }
 
-// setColorStrokePattern sets the stroke colour to a named pattern (SCN operator
-// with Pattern colour space).
+// setColorStrokePattern sets the stroke color to a named pattern (SCN operator
+// with Pattern color space).
 func (mw *miscWriter) setColorStrokePattern(name string) {
     fmt.Fprintf(mw.wr, "/%s SCN\n", name)
 }
@@ -237,8 +237,8 @@ func (gw *graphWriter) paintShading(name string) {
 ```go
 type drawState struct {
     // ... existing fields ...
-    fillGradient *gradientState // new: active fill gradient (nil = solid colour)
-    lineGradient *gradientState // new: active stroke gradient (nil = solid colour)
+    fillGradient *gradientState // new: active fill gradient (nil = solid color)
+    lineGradient *gradientState // new: active stroke gradient (nil = solid color)
 }
 ```
 
@@ -257,7 +257,7 @@ type gradientState struct {
 
 ```go
 // SetFillGradient sets the fill to a linear gradient. Pass nil to revert to
-// solid colour fill. Coordinates are in the current unit system.
+// solid color fill. Coordinates are in the current unit system.
 func (pw *PageWriter) SetFillLinearGradient(g *LinearGradient) error
 
 // SetFillRadialGradient sets the fill to a radial gradient.
@@ -269,10 +269,10 @@ func (pw *PageWriter) SetLineLinearGradient(g *LinearGradient) error
 // SetLineRadialGradient sets the stroke to a radial gradient.
 func (pw *PageWriter) SetLineRadialGradient(g *RadialGradient) error
 
-// ClearFillGradient reverts to solid colour fill.
+// ClearFillGradient reverts to solid color fill.
 func (pw *PageWriter) ClearFillGradient()
 
-// ClearLineGradient reverts to solid colour stroke.
+// ClearLineGradient reverts to solid color stroke.
 func (pw *PageWriter) ClearLineGradient()
 
 // PaintLinearGradient paints a linear gradient directly into the current
@@ -291,7 +291,7 @@ Add `checkSetFillGradient()` and `checkSetLineGradient()` following the `checkSe
 ```go
 func (pw *PageWriter) checkSetFillGradient() {
     // If gradient is active and differs from last, emit:
-    //   /Pattern cs      (set fill colour space)
+    //   /Pattern cs      (set fill color space)
     //   /P<n> scn        (select gradient pattern)
     // If gradient was cleared, revert to DeviceRGB:
     //   /DeviceRGB cs
@@ -369,7 +369,7 @@ func TestLinearGradient_Validate(t *testing.T) {
 }
 
 func TestShadingDict_Axial_TwoStop(t *testing.T) {
-    // Verify serialised PDF syntax for a simple two-colour axial shading
+    // Verify serialised PDF syntax for a simple two-color axial shading
 }
 
 func TestShadingDict_Radial_MultiStop(t *testing.T) {
@@ -397,7 +397,7 @@ func TestPageWriter_checkSetFillGradient(t *testing.T) {
 }
 
 func TestPageWriter_FillGradientRevertToSolid(t *testing.T) {
-    // Set gradient, then clear and set solid colour, verify stream
+    // Set gradient, then clear and set solid color, verify stream
 }
 ```
 
@@ -559,7 +559,7 @@ Leadtype supports linear (axial) and radial gradient fills for shapes.
 
 ### Multi-stop gradients
 
-Supply more than two stops to create multi-colour transitions:
+Supply more than two stops to create multi-color transitions:
 
     Stops: []pdf.GradientStop{
         {Position: 0, Color: colors.Red},
@@ -571,7 +571,7 @@ Supply more than two stops to create multi-colour transitions:
 ### Clearing a gradient
 
     doc.ClearFillGradient()
-    doc.SetFillColor(colors.Gray) // back to solid colour
+    doc.SetFillColor(colors.Gray) // back to solid color
 ```
 
 ### Checklist
