@@ -107,7 +107,8 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `style.valign`     | Vertical alignment: `top`, `middle`, `bottom`, `baseline`. |
 | `bullet`           | Reference to a named `<bullet>` style. |
 | `width`, `height`  | Explicit dimensions. |
-| `margin`, `padding` | Spacing around and inside the element. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the element. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the element box. |
 | `border`           | Reference to a named `<pen>` style. |
 | `fill`             | Reference to a named `<brush>` style. |
 | `rotate`           | Rotate the widget around its origin by the given degrees. |
@@ -177,7 +178,8 @@ Draws a rectangle with optional border and fill.
 | `border`   | Reference to a named `<pen>` style. |
 | `fill`     | Reference to a named `<brush>` style. |
 | `corners`  | Corner radius for rounded corners, in current units. |
-| `margin`, `padding` | Spacing. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the rectangle widget. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the rectangle widget. |
 
 ---
 
@@ -200,7 +202,8 @@ Shared attributes:
 | `width`, `height` | Layout box dimensions. Shapes are centered within their content boxes. |
 | `border` | Reference to a named `<pen>` style for the shape outline. |
 | `fill` | Reference to a named `<brush>` style for the interior. |
-| `margin`, `padding` | Spacing around and inside the shape widget. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the shape widget. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the shape widget. |
 | `reverse` | Reverse the path direction for shapes that support it. |
 
 Shape-specific attributes:
@@ -233,7 +236,8 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |
 | `width`, `height` | Optional explicit dimensions. |
-| `margin`, `padding` | Spacing around and inside the label. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the label. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the label box. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
 
@@ -282,7 +286,8 @@ code blocks and other preformatted content.
 |-----------|-------------|
 | `font` / `font.*` | Same font attributes supported by `<p>`. Defaults to the built-in `fixed` font style. |
 | `width`, `height` | Optional explicit dimensions. |
-| `margin`, `padding` | Spacing around and inside the block. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the block. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the block. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
 
@@ -304,7 +309,8 @@ Places an image file into the document using the PDF image API.
 |-----------|-------------|
 | `src` | Path to the source image file. |
 | `width`, `height` | Optional explicit dimensions. If only one is supplied, the other is inferred from the image aspect ratio. |
-| `margin`, `padding` | Spacing around and inside the widget box. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
 
@@ -330,7 +336,8 @@ Draws a line segment using the configured pen style.
 | `angle` | Line angle in degrees. `0` points right; positive angles rotate clockwise in page coordinates. |
 | `length` | Optional explicit line length. |
 | `width`, `height` | Optional layout box dimensions used to infer the line length and placement when `length` is omitted. |
-| `margin`, `padding` | Spacing around and inside the widget box. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Optional enclosing widget border, separate from the line stroke. |
 
 Horizontal, vertical, and diagonal lines are all represented with the same tag.
