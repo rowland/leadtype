@@ -269,8 +269,8 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 		}
 		rowHeights[r] = maxHeight
 	}
-	headerCount := minInt(c.headerRows, grid.Rows())
-	footerCount := minInt(c.footerRows, max(0, grid.Rows()-headerCount))
+	headerCount := min(c.headerRows, grid.Rows())
+	footerCount := min(c.footerRows, max(0, grid.Rows()-headerCount))
 	headerRows := make([]int, 0, headerCount)
 	for i := 0; i < headerCount; i++ {
 		headerRows = append(headerRows, i)
@@ -362,13 +362,6 @@ func cloneWidgetShallow(widget Widget) Widget {
 	w.SetVisible(true)
 	w.SetDisabled(false)
 	return w
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func init() {

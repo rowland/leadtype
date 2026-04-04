@@ -105,8 +105,8 @@ func intersectingLeafSlices(slices []leafSlice, start, end int) []leafSlice {
 			piece:     s.piece,
 			leafStart: s.leafStart,
 			leafEnd:   s.leafEnd,
-			clipStart: maxInt(s.leafStart, start),
-			clipEnd:   minInt(s.leafEnd, end),
+			clipStart: max(s.leafStart, start),
+			clipEnd:   min(s.leafEnd, end),
 		})
 	}
 	return out
@@ -157,18 +157,4 @@ func firstStrongDirection(text string) xbidi.Direction {
 		}
 	}
 	return xbidi.LeftToRight
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
