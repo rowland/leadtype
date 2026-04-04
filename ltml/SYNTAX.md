@@ -847,7 +847,7 @@ Hexadecimal color notation (e.g., `#ff0000`) is also accepted.
 </ltml>
 ```
 
-### Rules and Classes
+### Styles and Classes
 
 ```xml
 <ltml units="in" margin="1">
