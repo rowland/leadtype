@@ -170,10 +170,14 @@ func Print(widget Widget, writer Writer) error {
 		return nil
 	}
 	render := func() error {
-		if err := widget.PaintBackground(writer); err != nil {
+		if err := withAccessibilityArtifact(writer, func() error {
+			return widget.PaintBackground(writer)
+		}); err != nil {
 			return err
 		}
-		if err := widget.DrawBorder(writer); err != nil {
+		if err := withAccessibilityArtifact(writer, func() error {
+			return widget.DrawBorder(writer)
+		}); err != nil {
 			return err
 		}
 		if err := widget.DrawContent(writer); err != nil {

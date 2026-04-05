@@ -8,6 +8,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -167,9 +168,23 @@ func (w *labelTestWriter) SetUnderline(underline bool) (prev bool) {
 func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
-func (w *labelTestWriter) Stroke() error   { return nil }
-func (w *labelTestWriter) Strikeout() bool { return w.strikeout }
-func (w *labelTestWriter) Underline() bool { return w.underline }
+func (w *labelTestWriter) Stroke() error              { return nil }
+func (w *labelTestWriter) Strikeout() bool            { return w.strikeout }
+func (w *labelTestWriter) Underline() bool            { return w.underline }
+func (w *labelTestWriter) EnableTaggedPDF(value bool) {}
+func (w *labelTestWriter) TaggedPDFEnabled() bool     { return false }
+func (w *labelTestWriter) WithAccessibilityArtifact(fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (w *labelTestWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 
 func TestStdLabel_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 	l := &StdLabel{}
@@ -666,11 +681,11 @@ func TestParse_PredefinedInlineSpanAliases(t *testing.T) {
 	}
 
 	cases := []struct {
-		index      int
-		text       string
-		style      string
-		underline  bool
-		strikeout  bool
+		index     int
+		text      string
+		style     string
+		underline bool
+		strikeout bool
 	}{
 		{index: 0, text: "italic", style: "Italic"},
 		{index: 1, text: "underline", underline: true},

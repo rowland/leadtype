@@ -17,6 +17,10 @@ func (dw *DocWriter) NewPage() {
 	dw.DocWriter.NewPage()
 }
 
+func (dw *DocWriter) EnableTaggedPDF(value bool) {
+	dw.DocWriter.EnableTaggedPDF(value)
+}
+
 func (dw *DocWriter) LayoutProbeWriter() any {
 	probe := NewDocWriter()
 	probe.SetAssetFS(dw.AssetFS())

@@ -1,8 +1,8 @@
-%PDF-1.3
+%PDF-1.7
 1 0 obj
 <<
 /Count 1 
-/Kids [5 0 R ] 
+/Kids [7 0 R ] 
 /Type /Pages 
 >>
 endobj
@@ -14,16 +14,21 @@ endobj
 endobj
 3 0 obj
 <<
+/MarkInfo <<
+/Marked true 
+>>
+
 /Outlines 2 0 R 
 /PageMode /UseNone 
 /Pages 1 0 R 
+/StructTreeRoot 6 0 R 
 /Type /Catalog 
 >>
 endobj
 4 0 obj
 <<
 /Font <<
-/F0 8 0 R 
+/F0 11 0 R 
 >>
 
 /ProcSet [/PDF /Text /ImageB /ImageC ] 
@@ -31,17 +36,45 @@ endobj
 endobj
 5 0 obj
 <<
-/Contents 9 0 R 
+/Nums [0 [8 0 R 12 0 R 12 0 R 12 0 R 12 0 R 12 0 R 12 0 R 13 0 R 13 0 R 13 0 R 13 0 R 13 0 R 13 0 R ] ] 
+>>
+endobj
+6 0 obj
+<<
+/K [8 0 R 12 0 R 13 0 R ] 
+/ParentTree 5 0 R 
+/ParentTreeNextKey 1 
+/Type /StructTreeRoot 
+>>
+endobj
+7 0 obj
+<<
+/Contents 14 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 34071 
+/Length 34700 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
 /Rotate 0 
+/StructParents 0 
 /Type /Page 
 >>
 endobj
-6 0 obj
+8 0 obj
+<<
+/ActualText (VBox Layout) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 0 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+9 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -50,7 +83,7 @@ endobj
 /Flags 0 
 /FontBBox [-1947 -985 2961 2297 ] 
 /FontFamily (Helvetica) 
-/FontFile2 12 0 R 
+/FontFile2 17 0 R 
 /FontName /HHTLJC+Helvetica 
 /ItalicAngle 0 
 /Leading 2048 
@@ -62,50 +95,149 @@ endobj
 /XHeight 1071 
 >>
 endobj
-7 0 obj
+10 0 obj
 <<
 /BaseFont /HHTLJC+Helvetica 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 11 0 R 
+/CIDToGIDMap 16 0 R 
 /DW 556 
-/FontDescriptor 6 0 R 
+/FontDescriptor 9 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [666 666 ] 4 [500 277 ] 8 [500 ] 10 [277 333 ] 13 [833 222 ] 16 [500 ] 18 [222 277 500 ] 25 [277 722 500 722 ] 30 [277 666 ] ] 
 >>
 endobj
-8 0 obj
+11 0 obj
 <<
 /BaseFont /HHTLJC+Helvetica 
-/DescendantFonts [7 0 R ] 
+/DescendantFonts [10 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 10 0 R 
+/ToUnicode 15 0 R 
 /Type /Font 
 >>
 endobj
-9 0 obj
+12 0 obj
 <<
-/Length 34071 
+/ActualText (Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 1 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 2 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 3 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 4 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 5 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 6 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+13 0 obj
+<<
+/ActualText (Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 7 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 8 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 9 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 10 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 11 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 12 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+14 0 obj
+<<
+/Length 34700 
 >>
 stream
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 72 710.7598 Td
+/P <<
+/MCID 0 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <0001000200030004000500060007000800030009000a> Tj
+EMC
 ET
 0.5918 w
 72 709.8516 m
 140.0449 709.8516 l
+/Artifact BMC
+EMC
+/Artifact BMC
 S
 0.001 w
 [1 2] 0 d
 0 J
 72 608 468 82 re
 S
+EMC
 BT
 77 675.7598 Td
+/P <<
+/MCID 1 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 1 0 0 1 77 675.7598 Tm
@@ -267,8 +399,13 @@ BT
 1 0 0 1 531.0039 675.7598 Tm
 <000b> Tj
 1 0 0 1 535 675.7598 Tm
+EMC
 1 0 0 1 77 675.7598 Tm
 0 -12 Td
+/P <<
+/MCID 2 
+>>
+BDC
 1 0 0 1 77 663.7598 Tm
 <000e> Tj
 1 0 0 1 79.666 663.7598 Tm
@@ -434,8 +571,13 @@ BT
 1 0 0 1 528.3262 663.7598 Tm
 <0011> Tj
 1 0 0 1 535 663.7598 Tm
+EMC
 1 0 0 1 77 663.7598 Tm
 0 -12 Td
+/P <<
+/MCID 3 
+>>
+BDC
 1 0 0 1 77 651.7598 Tm
 <000c> Tj
 1 0 0 1 83.6738 651.7598 Tm
@@ -607,8 +749,13 @@ BT
 1 0 0 1 528.3262 651.7598 Tm
 <000c> Tj
 1 0 0 1 535 651.7598 Tm
+EMC
 1 0 0 1 77 651.7598 Tm
 0 -12 Td
+/P <<
+/MCID 4 
+>>
+BDC
 1 0 0 1 77 639.7598 Tm
 <0011> Tj
 1 0 0 1 83.6738 639.7598 Tm
@@ -782,8 +929,13 @@ BT
 1 0 0 1 531.666 639.7598 Tm
 <0019> Tj
 1 0 0 1 535 639.7598 Tm
+EMC
 1 0 0 1 77 639.7598 Tm
 0 -12 Td
+/P <<
+/MCID 5 
+>>
+BDC
 1 0 0 1 77 627.7598 Tm
 <001f> Tj
 1 0 0 1 85.0039 627.7598 Tm
@@ -949,16 +1101,30 @@ BT
 1 0 0 1 531.666 627.7598 Tm
 <000a> Tj
 1 0 0 1 535 627.7598 Tm
+EMC
 1 0 0 1 77 627.7598 Tm
 0 -12 Td
+/P <<
+/MCID 6 
+>>
+BDC
 <000d000300120012000e000a000500070015000e000d0005000e00110005000c0010000a00050012000700170003000b0009000d0019> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 [4 2] 0 d
 0 J
 72 508 468 82 re
 S
+EMC
 BT
 77 575.7598 Td
+/P <<
+/MCID 7 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 1 0 0 1 77 575.7598 Tm
@@ -1120,8 +1286,13 @@ BT
 1 0 0 1 531.0039 575.7598 Tm
 <000b> Tj
 1 0 0 1 535 575.7598 Tm
+EMC
 1 0 0 1 77 575.7598 Tm
 0 -12 Td
+/P <<
+/MCID 8 
+>>
+BDC
 1 0 0 1 77 563.7598 Tm
 <000e> Tj
 1 0 0 1 79.666 563.7598 Tm
@@ -1287,8 +1458,13 @@ BT
 1 0 0 1 528.3262 563.7598 Tm
 <0011> Tj
 1 0 0 1 535 563.7598 Tm
+EMC
 1 0 0 1 77 563.7598 Tm
 0 -12 Td
+/P <<
+/MCID 9 
+>>
+BDC
 1 0 0 1 77 551.7598 Tm
 <000c> Tj
 1 0 0 1 83.6738 551.7598 Tm
@@ -1460,8 +1636,13 @@ BT
 1 0 0 1 528.3262 551.7598 Tm
 <000c> Tj
 1 0 0 1 535 551.7598 Tm
+EMC
 1 0 0 1 77 551.7598 Tm
 0 -12 Td
+/P <<
+/MCID 10 
+>>
+BDC
 1 0 0 1 77 539.7598 Tm
 <0011> Tj
 1 0 0 1 83.6738 539.7598 Tm
@@ -1635,8 +1816,13 @@ BT
 1 0 0 1 531.666 539.7598 Tm
 <0019> Tj
 1 0 0 1 535 539.7598 Tm
+EMC
 1 0 0 1 77 539.7598 Tm
 0 -12 Td
+/P <<
+/MCID 11 
+>>
+BDC
 1 0 0 1 77 527.7598 Tm
 <001f> Tj
 1 0 0 1 85.0039 527.7598 Tm
@@ -1802,9 +1988,18 @@ BT
 1 0 0 1 531.666 527.7598 Tm
 <000a> Tj
 1 0 0 1 535 527.7598 Tm
+EMC
 1 0 0 1 77 527.7598 Tm
 0 -12 Td
+/P <<
+/MCID 12 
+>>
+BDC
 <000d000300120012000e000a000500070015000e000d0005000e00110005000c0010000a00050012000700170003000b0009000d0019> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 0 0 1 RG
 2 w
@@ -1818,6 +2013,10 @@ ET
 510.1529 454 516.6 460.4471 516.6 468.4 c
 516.6 475.6 l
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 1 0 0 RG
 516.6 421.6 m
 516.6 429.5529 510.1529 436 502.2 436 c
@@ -1829,6 +2028,10 @@ S
 510.1529 364 516.6 370.4471 516.6 378.4 c
 516.6 421.6 l
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 0 0 1 RG
 516.6 331.6 m
 516.6 339.5529 510.1529 346 502.2 346 c
@@ -1840,6 +2043,10 @@ S
 510.1529 274 516.6 280.4471 516.6 288.4 c
 516.6 331.6 l
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 1 0 0 RG
 516.6 93.6 m
 516.6 101.5529 510.1529 108 502.2 108 c
@@ -1851,10 +2058,11 @@ S
 510.1529 72 516.6 78.4471 516.6 86.4 c
 516.6 93.6 l
 S
+EMC
 ET
 endstream
 endobj
-10 0 obj
+15 0 obj
 <<
 /Length 718 
 >>
@@ -1906,14 +2114,14 @@ CMap end
 end
 endstream
 endobj
-11 0 obj
+16 0 obj
 <<
 /Length 64 
 >>
 stream
    9 % R [  / D \ X W U H P L S V G O  F Q J E T  8 Y ' K I (endstream
 endobj
-12 0 obj
+17 0 obj
 <<
 /Length 14756 
 /Length1 14756 
@@ -1988,25 +2196,30 @@ d ce+NôM<ýíNEeDæ ?MíÔí1067654&'#53ªEmÖ`vÑU-*ÚÊw´     ¯  € Ú
 ¸¬²?»« ? «³¸®²?»­ ? ­· ¸ÿà´   ¸«´   ¸«¶   ¸­³   ¸­@               J °¸ …v??>9FD>9FD>9FD>9FD>9FD>9F`D>9F`D>9F`D+++++++++++++++++++++++++++°–KSX°ªY°2KSX°ÿY+++++++++++++++++++++++++++++++++++++++++tu+++eB++KRy³vpjfEe#E`#Ee`#E`°‹vh°€b  ±jpEe#E °&`bch °&ae°p#eD°j#D ±vfEe#E °&`bch °&ae°f#eD°v#D± fETX±f@eD²v@vE#aDY³bBr]Ee#E`#Ee`#E`°‰vh°€b  ±rBEe#E °&`bch °&ae°B#eD°r#D ±b]Ee#E °&`bch °&ae°]#eD°b#D± ]ETX±]@eD²b@bE#aDY++++EiSBst¸š EiK °(S°IQZX° aYD¸¦ EiDu  endstream
 endobj
 xref
-0 13
+0 18
 0000000000 65535 f
 0000000009 00000 n
 0000000070 00000 n
 0000000118 00000 n
-0000000206 00000 n
-0000000291 00000 n
-0000000452 00000 n
-0000000770 00000 n
-0000001119 00000 n
-0000001268 00000 n
-0000035392 00000 n
-0000036162 00000 n
-0000036277 00000 n
+0000000260 00000 n
+0000000346 00000 n
+0000000472 00000 n
+0000000584 00000 n
+0000000764 00000 n
+0000000890 00000 n
+0000001208 00000 n
+0000001558 00000 n
+0000001709 00000 n
+0000002464 00000 n
+0000003222 00000 n
+0000037976 00000 n
+0000038746 00000 n
+0000038861 00000 n
 trailer
 <<
 /Root 3 0 R 
-/Size 13 
+/Size 18 
 >>
 startxref
-51103
+53687
 %%EOF

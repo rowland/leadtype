@@ -112,6 +112,12 @@ func writeSamplePDF(name string, outputFile string, t *testing.T) {
 	} else if assetFS != nil {
 		w.SetAssetFS(assetFS)
 	}
+	// Tagged PDF accessibility is document-driven for LTML samples. Add
+	// ua="true" to the root <ltml> element to opt a sample in, or call
+	// w.EnableTaggedPDF(true) here to force tagged output for the whole suite.
+	if tagged, ok := os.LookupEnv("LTML_UA"); ok && tagged == "true" {
+		w.EnableTaggedPDF(tagged == "true")
+	}
 
 	if err := doc.Print(w); err != nil {
 		t.Errorf("Printing sample: %v", err)

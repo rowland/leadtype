@@ -6,9 +6,11 @@ package pdf
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"sort"
+	"unicode/utf16"
 )
 
 type array []writer
@@ -74,6 +76,20 @@ func newCatalog(seq, gen int, pageMode string, pages *pages, outlines *outlines)
 	return new(catalog).init(seq, gen, pageMode, pages, outlines)
 }
 
+func (c *catalog) setMarkInfo(marked bool) {
+	c.dict["MarkInfo"] = dictionary{
+		"Marked": boolean(marked),
+	}
+}
+
+func (c *catalog) setStructTreeRoot(root *structTreeRoot) {
+	if root == nil {
+		delete(c.dict, "StructTreeRoot")
+		return
+	}
+	c.dict["StructTreeRoot"] = &indirectObjectRef{root}
+}
+
 type dictionary map[string]writer
 
 func (d dictionary) keys() []string {
@@ -125,7 +141,7 @@ type file struct {
 }
 
 func newFile() *file {
-	return &file{header{}, body{}, trailer{dictionary{}, 0}}
+	return &file{header{Version: defaultPDFVersion}, body{}, trailer{dictionary{}, 0}}
 }
 
 func (f *file) write(w io.Writer) {
@@ -233,10 +249,12 @@ type header struct {
 	Version float32
 }
 
+const defaultPDFVersion = 1.7
+
 func (h *header) write(w io.Writer) {
 	v := h.Version
 	if v == 0.0 {
-		v = 1.3
+		v = defaultPDFVersion
 	}
 	fmt.Fprintf(w, "%%PDF-%1.1f\n", v)
 }
@@ -386,6 +404,10 @@ func (p *page) contentRefs() (result array) {
 
 func (p *page) setThumb(thumb seqGen) {
 	p.dict["Thumb"] = &indirectObjectRef{thumb}
+}
+
+func (p *page) setStructParents(key int) {
+	p.dict["StructParents"] = integer(key)
 }
 
 func (p *page) write(w io.Writer) {
@@ -626,6 +648,8 @@ func newType1Font(seq, gen int,
 
 type str []byte
 
+type textString string
+
 var (
 	backSlash         = []byte("\\")
 	escapedBackslash  = []byte("\\\\")
@@ -644,6 +668,36 @@ func (s str) escape() []byte {
 
 func (s str) write(w io.Writer) {
 	fmt.Fprintf(w, "(%s) ", s.escape())
+}
+
+func (s textString) write(w io.Writer) {
+	if encoded, ok := s.asASCII(); ok {
+		fmt.Fprintf(w, "(%s) ", str(encoded).escape())
+		return
+	}
+	fmt.Fprintf(w, "<%s> ", hex.EncodeToString(s.asUTF16BE()))
+}
+
+func (s textString) asASCII() ([]byte, bool) {
+	buf := make([]byte, 0, len(s))
+	for _, r := range s {
+		if r > 0x7f {
+			return nil, false
+		}
+		buf = append(buf, byte(r))
+	}
+	return buf, true
+}
+
+func (s textString) asUTF16BE() []byte {
+	units := utf16.Encode([]rune(string(s)))
+	buf := make([]byte, 2, 2+len(units)*2)
+	buf[0] = 0xfe
+	buf[1] = 0xff
+	for _, unit := range units {
+		buf = append(buf, byte(unit>>8), byte(unit))
+	}
+	return buf
 }
 
 type stream struct {

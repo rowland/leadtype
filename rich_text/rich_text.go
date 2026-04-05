@@ -31,6 +31,7 @@ type RichText struct {
 	// annotation rectangle per rendered fragment without changing callers.
 	LinkURI            string
 	LinkTarget         string
+	LinkID             string
 	Underline          bool
 	Strikeout          bool
 	ascent             float64
@@ -74,16 +75,17 @@ var errNoFontSet = errors.New("No font set")
 //	              A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
 func New(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
 	piece := &RichText{
-		Text:        s,
-		FontSize:    fontSize,
-		Color:       options.ColorDefault("color", colors.Black),
-		LinkURI:     options.StringDefault("link_uri", ""),
-		LinkTarget:  options.StringDefault("link_target", ""),
-		Underline:   options.BoolDefault("underline", false),
-		Strikeout:   options.BoolDefault("strikeout", false),
-		CharSpacing: options.FloatDefault("char_spacing", 0),
-		WordSpacing: options.FloatDefault("word_spacing", 0),
-		NoBreak:     options.BoolDefault("nobreak", false),
+		Text:          s,
+		FontSize:      fontSize,
+		Color:         options.ColorDefault("color", colors.Black),
+		LinkURI:       options.StringDefault("link_uri", ""),
+		LinkTarget:    options.StringDefault("link_target", ""),
+		LinkID:        options.StringDefault("link_id", ""),
+		Underline:     options.BoolDefault("underline", false),
+		Strikeout:     options.BoolDefault("strikeout", false),
+		CharSpacing:   options.FloatDefault("char_spacing", 0),
+		WordSpacing:   options.FloatDefault("word_spacing", 0),
+		NoBreak:       options.BoolDefault("nobreak", false),
 	}
 	var defaultFont *font.Font
 	if len(fonts) == 0 {
@@ -387,6 +389,7 @@ func (piece *RichText) MatchesAttributes(other *RichText) bool {
 		piece.Color == other.Color &&
 		piece.LinkURI == other.LinkURI &&
 		piece.LinkTarget == other.LinkTarget &&
+		piece.LinkID == other.LinkID &&
 		piece.Underline == other.Underline &&
 		piece.Strikeout == other.Strikeout &&
 		piece.CharSpacing == other.CharSpacing &&
@@ -700,17 +703,18 @@ func (piece *RichText) Scale(scale float64, minFontSize float64) *RichText {
 
 func (piece *RichText) scaleClone(scale float64) *RichText {
 	clone := &RichText{
-		Text:        piece.Text,
-		Font:        piece.Font,
-		FontSize:    piece.FontSize,
-		Color:       piece.Color,
-		LinkURI:     piece.LinkURI,
-		LinkTarget:  piece.LinkTarget,
-		Underline:   piece.Underline,
-		Strikeout:   piece.Strikeout,
-		CharSpacing: piece.CharSpacing,
-		WordSpacing: piece.WordSpacing,
-		NoBreak:     piece.NoBreak,
+		Text:          piece.Text,
+		Font:          piece.Font,
+		FontSize:      piece.FontSize,
+		Color:         piece.Color,
+		LinkURI:       piece.LinkURI,
+		LinkTarget:    piece.LinkTarget,
+		LinkID:        piece.LinkID,
+		Underline:     piece.Underline,
+		Strikeout:     piece.Strikeout,
+		CharSpacing:   piece.CharSpacing,
+		WordSpacing:   piece.WordSpacing,
+		NoBreak:       piece.NoBreak,
 	}
 	if piece.IsLeaf() {
 		clone.FontSize *= scale

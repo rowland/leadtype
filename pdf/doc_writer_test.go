@@ -436,7 +436,7 @@ func TestDocWriter_PathAPI_Integration(t *testing.T) {
 
 	pdf := buf.String()
 
-	if !strings.HasPrefix(pdf, "%PDF-1.3\n") {
+	if !strings.HasPrefix(pdf, "%PDF-1.7\n") {
 		t.Fatalf("expected PDF header, got:\n%s", pdf[:min(32, len(pdf))])
 	}
 	if !strings.Contains(pdf, "/Type /Catalog") {
@@ -518,7 +518,7 @@ func TestDocWriter_ShapesIntegration(t *testing.T) {
 	}
 	pdf := buf.String()
 
-	if !strings.Contains(pdf, "%PDF-1.3\n") {
+	if !strings.Contains(pdf, "%PDF-1.7\n") {
 		t.Fatalf("expected PDF header")
 	}
 	if !strings.Contains(pdf, " c\n") {
@@ -558,7 +558,7 @@ func TestDocWriter_TransformsIntegration(t *testing.T) {
 	pdf := buf.String()
 
 	for _, fragment := range []string{
-		"%PDF-1.3\n",
+		"%PDF-1.7\n",
 		"q\n",
 		" cm\n",
 		" re\n",
@@ -609,7 +609,7 @@ func TestDocWriter_VTextAlignIntegration(t *testing.T) {
 	}
 
 	for _, fragment := range []string{
-		"%PDF-1.3\n",
+		"%PDF-1.7\n",
 		"0 Ts\n",
 		g(topRise) + " Ts\n",
 		"(Base) Tj\n",

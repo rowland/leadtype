@@ -79,6 +79,20 @@ func (mw *miscWriter) setRgbColorStroke(red, green, blue float64) {
 	fmt.Fprintf(mw.wr, "%s %s %s RG\n", g(red), g(green), g(blue))
 }
 
+func (mw *miscWriter) beginMarkedContent(tag string) {
+	fmt.Fprintf(mw.wr, "/%s BMC\n", tag)
+}
+
+func (mw *miscWriter) beginMarkedContentWithProperties(tag string, props dictionary) {
+	fmt.Fprintf(mw.wr, "/%s ", tag)
+	props.write(mw.wr)
+	fmt.Fprintf(mw.wr, "BDC\n")
+}
+
+func (mw *miscWriter) endMarkedContent() {
+	fmt.Fprintf(mw.wr, "EMC\n")
+}
+
 func (mw *miscWriter) xObject(name string) {
 	fmt.Fprintf(mw.wr, "/%s Do\n", name)
 }

@@ -26,26 +26,28 @@ func (p *StdPre) AddText(text string) {
 }
 
 func (p *StdPre) DrawContent(w Writer) error {
-	lines := p.Lines()
-	if len(lines) == 0 {
-		lines = []string{""}
-	}
-
-	p.Font().Apply(w)
-	lineHeight := p.lineHeight(w)
-	y := ContentTop(p)
-	for _, line := range lines {
-		if line != "" {
-			rt, err := p.richTextForLine(line, w)
-			if err != nil {
-				return err
-			}
-			w.MoveTo(ContentLeft(p), y+rt.Ascent())
-			w.PrintRichText(rt)
+	return withWidgetRoleAccessibility(w, &p.StdWidget, "", p.AccessibilityText(), func() error {
+		lines := p.Lines()
+		if len(lines) == 0 {
+			lines = []string{""}
 		}
-		y += lineHeight
-	}
-	return nil
+
+		p.Font().Apply(w)
+		lineHeight := p.lineHeight(w)
+		y := ContentTop(p)
+		for _, line := range lines {
+			if line != "" {
+				rt, err := p.richTextForLine(line, w)
+				if err != nil {
+					return err
+				}
+				w.MoveTo(ContentLeft(p), y+rt.Ascent())
+				w.PrintRichText(rt)
+			}
+			y += lineHeight
+		}
+		return nil
+	})
 }
 
 func (p *StdPre) Font() *FontStyle {
@@ -90,6 +92,10 @@ func (p *StdPre) PreferredWidth(w Writer) float64 {
 		}
 	}
 	return maxWidth + NonContentWidth(p)
+}
+
+func (p *StdPre) AccessibilityText() string {
+	return strings.Join(p.Lines(), "\n")
 }
 
 func (p *StdPre) SetAttrs(attrs map[string]string) {

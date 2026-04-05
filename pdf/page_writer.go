@@ -73,6 +73,8 @@ type PageWriter struct {
 	units                 *units
 	vTextAlignPts         float64
 	flushing              boolean
+	artifactDepth         int
+	accessibilityStack    []*structElem
 }
 
 type pathState struct {
@@ -151,6 +153,104 @@ func fontsSupportArabicShaping(fonts []*font.Font) bool {
 		}
 	}
 	return false
+}
+
+func (pw *PageWriter) WithAccessibilityTag(tag string, opts AccessibilityOptions, fn func()) error {
+	if tag == "" {
+		if fn != nil {
+			fn()
+		}
+		return nil
+	}
+	pw.dw.EnableTaggedPDF(true)
+	pw.flushText()
+	elem := pw.dw.accessibility.resolveElement(pw.currentStructElem(), tag, opts)
+	if elem == nil {
+		if fn != nil {
+			fn()
+		}
+		return nil
+	}
+	pw.accessibilityStack = append(pw.accessibilityStack, elem)
+	pw.dw.accessibility.stack = append(pw.dw.accessibility.stack, elem)
+	defer func() {
+		pw.flushText()
+		if len(pw.accessibilityStack) > 0 {
+			pw.accessibilityStack = pw.accessibilityStack[:len(pw.accessibilityStack)-1]
+		}
+		if len(pw.dw.accessibility.stack) > 0 {
+			pw.dw.accessibility.stack = pw.dw.accessibility.stack[:len(pw.dw.accessibility.stack)-1]
+		}
+	}()
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+func (pw *PageWriter) WithAccessibilityArtifact(fn func()) error {
+	if !pw.dw.taggedPDFEnabled() {
+		if fn != nil {
+			fn()
+		}
+		return nil
+	}
+	pw.flushText()
+	if pw.artifactDepth == 0 {
+		pw.mw.beginMarkedContent("Artifact")
+		defer pw.mw.endMarkedContent()
+	}
+	pw.artifactDepth++
+	defer func() {
+		pw.flushText()
+		pw.artifactDepth--
+	}()
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+func (pw *PageWriter) beginTaggedContent(tag string, elem *structElem) bool {
+	if !pw.dw.taggedPDFEnabled() || elem == nil || tag == "" {
+		return false
+	}
+	mcid := pw.dw.accessibility.associateMarkedContent(pw.page, elem)
+	if mcid < 0 {
+		return false
+	}
+	pw.mw.beginMarkedContentWithProperties(tag, dictionary{
+		"MCID": integer(mcid),
+	})
+	return true
+}
+
+func (pw *PageWriter) currentStructElem() *structElem {
+	if len(pw.accessibilityStack) > 0 {
+		return pw.accessibilityStack[len(pw.accessibilityStack)-1]
+	}
+	if pw.dw.taggedPDFEnabled() {
+		return pw.dw.accessibility.currentStructElem()
+	}
+	return nil
+}
+
+func (pw *PageWriter) structElemForLeaf(p *rich_text.RichText) (*structElem, string) {
+	if !pw.dw.taggedPDFEnabled() {
+		return nil, ""
+	}
+	if pw.artifactDepth > 0 {
+		return nil, ""
+	}
+	current := pw.currentStructElem()
+	if current == nil {
+		return nil, ""
+	}
+	if p != nil && (p.LinkURI != "" || p.LinkTarget != "") {
+		elem := pw.dw.accessibility.resolveElement(current, "Link", AccessibilityOptions{ID: p.LinkID})
+		return elem, "Link"
+	}
+	return current, current.s
 }
 
 func (pw *PageWriter) autoStrokeAndFill(stroke bool, fill bool) {
@@ -978,6 +1078,11 @@ func (pw *PageWriter) flushText() {
 	for _, p := range displayPieces {
 		leafStart := textLoc
 		textLoc.X += p.Width()
+		elem, tag := pw.structElemForLeaf(p)
+		closeMarkedContent := false
+		if elem != nil {
+			closeMarkedContent = pw.beginTaggedContent(tag, elem)
+		}
 		if p.Font.SubType() == "TrueType" {
 			fk := pw.dw.fontKeyUnicode(p.Font)
 			psName := p.Font.PostScriptName()
@@ -1109,6 +1214,9 @@ func (pw *PageWriter) flushText() {
 				pw.tw.show(buf.Bytes())
 			})
 		}
+		if closeMarkedContent {
+			pw.mw.endMarkedContent()
+		}
 	}
 	if usedPositionedText {
 		pw.tw.setMatrix(1, 0, 0, 1, pw.loc.X, pw.loc.Y)
@@ -1128,12 +1236,13 @@ func (pw *PageWriter) flushText() {
 			pw.drawUnderline(loc1, loc2, p.StrikeoutPosition, p.StrikeoutThickness)
 		}
 		if p.LinkURI != "" || p.LinkTarget != "" {
+			elem, _ := pw.structElemForLeaf(p)
 			pw.addTextLinkAnnotation(rectangle{
 				x1: loc1.X,
 				y1: loc1.Y + rise + p.Descent(),
 				x2: loc2.X,
 				y2: loc1.Y + rise + p.Ascent(),
-			}, p.LinkURI, p.LinkTarget)
+			}, p.LinkURI, p.LinkTarget, elem)
 		}
 		loc1 = loc2
 	})
@@ -1392,7 +1501,16 @@ func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float
 	if pw.inGraph {
 		pw.endGraph()
 	}
-	writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
+	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
+		if elem := pw.currentStructElem(); elem != nil && pw.beginTaggedContent(elem.s, elem) {
+			writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
+			pw.mw.endMarkedContent()
+		} else {
+			writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
+		}
+	} else {
+		writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
+	}
 	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
 }
 
@@ -1420,7 +1538,17 @@ func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64
 		pw.units = prevUnits
 	}()
 	renderer := newSVGRenderer(doc, pw, xpts, ypts, wpts, hpts)
-	if err := renderer.render(); err != nil {
+	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
+		if elem := pw.currentStructElem(); elem != nil && pw.beginTaggedContent(elem.s, elem) {
+			err = renderer.render()
+			pw.mw.endMarkedContent()
+		} else {
+			err = renderer.render()
+		}
+	} else {
+		err = renderer.render()
+	}
+	if err != nil {
 		return 0, 0, err
 	}
 	return prevUnits.fromPts(wpts), prevUnits.fromPts(hpts), nil
@@ -1536,7 +1664,11 @@ func (pw *PageWriter) AddURILink(x, y, width, height float64, uri string) error 
 	if uri == "" {
 		return errEmptyLinkURI
 	}
-	pw.addTextLinkAnnotation(pw.annotationRect(x, y, width, height), uri, "")
+	var elem *structElem
+	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
+		elem = pw.currentStructElem()
+	}
+	pw.addTextLinkAnnotation(pw.annotationRect(x, y, width, height), uri, "", elem)
 	return nil
 }
 
@@ -1544,7 +1676,11 @@ func (pw *PageWriter) AddTargetLink(x, y, width, height float64, target string) 
 	if target == "" {
 		return errEmptyLinkTarget
 	}
-	pw.addTextLinkAnnotation(pw.annotationRect(x, y, width, height), "", target)
+	var elem *structElem
+	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
+		elem = pw.currentStructElem()
+	}
+	pw.addTextLinkAnnotation(pw.annotationRect(x, y, width, height), "", target, elem)
 	return nil
 }
 
@@ -1556,7 +1692,7 @@ func (pw *PageWriter) annotationRect(x, y, width, height float64) rectangle {
 	return rectangle{x1: xpts, y1: yTop - hpts, x2: xpts + wpts, y2: yTop}
 }
 
-func (pw *PageWriter) addTextLinkAnnotation(rect rectangle, uri, target string) {
+func (pw *PageWriter) addTextLinkAnnotation(rect rectangle, uri, target string, elem *structElem) {
 	if rect.x2 <= rect.x1 || rect.y2 <= rect.y1 {
 		return
 	}
@@ -1572,6 +1708,9 @@ func (pw *PageWriter) addTextLinkAnnotation(rect rectangle, uri, target string) 
 	}
 	pw.dw.file.body.add(annot)
 	pw.page.addAnnot(annot)
+	if elem != nil && pw.dw.taggedPDFEnabled() {
+		pw.dw.accessibility.associateObject(pw.page, annot, elem)
+	}
 }
 
 func (pw *PageWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {

@@ -2,6 +2,7 @@ package ltml
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rowland/leadtype/options"
 )
@@ -20,6 +21,7 @@ type inlineTextWithLink interface {
 	inlineText
 	LinkURI() string
 	LinkTarget() string
+	LinkID() string
 }
 
 type staticInlineText string
@@ -63,22 +65,23 @@ func (p textPiece) RichTextOptions(base options.Options) options.Options {
 	if base == nil {
 		base = options.Options{}
 	}
-	linker, ok := p.content.(inlineTextWithLink)
-	if !ok {
-		return base
-	}
-	if linker.LinkURI() == "" && linker.LinkTarget() == "" {
-		return base
-	}
-	opts := make(options.Options, len(base)+2)
+	opts := make(options.Options, len(base)+3)
 	for k, v := range base {
 		opts[k] = v
 	}
-	if uri := linker.LinkURI(); uri != "" {
-		opts["link_uri"] = uri
+	if linker, ok := p.content.(inlineTextWithLink); ok {
+		if uri := linker.LinkURI(); uri != "" {
+			opts["link_uri"] = uri
+		}
+		if target := linker.LinkTarget(); target != "" {
+			opts["link_target"] = target
+		}
+		if id := linker.LinkID(); id != "" {
+			opts["link_id"] = id
+		}
 	}
-	if target := linker.LinkTarget(); target != "" {
-		opts["link_target"] = target
+	if len(opts) == 0 {
+		return base
 	}
 	return opts
 }
@@ -130,4 +133,27 @@ func walkWidgets(root Widget, fn func(Widget) bool) bool {
 
 func formatPageNo(value int) string {
 	return fmt.Sprintf("%d", value)
+}
+
+func resolvedTextPieces(pieces []textPiece, doc *StdDocument) string {
+	if len(pieces) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	lastText := ""
+	for _, piece := range pieces {
+		text := piece.ResolvedText(doc)
+		if text == "" {
+			continue
+		}
+		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
+			text = text[1:]
+		}
+		if text == "" {
+			continue
+		}
+		b.WriteString(text)
+		lastText = text
+	}
+	return b.String()
 }

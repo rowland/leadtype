@@ -73,13 +73,13 @@ func TestDictionaryObject(t *testing.T) {
 
 func TestFile(t *testing.T) {
 	f := newFile()
-	expectS(t, "%PDF-1.3\n", stringFromWriter(&f.header))
+	expectS(t, "%PDF-1.7\n", stringFromWriter(&f.header))
 	var buf bytes.Buffer
 	var ss xRefSubSection
 	f.body.write(&buf, &ss)
 	expectS(t, "", buf.String())
 	expectS(t, "trailer\n<<\n>>\nstartxref\n0\n%%EOF\n", stringFromWriter(&f.trailer))
-	expectS(t, "%PDF-1.3\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<\n/Size 1 \n>>\nstartxref\n9\n%%EOF\n", stringFromWriter(f))
+	expectS(t, "%PDF-1.7\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<\n/Size 1 \n>>\nstartxref\n9\n%%EOF\n", stringFromWriter(f))
 }
 
 func TestFontDescriptor(t *testing.T) {
@@ -143,7 +143,7 @@ func TestHeader(t *testing.T) {
 	h := &header{}
 	h.write(&buf)
 
-	expectS(t, "%PDF-1.3\n", buf.String())
+	expectS(t, "%PDF-1.7\n", buf.String())
 }
 
 func TestIndirectObject(t *testing.T) {
@@ -484,6 +484,25 @@ func TestStr(t *testing.T) {
 	expectS(t, "a\\\\b\\(cd\\)", string(s.escape()))
 	s.write(&buf)
 	expectS(t, "(a\\\\b\\(cd\\)) ", buf.String())
+}
+
+func TestTextStringASCII(t *testing.T) {
+	var buf bytes.Buffer
+	s := textString("Hello\n(world)")
+	s.write(&buf)
+	expectS(t, "(Hello\n\\(world\\)) ", buf.String())
+}
+
+func TestTextStringUTF16BE(t *testing.T) {
+	var buf bytes.Buffer
+	s := textString("cafe noir")
+	s.write(&buf)
+	expectS(t, "(cafe noir) ", buf.String())
+
+	buf.Reset()
+	s = textString("cafe noir \u2615")
+	s.write(&buf)
+	expectS(t, "<feff00630061006600650020006e006f0069007200202615> ", buf.String())
 }
 
 func TestStream(t *testing.T) {

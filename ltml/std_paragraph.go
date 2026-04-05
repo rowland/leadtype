@@ -105,27 +105,33 @@ func (p *StdParagraph) bulletWidth() float64 {
 }
 
 func (p *StdParagraph) DrawContent(w Writer) error {
-	para := p.Lines(w, p.lineWidth())
-	if len(para) == 0 {
+	return withWidgetRoleAccessibility(w, &p.StdWidget, "P", p.AccessibilityText(), func() error {
+		para := p.Lines(w, p.lineWidth())
+		if len(para) == 0 {
+			return nil
+		}
+		indent := p.textIndent()
+		x := ContentLeft(p)
+		if p.suppressBullet {
+			x += indent
+		}
+		w.MoveTo(x, ContentTop(p)+para[0].Ascent())
+		if b := p.Bullet(); b != nil && !p.suppressBullet {
+			x, y := w.Loc()
+			if err := withAccessibilityArtifact(w, func() error {
+				b.Apply(w)
+				return w.Print(b.Text())
+			}); err != nil {
+				return err
+			}
+			w.MoveTo(x+b.Width(), y)
+		}
+		w.PrintParagraph(para, options.Options{
+			"text-align": p.ParagraphStyle().ResolvedTextAlign(p).String(),
+			"width":      ContentWidth(p) - indent,
+		})
 		return nil
-	}
-	indent := p.textIndent()
-	x := ContentLeft(p)
-	if p.suppressBullet {
-		x += indent
-	}
-	w.MoveTo(x, ContentTop(p)+para[0].Ascent())
-	if b := p.Bullet(); b != nil && !p.suppressBullet {
-		x, y := w.Loc()
-		b.Apply(w)
-		w.Print(b.Text())
-		w.MoveTo(x+b.Width(), y)
-	}
-	w.PrintParagraph(para, options.Options{
-		"text-align": p.ParagraphStyle().ResolvedTextAlign(p).String(),
-		"width":      ContentWidth(p) - indent,
 	})
-	return nil
 }
 
 func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
@@ -143,6 +149,10 @@ func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 		return p.height
 	}
 	return p.heightForLines(p.Lines(w, p.lineWidth()), w)
+}
+
+func (p *StdParagraph) AccessibilityText() string {
+	return resolvedTextPieces(p.textPieces, documentForContainer(p))
 }
 
 func (p *StdParagraph) PreferredWidth(w Writer) float64 {
@@ -259,6 +269,7 @@ func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 }
 
 func (p *StdParagraph) cloneForSplit(lines []*rich_text.RichText, suppressBullet bool, continuationIndent float64) *StdParagraph {
+	p.AccessibilityLogicalID()
 	clone := *p
 	clone.splitLines = append([]*rich_text.RichText(nil), lines...)
 	clone.suppressBullet = suppressBullet

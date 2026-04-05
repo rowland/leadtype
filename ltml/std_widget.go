@@ -15,25 +15,28 @@ type StdWidget struct {
 	scope     HasScope
 	Identity
 	Dimensions
-	border    *PenStyle
-	borders   [4]*PenStyle
-	colSpan   int
-	fill      *BrushStyle
-	font      *FontStyle
-	position  Position
-	rowSpan   int
-	align     Align
-	rotate    *float64
-	originX   string
-	originY   string
-	shiftX    float64
-	shiftY    float64
-	zIndex    int
-	display   DisplayMode
-	printed   bool
-	invisible bool
-	disabled  bool
-	path      string
+	alt             string
+	role            string
+	accessibilityID string
+	border          *PenStyle
+	borders         [4]*PenStyle
+	colSpan         int
+	fill            *BrushStyle
+	font            *FontStyle
+	position        Position
+	rowSpan         int
+	align           Align
+	rotate          *float64
+	originX         string
+	originY         string
+	shiftX          float64
+	shiftY          float64
+	zIndex          int
+	display         DisplayMode
+	printed         bool
+	invisible       bool
+	disabled        bool
+	path            string
 }
 
 func (widget *StdWidget) Align() Align {
@@ -253,6 +256,12 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if display, ok := attrs["display"]; ok {
 		widget.display = ParseDisplayMode(display)
 	}
+	if value, ok := attrs["alt"]; ok {
+		widget.alt = value
+	}
+	if value, ok := attrs["role"]; ok {
+		widget.role = strings.TrimSpace(value)
+	}
 }
 
 func (widget *StdWidget) SetContainer(container Container) error {
@@ -396,6 +405,21 @@ func (widget *StdWidget) Display() DisplayMode {
 		return DisplayOnce
 	}
 	return widget.display
+}
+
+func (widget *StdWidget) AccessibilityLogicalID() string {
+	if widget.accessibilityID == "" {
+		widget.accessibilityID = fmt.Sprintf("%T:%p", widget, widget)
+	}
+	return widget.accessibilityID
+}
+
+func (widget *StdWidget) AccessibilityAlt() string {
+	return widget.alt
+}
+
+func (widget *StdWidget) AccessibilityRole() string {
+	return widget.role
 }
 
 func (widget *StdWidget) resolveLeft(value float64) float64 {

@@ -14,6 +14,7 @@ type StdDocument struct {
 	documentPageNo        int
 	physicalPageNo        int
 	pendingStart          *int
+	ua                    bool
 	compressPages         bool
 	compressToUnicode     bool
 	compressEmbeddedFonts bool
@@ -69,6 +70,7 @@ func (d *StdDocument) SetPendingStart(start int) {
 }
 
 func (d *StdDocument) Print(w Writer) error {
+	applyWriterAccessibility(w, d)
 	d.applyWriterCompression(w)
 	return d.printWithIndexes(w)
 }
@@ -83,6 +85,9 @@ func (d *StdDocument) SetAttrs(attrs map[string]string) {
 	}
 	if value, ok := attrs["compress-embedded-fonts"]; ok {
 		d.compressEmbeddedFonts = value == "true"
+	}
+	if value, ok := attrs["ua"]; ok {
+		d.ua = value == "true"
 	}
 }
 

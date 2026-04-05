@@ -59,6 +59,46 @@ The root element. Attributes set here apply as defaults to all pages.
 | `compress-pages` | If `true`, compress page content streams with `FlateDecode`. Default: `false`. |
 | `compress-to-unicode` | If `true`, compress generated `ToUnicode` streams. Default: `false`. |
 | `compress-embedded-fonts` | If `true`, compress embedded font subset streams. Default: `false`. |
+| `ua` | If `true`, opt the whole document into tagged PDF output and accessibility structure generation. Default: `false`. |
+
+#### Tagged PDF Accessibility
+
+LTML tagged PDF output is opt-in at the document level:
+
+```xml
+<ltml ua="true">
+  <page>
+    <p>Hello <a uri="https://example.com">world</a></p>
+  </page>
+</ltml>
+```
+
+When `ua="true"` is set, LTML emits PDF structure for conservative defaults:
+
+- `<p>` and `<label>` default to `P`
+- `<a>` defaults to `Link`
+- `<image>`, `<line>`, and shape primitives with `alt` default to `Figure`
+- decorative graphics without `alt`, borders, backgrounds, debug grids, and shape chrome are emitted as PDF artifacts
+
+When tagged output is enabled, LTML fills `/ActualText` automatically for
+paragraphs and labels from their fully resolved plain text, including inline
+links and dynamic text such as `<pageno>`. LTML does not emit `/ActualText` for
+inline spans or links.
+
+Widget-level accessibility attributes are intentionally small:
+
+- `role` overrides the computed PDF structure role for a participating widget
+- `alt` supplies replacement text for participating graphics
+
+LTML reserves `role="artifact"` as a special case. That value is
+case-insensitive and suppresses the widget from tagged output instead of
+creating a structure element.
+
+If `ua` is absent or not `true`, LTML ignores widget accessibility attributes.
+
+The `ltml.TestSamples` harness follows the same document-driven rule, so sample
+PDFs remain untagged unless a sample opts in with `ua="true"` or the test
+helper explicitly forces tagged output on its writer.
 
 ---
 
@@ -121,6 +161,11 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `orphans`          | Minimum number of lines kept on the first fragment when splitting. Defaults to `2`. |
 | `widows`           | Minimum number of lines carried to the continuation fragment when splitting. Defaults to `2`. |
 | `colspan`, `rowspan` | Span multiple table cells (when inside a `table`). |
+| `role` | Override the generated PDF structure type when `ua="true"`. Default tagged output uses `P`. |
+
+When `ua="true"`, paragraphs automatically emit `/ActualText` from their fully
+resolved plain text. That text includes inline links and `<pageno>` output, but
+not decorative bullet chrome or non-text decoration.
 
 ---
 
@@ -134,6 +179,11 @@ Applies font styling to a portion of text within a `<p>`. Must be a child of
 ```
 
 Supports the same `font.*` attributes as `<p>`.
+
+`<span>` does not define its own LTML accessibility attributes. In tagged
+output, spans contribute text to the enclosing paragraph or label. Inline links
+still emit `Link` structure elements, but `/ActualText` remains on the enclosing
+paragraph or label rather than on the span or link itself.
 
 ---
 
@@ -161,6 +211,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
+| `role` | Override the computed PDF structure type when `ua="true"`, for example `L` or `Table`. |
 
 ---
 
@@ -205,6 +256,8 @@ Shared attributes:
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the shape widget. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the shape widget. |
 | `reverse` | Reverse the path direction for shapes that support it. |
+| `alt` | When `ua="true"`, opt the shape into tagged output and use this text as `/ActualText`. |
+| `role` | Override the default tagged role when `ua="true"`. Shapes with `alt` default to `Figure`. |
 
 Shape-specific attributes:
 
@@ -240,11 +293,15 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the label box. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
+| `role` | Override the generated PDF structure type when `ua="true"`. Default tagged output uses `P`. |
 
 The built-in `<br/>` alias expands to an empty `<label/>`, which behaves as a
 line break in stacked layouts. Labels still do not wrap; `fit="shrink"` scales
 the rendered text instead. Unlike the generic widget `rotate` attribute, label
 `angle` rotates only the text paint operation.
+
+When `ua="true"`, labels automatically emit `/ActualText` from their fully
+resolved plain text, including inline links and `<pageno>` output.
 
 ---
 
@@ -290,10 +347,13 @@ code blocks and other preformatted content.
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the block. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
+| `role` | Override the generated PDF structure type when `ua="true"`. `<pre>` has no default tagged role. |
 
 `<pre>` preserves internal spaces and line breaks, does not wrap lines, trims a
 single surrounding newline from block content, removes common leading
 indentation from non-blank lines, and expands tab characters to four spaces.
+When `<pre>` participates in tagged output through `role`, LTML uses that same
+resolved preformatted text for `/ActualText`.
 
 ---
 
@@ -313,12 +373,17 @@ Places an image file into the document using the PDF image API.
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Reference to a named `<pen>` style. |
 | `fill` | Reference to a named `<brush>` style. |
+| `alt` | When `ua="true"`, opt the image into tagged output and use this text as `/ActualText`. |
+| `role` | Override the default tagged role when `ua="true"`. Images with `alt` default to `Figure`. |
 
 The current implementation supports JPEG, PNG, and SVG files through the same
 tag shape. Raster images are embedded as PDF image XObjects. SVG files are
 parsed and rendered through the PDF vector drawing path so unsupported SVG
 features are skipped with warnings to standard error rather than aborting the
 whole document when the rest of the file can still render.
+
+Images without `alt` remain decorative and are not added to the document's
+logical structure tree.
 
 ---
 
@@ -339,6 +404,8 @@ Draws a line segment using the configured pen style.
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Optional enclosing widget border, separate from the line stroke. |
+| `alt` | When `ua="true"`, opt the line into tagged output and use this text as `/ActualText`. |
+| `role` | Override the default tagged role when `ua="true"`. Lines with `alt` default to `Figure`. |
 
 Horizontal, vertical, and diagonal lines are all represented with the same tag.
 When `length` is omitted, the line is sized to fit within its content box.

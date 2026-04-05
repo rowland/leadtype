@@ -49,6 +49,10 @@ func (a *linkAnnotation) setURI(uri string) {
 	a.targetName = ""
 }
 
+func (a *linkAnnotation) setStructParent(key int) {
+	a.dict["StructParent"] = integer(key)
+}
+
 func destinationArray(page *page, x, y float64) array {
 	return array{
 		&indirectObjectRef{page},

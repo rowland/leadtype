@@ -1,0 +1,300 @@
+package ltml
+
+import (
+	"bytes"
+	"io/fs"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/rowland/leadtype/afm_fonts"
+	"github.com/rowland/leadtype/ltml/ltpdf"
+	"github.com/rowland/leadtype/pdf"
+)
+
+func renderLTMLPDF(t *testing.T, input string, assetFS fs.FS) string {
+	t.Helper()
+
+	doc, err := Parse([]byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	baseWriter := pdf.NewDocWriter()
+	fonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseWriter.AddFontSource(fonts)
+	if assetFS != nil {
+		baseWriter.SetAssetFS(assetFS)
+	}
+	writer := &ltpdf.DocWriter{DocWriter: baseWriter}
+
+	if err := doc.Print(writer); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	if _, err := baseWriter.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	return buf.String()
+}
+
+func TestLTML_UAEnablesTaggedPDF(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <p>Hello <a uri="https://example.com">world</a></p>
+  </page>
+</ltml>`, nil)
+
+	for _, fragment := range []string{
+		"%PDF-1.7\n",
+		"/StructTreeRoot",
+		"/S /P",
+		"/S /Link",
+		"/ActualText (Hello world)",
+	} {
+		if !strings.Contains(pdfText, fragment) {
+			t.Fatalf("expected tagged fragment %q in output:\n%s", fragment, pdfText)
+		}
+	}
+	if count := strings.Count(pdfText, "/ActualText ("); count != 1 {
+		t.Fatalf("actual-text count = %d, want 1\n%s", count, pdfText)
+	}
+}
+
+func TestLTML_WithoutUAAccessibilityAttrsAreIgnored(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml>
+  <page>
+    <label role="H1" alt="ignored">Hello</label>
+    <image src="pdf/testdata/eidetic.png" alt="ignored image" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS(".."))
+
+	if !strings.Contains(pdfText, "%PDF-1.7\n") {
+		t.Fatalf("expected untagged PDF header:\n%s", pdfText)
+	}
+	for _, fragment := range []string{"/StructTreeRoot", "/S /H1", "/S /Figure", "/ActualText ("} {
+		if strings.Contains(pdfText, fragment) {
+			t.Fatalf("did not expect %q in untagged output:\n%s", fragment, pdfText)
+		}
+	}
+}
+
+func TestLTML_LegacyPDFAttrsDoNotAffectOutput(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <label pdf.tag="H1" pdf.actual-text="Wrong">Hello</label>
+  </page>
+</ltml>`, nil)
+
+	if !strings.Contains(pdfText, "/S /P") {
+		t.Fatalf("expected default label role in output:\n%s", pdfText)
+	}
+	if strings.Contains(pdfText, "/S /H1") {
+		t.Fatalf("did not expect legacy pdf.tag override in output:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "/ActualText (Hello)") || strings.Contains(pdfText, "/ActualText (Wrong)") {
+		t.Fatalf("expected automatic actual text from label content:\n%s", pdfText)
+	}
+}
+
+func TestLTML_LabelRoleOverride(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <label role="H1">Heading</label>
+  </page>
+</ltml>`, nil)
+
+	if !strings.Contains(pdfText, "/S /H1") {
+		t.Fatalf("expected H1 role override in output:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "/ActualText (Heading)") {
+		t.Fatalf("expected label actual text in output:\n%s", pdfText)
+	}
+}
+
+func TestLTML_RoleArtifactSuppressesLabelAccessibility(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <label role="ArTiFaCt">42</label>
+  </page>
+</ltml>`, nil)
+
+	if strings.Contains(pdfText, "/S /P") || strings.Contains(pdfText, "/ActualText (42)") {
+		t.Fatalf("did not expect label tagging for artifact role:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "/Artifact BMC") {
+		t.Fatalf("expected artifact marked content for artifact role:\n%s", pdfText)
+	}
+}
+
+func TestLTML_InvalidRoleFallsBackToDefaultRole(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <label role="bad role!">Hello</label>
+  </page>
+</ltml>`, nil)
+
+	if !strings.Contains(pdfText, "/S /P") {
+		t.Fatalf("expected fallback to default label role in output:\n%s", pdfText)
+	}
+	if strings.Contains(pdfText, "/S /bad") {
+		t.Fatalf("did not expect invalid role to flow through to output:\n%s", pdfText)
+	}
+}
+
+func TestLTML_ParagraphActualTextIncludesDynamicPageNo(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <label>Page <pageno/></label>
+  </page>
+</ltml>`, nil)
+
+	if !strings.Contains(pdfText, "/ActualText (Page 1)") {
+		t.Fatalf("expected resolved page number in label actual text:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "(Page 1) Tj") && !strings.Contains(pdfText, "<") {
+		t.Fatalf("expected page number content to render as text:\n%s", pdfText)
+	}
+}
+
+func TestLTML_PreRoleIncludesActualText(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <pre role="Code">
+      if x &lt; 1 {
+        return
+      }
+    </pre>
+  </page>
+</ltml>`, nil)
+
+	if !strings.Contains(pdfText, "/S /Code") {
+		t.Fatalf("expected pre role in output:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "/ActualText (if x < 1 {\n  return\n})") {
+		t.Fatalf("expected pre actual text in output:\n%s", pdfText)
+	}
+}
+
+func TestLTML_WrappedLinkReusesOneLinkElement(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <p width="1in"><a uri="https://example.com">One two three four five six</a></p>
+  </page>
+</ltml>`, nil)
+
+	if count := strings.Count(pdfText, "/S /Link"); count != 1 {
+		t.Fatalf("link struct element count = %d, want 1\n%s", count, pdfText)
+	}
+	if count := strings.Count(pdfText, "/Type /MCR"); count < 2 {
+		t.Fatalf("marked-content ref count = %d, want at least 2\n%s", count, pdfText)
+	}
+}
+
+func TestLTML_ImageRequiresAlt(t *testing.T) {
+	withAlt := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <image src="pdf/testdata/eidetic.png" alt="logo" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS(".."))
+	if !strings.Contains(withAlt, "/S /Figure") || !strings.Contains(withAlt, "/ActualText (logo)") {
+		t.Fatalf("expected figure with actual text for image alt:\n%s", withAlt)
+	}
+
+	withoutAlt := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <image src="pdf/testdata/eidetic.png" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS(".."))
+	if strings.Contains(withoutAlt, "/S /Figure") {
+		t.Fatalf("did not expect figure tag without image alt:\n%s", withoutAlt)
+	}
+	if !strings.Contains(withoutAlt, "/Artifact BMC") {
+		t.Fatalf("expected decorative image to render as artifact:\n%s", withoutAlt)
+	}
+}
+
+func TestLTML_GraphicRoleOverrideRequiresAlt(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <image src="pdf/testdata/eidetic.png" alt="diagram" role="Formula" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS(".."))
+
+	if !strings.Contains(pdfText, "/S /Formula") || !strings.Contains(pdfText, "/ActualText (diagram)") {
+		t.Fatalf("expected explicit graphic role override with alt:\n%s", pdfText)
+	}
+}
+
+func TestLTML_GraphicArtifactRoleSuppressesAltTagging(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <image src="pdf/testdata/eidetic.png" alt="diagram" role="artifact" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS(".."))
+
+	if strings.Contains(pdfText, "/S /Figure") || strings.Contains(pdfText, "/ActualText (diagram)") {
+		t.Fatalf("did not expect figure tagging for artifact role:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "/Artifact BMC") {
+		t.Fatalf("expected graphic artifact marked content for artifact role:\n%s", pdfText)
+	}
+}
+
+func TestLTML_LineAndShapeRequireAlt(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <line angle="0" length="1in" />
+    <circle width="1in" height="1in" />
+    <line angle="0" length="1in" alt="separator" />
+    <circle width="1in" height="1in" alt="badge" />
+  </page>
+</ltml>`, nil)
+
+	if count := strings.Count(pdfText, "/S /Figure"); count != 2 {
+		t.Fatalf("figure count = %d, want 2\n%s", count, pdfText)
+	}
+	for _, fragment := range []string{"/ActualText (separator)", "/ActualText (badge)", "/Artifact BMC"} {
+		if !strings.Contains(pdfText, fragment) {
+			t.Fatalf("expected %q in output:\n%s", fragment, pdfText)
+		}
+	}
+}
+
+func TestLTML_ContainerAndParagraphRoles(t *testing.T) {
+	pdfText := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <div role="L">
+      <p role="LI">Item one</p>
+    </div>
+    <div layout="table" cols="1" role="Table">
+      <label role="TD">Cell</label>
+    </div>
+  </page>
+</ltml>`, nil)
+
+	for _, fragment := range []string{"/S /L", "/S /LI", "/S /Table", "/S /TD"} {
+		if !strings.Contains(pdfText, fragment) {
+			t.Fatalf("expected role fragment %q in output:\n%s", fragment, pdfText)
+		}
+	}
+}

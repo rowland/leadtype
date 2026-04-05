@@ -13,11 +13,13 @@ type StdImage struct {
 }
 
 func (img *StdImage) DrawContent(w Writer) error {
-	if img.src == "" {
-		return fmt.Errorf("image src must be specified")
-	}
-	_, _, err := w.PrintImageFile(img.src, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
-	return err
+	return withGraphicAccessibility(w, &img.StdWidget, "Figure", func() error {
+		if img.src == "" {
+			return fmt.Errorf("image src must be specified")
+		}
+		_, _, err := w.PrintImageFile(img.src, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
+		return err
+	})
 }
 
 func (img *StdImage) PreferredHeight(w Writer) float64 {
