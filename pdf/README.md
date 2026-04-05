@@ -2,6 +2,54 @@
 
 The `pdf` package provides Leadtype's low-level PDF drawing API: document and page writers, text and image output, path drawing, font registration, and related serialization support.
 
+## Tagged PDF Accessibility
+
+Tagged PDF output is off by default. Enable it explicitly when you want the
+writer to emit PDF structure trees, marked-content identifiers, and related
+accessibility objects:
+
+```go
+doc := pdf.NewDocWriter()
+doc.EnableTaggedPDF(true)
+```
+
+Leadtype writes PDF 1.7 documents and emits `/StructTreeRoot`, `/MarkInfo`,
+`/ParentTree`, page `/StructParents`, and marked-content associations when
+tagged output is enabled.
+
+Use semantic scopes to associate rendered output with structure elements:
+
+```go
+err := doc.WithAccessibilityTag("P", pdf.AccessibilityOptions{
+	ActualText: "Accessible greeting",
+}, func() {
+	doc.MoveTo(1, 1)
+	_ = doc.Print("Hello")
+})
+if err != nil {
+	panic(err)
+}
+```
+
+Use artifact scopes for decorative or non-reading-order output:
+
+```go
+err := doc.WithAccessibilityArtifact(func() {
+	doc.Rectangle(0.5, 0.5, 7.5, 10, true, false)
+})
+if err != nil {
+	panic(err)
+}
+```
+
+The same APIs are available on `PageWriter`. LTML uses this writer-level support
+under the hood when a document opts into `ua="true"`.
+
+In LTML, `/ActualText` is applied conservatively at higher-level structure
+elements such as paragraphs, labels, and opted-in graphics. Fine-grained
+copy/paste still relies on `ToUnicode` mappings rather than inline
+`/ActualText` overrides.
+
 ## Gradients
 
 Leadtype supports linear (axial) and radial gradients for PDF drawing.

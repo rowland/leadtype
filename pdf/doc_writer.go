@@ -25,6 +25,7 @@ type DocWriter struct {
 	nextSeq               func() int
 	file                  *file
 	catalog               *catalog
+	accessibility         *accessibilityState
 	resources             *resources
 	pagesAcross           int
 	pagesDown             int
@@ -93,6 +94,41 @@ func NewDocWriter() *DocWriter {
 		gradientPatterns: make(map[string]string),
 		destinations:     make(map[string]namedDestination),
 	}
+}
+
+func (dw *DocWriter) EnableTaggedPDF(value bool) *DocWriter {
+	if !value {
+		return dw
+	}
+	if dw.accessibility == nil {
+		dw.accessibility = newAccessibilityState(dw)
+	}
+	return dw
+}
+
+func (dw *DocWriter) taggedPDFEnabled() bool {
+	return dw.accessibility != nil
+}
+
+func (dw *DocWriter) TaggedPDFEnabled() bool {
+	return dw.taggedPDFEnabled()
+}
+
+func (dw *DocWriter) WithAccessibilityTag(tag string, opts AccessibilityOptions, fn func()) error {
+	if dw.curPage != nil {
+		return dw.curPage.WithAccessibilityTag(tag, opts, fn)
+	}
+	dw.EnableTaggedPDF(true)
+	elem := dw.accessibility.push(tag, opts)
+	if fn != nil {
+		fn()
+	}
+	dw.accessibility.pop(elem)
+	return nil
+}
+
+func (dw *DocWriter) WithAccessibilityArtifact(fn func()) error {
+	return dw.CurPage().WithAccessibilityArtifact(fn)
 }
 
 func nextSeqFunc() func() int {

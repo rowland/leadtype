@@ -18,10 +18,12 @@ type linkedInlineText struct {
 	inlineText
 	uri    string
 	target string
+	id     string
 }
 
 func (t linkedInlineText) LinkURI() string    { return t.uri }
 func (t linkedInlineText) LinkTarget() string { return t.target }
+func (t linkedInlineText) LinkID() string     { return t.id }
 
 func (t linkedInlineText) Font() *FontStyle {
 	if withFont, ok := t.inlineText.(inlineTextWithFont); ok {
@@ -50,6 +52,7 @@ func (a *StdA) AddInlineWithFont(content inlineText, font *FontStyle) {
 		inlineText: content,
 		uri:        a.uri,
 		target:     a.target,
+		id:         a.AccessibilityLogicalID(),
 	}, font)
 }
 

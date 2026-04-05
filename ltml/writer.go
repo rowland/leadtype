@@ -7,12 +7,14 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
 
 type Writer interface {
 	Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error
 	Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error
+	EnableTaggedPDF(bool)
 	Circle(x, y, r float64, border, fill, reverse bool) error
 	Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error
 	FontColor() colors.Color
@@ -48,5 +50,8 @@ type Writer interface {
 	Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error
 	Stroke() error
 	Strikeout() bool
+	TaggedPDFEnabled() bool
 	Underline() bool
+	WithAccessibilityArtifact(fn func()) error
+	WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error
 }

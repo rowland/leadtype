@@ -28,7 +28,8 @@ samples:
 	done
 
 ltml-samples:
-	go test ./ltml -run TestSamples -write-sample-pdfs
+	LTML_UA=true go test ./ltml -run TestSamples -write-sample-pdfs
+	# go test ./ltml -run TestSamples -write-sample-pdfs
 
 ltml-samples-open:
 	go test ./ltml -run TestSamples -args -open-sample-pdfs

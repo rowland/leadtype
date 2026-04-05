@@ -1,8 +1,8 @@
-%PDF-1.3
+%PDF-1.7
 1 0 obj
 <<
 /Count 1 
-/Kids [5 0 R ] 
+/Kids [7 0 R ] 
 /Type /Pages 
 >>
 endobj
@@ -14,17 +14,22 @@ endobj
 endobj
 3 0 obj
 <<
+/MarkInfo <<
+/Marked true 
+>>
+
 /Outlines 2 0 R 
 /PageMode /UseNone 
 /Pages 1 0 R 
+/StructTreeRoot 6 0 R 
 /Type /Catalog 
 >>
 endobj
 4 0 obj
 <<
 /Font <<
-/F0 8 0 R 
-/F1 11 0 R 
+/F0 11 0 R 
+/F1 15 0 R 
 >>
 
 /ProcSet [/PDF /Text /ImageB /ImageC ] 
@@ -32,17 +37,45 @@ endobj
 endobj
 5 0 obj
 <<
-/Contents 12 0 R 
+/Nums [0 [8 0 R 12 0 R 12 0 R 16 0 R 17 0 R 18 0 R 19 0 R 20 0 R 21 0 R 22 0 R 23 0 R 25 0 R 25 0 R 25 0 R 25 0 R 26 0 R 27 0 R 28 0 R 28 0 R 28 0 R 28 0 R ] ] 
+>>
+endobj
+6 0 obj
+<<
+/K [8 0 R 12 0 R 16 0 R 17 0 R 18 0 R 19 0 R 20 0 R 21 0 R 22 0 R 23 0 R 24 0 R 25 0 R 26 0 R 27 0 R 28 0 R ] 
+/ParentTree 5 0 R 
+/ParentTreeNextKey 1 
+/Type /StructTreeRoot 
+>>
+endobj
+7 0 obj
+<<
+/Contents 29 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 4969 
+/Length 6462 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
 /Rotate 0 
+/StructParents 0 
 /Type /Page 
 >>
 endobj
-6 0 obj
+8 0 obj
+<<
+/ActualText (Relative Layout) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 0 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+9 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -51,7 +84,7 @@ endobj
 /Flags 262144 
 /FontBBox [-2084 -985 2810 1971 ] 
 /FontFamily (Helvetica) 
-/FontFile2 18 0 R 
+/FontFile2 35 0 R 
 /FontName /CSRIGG+Helvetica-Bold 
 /ItalicAngle 0 
 /Leading 2048 
@@ -63,29 +96,48 @@ endobj
 /XHeight 1090 
 >>
 endobj
-7 0 obj
+10 0 obj
 <<
 /BaseFont /CSRIGG+Helvetica-Bold 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 17 0 R 
+/CIDToGIDMap 34 0 R 
 /DW 610 
-/FontDescriptor 6 0 R 
+/FontDescriptor 9 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [722 556 277 556 333 277 556 277 ] 10 [556 ] 13 [722 ] 15 [389 333 556 ] 19 [556 666 ] ] 
 >>
 endobj
-8 0 obj
+11 0 obj
 <<
 /BaseFont /CSRIGG+Helvetica-Bold 
-/DescendantFonts [7 0 R ] 
+/DescendantFonts [10 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 16 0 R 
+/ToUnicode 33 0 R 
 /Type /Font 
 >>
 endobj
-9 0 obj
+12 0 obj
+<<
+/ActualText (Use layout="relative" when a container should provide its own coordinate system for overlays, callouts, and anchored badges.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 1 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 2 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+13 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -94,7 +146,7 @@ endobj
 /Flags 0 
 /FontBBox [-1947 -985 2961 2297 ] 
 /FontFamily (Helvetica) 
-/FontFile2 15 0 R 
+/FontFile2 32 0 R 
 /FontName /DZKBFQ+Helvetica 
 /ItalicAngle 0 
 /Leading 2048 
@@ -106,33 +158,239 @@ endobj
 /XHeight 1071 
 >>
 endobj
-10 0 obj
+14 0 obj
 <<
 /BaseFont /DZKBFQ+Helvetica 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 14 0 R 
+/CIDToGIDMap 31 0 R 
 /DW 556 
-/FontDescriptor 9 0 R 
+/FontDescriptor 13 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [722 500 ] 4 [277 222 ] 7 [500 ] 10 [277 583 354 333 222 500 722 ] 19 [500 ] 22 [833 277 277 ] 27 [277 ] 32 [666 500 277 666 ] 37 [889 666 500 722 666 277 333 ] ] 
 >>
 endobj
-11 0 obj
+15 0 obj
 <<
 /BaseFont /DZKBFQ+Helvetica 
-/DescendantFonts [10 0 R ] 
+/DescendantFonts [14 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 13 0 R 
+/ToUnicode 30 0 R 
 /Type /Font 
 >>
 endobj
-12 0 obj
+16 0 obj
 <<
-/Length 4969 
+/ActualText (Container-local coordinates) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 3 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+17 0 obj
+<<
+/ActualText (left="0.2" top="0.45") 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 4 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+18 0 obj
+<<
+/ActualText (Explicit left/top) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 5 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+19 0 obj
+<<
+/ActualText (Anchored from right/bottom) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 6 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+20 0 obj
+<<
+/ActualText (right="0.3") 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 7 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+21 0 obj
+<<
+/ActualText (width="35%" height="40%") 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 8 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+22 0 obj
+<<
+/ActualText (Sized by left, right, top, bottom) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 9 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+23 0 obj
+<<
+/ActualText (Default vbox container with a positioned child.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 10 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+24 0 obj
+<<
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+25 0 obj
+<<
+/ActualText (Positional attrs without an explicit position still opt a child into relative placement.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 11 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 12 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 13 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 14 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+26 0 obj
+<<
+/ActualText (Implicit relative) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 15 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+27 0 obj
+<<
+/ActualText (Page-scope pattern) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 16 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+28 0 obj
+<<
+/ActualText (A page can also use relative coordinates when you want page-local positioning.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 17 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 18 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 19 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 20 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+29 0 obj
+<<
+/Length 6462 
 >>
 stream
+/Artifact BMC
 0.8275 0.8275 0.8275 RG
 0.25 w
 [] 0 d
@@ -298,17 +556,46 @@ stream
 0 0 m
 612 0 l
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 54 733.3996 Td
+/P <<
+/MCID 0 
+>>
+BDC
 /F0 20 Tf
 0 Ts
 <00010002000300040005000600070002000800090004000a000b000c0005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -22.6398 Td
+/P <<
+/MCID 1 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <000100020003000400050006000700080009000a000b000c000d000300050006000a000e000f0003000c00040010001100030012000400060004001300080012000a0006000e00120003000d000400020011000800090005001400040015000d0008000f000e001400030004000e000a000200040008001000120004001300080008000d0014000e00120006000a00030004000200070002000a00030016000400170008000d> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 2 
+>>
+BDC
 <0008000f0003000d000500060007000200180004001300060005000500080009000a000200180004000600120014000400060012001300110008000d000300140004001900060014001a00030002001b> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 0 0 0 RG
 0.001 w
@@ -316,133 +603,317 @@ ET
 0 J
 54 446.4 460.8 230.4 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+BT
+61.2 661.7998 Td
+/P <<
+/MCID 3 
+>>
+BDC
+/F0 12 Tf
+0 Ts
+<000d000b000e000500040006000e0002000f00100003000b00110004000300080011000b000b000f00120006000e0004000500020013> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+ET
 0 w
 [] 0 d
 0 J
 68.4 626.4 113.1152 18 re
 S
+EMC
 BT
-61.2 661.7998 Td
-/F0 12 Tf
-0 Ts
-<000d000b000e000500040006000e0002000f00100003000b00110004000300080011000b000b000f00120006000e0004000500020013> Tj
-10.2 -29.64 Td
+71.4 632.1598 Td
+/P <<
+/MCID 4 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <000500030017000a000b000c001c001b001d000c0004000a00080015000b000c001c001b001e001f000c> Tj
+EMC
+/Artifact BMC
 ET
 0.6784 0.8471 0.902 rg
 72 550.8 97.2 54 re
 f
+EMC
+/Artifact BMC
 72 550.8 97.2 54 re
 S
-356.4 626.4 151.4004 18 re
-S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 77.76 577.5598 Td
+/P <<
+/MCID 5 
+>>
+BDC
 0 0 0 rg
 /F1 12 Tf
 0 Ts
 <0020002100150005000e0013000e000a0004000500030017000a0022000a00080015> Tj
-281.64 54.6 Td
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+ET
+356.4 626.4 151.4004 18 re
+S
+EMC
+BT
+359.4 632.1598 Td
+/P <<
+/MCID 6 
+>>
+BDC
+/F1 12 Tf
+0 Ts
 <00230012001300110008000d0003001400040017000d000800160004000d000e001a0011000a002200190008000a000a00080016> Tj
+EMC
+/Artifact BMC
 ET
 1 0.8431 0 rg
 403.2 550.8 90 50.4 re
 f
+EMC
+/Artifact BMC
 403.2 550.8 90 50.4 re
 S
-0.5961 0.9843 0.5961 rg
-212.4 535.68 153.72 83.52 re
-f
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 430.4473 573.9598 Td
+/P <<
+/MCID 7 
+>>
+BDC
 0 0 0 rg
 /F1 12 Tf
 0 Ts
 <000d000e001a0011000a000b000c001c001b0024000c> Tj
+EMC
+/Artifact BMC
 ET
+0.5961 0.9843 0.5961 rg
+212.4 535.68 153.72 83.52 re
+f
+EMC
+/Artifact BMC
 212.4 535.68 153.72 83.52 re
 S
-1 0.8941 0.8824 rg
-327.6 511.2 180 18 re
-f
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 219.6 583.3198 Td
+/P <<
+/MCID 8 
+>>
+BDC
 0 0 0 rg
 /F1 12 Tf
 0 Ts
 <0010000e0014000a0011000b000c0024001f0025000c000400110003000e001a0011000a000b000c001e001c0025000c> Tj
+EMC
+/Artifact BMC
 ET
+1 0.8941 0.8824 rg
+327.6 511.2 180 18 re
+f
+EMC
+/Artifact BMC
 327.6 511.2 180 18 re
 S
+EMC
+BT
+330.6 516.9598 Td
+/P <<
+/MCID 9 
+>>
+BDC
+0 0 0 rg
+/F1 12 Tf
+0 Ts
+<0026000e0027000300140004001900070004000500030017000a00180004000d000e001a0011000a00180004000a000800150018000400190008000a000a00080016> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+ET
 0.001 w
 [1 2] 0 d
 0 J
 54 295.2 280.8 136.8 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
-330.6 516.9598 Td
+64.8 411.9598 Td
+/P <<
+/MCID 10 
+>>
+BDC
 /F1 12 Tf
 0 Ts
-<0026000e0027000300140004001900070004000500030017000a00180004000d000e001a0011000a00180004000a000800150018000400190008000a000a00080016> Tj
--265.8 -105 Td
 <002800030017000600090005000a0004000f0019000800210004001300080012000a0006000e00120003000d00040010000e000a0011000400060004001500080002000e000a000e0008001200030014000400130011000e00050014001b> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -24 Td
+/P <<
+/MCID 11 
+>>
+BDC
 <002900080002000e000a000e000800120006000500040006000a000a000d000200040010000e000a001100080009000a000400060012> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 12 
+>>
+BDC
 <0003002100150005000e0013000e000a0004001500080002000e000a000e0008001200040002000a000e00050005000400080015000a00040006> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 13 
+>>
+BDC
 <00130011000e000500140004000e0012000a00080004000d000300050006000a000e000f0003> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 14 
+>>
+BDC
 <00150005000600130003001600030012000a001b> Tj
+EMC
+/Artifact BMC
 ET
 0.9412 0.502 0.502 rg
 230.4 327.6 100.8 57.6 re
 f
+EMC
+/Artifact BMC
 0 w
 [] 0 d
 0 J
 230.4 327.6 100.8 57.6 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+BT
+239.76 353.6398 Td
+/P <<
+/MCID 15 
+>>
+BDC
+0 0 0 rg
+/F1 12 Tf
+0 Ts
+<002a001600150005000e0013000e000a0004000d000300050006000a000e000f0003> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+ET
 0.001 w
 [1 2] 0 d
 0 J
 356.4 295.2 158.4 136.8 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
-239.76 353.6398 Td
-0 0 0 rg
-/F1 12 Tf
-0 Ts
-<002a001600150005000e0013000e000a0004000d000300050006000a000e000f0003> Tj
-123.84 61.92 Td
+363.6 415.5598 Td
+/P <<
+/MCID 16 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <0014000400150002001000130011000b00160002000800160004000500050002000f000e> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -23.04 Td
+/P <<
+/MCID 17 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0023000400150006001a00030004001300060012000400060005000200080004000900020003> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 18 
+>>
+BDC
 <000d000300050006000a000e000f00030004001300080008000d0014000e00120006000a00030002> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 19 
+>>
+BDC
 <001000110003001200040007000800090004001000060012000a000400150006001a0003002b> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 20 
+>>
+BDC
 <000500080013000600050004001500080002000e000a000e00080012000e0012001a001b> Tj
+EMC
+/Artifact BMC
 ET
 0.902 0.902 0.9804 rg
 370.8 309.6 68.4 32.4 re
 f
+EMC
+/Artifact BMC
 0 w
 [] 0 d
 0 J
 370.8 309.6 68.4 32.4 re
 S
+EMC
 ET
 endstream
 endobj
-13 0 obj
+30 0 obj
 <<
 /Length 886 
 >>
@@ -506,14 +977,14 @@ CMap end
 end
 endstream
 endobj
-14 0 obj
+31 0 obj
 <<
 /Length 88 
 >>
 stream
    8 V H  O D \ R X W    U L Y Z K Q F G S P I  E J      ( [  $   6 ] ' 3 , endstream
 endobj
-15 0 obj
+32 0 obj
 <<
 /Length 17316 
 /Length1 17316 
@@ -640,7 +1111,7 @@ FIGw xW((++;;	 
 © p© €©  €© ©²2¾, % & ¶ç1-å1¸²Â'¸²Á¸@Àž¿g¾g«'¸²ª)¸¶©l“¸š²’¸²‘¸²u¸¶m)–d1¸š²L–¸«²9¸V@68!5ä/'¸@-L*1Í$¸«² ¸%@“:LE':E'»ª› *›²%Jº› %z³I)8–¸{³H(1%¸z@6H(–)H'%)L%)F'')H'VÈ„[A2+(&!
 ¸¬²?»« ? «³¸®²?»­ ? ­· ¸ÿà´   ¸«´   ¸«¶   ¸­³   ¸­@               J °¸ …v??>9FD>9FD>9FD>9FD>9FD>9F`D>9F`D>9F`D+++++++++++++++++++++++++++°–KSX°ªY°2KSX°ÿY+++++++++++++++++++++++++++++++++++++++++tu+++eB++KRy³vpjfEe#E`#Ee`#E`°‹vh°€b  ±jpEe#E °&`bch °&ae°p#eD°j#D ±vfEe#E °&`bch °&ae°f#eD°v#D± fETX±f@eD²v@vE#aDY³bBr]Ee#E`#Ee`#E`°‰vh°€b  ±rBEe#E °&`bch °&ae°B#eD°r#D ±b]Ee#E °&`bch °&ae°]#eD°b#D± ]ETX±]@eD²b@bE#aDY++++EiSBst¸š EiK °(S°IQZX° aYD¸¦ EiDu  endstream
 endobj
-16 0 obj
+33 0 obj
 <<
 /Length 592 
 >>
@@ -683,14 +1154,14 @@ CMap end
 end
 endstream
 endobj
-17 0 obj
+34 0 obj
 <<
 /Length 46 
 >>
 stream
    5 H O D W L Y  / \ R X & Q U  F G V 3 J Sendstream
 endobj
-18 0 obj
+35 0 obj
 <<
 /Length 10100 
 /Length1 10100 
@@ -756,31 +1227,48 @@ T†þùþùøñÍ»=1BL~xIˆlV‚t»8ù8¸     ?ÿÞeÀ  o¸ f+ ¸  EX¸ /¹  
                         ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \¸ f+ º   h+º   h+¿  (       n+¿  %       n+ ¿  - %      n+¿  K = 0 "    n+¿  &       n+ º   m+¸   E}iDendstream
 endobj
 xref
-0 19
+0 36
 0000000000 65535 f
 0000000009 00000 n
 0000000070 00000 n
 0000000118 00000 n
-0000000206 00000 n
-0000000303 00000 n
-0000000464 00000 n
-0000000793 00000 n
-0000001109 00000 n
-0000001263 00000 n
-0000001581 00000 n
-0000001967 00000 n
-0000002118 00000 n
-0000007140 00000 n
-0000008078 00000 n
-0000008217 00000 n
-0000025603 00000 n
-0000026247 00000 n
-0000026344 00000 n
+0000000260 00000 n
+0000000358 00000 n
+0000000540 00000 n
+0000000736 00000 n
+0000000915 00000 n
+0000001045 00000 n
+0000001374 00000 n
+0000001691 00000 n
+0000001847 00000 n
+0000002128 00000 n
+0000002447 00000 n
+0000002834 00000 n
+0000002985 00000 n
+0000003128 00000 n
+0000003265 00000 n
+0000003398 00000 n
+0000003540 00000 n
+0000003667 00000 n
+0000003807 00000 n
+0000003956 00000 n
+0000004120 00000 n
+0000004178 00000 n
+0000004503 00000 n
+0000004637 00000 n
+0000004772 00000 n
+0000005087 00000 n
+0000011602 00000 n
+0000012540 00000 n
+0000012679 00000 n
+0000030065 00000 n
+0000030709 00000 n
+0000030806 00000 n
 trailer
 <<
 /Root 3 0 R 
-/Size 19 
+/Size 36 
 >>
 startxref
-36514
+40976
 %%EOF

@@ -17,13 +17,15 @@ type StdLine struct {
 }
 
 func (l *StdLine) DrawContent(w Writer) error {
-	style := l.Style()
-	if style != nil {
-		style.Apply(w)
-	}
-	x, y := l.originForQuadrant()
-	w.Line(x, y, l.Angle(), l.Length())
-	return nil
+	return withGraphicAccessibility(w, &l.StdWidget, "Figure", func() error {
+		style := l.Style()
+		if style != nil {
+			style.Apply(w)
+		}
+		x, y := l.originForQuadrant()
+		w.Line(x, y, l.Angle(), l.Length())
+		return nil
+	})
 }
 
 func (l *StdLine) Angle() float64 {

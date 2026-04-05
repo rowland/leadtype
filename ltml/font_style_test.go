@@ -10,6 +10,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -107,9 +108,23 @@ func (m *mockWriter) SetUnderline(u bool) bool                                  
 func (m *mockWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
-func (m *mockWriter) Stroke() error   { return nil }
-func (m *mockWriter) Strikeout() bool { return false }
-func (m *mockWriter) Underline() bool { return false }
+func (m *mockWriter) Stroke() error              { return nil }
+func (m *mockWriter) Strikeout() bool            { return false }
+func (m *mockWriter) Underline() bool            { return false }
+func (m *mockWriter) EnableTaggedPDF(value bool) {}
+func (m *mockWriter) TaggedPDFEnabled() bool     { return false }
+func (m *mockWriter) WithAccessibilityArtifact(fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (m *mockWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 
 func TestFontStyle_SetAttrs_SingleName(t *testing.T) {
 	var fs FontStyle

@@ -83,25 +83,27 @@ func (l *StdLabel) LayoutWidget(Writer) {
 }
 
 func (l *StdLabel) DrawContent(w Writer) error {
-	rt := l.fittedRichText(w)
-	if rt.Len() == 0 {
+	return withWidgetRoleAccessibility(w, &l.StdWidget, "P", l.AccessibilityText(), func() error {
+		rt := l.fittedRichText(w)
+		if rt.Len() == 0 {
+			return nil
+		}
+		l.Font().Apply(w)
+		anchorX, anchorY := l.textAnchor(rt)
+		startX := anchorX - l.textAnchorOffset(rt)
+		if l.angle == 0 {
+			w.MoveTo(startX, anchorY)
+			w.PrintRichText(rt)
+			return nil
+		}
+		if err := w.Rotate(l.angle, anchorX, anchorY, func() {
+			w.MoveTo(startX, anchorY)
+			w.PrintRichText(rt)
+		}); err != nil {
+			return err
+		}
 		return nil
-	}
-	l.Font().Apply(w)
-	anchorX, anchorY := l.textAnchor(rt)
-	startX := anchorX - l.textAnchorOffset(rt)
-	if l.angle == 0 {
-		w.MoveTo(startX, anchorY)
-		w.PrintRichText(rt)
-		return nil
-	}
-	if err := w.Rotate(l.angle, anchorX, anchorY, func() {
-		w.MoveTo(startX, anchorY)
-		w.PrintRichText(rt)
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (l *StdLabel) PreferredHeight(w Writer) float64 {
@@ -121,6 +123,10 @@ func (l *StdLabel) PreferredWidth(w Writer) float64 {
 	}
 	rt := l.RichText(w)
 	return rt.Width() + NonContentWidth(l)
+}
+
+func (l *StdLabel) AccessibilityText() string {
+	return resolvedTextPieces(l.textPieces, documentForContainer(l))
 }
 
 func (l *StdLabel) RichText(w Writer) *rich_text.RichText {

@@ -4,6 +4,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -29,6 +30,7 @@ func (w *layoutProbeWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, bor
 func (w *layoutProbeWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
 	return nil
 }
+func (w *layoutProbeWriter) EnableTaggedPDF(value bool)                               { w.base.EnableTaggedPDF(value) }
 func (w *layoutProbeWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
 func (w *layoutProbeWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
@@ -99,3 +101,18 @@ func (w *layoutProbeWriter) Star(x, y, r1, r2 float64, points int, border, fill,
 func (w *layoutProbeWriter) Strikeout() bool { return w.base.Strikeout() }
 func (w *layoutProbeWriter) Stroke() error   { return nil }
 func (w *layoutProbeWriter) Underline() bool { return w.base.Underline() }
+func (w *layoutProbeWriter) TaggedPDFEnabled() bool {
+	return w.base.TaggedPDFEnabled()
+}
+func (w *layoutProbeWriter) WithAccessibilityArtifact(fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (w *layoutProbeWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}

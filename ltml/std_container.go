@@ -46,6 +46,12 @@ func (c *StdContainer) Dir() Dir {
 }
 
 func (c *StdContainer) DrawContent(w Writer) error {
+	return withWidgetRoleAccessibility(w, &c.StdWidget, "", "", func() error {
+		return c.drawChildren(w)
+	})
+}
+
+func (c *StdContainer) drawChildren(w Writer) error {
 	// fmt.Printf("DrawContent %s\n", c)
 	children := slices.Clone(c.Widgets())
 	slices.SortStableFunc(children, func(a, b Widget) int {
@@ -351,6 +357,9 @@ func cloneWidgetShallow(widget Widget) Widget {
 	value := reflect.ValueOf(widget)
 	if value.Kind() != reflect.Pointer || value.IsNil() {
 		panic("cloneWidgetShallow expects non-nil pointer widget")
+	}
+	if accessible, ok := widget.(interface{ AccessibilityLogicalID() string }); ok {
+		accessible.AccessibilityLogicalID()
 	}
 	clone := reflect.New(value.Elem().Type())
 	clone.Elem().Set(value.Elem())
