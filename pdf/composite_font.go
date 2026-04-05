@@ -29,7 +29,7 @@ func mostCommonWidth(glyphWidths map[uint16]int) int {
 	}
 	best, bestCount := 0, 0
 	for w, c := range counts {
-		if c > bestCount {
+		if c > bestCount || (c == bestCount && w < best) {
 			best, bestCount = w, c
 		}
 	}

@@ -108,6 +108,13 @@ func TestMostCommonWidth(t *testing.T) {
 	}
 }
 
+func TestMostCommonWidth_TieBreaksDeterministically(t *testing.T) {
+	w := mostCommonWidth(map[uint16]int{1: 556, 2: 277, 3: 556, 4: 277})
+	if w != 277 {
+		t.Errorf("expected deterministic tied width 277, got %d", w)
+	}
+}
+
 func TestMostCommonWidth_Empty(t *testing.T) {
 	w := mostCommonWidth(nil)
 	if w != 0 {
