@@ -592,7 +592,7 @@ func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	}
 }
 
-func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *testing.T) {
+func TestShapedGlyphRuneAssignments_DistributesRunesAcrossClusterGlyphs(t *testing.T) {
 	assignments := shapedGlyphRuneAssignments([]shaping.GlyphPosition{
 		{GlyphID: 10, ClusterIndex: 2},
 		{GlyphID: 20, ClusterIndex: 0},
@@ -602,11 +602,13 @@ func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *tes
 	if got := string(assignments[0]); got != "م" {
 		t.Fatalf("glyph 0 assignment = %q, want %q", got, "م")
 	}
-	if got := string(assignments[1]); got != "ُص" {
-		t.Fatalf("glyph 1 assignment = %q, want %q", got, "ُص")
+	// With per-glyph distribution, cluster 0 ("صُ") splits across 2 glyphs
+	// in reversed visual order: glyph[1] → damma, glyph[2] → saad.
+	if got := string(assignments[1]); got != "ُ" {
+		t.Fatalf("glyph 1 assignment = %q, want %q", got, "ُ")
 	}
-	if _, ok := assignments[2]; ok {
-		t.Fatalf("glyph 2 should not receive a duplicate cluster assignment, got %q", string(assignments[2]))
+	if got := string(assignments[2]); got != "ص" {
+		t.Fatalf("glyph 2 assignment = %q, want %q", got, "ص")
 	}
 }
 
@@ -642,8 +644,13 @@ func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *tes
 	dw.WriteTo(&buf)
 	pdf := buf.String()
 
-	if strings.Count(pdf, "<064F0635>") != 1 {
-		t.Fatalf("expected cluster text to appear once in ToUnicode, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	// With per-glyph rune distribution, the cluster "صُ" produces
+	// individual ToUnicode entries for each glyph rather than one combined entry.
+	if strings.Count(pdf, "<0635>") != 1 {
+		t.Fatalf("expected saad mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if strings.Count(pdf, "<064F>") != 1 {
+		t.Fatalf("expected damma mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
 	if strings.Count(pdf, "<0645>") != 1 {
 		t.Fatalf("expected standalone meem mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))

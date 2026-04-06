@@ -1130,27 +1130,99 @@ func (pw *PageWriter) flushText() {
 			if shaped != nil {
 				usedPositionedText = true
 				penX := 0.0
-				// The shaper returns glyphs in visual order, so emit them in the
-				// same order while advancing the pen explicitly.
+				fontSize := p.FontSize
+
+				// Assign CIDs for all shaped glyphs.
+				codes := make([]uint16, len(shaped))
 				for i, gp := range shaped {
 					code := gp.GlyphID
 					if gr != nil {
 						if seq := glyphRuneAssignments[i]; len(seq) > 0 {
 							code = gr.recordRunes(gp.GlyphID, seq)
 						} else {
-							code = gr.use(gp.GlyphID)
+							code = gr.recordRunes(gp.GlyphID, []rune{'\u034F'}) // CGJ keeps word together in ToUnicode
 						}
 					}
-					buf.WriteByte(byte(code >> 8))
-					buf.WriteByte(byte(code & 0xFF))
+					codes[i] = code
+				}
+
+				// Check if all glyphs share the same YOffset (commonly 0).
+				// If so, use a single TJ array for better text extraction.
+				baseY := shaped[0].YOffset
+				allSameY := true
+				for _, gp := range shaped[1:] {
+					if gp.YOffset != baseY {
+						allSameY = false
+						break
+					}
+				}
+
+				if allSameY {
+					// Compute the effective /W width for each CID so that the
+					// TJ adjustments are near zero. This prevents text
+					// extractors from interpreting XOffset-driven position
+					// changes as word boundaries.
+					if gr != nil {
+						for i, gp := range shaped {
+							xAdv := float64(gp.XAdvance) / 64.0
+							deltaOff := 0.0
+							if i < len(shaped)-1 {
+								deltaOff = float64(shaped[i+1].XOffset-gp.XOffset) / 64.0
+							}
+							effPts := xAdv + deltaOff
+							effW := int(effPts * 1000.0 / fontSize)
+							gr.setEffectiveWidth(codes[i], effW)
+						}
+					}
+
+					// Emit all glyphs in a single TJ array.
 					pw.tw.setMatrix(
 						1, 0, 0, 1,
-						leafStart.X+penX+(float64(gp.XOffset)/64.0),
-						leafStart.Y+(float64(gp.YOffset)/64.0),
+						leafStart.X+float64(shaped[0].XOffset)/64.0,
+						leafStart.Y+float64(baseY)/64.0,
 					)
-					pw.tw.showHex(buf.Bytes())
-					buf.Reset()
-					penX += float64(gp.XAdvance) / 64.0
+					var tjElems []interface{}
+					cursor := leafStart.X + float64(shaped[0].XOffset)/64.0
+					for i, gp := range shaped {
+						cidBytes := []byte{byte(codes[i] >> 8), byte(codes[i] & 0xFF)}
+						tjElems = append(tjElems, cidBytes)
+
+						// Advance cursor by the effective width.
+						effPts := float64(gp.XAdvance) / 64.0
+						if i < len(shaped)-1 {
+							effPts += float64(shaped[i+1].XOffset-gp.XOffset) / 64.0
+						}
+						cursor += effPts
+
+						if i < len(shaped)-1 {
+							// Desired position for next glyph.
+							penX += float64(gp.XAdvance) / 64.0
+							desired := leafStart.X + penX + float64(shaped[i+1].XOffset)/64.0
+							// TJ adjustment: positive moves left, in 1/1000 text units.
+							adj := (cursor - desired) * 1000.0 / fontSize
+							if adj < -0.5 || adj > 0.5 {
+								tjElems = append(tjElems, adj)
+							}
+							cursor = desired
+						} else {
+							penX += float64(gp.XAdvance) / 64.0
+						}
+					}
+					pw.tw.showHexTJ(tjElems)
+				} else {
+					// Fall back to per-glyph Tm+Tj for runs with varying YOffset.
+					for i, gp := range shaped {
+						buf.WriteByte(byte(codes[i] >> 8))
+						buf.WriteByte(byte(codes[i] & 0xFF))
+						pw.tw.setMatrix(
+							1, 0, 0, 1,
+							leafStart.X+penX+(float64(gp.XOffset)/64.0),
+							leafStart.Y+(float64(gp.YOffset)/64.0),
+						)
+						pw.tw.showHex(buf.Bytes())
+						buf.Reset()
+						penX += float64(gp.XAdvance) / 64.0
+					}
 				}
 			} else if usePositionedGlyphs {
 				usedPositionedText = true
@@ -1301,6 +1373,7 @@ func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) ma
 		return nil
 	}
 
+	// Identify cluster boundaries in the rune array.
 	clusterStarts := make(map[int]struct{}, len(glyphs))
 	for _, gp := range glyphs {
 		if gp.ClusterIndex >= 0 && gp.ClusterIndex < len(runes) {
@@ -1317,6 +1390,7 @@ func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) ma
 	}
 	sort.Ints(sortedStarts)
 
+	// Build the rune sequence for each cluster.
 	clusterSequences := make(map[int][]rune, len(sortedStarts))
 	for i, start := range sortedStarts {
 		end := len(runes)
@@ -1324,29 +1398,49 @@ func shapedGlyphRuneAssignments(glyphs []shaping.GlyphPosition, runes []rune) ma
 			end = sortedStarts[i+1]
 		}
 		if start < end {
-			clusterSequences[start] = reverseRunes(append([]rune(nil), runes[start:end]...))
+			clusterSequences[start] = append([]rune(nil), runes[start:end]...)
 		}
+	}
+
+	// Group glyph indices by cluster.
+	clusterGlyphs := make(map[int][]int, len(clusterSequences))
+	for i, gp := range glyphs {
+		clusterGlyphs[gp.ClusterIndex] = append(clusterGlyphs[gp.ClusterIndex], i)
 	}
 
 	assignments := make(map[int][]rune, len(glyphs))
-	seenClusters := make(map[int]struct{}, len(clusterSequences))
-	for i, gp := range glyphs {
-		if _, seen := seenClusters[gp.ClusterIndex]; seen {
+	for clusterIdx, seq := range clusterSequences {
+		gidxs := clusterGlyphs[clusterIdx]
+		if len(gidxs) == 0 || len(seq) == 0 {
 			continue
 		}
-		if seq := clusterSequences[gp.ClusterIndex]; len(seq) > 0 {
-			assignments[i] = seq
-			seenClusters[gp.ClusterIndex] = struct{}{}
+
+		if len(gidxs) == 1 {
+			// Single glyph for this cluster: assign all runes.
+			assignments[gidxs[0]] = seq
+		} else if len(gidxs) == len(seq) {
+			// Equal number of glyphs and runes: distribute one rune per
+			// glyph. Glyphs are in visual (L-to-R) order; runes are in
+			// logical order. For RTL text the visual order is the reverse
+			// of logical, so assign rune[N-1-j] to glyph[j].
+			for j, gi := range gidxs {
+				ri := len(seq) - 1 - j
+				assignments[gi] = []rune{seq[ri]}
+			}
+		} else if len(gidxs) > len(seq) {
+			// More glyphs than runes: distribute runes to glyphs in
+			// reverse order, leave remaining glyphs unassigned.
+			for j := 0; j < len(seq) && j < len(gidxs); j++ {
+				gi := gidxs[j]
+				ri := len(seq) - 1 - j
+				assignments[gi] = []rune{seq[ri]}
+			}
+		} else {
+			// More runes than glyphs: assign all runes to the first glyph.
+			assignments[gidxs[0]] = seq
 		}
 	}
 	return assignments
-}
-
-func reverseRunes(runes []rune) []rune {
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
-	}
-	return runes
 }
 
 func (pw *PageWriter) FontColor() colors.Color {

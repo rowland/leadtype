@@ -8,9 +8,10 @@ package pdf
 // It is used in Unicode mode to build the /W width array and the ToUnicode
 // CMap stream at document close.
 type glyphRecorder struct {
-	keyToCID map[glyphUseKey]uint16
-	cidUses  map[uint16]glyphUse
-	nextCID  uint16
+	keyToCID       map[glyphUseKey]uint16
+	cidUses        map[uint16]glyphUse
+	cidWidthOverride map[uint16]int // per-CID effective width in 1/1000 em (set during rendering)
+	nextCID        uint16
 }
 
 type glyphUseKey struct {
@@ -27,10 +28,26 @@ type glyphUse struct {
 
 func newGlyphRecorder() *glyphRecorder {
 	return &glyphRecorder{
-		keyToCID: make(map[glyphUseKey]uint16),
-		cidUses:  make(map[uint16]glyphUse),
-		nextCID:  1, // reserve CID 0 for .notdef
+		keyToCID:       make(map[glyphUseKey]uint16),
+		cidUses:        make(map[uint16]glyphUse),
+		cidWidthOverride: make(map[uint16]int),
+		nextCID:        1, // reserve CID 0 for .notdef
 	}
+}
+
+// setEffectiveWidth records the effective /W width (in 1/1000 em units) for
+// a CID. This allows shaped text emission to override the raw font metric
+// width with one that accounts for GPOS XOffset adjustments, preventing
+// text extractors from inserting spurious spaces.
+func (gr *glyphRecorder) setEffectiveWidth(cid uint16, w int) {
+	gr.cidWidthOverride[cid] = w
+}
+
+// effectiveWidth returns the overridden width for a CID, or ok=false if
+// no override has been set.
+func (gr *glyphRecorder) effectiveWidth(cid uint16) (int, bool) {
+	w, ok := gr.cidWidthOverride[cid]
+	return w, ok
 }
 
 // record notes that glyphID was used to render the given rune.
