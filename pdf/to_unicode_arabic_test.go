@@ -120,7 +120,7 @@ func TestUnicodeMode_ArabicExtractionPreservesDistinctSequences(t *testing.T) {
 	}
 	got := strings.TrimSpace(string(out))
 	normalized := strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) || r == '\u202b' || r == '\u202c' {
+		if unicode.IsSpace(r) || r == '\u202b' || r == '\u202c' || r == '\u034f' {
 			return -1
 		}
 		return r

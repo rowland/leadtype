@@ -387,11 +387,15 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		for _, cid := range cids {
 			gid := gr.glyphIDForCID(cid)
 			cidToGID[cid] = gid
-			w := f.AdvanceWidthForGlyph(gid)
-			if upm > 0 {
-				w = w * 1000 / upm
+			if ew, ok := gr.effectiveWidth(cid); ok {
+				cidWidths[cid] = ew
+			} else {
+				w := f.AdvanceWidthForGlyph(gid)
+				if upm > 0 {
+					w = w * 1000 / upm
+				}
+				cidWidths[cid] = w
 			}
-			cidWidths[cid] = w
 		}
 		defWidth := mostCommonWidth(cidWidths)
 		dw.cidFonts[psName].setDefaultWidth(defWidth)
