@@ -92,3 +92,21 @@ curl -s \
   -F 'file=@./img/logo.png;filename=assets/logo.png' \
   http://localhost:8080/render -o report.pdf
 ```
+
+
+## Embedding and custom widgets
+
+`serve-ltml` now exposes an importable package at:
+
+- `github.com/rowland/leadtype/cmd/serve-ltml/serveltml`
+
+Third-party programs can host the server and register custom LTML widgets
+before requests are handled:
+
+```go
+code := serveltml.Main(os.Stderr, func() error {
+    // call ltml.RegisterTag / custom setup here
+    return nil
+})
+os.Exit(code)
+```

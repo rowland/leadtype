@@ -93,3 +93,21 @@ Submit a batch to a running `serve-ltml` instance:
 ```sh
 render-ltml -b -submit http://localhost:8080/render -o ./out reports/one.ltml reports/two.ltml
 ```
+
+
+## Embedding and custom widgets
+
+`render-ltml` now exposes an importable package at:
+
+- `github.com/rowland/leadtype/cmd/render-ltml/renderltml`
+
+Third-party programs can call `renderltml.Main(...)` and register custom LTML
+widgets before normal command processing begins:
+
+```go
+code := renderltml.Main(context.Background(), os.Args[1:], os.Stderr, func() error {
+    // call ltml.RegisterTag / custom setup here
+    return nil
+})
+os.Exit(code)
+```
