@@ -1,6 +1,13 @@
 // Copyright 2026 Brent Rowland.
 // Use of this source code is governed the Apache License, Version 2.0, as described in the LICENSE file.
 
+// Package renderltml provides reusable command logic for rendering LTML
+// documents to PDF.
+//
+// It can render documents locally, including optional asset directories and
+// extra uploaded files, or submit multipart/form-data requests to a remote
+// serve-ltml service. It also supports batch rendering and polling-based watch
+// mode for rerendering when inputs change.
 package renderltml
 
 import (
@@ -98,6 +105,9 @@ func displayPath(path string) string {
 	return rel
 }
 
+// Main runs the render-ltml command flow and returns a process exit code. If
+// registerWidgets is non-nil, it is called before argument validation and
+// rendering begin.
 func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets func() error) int {
 	var cfg runConfig
 	var extraFiles multiFlag
