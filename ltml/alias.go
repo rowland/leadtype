@@ -53,7 +53,9 @@ var StdAliases = map[string]*Alias{
 	"s":     {"s", "span", map[string]string{"font.strikeout": "true"}},
 	"hbox":  {"hbox", "div", map[string]string{"layout": "hbox"}},
 	"vbox":  {"vbox", "div", map[string]string{"layout": "vbox"}},
-	"table": {"table", "div", map[string]string{"layout": "table"}},
+	"table": {"table", "div", map[string]string{"layout": "table", "role": "Table"}},
+	"th":    {"th", "p", map[string]string{"role": "TH", "font.weight": "Bold"}},
+	"td":    {"td", "p", map[string]string{"role": "TD"}},
 	"layer": {"layer", "div", map[string]string{"position": "relative", "width": "100%", "height": "100%"}},
 	"br":    {"br", "label", map[string]string{}},
 }
