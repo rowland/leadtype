@@ -89,3 +89,19 @@ func (tw *textWriter) showWithDispacements(elements array) {
 	elements.write(tw.wr)
 	fmt.Fprint(tw.wr, "TJ\n")
 }
+
+// showHexTJ emits a TJ array from alternating hex-string and adjustment
+// elements. Each element is either a []byte (hex CID pair) or a float64
+// (position adjustment in thousandths of text space unit).
+func (tw *textWriter) showHexTJ(elements []interface{}) {
+	fmt.Fprint(tw.wr, "[")
+	for _, elem := range elements {
+		switch v := elem.(type) {
+		case []byte:
+			fmt.Fprintf(tw.wr, "<%s>", hex.EncodeToString(v))
+		case float64:
+			fmt.Fprintf(tw.wr, "%s ", g(v))
+		}
+	}
+	fmt.Fprint(tw.wr, "] TJ\n")
+}

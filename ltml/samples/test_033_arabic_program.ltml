@@ -1,12 +1,20 @@
-<ltml>
+<ltml ua="true">
   <layout id="vbox" padding="10pt" />
   <font id="body" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="12" />
   <font id="heading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="18" weight="Bold" />
   <font id="subheading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="14" weight="Bold" />
-  <define id="cell" tag="p" border="solid" padding="6pt" />
+
+  <define id="h1" tag="p" font="heading" role="H1" />
+  <define id="h2" tag="p" font="subheading" role="H2" />
+
+  <style>
+    td { border: solid; padding: 6pt; }
+    th { border: solid; padding: 6pt; }
+  </style>
+
   <page units="in" margin="0.75in" layout="vbox" font="body" dir="rtl">
-    <p font="heading">برنامج أمسيات الحي الثقافية</p>
-    <p font="subheading">مكتبة المدينة - ربيع عام ألفين وستة وعشرين</p>
+    <h1>برنامج أمسيات الحي الثقافية</h1>
+    <h2>مكتبة المدينة - ربيع عام ألفين وستة وعشرين</h2>
 
     <p>
       تدعو مكتبة المدينة سكان الحي إلى برنامج أسبوعي يجمع بين القراءة
@@ -21,19 +29,19 @@
       مساعدة لغوية باللغة الإنجليزية عند التسجيل.
     </p>
 
-    <p font="subheading">جدول مختصر</p>
-    <table order="rows" cols="2" border="solid" padding="4pt" width="100%" dir="rtl">
-      <cell font.weight="Bold">الموعد</cell>
-      <cell font.weight="Bold">التفاصيل</cell>
+    <h2>جدول مختصر</h2>
+    <table order="rows" cols="2" border="solid" padding="4pt" width="100%">
+      <th>الموعد</th>
+      <th>التفاصيل</th>
 
-      <cell>مساء الثلاثاء الرابع عشر من أبريل</cell>
-      <cell>ورشة كتابة قصيرة للشباب والبالغين في قاعة القراءة</cell>
+      <td>مساء الثلاثاء الرابع عشر من أبريل</td>
+      <td>ورشة كتابة قصيرة للشباب والبالغين في قاعة القراءة</td>
 
-      <cell>مساء الخميس السادس عشر من أبريل</cell>
-      <cell>عرض فيلم وثائقي محلي يتبعه نقاش مفتوح مع المخرج</cell>
+      <td>مساء الخميس السادس عشر من أبريل</td>
+      <td>عرض فيلم وثائقي محلي يتبعه نقاش مفتوح مع المخرج</td>
 
-      <cell>صباح السبت الثامن عشر من أبريل</cell>
-      <cell>سوق صغير للحِرَف مع ركن للأطفال وتجربة طباعة يدوية</cell>
+      <td>صباح السبت الثامن عشر من أبريل</td>
+      <td>سوق صغير للحِرَف مع ركن للأطفال وتجربة طباعة يدوية</td>
     </table>
 
     <p>

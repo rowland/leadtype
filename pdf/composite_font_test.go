@@ -9,7 +9,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -551,7 +553,7 @@ func captureStderr(t *testing.T, fn func()) string {
 	return string(data)
 }
 
-func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
+func TestUnicodeMode_ShapedGlyphOffsetsWithVaryingYOffsetUsePerGlyphPositioning(t *testing.T) {
 	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
 	if err != nil || len(fc.FontInfos) == 0 {
 		t.Skipf("Arabic fixture font not found: %v", err)
@@ -592,7 +594,89 @@ func TestUnicodeMode_ShapedGlyphOffsetsUsePositioningOperators(t *testing.T) {
 	}
 }
 
-func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *testing.T) {
+func TestUnicodeMode_ShapedGlyphOffsetsWithZeroYOffsetUseTJAndRawWidths(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+	family := fc.FontInfos[0].Family()
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+
+	pw := dw.NewPage()
+	fonts, err := pw.SetFont(family, 12, options.Options{})
+	if err != nil {
+		t.Fatalf("SetFont: %v", err)
+	}
+	if len(fonts) == 0 {
+		t.Fatal("SetFont returned no fonts")
+	}
+
+	gidMeem := fonts[0].GlyphIndex('م')
+	gidAlef := fonts[0].GlyphIndex('ا')
+	fonts[0].Shaper = offsetShaper{glyphs: []shaping.GlyphPosition{
+		{GlyphID: gidMeem, XAdvance: 9 * 64, XOffset: 0, YOffset: 0, ClusterIndex: 0},
+		{GlyphID: gidAlef, XAdvance: 9 * 64, XOffset: 2 * 64, YOffset: 0, ClusterIndex: 1},
+	}}
+
+	pw.MoveTo(72, 720)
+	pw.Print("ما")
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo: %v", err)
+	}
+	pdf := buf.String()
+	section := extractSection(pdf, "BT", 500)
+
+	if strings.Count(section, " TJ\n") != 1 {
+		t.Fatalf("expected a single TJ operator for zero-YOffset shaped text, got excerpt:\n%s", section)
+	}
+	if strings.Contains(section, " Tj\n") {
+		t.Fatalf("expected zero-YOffset shaped text to avoid per-glyph Tj operators, got excerpt:\n%s", section)
+	}
+	if !regexp.MustCompile(`>[[:space:]]*-?[0-9]`).MatchString(section) {
+		t.Fatalf("expected TJ array to contain numeric positioning adjustments, got excerpt:\n%s", section)
+	}
+
+	psName := fonts[0].PostScriptName()
+	cidFont := dw.cidFonts[psName]
+	defaultWidth, ok := cidFont.dict["DW"].(integer)
+	if !ok {
+		t.Fatalf("expected integer /DW entry, got %T", cidFont.dict["DW"])
+	}
+	var widthBuf bytes.Buffer
+	cidFont.dict["W"].write(&widthBuf)
+	widths := widthBuf.String()
+
+	rawMeem := fonts[0].AdvanceWidthForGlyph(gidMeem)
+	rawAlef := fonts[0].AdvanceWidthForGlyph(gidAlef)
+	if upm := fonts[0].UnitsPerEm(); upm > 0 {
+		rawMeem = rawMeem * 1000 / upm
+		rawAlef = rawAlef * 1000 / upm
+	}
+	expectedDefault := rawAlef
+	if rawMeem < rawAlef {
+		expectedDefault = rawMeem
+	}
+	if int(defaultWidth) != expectedDefault {
+		t.Fatalf("default width = %d, want raw metric width %d", defaultWidth, expectedDefault)
+	}
+	if rawMeem != expectedDefault && !strings.Contains(widths, strconv.Itoa(rawMeem)) {
+		t.Fatalf("expected raw meem width %d in /W array, got %q", rawMeem, widths)
+	}
+	if rawAlef != expectedDefault && !strings.Contains(widths, strconv.Itoa(rawAlef)) {
+		t.Fatalf("expected raw alef width %d in /W array, got %q", rawAlef, widths)
+	}
+
+	adjustedMeem := 916 // (9pt advance + 2pt next XOffset) scaled to 1000/fontSize.
+	if adjustedMeem != rawMeem && adjustedMeem != rawAlef && strings.Contains(widths, strconv.Itoa(adjustedMeem)) {
+		t.Fatalf("expected /W array to avoid synthetic positioned width %d, got %q", adjustedMeem, widths)
+	}
+}
+
+func TestShapedGlyphRuneAssignments_DistributesRunesAcrossClusterGlyphs(t *testing.T) {
 	assignments := shapedGlyphRuneAssignments([]shaping.GlyphPosition{
 		{GlyphID: 10, ClusterIndex: 2},
 		{GlyphID: 20, ClusterIndex: 0},
@@ -602,11 +686,13 @@ func TestShapedGlyphRuneAssignments_DuplicateClusterAssignsFirstGlyphOnly(t *tes
 	if got := string(assignments[0]); got != "م" {
 		t.Fatalf("glyph 0 assignment = %q, want %q", got, "م")
 	}
-	if got := string(assignments[1]); got != "ُص" {
-		t.Fatalf("glyph 1 assignment = %q, want %q", got, "ُص")
+	// With per-glyph distribution, cluster 0 ("صُ") splits across 2 glyphs
+	// in reversed visual order: glyph[1] → damma, glyph[2] → saad.
+	if got := string(assignments[1]); got != "ُ" {
+		t.Fatalf("glyph 1 assignment = %q, want %q", got, "ُ")
 	}
-	if _, ok := assignments[2]; ok {
-		t.Fatalf("glyph 2 should not receive a duplicate cluster assignment, got %q", string(assignments[2]))
+	if got := string(assignments[2]); got != "ص" {
+		t.Fatalf("glyph 2 assignment = %q, want %q", got, "ص")
 	}
 }
 
@@ -642,8 +728,13 @@ func TestUnicodeMode_ToUnicodeCMap_ShapedClusterMapsOnceAndKeepsAllGlyphs(t *tes
 	dw.WriteTo(&buf)
 	pdf := buf.String()
 
-	if strings.Count(pdf, "<064F0635>") != 1 {
-		t.Fatalf("expected cluster text to appear once in ToUnicode, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	// With per-glyph rune distribution, the cluster "صُ" produces
+	// individual ToUnicode entries for each glyph rather than one combined entry.
+	if strings.Count(pdf, "<0635>") != 1 {
+		t.Fatalf("expected saad mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))
+	}
+	if strings.Count(pdf, "<064F>") != 1 {
+		t.Fatalf("expected damma mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))
 	}
 	if strings.Count(pdf, "<0645>") != 1 {
 		t.Fatalf("expected standalone meem mapping to appear once, got pdf excerpt:\n%s", extractCMapSection(pdf))

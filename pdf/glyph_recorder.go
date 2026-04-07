@@ -16,13 +16,11 @@ type glyphRecorder struct {
 type glyphUseKey struct {
 	glyphID uint16
 	text    string
-	mapped  bool
 }
 
 type glyphUse struct {
 	glyphID uint16
 	runes   []rune
-	mapped  bool
 }
 
 func newGlyphRecorder() *glyphRecorder {
@@ -40,21 +38,21 @@ func (gr *glyphRecorder) record(glyphID uint16, r rune) uint16 {
 
 // recordRunes notes that glyphID was used to render the given Unicode sequence.
 func (gr *glyphRecorder) recordRunes(glyphID uint16, runes []rune) uint16 {
-	return gr.cidFor(glyphID, runes, true)
+	return gr.cidFor(glyphID, runes)
 }
 
-// use notes that glyphID was used during rendering even if it has no direct
-// Unicode mapping in the ToUnicode CMap (for example, a secondary glyph in a
-// shaped cluster).
-func (gr *glyphRecorder) use(glyphID uint16) uint16 {
-	return gr.cidFor(glyphID, nil, false)
+// recordEmpty notes that glyphID was used during rendering but does not
+// correspond to authored Unicode text (for example, a secondary glyph in a
+// shaped cluster). The ToUnicode CMap still gets an entry for the CID, but the
+// destination sequence is empty.
+func (gr *glyphRecorder) recordEmpty(glyphID uint16) uint16 {
+	return gr.cidFor(glyphID, nil)
 }
 
-func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint16 {
+func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	key := glyphUseKey{
 		glyphID: glyphID,
 		text:    string(runes),
-		mapped:  mapped,
 	}
 	if cid, ok := gr.keyToCID[key]; ok {
 		return cid
@@ -65,7 +63,6 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint1
 	gr.cidUses[cid] = glyphUse{
 		glyphID: glyphID,
 		runes:   append([]rune(nil), runes...),
-		mapped:  mapped,
 	}
 	return cid
 }
@@ -74,9 +71,6 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint1
 func (gr *glyphRecorder) mapping() map[uint16][]rune {
 	m := make(map[uint16][]rune, len(gr.cidUses))
 	for cid, use := range gr.cidUses {
-		if !use.mapped || len(use.runes) == 0 {
-			continue
-		}
 		m[cid] = append([]rune(nil), use.runes...)
 	}
 	return m
