@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"image/jpeg"
+	"math"
 	"strings"
 	"testing"
 
@@ -177,6 +178,36 @@ func TestPageWriter_MeasureText(t *testing.T) {
 	expectFdelta(t, UnitConversions["in"].fromPts(rt.Height()), metrics.Height, 0.0001)
 	expectFdelta(t, UnitConversions["in"].fromPts(rt.Ascent()), metrics.Ascent, 0.0001)
 	expectFdelta(t, UnitConversions["in"].fromPts(rt.Descent()), metrics.Descent, 0.0001)
+}
+
+func TestPageWriter_PrintParagraph_RightAlignConvertsWidthFromCurrentUnits(t *testing.T) {
+	dw := NewDocWriter()
+	fonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fonts)
+	pw := newPageWriter(dw, options.Options{"units": "in"})
+	fontsUsed, err := pw.SetFont("Helvetica", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rt, err := rich_text.New("Hello", fontsUsed, pw.FontSize(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(0.75, 1.0)
+	pw.PrintParagraph([]*rich_text.RichText{rt}, options.Options{
+		"text-align": "right",
+		"width":      6.0,
+	})
+
+	want := pw.units.toPts(0.75+6.0) - rt.Width()
+	if math.Abs(pw.last.loc.X-want) > 0.001 {
+		t.Fatalf("right-aligned paragraph started at %v pt, want %v pt", pw.last.loc.X, want)
+	}
 }
 
 func TestClonePageWriter(t *testing.T) {

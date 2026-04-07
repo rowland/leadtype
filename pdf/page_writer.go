@@ -1574,7 +1574,7 @@ func (pw *PageWriter) print(text string) (err error) {
 
 func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
 	pw.flushText()
-	width := options.FloatDefault("width", pw.PageWidth()-pw.loc.X)
+	width := pw.units.toPts(options.FloatDefault("width", pw.units.fromPts(pw.pageWidth-pw.loc.X)))
 	for _, p := range para {
 		pw.origin = pw.loc
 		switch options.StringDefault("text-align", "left") {
