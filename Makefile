@@ -28,11 +28,11 @@ samples:
 	done
 
 ltml-samples:
-	LTML_UA=true go test ./ltml -run TestSamples -write-sample-pdfs
+	LTML_UA=true go test ./ltml -count=1 -run TestSamples -write-sample-pdfs
 	# go test ./ltml -run TestSamples -write-sample-pdfs
 
 ltml-samples-open:
-	go test ./ltml -run TestSamples -args -open-sample-pdfs
+	go test ./ltml -count=1 -run TestSamples -args -open-sample-pdfs
 
 ltml-image-sample-local: binaries
 	@echo "==> rendering $(LTML_IMAGE_SAMPLE) locally"
