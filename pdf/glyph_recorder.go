@@ -8,46 +8,27 @@ package pdf
 // It is used in Unicode mode to build the /W width array and the ToUnicode
 // CMap stream at document close.
 type glyphRecorder struct {
-	keyToCID       map[glyphUseKey]uint16
-	cidUses        map[uint16]glyphUse
-	cidWidthOverride map[uint16]int // per-CID effective width in 1/1000 em (set during rendering)
-	nextCID        uint16
+	keyToCID map[glyphUseKey]uint16
+	cidUses  map[uint16]glyphUse
+	nextCID  uint16
 }
 
 type glyphUseKey struct {
 	glyphID uint16
 	text    string
-	mapped  bool
 }
 
 type glyphUse struct {
 	glyphID uint16
 	runes   []rune
-	mapped  bool
 }
 
 func newGlyphRecorder() *glyphRecorder {
 	return &glyphRecorder{
-		keyToCID:       make(map[glyphUseKey]uint16),
-		cidUses:        make(map[uint16]glyphUse),
-		cidWidthOverride: make(map[uint16]int),
-		nextCID:        1, // reserve CID 0 for .notdef
+		keyToCID: make(map[glyphUseKey]uint16),
+		cidUses:  make(map[uint16]glyphUse),
+		nextCID:  1, // reserve CID 0 for .notdef
 	}
-}
-
-// setEffectiveWidth records the effective /W width (in 1/1000 em units) for
-// a CID. This allows shaped text emission to override the raw font metric
-// width with one that accounts for GPOS XOffset adjustments, preventing
-// text extractors from inserting spurious spaces.
-func (gr *glyphRecorder) setEffectiveWidth(cid uint16, w int) {
-	gr.cidWidthOverride[cid] = w
-}
-
-// effectiveWidth returns the overridden width for a CID, or ok=false if
-// no override has been set.
-func (gr *glyphRecorder) effectiveWidth(cid uint16) (int, bool) {
-	w, ok := gr.cidWidthOverride[cid]
-	return w, ok
 }
 
 // record notes that glyphID was used to render the given rune.
@@ -57,21 +38,21 @@ func (gr *glyphRecorder) record(glyphID uint16, r rune) uint16 {
 
 // recordRunes notes that glyphID was used to render the given Unicode sequence.
 func (gr *glyphRecorder) recordRunes(glyphID uint16, runes []rune) uint16 {
-	return gr.cidFor(glyphID, runes, true)
+	return gr.cidFor(glyphID, runes)
 }
 
-// use notes that glyphID was used during rendering even if it has no direct
-// Unicode mapping in the ToUnicode CMap (for example, a secondary glyph in a
-// shaped cluster).
-func (gr *glyphRecorder) use(glyphID uint16) uint16 {
-	return gr.cidFor(glyphID, nil, false)
+// recordEmpty notes that glyphID was used during rendering but does not
+// correspond to authored Unicode text (for example, a secondary glyph in a
+// shaped cluster). The ToUnicode CMap still gets an entry for the CID, but the
+// destination sequence is empty.
+func (gr *glyphRecorder) recordEmpty(glyphID uint16) uint16 {
+	return gr.cidFor(glyphID, nil)
 }
 
-func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint16 {
+func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	key := glyphUseKey{
 		glyphID: glyphID,
 		text:    string(runes),
-		mapped:  mapped,
 	}
 	if cid, ok := gr.keyToCID[key]; ok {
 		return cid
@@ -82,7 +63,6 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint1
 	gr.cidUses[cid] = glyphUse{
 		glyphID: glyphID,
 		runes:   append([]rune(nil), runes...),
-		mapped:  mapped,
 	}
 	return cid
 }
@@ -91,9 +71,6 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune, mapped bool) uint1
 func (gr *glyphRecorder) mapping() map[uint16][]rune {
 	m := make(map[uint16][]rune, len(gr.cidUses))
 	for cid, use := range gr.cidUses {
-		if !use.mapped || len(use.runes) == 0 {
-			continue
-		}
 		m[cid] = append([]rune(nil), use.runes...)
 	}
 	return m

@@ -46,11 +46,11 @@ func TestHypothesis1_ReverseRunesCorruptsToUnicode(t *testing.T) {
 	f := loadAmiriFont(t)
 
 	words := []string{
-		"الخبرات",  // al-khibrat
-		"الجيران",  // al-jiran
-		"بسم",      // bism
-		"الله",     // allah
-		"مرحبا",    // marhaba
+		"الخبرات", // al-khibrat
+		"الجيران", // al-jiran
+		"بسم",     // bism
+		"الله",    // allah
+		"مرحبا",   // marhaba
 	}
 
 	for _, word := range words {
@@ -70,7 +70,7 @@ func TestHypothesis1_ReverseRunesCorruptsToUnicode(t *testing.T) {
 					t.Logf("  glyph[%d] id=%d cluster=%d → %q (U+%s)",
 						i, gp.GlyphID, gp.ClusterIndex, string(seq), formatCodepoints(seq))
 				} else {
-					t.Logf("  glyph[%d] id=%d cluster=%d → (unmapped/secondary)",
+					t.Logf("  glyph[%d] id=%d cluster=%d → (secondary/empty)",
 						i, gp.GlyphID, gp.ClusterIndex)
 				}
 			}
@@ -216,13 +216,13 @@ func TestHypothesis3_TmPositionGapsCauseSpaces(t *testing.T) {
 			leafStartX := 72.0 // arbitrary start
 			penX := 0.0
 			type glyphInfo struct {
-				tmX       float64
-				wWidth    float64 // /W width in points
-				xAdvance  float64 // shaper advance in points
-				xOffset   float64 // glyph offset in points
-				mapped    bool
-				runeStr   string
-				glyphID   uint16
+				tmX      float64
+				wWidth   float64 // /W width in points
+				xAdvance float64 // shaper advance in points
+				xOffset  float64 // glyph offset in points
+				mapped   bool
+				runeStr  string
+				glyphID  uint16
 			}
 			infos := make([]glyphInfo, len(glyphs))
 			for i, gp := range glyphs {
@@ -280,8 +280,8 @@ func TestHypothesis3_TmPositionGapsCauseSpaces(t *testing.T) {
 // are CIDs, not glyph IDs).
 //
 // This test generates a full PDF, extracts the ToUnicode CMap, and verifies
-// that every CID emitted in the content stream has a corresponding entry
-// in the ToUnicode CMap (except for intentionally unmapped secondary glyphs).
+// that every CID emitted in the content stream has a corresponding entry in
+// the ToUnicode CMap, including empty destinations for zero-text glyphs.
 func TestHypothesis4_InspectGeneratedToUnicodeCMap(t *testing.T) {
 	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
 	if err != nil || len(fc.FontInfos) == 0 {
@@ -389,11 +389,10 @@ func TestPdftotextArabicWords(t *testing.T) {
 			}
 			got := strings.TrimSpace(string(out))
 
-			// Normalize: strip bidi marks (U+202B, U+202C) and CGJ (U+034F)
-			// added by pdftotext/ToUnicode that don't affect readability.
+			// Normalize: strip only the bidi wrappers added by the extractor.
 			normalized := strings.Map(func(r rune) rune {
 				switch r {
-				case '\u202B', '\u202C', '\u034F':
+				case '\u202B', '\u202C':
 					return -1
 				}
 				return r
@@ -411,8 +410,8 @@ func TestPdftotextArabicWords(t *testing.T) {
 	}
 }
 
-// TestShapedGlyphDetails shows full glyph-by-glyph details for words
-// that still have extraction issues after the CGJ fix.
+// TestShapedGlyphDetails shows full glyph-by-glyph details for representative
+// Arabic words, including clusters with marks and decorative secondary glyphs.
 func TestShapedGlyphDetails(t *testing.T) {
 	f := loadAmiriFont(t)
 
@@ -440,7 +439,7 @@ func TestShapedGlyphDetails(t *testing.T) {
 			t.Logf("---")
 			for i, gp := range glyphs {
 				seq := assignments[i]
-				mapped := "UNMAPPED"
+				mapped := "→ <> (empty destination)"
 				if len(seq) > 0 {
 					mapped = fmt.Sprintf("→ %q (U+%s)", string(seq), formatCodepoints(seq))
 				}

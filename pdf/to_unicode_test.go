@@ -188,3 +188,14 @@ func TestToUnicodeCMapDataComposite_NonBMPUsesSurrogatePair(t *testing.T) {
 		t.Fatalf("expected non-BMP glyph to map via UTF-16 surrogate pair, got:\n%s", s)
 	}
 }
+
+func TestToUnicodeCMapDataComposite_EmptyDestination(t *testing.T) {
+	data := toUnicodeCMapDataComposite(map[uint16][]rune{
+		7: nil,
+	})
+	s := string(data)
+
+	if !strings.Contains(s, "<0007> <>") {
+		t.Fatalf("expected empty destination entry for zero-text CID, got:\n%s", s)
+	}
+}

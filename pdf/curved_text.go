@@ -495,7 +495,7 @@ func (pw *PageWriter) showCurvedTextGlyph(glyph curvedTextRenderGlyph, placement
 			if len(glyph.mappedText) > 0 {
 				code = gr.recordRunes(glyph.GlyphID, glyph.mappedText)
 			} else {
-				code = gr.use(glyph.GlyphID)
+				code = gr.recordEmpty(glyph.GlyphID)
 			}
 		}
 		buf := []byte{byte(code >> 8), byte(code & 0xFF)}
