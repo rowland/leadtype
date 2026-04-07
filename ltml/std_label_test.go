@@ -269,6 +269,25 @@ func TestStdLabel_DrawContent_AngleRotatesAroundLeftAnchor(t *testing.T) {
 	}
 }
 
+func TestStdLabel_RichText_ReappliesFontsWhenUsingCachedRichText(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.AddText("Hello")
+
+	probe := &mockWriter{t: t}
+	if got := l.RichText(probe); got == nil {
+		t.Fatal("expected cached rich text to be built")
+	}
+
+	render := &mockWriter{t: t}
+	if got := l.RichText(render); got == nil {
+		t.Fatal("expected cached rich text to be returned")
+	}
+	if len(render.setFontCalls) == 0 {
+		t.Fatal("expected cached rich text path to apply fonts to the render writer")
+	}
+}
+
 func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
 	cases := []struct {
 		name       string

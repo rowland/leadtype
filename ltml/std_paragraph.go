@@ -165,6 +165,7 @@ func (p *StdParagraph) PreferredWidth(w Writer) float64 {
 func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 	doc := documentForContainer(p)
 	if p.richText != nil && !p.hasDynamicText() {
+		p.applyFonts(w)
 		return p.richText
 	}
 	rt := &rich_text.RichText{}
@@ -198,6 +199,12 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 		p.richText = rt
 	}
 	return rt
+}
+
+func (p *StdParagraph) applyFonts(w Writer) {
+	for _, piece := range p.textPieces {
+		piece.Font(p.Font()).Apply(w)
+	}
 }
 
 func (p *StdParagraph) hasDynamicText() bool {

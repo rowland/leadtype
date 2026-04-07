@@ -132,6 +132,7 @@ func (l *StdLabel) AccessibilityText() string {
 func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 	doc := documentForContainer(l)
 	if l.richText != nil && !l.hasDynamicText() {
+		l.applyFonts(w)
 		return l.richText
 	}
 	rt := &rich_text.RichText{}
@@ -165,6 +166,12 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 		l.richText = rt
 	}
 	return rt
+}
+
+func (l *StdLabel) applyFonts(w Writer) {
+	for _, piece := range l.textPieces {
+		piece.Font(l.Font()).Apply(w)
+	}
 }
 
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
