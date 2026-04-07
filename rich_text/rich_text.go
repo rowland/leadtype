@@ -114,6 +114,12 @@ func (piece *RichText) Add(s string, fonts []*font.Font, fontSize float64, optio
 
 // AddPiece appends one piece of text to another, possibly returning a new root.
 func (piece *RichText) AddPiece(p *RichText) *RichText {
+	if piece == nil || (piece.Text == "" && len(piece.pieces) == 0 && piece.Font == nil) {
+		return p
+	}
+	if p == nil || (p.Text == "" && len(p.pieces) == 0 && p.Font == nil) {
+		return piece
+	}
 	if len(piece.pieces) > 0 {
 		piece.pieces = append(piece.pieces, p)
 		piece.chars = 0

@@ -852,6 +852,27 @@ func TestRichText_TrimRightFunc_complex(t *testing.T) {
 	st.Equal(trailingwhiteSpaceText_simple_trimmed, t3.String())
 }
 
+func TestRichText_Add_OnEmptyRootDoesNotCreateLeadingEmptyLeaf(t *testing.T) {
+	fonts := afm_fonts.Families("Helvetica")
+
+	rt := &RichText{}
+	var err error
+	rt, err = rt.Add("Hello", fonts, 10, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	leafTexts := []string{}
+	rt.VisitAll(func(p *RichText) {
+		if p.IsLeaf() {
+			leafTexts = append(leafTexts, p.Text)
+		}
+	})
+	if len(leafTexts) != 1 || leafTexts[0] != "Hello" {
+		t.Fatalf("leaf texts = %#v, want []string{\"Hello\"}", leafTexts)
+	}
+}
+
 func TestRichText_Width(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
