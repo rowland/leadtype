@@ -685,6 +685,7 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<hbox>` | `<div>`   | `layout="hbox"` |
 | `<vbox>` | `<div>`   | `layout="vbox"` |
 | `<table>` | `<div>` | `layout="table"` |
+| `<disc>` | `<div>` | `layout="radial"` |
 | `<layer>` | `<div>` | `position="relative"`, `width="100%"`, `height="100%"` |
 | `<br>`  | `<label>`  | *(empty line break)* |
 

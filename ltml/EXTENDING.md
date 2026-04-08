@@ -349,7 +349,7 @@ defaultScope (global)
 | `fixed`   | `*FontStyle`| Courier New 12pt |
 | `letter`, `legal`, `A4`, `B5`, `C5` | `*PageStyle` | Standard page sizes; custom sizes can be added via `<pagestyle>` |
 | `vbox`, `hbox`, `table`, `flow`, `absolute`, `relative` | `*LayoutStyle` | Default layouts |
-| `h`, `b`, `i`, `u`, `s`, `hbox`, `vbox`, `table`, `layer`, `br` | `*Alias` | Built-in tag aliases |
+| `h`, `b`, `i`, `u`, `s`, `hbox`, `vbox`, `table`, `disc`, `layer`, `br` | `*Alias` | Built-in tag aliases |
 
 `HasScope` interface (implemented by `Scope`):
 

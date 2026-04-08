@@ -52,6 +52,35 @@ func TestParse_RadialWrapsDirectChildInSector(t *testing.T) {
 	}
 }
 
+func TestParse_DiscAliasBehavesLikeRadialContainer(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <disc cols="2">
+      <label id="wrapped">Hello</label>
+    </disc>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.ltmls[0].Page(0)
+	disc := page.children[0].(*StdContainer)
+	if disc.LayoutStyle().manager != "radial" {
+		t.Fatalf("layout manager = %q, want radial", disc.LayoutStyle().manager)
+	}
+	if disc.Path() != "ltml/page/disc" {
+		t.Fatalf("disc path = %q, want ltml/page/disc", disc.Path())
+	}
+	if len(disc.children) != 1 {
+		t.Fatalf("disc child count = %d, want 1", len(disc.children))
+	}
+	if _, ok := disc.children[0].(*StdSector); !ok {
+		t.Fatalf("wrapped child type = %T, want *StdSector", disc.children[0])
+	}
+}
+
 func TestLayoutRadialTable_DerivesInnerTrackFromExtraCells(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 200)
 	container.SetScope(&defaultScope)
