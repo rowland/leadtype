@@ -68,6 +68,9 @@ func (ls *LayoutStyle) VPadding() float64 {
 
 func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
 	// fmt.Println("In LayoutStyleFor", id)
+	if scope == nil {
+		return defaultLayouts[id]
+	}
 	if ls, ok := scope.LayoutFor(id); ok {
 		// fmt.Println("Found LayoutStyle", ls)
 		return ls
@@ -81,6 +84,7 @@ var defaultLayouts = map[string]*LayoutStyle{
 	"absolute": {id: "absolute", manager: "absolute"},
 	"flow":     {id: "flow", manager: "flow"},
 	"hbox":     {id: "hbox", manager: "hbox"},
+	"radial":   {id: "radial", manager: "radial"},
 	"relative": {id: "relative", manager: "relative"},
 	"table":    {id: "table", manager: "table"},
 	"vbox":     {id: "vbox", manager: "vbox"},

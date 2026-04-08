@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 type StdContainer struct {
@@ -28,6 +29,14 @@ type StdContainer struct {
 	splitExplicit   bool
 	headerRows      int
 	footerRows      int
+	baseAngle       float64
+	angles          []float64
+	centerX         float64
+	centerXSet      bool
+	centerY         float64
+	centerYSet      bool
+	radiusValue     float64
+	innerRadius     float64
 }
 
 func (c *StdContainer) Cols() int {
@@ -90,6 +99,9 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	if c.height != 0 {
 		return c.height
 	}
+	if c.layout != nil && c.layout.manager == "radial" && c.radiusValue > 0 {
+		return (c.radiusValue * 2) + NonContentHeight(c)
+	}
 	savedHeight, savedHeightPct, savedHeightRel, savedHeightSet :=
 		c.height, c.heightPct, c.heightRel, c.heightSet
 	LayoutContainer(c, newLayoutProbeWriter(w))
@@ -97,6 +109,16 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	c.height, c.heightPct, c.heightRel, c.heightSet =
 		savedHeight, savedHeightPct, savedHeightRel, savedHeightSet
 	return height
+}
+
+func (c *StdContainer) PreferredWidth(w Writer) float64 {
+	if c.width != 0 {
+		return c.width
+	}
+	if c.layout != nil && c.layout.manager == "radial" && c.radiusValue > 0 {
+		return (c.radiusValue * 2) + NonContentWidth(c)
+	}
+	return c.StdWidget.PreferredWidth(w)
 }
 
 func (c *StdContainer) Order() TableOrder {
@@ -140,6 +162,37 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 			c.cols = value
 		}
 	}
+	if baseAngle, ok := attrs["base-angle"]; ok {
+		if value, err := strconv.ParseFloat(strings.TrimSpace(baseAngle), 64); err == nil {
+			c.baseAngle = value
+		}
+	}
+	if angles, ok := attrs["angles"]; ok {
+		c.angles = c.angles[:0]
+		for _, part := range strings.Split(angles, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			if value, err := strconv.ParseFloat(part, 64); err == nil {
+				c.angles = append(c.angles, value)
+			}
+		}
+	}
+	if centerX, ok := attrs["center-x"]; ok {
+		c.centerX = ParseMeasurement(centerX, c.Units())
+		c.centerXSet = true
+	}
+	if centerY, ok := attrs["center-y"]; ok {
+		c.centerY = ParseMeasurement(centerY, c.Units())
+		c.centerYSet = true
+	}
+	if radius, ok := attrs["r"]; ok {
+		c.radiusValue = ParseMeasurement(radius, c.Units())
+	}
+	if innerRadius, ok := attrs["inner-r"]; ok {
+		c.innerRadius = ParseMeasurement(innerRadius, c.Units())
+	}
 	if split, ok := attrs["split"]; ok {
 		c.splitExplicit = true
 		c.splitEnabled = split != "false"
@@ -161,6 +214,30 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		c.paragraphStyle = c.ParagraphStyle().Clone()
 		c.paragraphStyle.SetAttrs("paragraph-style.", attrs)
 	}
+}
+
+func (c *StdContainer) BaseAngle() float64 {
+	return c.baseAngle
+}
+
+func (c *StdContainer) Angles() []float64 {
+	return c.angles
+}
+
+func (c *StdContainer) CenterX() (float64, bool) {
+	return c.centerX, c.centerXSet
+}
+
+func (c *StdContainer) CenterY() (float64, bool) {
+	return c.centerY, c.centerYSet
+}
+
+func (c *StdContainer) RadiusValue() float64 {
+	return c.radiusValue
+}
+
+func (c *StdContainer) InnerRadius() float64 {
+	return c.innerRadius
 }
 
 func (c *StdContainer) String() string {

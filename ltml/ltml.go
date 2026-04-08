@@ -98,13 +98,44 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			debugf("Setting parent: %s\n", err)
 		}
 	}
-	if parent, ok := doc.current().(Container); ok && err == nil {
+	var wrapper *StdSector
+	var parent Container
+	if parentCurrent, ok := doc.current().(Container); ok && err == nil {
+		parent = parentCurrent
 		if widget, ok := e.(Widget); ok {
-			parent.AddChild(widget)
-		}
-		if wc, ok := e.(WantsContainer); ok {
-			if err = wc.SetContainer(parent); err != nil {
-				debugf("Setting container: %s\n", err)
+			if parent.LayoutStyle() != nil && parent.LayoutStyle().manager == "radial" {
+				if _, isSector := widget.(*StdSector); !isSector {
+					wrapper = &StdSector{}
+					if ws, ok := any(wrapper).(WantsScope); ok {
+						ws.SetScope(doc.scope())
+					}
+					parentCurrent.AddChild(wrapper)
+					if wc, ok := any(wrapper).(WantsContainer); ok {
+						if err = wc.SetContainer(parentCurrent); err != nil {
+							debugf("Setting radial wrapper container: %s\n", err)
+						}
+					}
+					wrapper.AddChild(widget)
+					if wc, ok := e.(WantsContainer); ok {
+						if err = wc.SetContainer(wrapper); err != nil {
+							debugf("Setting wrapped container: %s\n", err)
+						}
+					}
+				} else {
+					parentCurrent.AddChild(widget)
+					if wc, ok := e.(WantsContainer); ok {
+						if err = wc.SetContainer(parentCurrent); err != nil {
+							debugf("Setting container: %s\n", err)
+						}
+					}
+				}
+			} else {
+				parentCurrent.AddChild(widget)
+				if wc, ok := e.(WantsContainer); ok {
+					if err = wc.SetContainer(parentCurrent); err != nil {
+						debugf("Setting container: %s\n", err)
+					}
+				}
 			}
 		}
 	}
@@ -124,23 +155,20 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if ident, ok := e.(Identifier); ok {
 		ident.SetIentifiers(attrs)
 	}
-	if e, ok := e.(HasAttrs); ok {
-		e.SetAttrs(defaultAttrs)
-		if p, ok := e.(HasPath); ok {
-			doc.scope().EachRuleFor(p.Path(), func(rule *Rule) {
-				e.SetAttrs(rule.Attrs)
-			})
+	sourcePath := ""
+	if wrapper != nil {
+		if setter, ok := e.(interface{ SetPath(string) }); ok {
+			if parent != nil {
+				if selector, ok := e.(interface{ SelectorTag() string }); ok {
+					sourcePath = parent.Path() + "/" + selector.SelectorTag()
+					setter.SetPath(sourcePath)
+				}
+			}
 		}
-		e.SetAttrs(attrs)
 	}
-	if e, ok := e.(HasAttrsPrefix); ok {
-		e.SetAttrs("", defaultAttrs)
-		if p, ok := e.(HasPath); ok {
-			doc.scope().EachRuleFor(p.Path(), func(rule *Rule) {
-				e.SetAttrs("", rule.Attrs)
-			})
-		}
-		e.SetAttrs("", attrs)
+	applyElementAttrs(doc.scope(), e, defaultAttrs, attrs, sourcePath)
+	if wrapper != nil {
+		applyElementAttrs(doc.scope(), wrapper, defaultAttrs, attrs, sourcePath)
 	}
 	if style, ok := e.(Styler); ok {
 		if st, ok := doc.scope().StyleFor(style.ID()); ok {
@@ -191,6 +219,42 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			doc.parseErr = err
 			debugf("Adding rules: %s\n", err)
 		}
+	}
+}
+
+func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[string]string, pathOverride string) {
+	if target == nil {
+		return
+	}
+	if e, ok := target.(HasAttrs); ok {
+		e.SetAttrs(defaultAttrs)
+		path := pathOverride
+		if path == "" {
+			if p, ok := target.(HasPath); ok {
+				path = p.Path()
+			}
+		}
+		if path != "" {
+			scope.EachRuleFor(path, func(rule *Rule) {
+				e.SetAttrs(rule.Attrs)
+			})
+		}
+		e.SetAttrs(attrs)
+	}
+	if e, ok := target.(HasAttrsPrefix); ok {
+		e.SetAttrs("", defaultAttrs)
+		path := pathOverride
+		if path == "" {
+			if p, ok := target.(HasPath); ok {
+				path = p.Path()
+			}
+		}
+		if path != "" {
+			scope.EachRuleFor(path, func(rule *Rule) {
+				e.SetAttrs("", rule.Attrs)
+			})
+		}
+		e.SetAttrs("", attrs)
 	}
 }
 

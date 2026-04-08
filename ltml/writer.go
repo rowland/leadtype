@@ -14,6 +14,9 @@ import (
 type Writer interface {
 	Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error
 	Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error
+	Clip(fn func()) error
+	DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
+	DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	EnableTaggedPDF(bool)
 	Circle(x, y, r float64, border, fill, reverse bool) error
 	Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error

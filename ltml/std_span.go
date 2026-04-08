@@ -29,8 +29,9 @@ func (s *StdSpan) SetContainer(container Container) error {
 	case *StdSpan:
 	case *StdParagraph:
 	case *StdLabel:
+	case *StdSector:
 	default:
-		return fmt.Errorf("span must be child of p, label, a or another span")
+		return fmt.Errorf("span must be child of p, label, sector, a or another span")
 	}
 	s.container = container
 	return nil

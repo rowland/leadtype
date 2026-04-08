@@ -193,6 +193,7 @@ func TestSamples(t *testing.T) {
 		"test_035_links",
 		"test_036_indexes",
 		"test_037_relative_layout",
+		"test_038_radial_layout",
 	}
 
 	for _, sample := range samples {

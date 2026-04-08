@@ -676,6 +676,7 @@ func (pw *PageWriter) Clip(fn func()) error {
 	if err := pw.requireActivePath(); err != nil {
 		return err
 	}
+	savedLast := pw.last
 	pw.startGraph()
 	pw.gw.saveGraphicsState()
 	pw.gw.clip()
@@ -692,6 +693,7 @@ func (pw *PageWriter) Clip(fn func()) error {
 		pw.endGraph()
 	}
 	pw.gw.restoreGraphicsState()
+	pw.last = savedLast
 	return nil
 }
 

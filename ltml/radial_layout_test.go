@@ -1,0 +1,306 @@
+package ltml
+
+import (
+	"math"
+	"strings"
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
+
+func testSectorFont() *FontStyle {
+	return &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+}
+
+func TestParse_RadialWrapsDirectChildInSector(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <div layout="radial" cols="2">
+      <label id="wrapped">Hello</label>
+    </div>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.ltmls[0].Page(0)
+	radial := page.children[0].(*StdContainer)
+	if radial.LayoutStyle().manager != "radial" {
+		t.Fatalf("layout manager = %q, want radial", radial.LayoutStyle().manager)
+	}
+	if len(radial.children) != 1 {
+		t.Fatalf("radial child count = %d, want 1", len(radial.children))
+	}
+	sector, ok := radial.children[0].(*StdSector)
+	if !ok {
+		t.Fatalf("wrapped child type = %T, want *StdSector", radial.children[0])
+	}
+	if len(sector.children) != 1 {
+		t.Fatalf("sector child count = %d, want 1", len(sector.children))
+	}
+	label, ok := sector.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("inner child type = %T, want *StdLabel", sector.children[0])
+	}
+	if label.Container() != sector {
+		t.Fatalf("label container = %T, want *StdSector", label.Container())
+	}
+	if path := label.Path(); strings.Contains(path, "/sector/") {
+		t.Fatalf("wrapped label path = %q, should preserve source path", path)
+	}
+}
+
+func TestLayoutRadialTable_DerivesInnerTrackFromExtraCells(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{"layout": "radial", "cols": "2"})
+
+	s1 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s2 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s3 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	for _, sector := range []*StdSector{s1, s2, s3} {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if s1.geometry.StartAngle != 0 || s1.geometry.EndAngle != 180 {
+		t.Fatalf("outer sector angles = %v..%v, want 0..180", s1.geometry.StartAngle, s1.geometry.EndAngle)
+	}
+	if s2.geometry.StartAngle != 180 || s2.geometry.EndAngle != 360 {
+		t.Fatalf("second sector angles = %v..%v, want 180..360", s2.geometry.StartAngle, s2.geometry.EndAngle)
+	}
+	if !(s3.geometry.OuterRadius < s1.geometry.OuterRadius) {
+		t.Fatalf("inner sector outer radius = %v, want less than %v", s3.geometry.OuterRadius, s1.geometry.OuterRadius)
+	}
+}
+
+func TestLayoutRadialTable_UsesExplicitAnglesAndBaseAngle(t *testing.T) {
+	container := positionedContainer(0, 0, 240, 240)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":     "radial",
+		"rows":       "1",
+		"base-angle": "10",
+		"angles":     "0,120,360",
+	})
+
+	s1 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s2 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	for _, sector := range []*StdSector{s1, s2} {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if s1.geometry.StartAngle != 10 || s1.geometry.EndAngle != 130 {
+		t.Fatalf("sector 1 angles = %v..%v, want 10..130", s1.geometry.StartAngle, s1.geometry.EndAngle)
+	}
+	if s2.geometry.StartAngle != 130 || s2.geometry.EndAngle != 370 {
+		t.Fatalf("sector 2 angles = %v..%v, want 130..370", s2.geometry.StartAngle, s2.geometry.EndAngle)
+	}
+}
+
+func TestStdSector_OriginAliasesResolveToSectorReferencePoints(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	ax, ay := radialPointAt(100, 100, 35, 45)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 50,
+		StartAngle:  0,
+		EndAngle:    90,
+		AnchorAngle: 45,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{
+		"position": "relative",
+		"origin-x": "start",
+		"origin-y": "outer",
+		"left":     "0",
+		"top":      "0",
+	})
+
+	if got, want := child.Left(), sector.ResolveSectorReferenceX(child); got != want {
+		t.Fatalf("Left() = %v, want %v", got, want)
+	}
+	if got, want := child.Top(), sector.ResolveSectorReferenceY(child); got != want {
+		t.Fatalf("Top() = %v, want %v", got, want)
+	}
+	if got, want := child.OriginX(), sector.ResolveSectorReferenceX(child); got != want {
+		t.Fatalf("OriginX() = %v, want %v", got, want)
+	}
+	if got, want := child.OriginY(), sector.ResolveSectorReferenceY(child); got != want {
+		t.Fatalf("OriginY() = %v, want %v", got, want)
+	}
+}
+
+func TestStdSector_DrawContent_UsesCurvedTextUnlessAngleOverrides(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	sector.AddText("Radial")
+	ax, ay := radialPointAt(100, 100, 40, 90)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 60,
+		StartAngle:  45,
+		EndAngle:    135,
+		AnchorAngle: 90,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	w := &labelTestWriter{t: t}
+	if err := sector.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.curvedCount != 1 {
+		t.Fatalf("curved draw count = %d, want 1", w.curvedCount)
+	}
+	if len(w.curvedOpts) != 1 || w.curvedOpts[0].VAlign != pdf.VTextAlignMiddle {
+		t.Fatalf("curved valign = %v, want %v", w.curvedOpts, pdf.VTextAlignMiddle)
+	}
+	if len(w.rotations) != 0 {
+		t.Fatalf("rotation count = %d, want 0 for curved text", len(w.rotations))
+	}
+
+	sector.angle = 90
+	sector.angleSet = true
+	w2 := &labelTestWriter{t: t}
+	if err := sector.DrawContent(w2); err != nil {
+		t.Fatal(err)
+	}
+	if w2.curvedCount != 0 {
+		t.Fatalf("curved draw count with explicit angle = %d, want 0", w2.curvedCount)
+	}
+	if len(w2.rotations) != 1 {
+		t.Fatalf("rotation count with explicit angle = %d, want 1", len(w2.rotations))
+	}
+}
+
+func TestStdSector_LayoutWidget_CentersSingleStaticChildInSector(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	ax, ay := radialPointAt(100, 100, 40, 90)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 60,
+		StartAngle:  45,
+		EndAngle:    135,
+		AnchorAngle: 90,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	label := &StdLabel{}
+	label.font = testSectorFont()
+	if err := label.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	label.AddText("42")
+	sector.AddChild(label)
+
+	w := &labelTestWriter{t: t}
+	sector.LayoutWidget(w)
+
+	centerX, centerY := sector.contentLocalCenter()
+	if got, want := (label.Left()+label.Right())/2, sector.geometry.AnchorX+centerX; math.Abs(got-want) > 0.5 {
+		t.Fatalf("label center x = %v, want near %v", got, want)
+	}
+	if got, want := (label.Top()+label.Bottom())/2, sector.geometry.AnchorY+centerY; math.Abs(got-want) > 0.5 {
+		t.Fatalf("label center y = %v, want near %v", got, want)
+	}
+}
+
+func TestStdSector_ParagraphLayoutVariesLineWidthsAcrossSector(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	ax, ay := radialPointAt(120, 120, 70, 90)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     120,
+		CenterY:     120,
+		InnerRadius: 10,
+		OuterRadius: 130,
+		StartAngle:  75,
+		EndAngle:    105,
+		AnchorAngle: 90,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	p := &StdParagraph{}
+	p.paragraphStyle = &ParagraphStyle{}
+	if err := p.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	p.AddText("This paragraph should wrap onto multiple sector-shaped lines instead of using one fixed rectangular width.")
+	sector.AddChild(p)
+
+	w := &labelTestWriter{t: t}
+	sector.LayoutWidget(w)
+	layout := sector.sectorParagraphLayoutFor(p, w)
+	if len(layout.lines) < 2 {
+		t.Fatalf("sector paragraph line count = %d, want at least 2", len(layout.lines))
+	}
+	varying := false
+	for i := 1; i < len(layout.intervals); i++ {
+		if math.Abs((layout.intervals[i].MaxX-layout.intervals[i].MinX)-(layout.intervals[i-1].MaxX-layout.intervals[i-1].MinX)) > 0.5 {
+			varying = true
+			break
+		}
+	}
+	if !varying {
+		t.Fatalf("expected varying line widths across the sector, got intervals %v", layout.intervals)
+	}
+}
+
+func TestStdSector_WithParagraphChild_DoesNotDefaultToTangentRotation(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	p := &StdParagraph{}
+	p.paragraphStyle = &ParagraphStyle{}
+	if err := p.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	p.AddText("Paragraph")
+	sector.AddChild(p)
+
+	ax, ay := radialPointAt(100, 100, 40, 45)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 60,
+		StartAngle:  0,
+		EndAngle:    90,
+		AnchorAngle: 45,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	if got := sector.contentRotation; math.Abs(got) > 0.001 {
+		t.Fatalf("content rotation = %v, want 0 for paragraph-bearing sector", got)
+	}
+}
