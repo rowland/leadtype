@@ -52,6 +52,46 @@ func TestParse_RadialWrapsDirectChildInSector(t *testing.T) {
 	}
 }
 
+func TestParse_RadialOutWrapsDirectChildInSector(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <div layout="radial-out" cols="2">
+      <label id="wrapped">Hello</label>
+    </div>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.ltmls[0].Page(0)
+	radial := page.children[0].(*StdContainer)
+	if radial.LayoutStyle().manager != "radial-out" {
+		t.Fatalf("layout manager = %q, want radial-out", radial.LayoutStyle().manager)
+	}
+	if len(radial.children) != 1 {
+		t.Fatalf("radial-out child count = %d, want 1", len(radial.children))
+	}
+	sector, ok := radial.children[0].(*StdSector)
+	if !ok {
+		t.Fatalf("wrapped child type = %T, want *StdSector", radial.children[0])
+	}
+	if len(sector.children) != 1 {
+		t.Fatalf("sector child count = %d, want 1", len(sector.children))
+	}
+	label, ok := sector.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("inner child type = %T, want *StdLabel", sector.children[0])
+	}
+	if label.Container() != sector {
+		t.Fatalf("label container = %T, want *StdSector", label.Container())
+	}
+	if path := label.Path(); strings.Contains(path, "/sector/") {
+		t.Fatalf("wrapped label path = %q, should preserve source path", path)
+	}
+}
+
 func TestParse_DiscAliasBehavesLikeRadialContainer(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>
@@ -115,6 +155,137 @@ func TestLayoutRadialTable_UsesExplicitAnglesAndBaseAngle(t *testing.T) {
 	container.SetScope(&defaultScope)
 	container.SetAttrs(map[string]string{
 		"layout":     "radial",
+		"rows":       "1",
+		"base-angle": "10",
+		"angles":     "0,120,360",
+	})
+
+	s1 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s2 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	for _, sector := range []*StdSector{s1, s2} {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if s1.geometry.StartAngle != 10 || s1.geometry.EndAngle != 130 {
+		t.Fatalf("sector 1 angles = %v..%v, want 10..130", s1.geometry.StartAngle, s1.geometry.EndAngle)
+	}
+	if s2.geometry.StartAngle != 130 || s2.geometry.EndAngle != 370 {
+		t.Fatalf("sector 2 angles = %v..%v, want 130..370", s2.geometry.StartAngle, s2.geometry.EndAngle)
+	}
+}
+
+func TestLayoutRadialOut_RowZeroIsInnermostAndRowspanExtendsOutward(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":  "radial-out",
+		"rows":    "3",
+		"cols":    "1",
+		"inner-r": "10",
+	})
+
+	s1 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s1.font = testSectorFont()
+	s1.SetAttrs(map[string]string{"rowspan": "2"})
+	if err := s1.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(s1)
+
+	s2 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s2.font = testSectorFont()
+	if err := s2.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(s2)
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got, want := s1.geometry.InnerRadius, 10.0; !floatEquals(got, want) {
+		t.Fatalf("row 0 inner radius = %v, want %v", got, want)
+	}
+	if got, want := s1.geometry.OuterRadius, 70.0; !floatEquals(got, want) {
+		t.Fatalf("row 0 rowspan=2 outer radius = %v, want %v", got, want)
+	}
+	if got, want := s2.geometry.InnerRadius, 70.0; !floatEquals(got, want) {
+		t.Fatalf("row 2 inner radius = %v, want %v", got, want)
+	}
+	if got, want := s2.geometry.OuterRadius, 100.0; !floatEquals(got, want) {
+		t.Fatalf("row 2 outer radius = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutRadialOut_OrderColsFillsOutwardBeforeNextAngularSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout": "radial-out",
+		"rows":   "2",
+		"order":  "cols",
+	})
+
+	s1 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s2 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	s3 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	for _, sector := range []*StdSector{s1, s2, s3} {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got, want := s1.geometry.InnerRadius, 0.0; !floatEquals(got, want) {
+		t.Fatalf("first sector inner radius = %v, want %v", got, want)
+	}
+	if got, want := s1.geometry.OuterRadius, 50.0; !floatEquals(got, want) {
+		t.Fatalf("first sector outer radius = %v, want %v", got, want)
+	}
+	if got, want := s1.geometry.StartAngle, 0.0; !floatEquals(got, want) {
+		t.Fatalf("first sector start angle = %v, want %v", got, want)
+	}
+	if got, want := s1.geometry.EndAngle, 180.0; !floatEquals(got, want) {
+		t.Fatalf("first sector end angle = %v, want %v", got, want)
+	}
+	if got, want := s2.geometry.InnerRadius, 50.0; !floatEquals(got, want) {
+		t.Fatalf("second sector inner radius = %v, want %v", got, want)
+	}
+	if got, want := s2.geometry.OuterRadius, 100.0; !floatEquals(got, want) {
+		t.Fatalf("second sector outer radius = %v, want %v", got, want)
+	}
+	if got, want := s2.geometry.StartAngle, 0.0; !floatEquals(got, want) {
+		t.Fatalf("second sector start angle = %v, want %v", got, want)
+	}
+	if got, want := s2.geometry.EndAngle, 180.0; !floatEquals(got, want) {
+		t.Fatalf("second sector end angle = %v, want %v", got, want)
+	}
+	if got, want := s3.geometry.InnerRadius, 0.0; !floatEquals(got, want) {
+		t.Fatalf("third sector inner radius = %v, want %v", got, want)
+	}
+	if got, want := s3.geometry.OuterRadius, 50.0; !floatEquals(got, want) {
+		t.Fatalf("third sector outer radius = %v, want %v", got, want)
+	}
+	if got, want := s3.geometry.StartAngle, 180.0; !floatEquals(got, want) {
+		t.Fatalf("third sector start angle = %v, want %v", got, want)
+	}
+	if got, want := s3.geometry.EndAngle, 360.0; !floatEquals(got, want) {
+		t.Fatalf("third sector end angle = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutRadialOut_UsesExplicitAnglesAndBaseAngle(t *testing.T) {
+	container := positionedContainer(0, 0, 240, 240)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":     "radial-out",
 		"rows":       "1",
 		"base-angle": "10",
 		"angles":     "0,120,360",

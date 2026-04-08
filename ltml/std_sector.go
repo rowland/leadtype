@@ -286,8 +286,8 @@ func (s *StdSector) SetContainer(container Container) error {
 		s.container = container
 		return nil
 	}
-	if container == nil || container.LayoutStyle() == nil || container.LayoutStyle().manager != "radial" {
-		return fmt.Errorf("sector must be child of a radial container")
+	if container == nil || !isRadialLayoutStyle(container.LayoutStyle()) {
+		return fmt.Errorf("sector must be child of a radial or radial-out container")
 	}
 	s.container = container
 	return nil

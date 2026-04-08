@@ -99,7 +99,7 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	if c.height != 0 {
 		return c.height
 	}
-	if c.layout != nil && c.layout.manager == "radial" && c.radiusValue > 0 {
+	if isRadialLayoutStyle(c.layout) && c.radiusValue > 0 {
 		return (c.radiusValue * 2) + NonContentHeight(c)
 	}
 	savedHeight, savedHeightPct, savedHeightRel, savedHeightSet :=
@@ -115,7 +115,7 @@ func (c *StdContainer) PreferredWidth(w Writer) float64 {
 	if c.width != 0 {
 		return c.width
 	}
-	if c.layout != nil && c.layout.manager == "radial" && c.radiusValue > 0 {
+	if isRadialLayoutStyle(c.layout) && c.radiusValue > 0 {
 		return (c.radiusValue * 2) + NonContentWidth(c)
 	}
 	return c.StdWidget.PreferredWidth(w)

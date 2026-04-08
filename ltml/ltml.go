@@ -103,7 +103,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if parentCurrent, ok := doc.current().(Container); ok && err == nil {
 		parent = parentCurrent
 		if widget, ok := e.(Widget); ok {
-			if parent.LayoutStyle() != nil && parent.LayoutStyle().manager == "radial" {
+			if isRadialLayoutStyle(parent.LayoutStyle()) {
 				if _, isSector := widget.(*StdSector); !isSector {
 					wrapper = &StdSector{}
 					if ws, ok := any(wrapper).(WantsScope); ok {

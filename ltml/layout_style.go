@@ -81,13 +81,14 @@ func LayoutStyleFor(id string, scope HasScope) *LayoutStyle {
 var _ HasAttrs = (*LayoutStyle)(nil)
 
 var defaultLayouts = map[string]*LayoutStyle{
-	"absolute": {id: "absolute", manager: "absolute"},
-	"flow":     {id: "flow", manager: "flow"},
-	"hbox":     {id: "hbox", manager: "hbox"},
-	"radial":   {id: "radial", manager: "radial"},
-	"relative": {id: "relative", manager: "relative"},
-	"table":    {id: "table", manager: "table"},
-	"vbox":     {id: "vbox", manager: "vbox"},
+	"absolute":   {id: "absolute", manager: "absolute"},
+	"flow":       {id: "flow", manager: "flow"},
+	"hbox":       {id: "hbox", manager: "hbox"},
+	"radial":     {id: "radial", manager: "radial"},
+	"radial-out": {id: "radial-out", manager: "radial-out"},
+	"relative":   {id: "relative", manager: "relative"},
+	"table":      {id: "table", manager: "table"},
+	"vbox":       {id: "vbox", manager: "vbox"},
 }
 
 func init() {

@@ -9,6 +9,18 @@ import (
 var errRadialNeedsDimension = errors.New("radial layout requires rows or cols")
 var errRadialNeedsAngles = errors.New("radial layout angles must contain at least two boundaries")
 
+func isRadialLayoutManager(manager string) bool {
+	return manager == "radial" || manager == "radial-out"
+}
+
+func isRadialLayoutStyle(style *LayoutStyle) bool {
+	return style != nil && isRadialLayoutManager(style.manager)
+}
+
+func radialRowsGrowOutward(style *LayoutStyle) bool {
+	return style != nil && style.manager == "radial-out"
+}
+
 type radialPoint struct {
 	X float64
 	Y float64
@@ -66,7 +78,7 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 		panic(fmt.Errorf("radial outer radius %g must be greater than inner radius %g", outerRadius, innerRadius))
 	}
 
-	step := (outerRadius - innerRadius) / float64(rows)
+	rowsGrowOutward := radialRowsGrowOutward(style)
 	for row := 0; row < grid.Rows(); row++ {
 		for col := 0; col < grid.Cols(); col++ {
 			widget := grid.Cell(col, row)
@@ -79,8 +91,7 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 			}
 			rowSpan := sector.RowSpan()
 			colSpan := sector.ColSpan()
-			outer := outerRadius - (step * float64(row))
-			inner := outerRadius - (step * float64(row+rowSpan))
+			inner, outer := radialTrackBounds(innerRadius, outerRadius, rows, row, rowSpan, rowsGrowOutward)
 			startAngle := angles[col]
 			endAngle := angles[col+colSpan]
 			geometry := radialSectorGeometry{
@@ -103,6 +114,18 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 	if !container.WidthIsSet() {
 		container.SetWidth((outerRadius * 2) + NonContentWidth(container))
 	}
+}
+
+func radialTrackBounds(innerRadius, outerRadius float64, rows, row, rowSpan int, rowsGrowOutward bool) (float64, float64) {
+	step := (outerRadius - innerRadius) / float64(rows)
+	if rowsGrowOutward {
+		inner := innerRadius + (step * float64(row))
+		outer := innerRadius + (step * float64(row+rowSpan))
+		return inner, outer
+	}
+	outer := outerRadius - (step * float64(row))
+	inner := outerRadius - (step * float64(row+rowSpan))
+	return inner, outer
 }
 
 func boundsForPoints(points []radialPoint) radialBounds {
@@ -363,4 +386,5 @@ func rotatePagePoint(x, y, centerX, centerY, angle float64) (float64, float64) {
 
 func init() {
 	RegisterLayoutManager("radial", LayoutRadialTable)
+	RegisterLayoutManager("radial-out", LayoutRadialTable)
 }

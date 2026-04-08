@@ -112,7 +112,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin`      | Margin for all sides. |
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
-| `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`). Default: `vbox`. |
+| `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. |
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
@@ -204,9 +204,9 @@ Supports the same layout and styling attributes as `<p>`, plus:
 |------------------|-------------|
 | `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). |
 | `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. Invalid values fall back to `ltr`. |
-| `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` when `angles` determines the angular slots. |
-| `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. |
-| `order`          | Grid fill order: `rows` (default) or `cols`. Used by both `table` and `radial`. |
+| `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` and `radial-out` when `angles` determines the angular slots. |
+| `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. In `radial-out`, row `0` is innermost and higher rows move outward. |
+| `order`          | Grid fill order: `rows` (default) or `cols`. Used by `table`, `radial`, and `radial-out`. |
 | `split`          | Whether a direct page-child `table` may split by whole rows across pages. Defaults to `true` for table layouts. |
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
@@ -222,7 +222,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 
 ### `<sector>` — Radial Cell
 
-`<sector>` is a container used inside a `layout="radial"` parent. It behaves
+`<sector>` is a container used inside a `layout="radial"` or `layout="radial-out"` parent. It behaves
 like a radial table cell: LTML assigns it one wedge or annular-sector region
 based on the parent grid, and the sector owns the special paint and layout
 behavior for that region.
@@ -744,6 +744,7 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 | `absolute` | Children are positioned absolutely; no automatic layout. |
 | `relative` | Children use relative positioning. |
 | `radial`   | Grid layout on concentric tracks and angular sectors. Requires `rows`, `cols`, or explicit `angles` so LTML can derive the radial grid. |
+| `radial-out` | Radial grid layout that starts at the center and grows outward. Requires `rows`, `cols`, or explicit `angles` so LTML can derive the radial grid. |
 
 All layout managers except `absolute` and `relative` honor the `dir` attribute.
 When `dir="rtl"` is set on a container (or inherited from a parent), horizontal
@@ -796,6 +797,23 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - `base-angle` rotates the whole radial grid.
 - `center-x`, `center-y`, `r`, and `inner-r` override inferred geometry.
 - Inline text written directly in `<sector>` follows the arc.
+- Direct non-`<sector>` children are wrapped in implicit sectors automatically.
+- Positioned children inside a sector may use `origin-x="start|center|end"` and
+  `origin-y="inner|middle|outer"` to anchor to radial reference points.
+
+### Radial-Out Details
+
+- Use `rows` to specify concentric tracks and `cols` to specify angular slots.
+- If `angles` is present, it overrides equal angular slicing and determines the
+  column boundaries directly.
+- At least one of `rows` or `cols` must be specified unless `angles` supplies
+  the columns and the missing dimension can be derived from the children.
+- `order="rows"` fills sectors around the circle before moving outward.
+- `order="cols"` fills sectors outward before advancing to the next angular slot.
+- Row `0` is the innermost track; higher row numbers move outward.
+- `base-angle` rotates the whole radial grid.
+- `center-x`, `center-y`, `r`, and `inner-r` override inferred geometry.
+- Inline text written directly inside `<sector>` follows the arc.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
