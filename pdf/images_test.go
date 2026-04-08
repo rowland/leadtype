@@ -359,15 +359,26 @@ func TestPageWriter_PrintImage_SVG(t *testing.T) {
 	if actualHeight <= 0 {
 		t.Fatalf("actualHeight = %.2f, want > 0", actualHeight)
 	}
-	pw.endText()
-	got := pw.stream.String()
-	for _, fragment := range []string{" m\n", " c\n", "W\n", "BT\n", "Tj\n"} {
-		if !strings.Contains(got, fragment) {
-			t.Fatalf("expected SVG rendering stream to contain %q, got:\n%s", fragment, got)
-		}
+	pw.close()
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if strings.Count(got, "/Subtype /Form") != 1 {
+		t.Fatalf("expected one SVG form XObject, got:\n%s", got)
+	}
+	if !strings.Contains(got, "/Fm0 Do") {
+		t.Fatalf("expected page content to place cached SVG form, got:\n%s", got)
 	}
 	if strings.Contains(got, "/Im0 Do") {
 		t.Fatalf("expected SVG rendering to avoid image XObjects, got:\n%s", got)
+	}
+	for _, fragment := range []string{" m\n", " c\n", "W\n", "BT\n", "Tj\n"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected SVG form stream to contain %q, got:\n%s", fragment, got)
+		}
 	}
 }
 
@@ -427,6 +438,38 @@ func TestPageWriter_PrintSVG_RestoresFontState(t *testing.T) {
 	}
 	if len(savedFonts) > 0 && pw.Fonts()[0].PostScriptName() != savedFonts[0].PostScriptName() {
 		t.Fatalf("font after SVG = %s, want %s", pw.Fonts()[0].PostScriptName(), savedFonts[0].PostScriptName())
+	}
+}
+
+func TestDocWriter_PrintSVG_ReusesFormAcrossPages(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter()
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afm)
+	dw.SetUnits("in")
+
+	width1 := 3.0
+	if _, _, err := dw.PrintSVG(testSVGFixture(), 1, 1, &width1, nil); err != nil {
+		t.Fatal(err)
+	}
+	dw.NewPage()
+	height2 := 1.25
+	if _, _, err := dw.PrintSVG(testSVGFixture(), 0.5, 0.75, nil, &height2); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if count := strings.Count(got, "/Subtype /Form"); count != 1 {
+		t.Fatalf("expected one cached SVG form, got %d\n%s", count, got)
+	}
+	if count := strings.Count(got, "/Fm0 Do"); count != 2 {
+		t.Fatalf("expected two form placements, got %d\n%s", count, got)
 	}
 }
 

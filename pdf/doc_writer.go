@@ -18,6 +18,7 @@ import (
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
+	"github.com/rowland/leadtype/svg"
 )
 
 type DocWriter struct {
@@ -40,6 +41,7 @@ type DocWriter struct {
 	type0Fonts            map[string]*type0Font      // PostScript name → Type0 font, for ToUnicode at Close
 	fontDescriptors       map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 	images                map[string]*cachedImage
+	svgForms              map[string]*cachedSVGForm
 	gradientShadings      map[string]string // gradient key → shading resource name
 	gradientPatterns      map[string]string // gradient key → pattern resource name
 	assetFS               fs.FS
@@ -53,6 +55,13 @@ type DocWriter struct {
 type cachedImage struct {
 	image *pdfImage
 	name  string
+}
+
+type cachedSVGForm struct {
+	form   *pdfForm
+	name   string
+	width  float64
+	height float64
 }
 
 type namedDestination struct {
@@ -90,6 +99,7 @@ func NewDocWriter() *DocWriter {
 		type0Fonts:       make(map[string]*type0Font),
 		fontDescriptors:  make(map[string]*fontDescriptor),
 		images:           make(map[string]*cachedImage),
+		svgForms:         make(map[string]*cachedSVGForm),
 		gradientShadings: make(map[string]string),
 		gradientPatterns: make(map[string]string),
 		destinations:     make(map[string]namedDestination),
@@ -802,6 +812,36 @@ func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, erro
 	dw.resources.setXObject(name, &indirectObjectRef{image})
 	dw.images[key] = &cachedImage{image: image, name: name}
 	return image, name, nil
+}
+
+func (dw *DocWriter) loadSVGForm(data []byte, key string) (*cachedSVGForm, error) {
+	if cached, ok := dw.svgForms[key]; ok {
+		return cached, nil
+	}
+
+	doc, warnings, err := svg.Parse(data)
+	if err != nil {
+		return nil, err
+	}
+	logSVGWarnings(warnings)
+
+	form, err := dw.newSVGForm(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	name := fmt.Sprintf("Fm%d", len(dw.svgForms))
+	dw.file.body.add(form.resources, form.form)
+	dw.resources.setXObject(name, &indirectObjectRef{form.form})
+
+	cached := &cachedSVGForm{
+		form:   form.form,
+		name:   name,
+		width:  doc.Width,
+		height: doc.Height,
+	}
+	dw.svgForms[key] = cached
+	return cached, nil
 }
 
 func (dw *DocWriter) gradientKey(prefix string, coords []float64, stops []GradientStop) string {

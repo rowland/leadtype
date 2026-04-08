@@ -282,6 +282,13 @@ func writeImageXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width
 	gw.restoreGraphicsState()
 }
 
+func writeFormXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width, height, sourceWidth, sourceHeight, pageHeight float64) {
+	gw.saveGraphicsState()
+	gw.concatMatrix(width/sourceWidth, 0, 0, height/sourceHeight, x, pageHeight-y-height)
+	mw.xObject(name)
+	gw.restoreGraphicsState()
+}
+
 func decodePNG(data []byte) (decodedImage, error) {
 	info, err := pngInfo(data)
 	if err != nil {
