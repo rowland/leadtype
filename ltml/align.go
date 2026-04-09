@@ -3,7 +3,7 @@
 
 package ltml
 
-type Align int
+type Align int8
 
 const (
 	AlignDefault = Align(iota)
@@ -22,7 +22,25 @@ func (a Align) String() string {
 	return "unknown"
 }
 
-type HAlign int
+type SelfAlign int8
+
+const (
+	SelfAlignDefault = SelfAlign(iota)
+	SelfAlignStart
+	SelfAlignCenter
+	SelfAlignEnd
+)
+
+var selfAlignStrings = []string{"default", "start", "center", "end"}
+
+func (sa SelfAlign) String() string {
+	if int(sa) < len(selfAlignStrings) {
+		return selfAlignStrings[sa]
+	}
+	return "unknown"
+}
+
+type HAlign int8
 
 const (
 	HAlignLeft = HAlign(iota)
@@ -40,7 +58,7 @@ func (ha HAlign) String() string {
 	return "unknown"
 }
 
-type VAlign int
+type VAlign int8
 
 const (
 	VAlignTop = VAlign(iota)

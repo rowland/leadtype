@@ -26,6 +26,7 @@ type StdWidget struct {
 	position        Position
 	rowSpan         int
 	align           Align
+	selfAlign       SelfAlign
 	rotate          *float64
 	originX         string
 	originY         string
@@ -46,6 +47,10 @@ type sectorReferenceResolver interface {
 
 func (widget *StdWidget) Align() Align {
 	return widget.align
+}
+
+func (widget *StdWidget) SelfAlign() SelfAlign {
+	return widget.selfAlign
 }
 
 func (widget *StdWidget) BeforePrint(Writer) error {
@@ -217,6 +222,16 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.align = AlignTop
 		case "bottom":
 			widget.align = AlignBottom
+		}
+	}
+	if alignSelf, ok := attrs["align-self"]; ok {
+		switch alignSelf {
+		case "start":
+			widget.selfAlign = SelfAlignStart
+		case "center":
+			widget.selfAlign = SelfAlignCenter
+		case "end":
+			widget.selfAlign = SelfAlignEnd
 		}
 	}
 	if border, ok := attrs["border"]; ok {

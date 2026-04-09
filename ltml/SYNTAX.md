@@ -760,6 +760,8 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Width defaults to content width of the container.
 - Use `align="top"` to pin an element to the top (header behavior).
 - Use `align="bottom"` to pin an element to the bottom (footer behavior).
+- Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control horizontal placement within the vbox row.
+- In `dir="rtl"`, `align-self="start"` means right and `align-self="end"` means left.
 - In `dir="rtl"`, children are flush against the right edge plus padding instead of the left.
 
 ### HBox Details
@@ -767,6 +769,8 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Children are laid out left to right.
 - Use `align="left"` to pin to the left side.
 - Use `align="right"` to pin to the right side.
+- Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control vertical placement within the hbox track.
+- In `hbox`, `align-self="start"` means top and `align-self="end"` means bottom.
 - Unaligned children share remaining width equally unless `width` is specified.
 - In `dir="rtl"`, stacking order reverses: children flow right to left, `align="left"` pins to the right side, and `align="right"` pins to the left side.
 

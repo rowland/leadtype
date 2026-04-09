@@ -23,7 +23,7 @@ func LayoutManagerFor(name string) LayoutFunc {
 	return LayoutVBox
 }
 
-type Position int
+type Position int8
 
 const (
 	Static = Position(iota)
@@ -181,15 +181,10 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 
 	for _, widget := range static {
-		if container.Align() == AlignBottom {
-			widget.SetBottom(ContentBottom(container))
-		} else {
-			containerFull = true
-			widget.SetTop(ContentTop(container))
-		}
 		if !widget.HeightIsSet() {
 			widget.SetHeight(widget.PreferredHeight(writer))
 		}
+		widget.SetTop(hboxCrossAxisTop(container, widget))
 	}
 
 	left := ContentLeft(container)
@@ -617,8 +612,6 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 	rtl := IsRTL(container)
-	left := ContentLeft(container)
-	// fmt.Println("left:", left)
 	for _, widget := range static {
 		if !widget.WidthIsSet() {
 			// fmt.Println("pw:", pw, widget)
@@ -638,11 +631,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			// panic("foo")
 			widget.SetWidth(w)
 		}
-		if rtl {
-			widget.SetLeft(ContentRight(container) - widget.Width())
-		} else {
-			widget.SetLeft(left)
-		}
+		widget.SetLeft(vboxCrossAxisLeft(container, widget, rtl))
 	}
 	top, dy := ContentTop(container), 0.0
 	// fmt.Println("top:", top)
@@ -732,6 +721,37 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		container.SetHeight(max(contentHeight, 0) + NonContentHeight(container))
 	}
 	layoutPositionedChildren(container, writer)
+}
+
+func hboxCrossAxisTop(container Container, widget Widget) float64 {
+	switch widget.SelfAlign() {
+	case SelfAlignEnd:
+		return ContentBottom(container) - widget.Height()
+	case SelfAlignCenter:
+		return ContentTop(container) + max(ContentHeight(container)-widget.Height(), 0)/2
+	default:
+		if container.Align() == AlignBottom {
+			return ContentBottom(container) - widget.Height()
+		}
+		return ContentTop(container)
+	}
+}
+
+func vboxCrossAxisLeft(container Container, widget Widget, rtl bool) float64 {
+	switch widget.SelfAlign() {
+	case SelfAlignCenter:
+		return ContentLeft(container) + max(ContentWidth(container)-widget.Width(), 0)/2
+	case SelfAlignEnd:
+		if rtl {
+			return ContentLeft(container)
+		}
+		return ContentRight(container) - widget.Width()
+	default:
+		if rtl {
+			return ContentRight(container) - widget.Width()
+		}
+		return ContentLeft(container)
+	}
 }
 
 func printableWidgets(c Container, p Position) (widgets, remaining []Widget) {
