@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	registerSample("test_015_svg", "demonstrate SVG placement through direct and image-compatible PDF APIs", runTest015SVG)
+	registerSample("test_015_svg", "demonstrate reusable SVG placement through direct and image-compatible PDF APIs", runTest015SVG)
 }
 
 func runTest015SVG() (string, error) {
@@ -35,12 +35,34 @@ func runTest015SVG() (string, error) {
 			return err
 		}
 
-		width := 2.4
-		if _, _, err := doc.PrintSVG(data, 0.8, 1.1, &width, nil); err != nil {
+		widthLarge := 2.4
+		if _, _, err := doc.PrintSVG(data, 0.8, 1.1, &widthLarge, nil); err != nil {
+			return err
+		}
+		widthMedium := 1.6
+		if _, _, err := doc.PrintSVG(data, 4.0, 1.3, &widthMedium, nil); err != nil {
+			return err
+		}
+		heightSmall := 0.95
+		if _, _, err := doc.PrintImageFile("pdf/testdata/test_scene.svg", 0.9, 4.6, nil, &heightSmall); err != nil {
+			return err
+		}
+		widthSmall := 1.15
+		if _, _, err := doc.PrintImageFile("pdf/testdata/test_scene.svg", 2.4, 4.5, &widthSmall, nil); err != nil {
+			return err
+		}
+		widthTiny := 0.9
+		if _, _, err := doc.PrintSVG(data, 4.1, 4.55, &widthTiny, nil); err != nil {
 			return err
 		}
 
-		if _, _, err := doc.PrintImageFile("pdf/testdata/test_scene.svg", 3.8, 1.1, &width, nil); err != nil {
+		doc.NewPage()
+		if _, err := doc.SetFont("Arial", 12, options.Options{}); err == nil {
+			doc.MoveTo(0.7, 0.6)
+			fmt.Fprintln(doc, "Same SVG asset reused again on page 2")
+		}
+		widthHero := 3.6
+		if _, _, err := doc.PrintImageFile("pdf/testdata/test_scene.svg", 1.2, 1.2, &widthHero, nil); err != nil {
 			return err
 		}
 

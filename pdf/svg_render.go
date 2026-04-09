@@ -33,6 +33,27 @@ func svgDimensions(data []byte) (width, height int, err error) {
 	return int(doc.Width + 0.5), int(doc.Height + 0.5), nil
 }
 
+func (dw *DocWriter) newSVGForm(doc *svg.Document) (*renderedForm, error) {
+	content := newContentWriter(dw, options.Options{"units": "pt"}, doc.Width, doc.Height)
+	renderer := newSVGRenderer(doc, content, 0, 0, doc.Width, doc.Height)
+	if err := renderer.render(); err != nil {
+		return nil, err
+	}
+	content.endText()
+	content.endGraph()
+
+	formResources := dw.resources.clone(dw.nextSeq(), 0)
+	form := newPDFForm(dw.nextSeq(), 0, content.stream.Bytes())
+	form.setBBox(doc.Width, doc.Height)
+	form.setResources(formResources)
+	if dw.compressPages {
+		if err := form.compress(); err != nil {
+			return nil, err
+		}
+	}
+	return &renderedForm{form: form, resources: formResources}, nil
+}
+
 type svgRenderer struct {
 	doc     *svg.Document
 	pw      *PageWriter
@@ -65,8 +86,8 @@ func newSVGRenderer(doc *svg.Document, pw *PageWriter, x, y, width, height float
 
 func (r *svgRenderer) mapPoint(point svg.Point) svg.Point {
 	return svg.Point{
-		X: r.x + ((point.X-r.viewBox.MinX)*r.scaleX),
-		Y: r.y + ((point.Y-r.viewBox.MinY)*r.scaleY),
+		X: r.x + ((point.X - r.viewBox.MinX) * r.scaleX),
+		Y: r.y + ((point.Y - r.viewBox.MinY) * r.scaleY),
 	}
 }
 

@@ -94,6 +94,10 @@ func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
 	return new(PageWriter).init(dw, options)
 }
 
+func newContentWriter(dw *DocWriter, options options.Options, pageWidth, pageHeight float64) *PageWriter {
+	return new(PageWriter).initContent(dw, options, pageWidth, pageHeight)
+}
+
 func clonePageWriter(opw *PageWriter) *PageWriter {
 	pw := new(PageWriter).init(opw.dw, opw.options)
 	pw.drawState = opw.drawState
@@ -104,20 +108,25 @@ func clonePageWriter(opw *PageWriter) *PageWriter {
 }
 
 func (pw *PageWriter) init(dw *DocWriter, options options.Options) *PageWriter {
-	pw.dw = dw
-	pw.options = options
-	pw.lineSpacing = options.FloatDefault("line_spacing", 1.0)
-	pw.units = UnitConversions[options.StringDefault("units", "pt")]
-	pw.vTextAlign = parseVerticalTextAlign(options.StringDefault("v_text_align", "base"))
 	ps := newPageStyle(options)
-	pw.pageHeight = ps.pageSize.y2
-	pw.pageWidth = ps.pageSize.x2
+	pw.initContent(dw, options, ps.pageSize.x2, ps.pageSize.y2)
 	pw.page = newPage(pw.dw.nextSeq(), 0, pw.dw.catalog.pages)
 	pw.page.setMediaBox(ps.pageSize)
 	pw.page.setCropBox(ps.cropSize)
 	pw.page.setRotate(ps.rotate)
 	pw.page.setResources(pw.dw.resources)
 	pw.dw.file.body.add(pw.page)
+	return pw
+}
+
+func (pw *PageWriter) initContent(dw *DocWriter, options options.Options, pageWidth, pageHeight float64) *PageWriter {
+	pw.dw = dw
+	pw.options = options
+	pw.lineSpacing = options.FloatDefault("line_spacing", 1.0)
+	pw.units = UnitConversions[options.StringDefault("units", "pt")]
+	pw.vTextAlign = parseVerticalTextAlign(options.StringDefault("v_text_align", "base"))
+	pw.pageHeight = pageHeight
+	pw.pageWidth = pageWidth
 	pw.autoPath = true
 	pw.lineJoinStyle = MiterJoin
 	pw.last.lineJoinStyle = MiterJoin
@@ -1712,35 +1721,35 @@ func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, heigh
 }
 
 func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	doc, warnings, err := svg.Parse(data)
+	key := imageKey(data)
+	form, err := pw.dw.loadSVGForm(data, key)
 	if err != nil {
 		return 0, 0, err
 	}
-	logSVGWarnings(warnings)
-	info := imageInfo{width: int(doc.Width + 0.5), height: int(doc.Height + 0.5)}
+	info := imageInfo{width: int(form.width + 0.5), height: int(form.height + 0.5)}
 	wpts, hpts := imageSizeInPoints(info, pw.units, width, height)
 	xpts := pw.units.toPts(x)
 	ypts := pw.units.toPts(y)
-	prevUnits := pw.units
-	pw.units = UnitConversions["pt"]
-	defer func() {
-		pw.units = prevUnits
-	}()
-	renderer := newSVGRenderer(doc, pw, xpts, ypts, wpts, hpts)
+	if pw.inPath {
+		pw.endPath()
+	}
+	if pw.inText {
+		pw.endText()
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
 	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
 		if elem := pw.currentStructElem(); elem != nil && pw.beginTaggedContent(elem.s, elem) {
-			err = renderer.render()
+			writeFormXObject(pw.mw, pw.gw, form.name, xpts, ypts, wpts, hpts, form.width, form.height, pw.pageHeight)
 			pw.mw.endMarkedContent()
 		} else {
-			err = renderer.render()
+			writeFormXObject(pw.mw, pw.gw, form.name, xpts, ypts, wpts, hpts, form.width, form.height, pw.pageHeight)
 		}
 	} else {
-		err = renderer.render()
+		writeFormXObject(pw.mw, pw.gw, form.name, xpts, ypts, wpts, hpts, form.width, form.height, pw.pageHeight)
 	}
-	if err != nil {
-		return 0, 0, err
-	}
-	return prevUnits.fromPts(wpts), prevUnits.fromPts(hpts), nil
+	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
 }
 
 func (pw *PageWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {

@@ -131,10 +131,11 @@ func TestStdImage_UsesWriterAssetFS_SVG(t *testing.T) {
 	if strings.Contains(pdf, "/Subtype /Image") {
 		t.Fatalf("expected SVG render path to avoid image XObjects, got:\n%s", pdf)
 	}
-	for _, fragment := range []string{"W\n", " c\n", "Tj\n"} {
-		if !strings.Contains(pdf, fragment) {
-			t.Fatalf("expected SVG PDF stream to contain %q, got:\n%s", fragment, pdf)
-		}
+	if strings.Count(pdf, "/Subtype /Form") != 1 {
+		t.Fatalf("expected one cached SVG form, got:\n%s", pdf)
+	}
+	if !strings.Contains(pdf, "/Fm0 Do") {
+		t.Fatalf("expected page content to place cached SVG form, got:\n%s", pdf)
 	}
 }
 
@@ -194,14 +195,25 @@ func TestStdImage_TableLayoutWithAssetFS_SVGViewBoxUsesNonZeroInferredDimensions
 	}
 
 	pdf := renderWithAssetFS(t, doc)
-	matches := imageMatrixRE.FindAllStringSubmatch(pdf, -1)
-	if len(matches) != 0 {
-		t.Fatalf("expected SVG rendering without image XObject matrices, got:\n%s", pdf)
+	matches := formMatrixRE.FindAllStringSubmatch(pdf, -1)
+	if len(matches) != 3 {
+		t.Fatalf("form draw count = %d, want 3; pdf:\n%s", len(matches), pdf)
 	}
-	for _, fragment := range []string{"W\n", "BT", "Tj"} {
-		if !strings.Contains(pdf, fragment) {
-			t.Fatalf("expected SVG output to render vector content, missing %q", fragment)
+	for i, match := range matches {
+		width, err := strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			t.Fatalf("parsing width %q: %v", match[1], err)
 		}
+		height, err := strconv.ParseFloat(match[2], 64)
+		if err != nil {
+			t.Fatalf("parsing height %q: %v", match[2], err)
+		}
+		if width <= 0 || height <= 0 {
+			t.Fatalf("form %d matrix width=%v height=%v, want both > 0; pdf:\n%s", i, width, height, pdf)
+		}
+	}
+	if strings.Count(pdf, "/Subtype /Form") != 1 {
+		t.Fatalf("expected one cached SVG form, got:\n%s", pdf)
 	}
 }
 
@@ -245,3 +257,4 @@ func TestStdImage_SVGUnsupportedFeaturesWarnAndContinue(t *testing.T) {
 }
 
 var imageMatrixRE = regexp.MustCompile(`(?m)^([0-9.]+) 0 0 ([0-9.]+) [0-9.]+ [0-9.]+ cm\n/Im[0-9]+ Do$`)
+var formMatrixRE = regexp.MustCompile(`(?m)^([0-9.]+) 0 0 ([0-9.]+) [0-9.]+ [0-9.]+ cm\n/Fm[0-9]+ Do$`)
