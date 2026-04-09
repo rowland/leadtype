@@ -6,6 +6,7 @@ package serveltml
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -34,6 +35,8 @@ type fileOutputError struct {
 	Error     string `json:"error"`
 	ElapsedMs int64  `json:"elapsed_ms"`
 }
+
+var errOutputPathConflict = errors.New("output path conflict")
 
 // crockford is the Crockford base-32 alphabet used for ULID encoding.
 const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -96,6 +99,27 @@ func ltmlFilename(pdfName string) string {
 	return pdfName[:len(pdfName)-len(ext)] + ".ltml"
 }
 
+// reservedOutputPaths returns the output-relative paths that are owned by the
+// generated artifacts for a file-output request.
+func reservedOutputPaths(pdfName string) map[string]struct{} {
+	return map[string]struct{}{
+		pdfName:               {},
+		ltmlFilename(pdfName): {},
+	}
+}
+
+// validateOutputUploads rejects uploaded files that would overwrite the
+// generated PDF or LTML sidecar in file-output mode.
+func validateOutputUploads(pdfName string, uploads []uploadedFile) error {
+	reserved := reservedOutputPaths(pdfName)
+	for _, up := range uploads {
+		if _, exists := reserved[up.relPath]; exists {
+			return fmt.Errorf("%w: uploaded file %q conflicts with generated output", errOutputPathConflict, up.relPath)
+		}
+	}
+	return nil
+}
+
 // writeFileOutput creates {outputPath}/{ULID}/ and writes three kinds of files:
 //
 //   - {pdfName}      — the rendered PDF (copied from pdfFile)
@@ -113,6 +137,10 @@ func writeFileOutput(
 	pdfName string,
 	renderStart time.Time,
 ) (fileOutputResponse, error) {
+	if err := validateOutputUploads(pdfName, uploads); err != nil {
+		return fileOutputResponse{}, err
+	}
+
 	ulid, err := generateULID()
 	if err != nil {
 		return fileOutputResponse{}, err

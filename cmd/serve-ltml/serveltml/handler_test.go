@@ -440,6 +440,86 @@ func TestHandler_FileOutputMode_WithUploads(t *testing.T) {
 	}
 }
 
+// TestHandler_FileOutputMode_RejectsUploadCollisionWithPDF verifies that an
+// uploaded file cannot overwrite the generated PDF output.
+func TestHandler_FileOutputMode_RejectsUploadCollisionWithPDF(t *testing.T) {
+	h, _, outputPath := newHandlerWithOutput(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+		{"file", "report.pdf", "application/pdf", "not-a-rendered-pdf"},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rr.Code, rr.Body.String())
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+
+	var resp fileOutputError
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON error response: %v", err)
+	}
+	if !strings.Contains(resp.Error, `uploaded file "report.pdf" conflicts with generated output`) {
+		t.Fatalf("error = %q, want collision message", resp.Error)
+	}
+
+	entries, err := os.ReadDir(outputPath)
+	if err != nil {
+		t.Fatalf("reading output path: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("output path contains %d entries, want none", len(entries))
+	}
+}
+
+// TestHandler_FileOutputMode_RejectsUploadCollisionWithLTML verifies that an
+// uploaded file cannot overwrite the generated LTML sidecar.
+func TestHandler_FileOutputMode_RejectsUploadCollisionWithLTML(t *testing.T) {
+	h, _, outputPath := newHandlerWithOutput(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+		{"file", "report.ltml", "application/xml", "<unexpected/>"},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; body: %s", rr.Code, rr.Body.String())
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+
+	var resp fileOutputError
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON error response: %v", err)
+	}
+	if !strings.Contains(resp.Error, `uploaded file "report.ltml" conflicts with generated output`) {
+		t.Fatalf("error = %q, want collision message", resp.Error)
+	}
+
+	entries, err := os.ReadDir(outputPath)
+	if err != nil {
+		t.Fatalf("reading output path: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("output path contains %d entries, want none", len(entries))
+	}
+}
+
 // TestHandler_FileOutputMode_NoOutputPath verifies that sending X-Output-File
 // when OutputPath is not configured returns a JSON 500 error.
 func TestHandler_FileOutputMode_NoOutputPath(t *testing.T) {

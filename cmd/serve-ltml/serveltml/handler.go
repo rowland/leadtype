@@ -220,6 +220,13 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		result, err := writeFileOutput(h.cfg.OutputPath, pdfFile, ltmlBytes, uploads, outputFilename, renderStart)
 		if err != nil {
 			requestLogf(requestID, "file output: %v", err)
+			if errors.Is(err, errOutputPathConflict) {
+				writeJSONResponse(w, http.StatusBadRequest, fileOutputError{
+					Error:     err.Error(),
+					ElapsedMs: time.Since(renderStart).Milliseconds(),
+				})
+				return
+			}
 			writeJSONResponse(w, http.StatusInternalServerError, fileOutputError{
 				Error:     "error writing output files",
 				ElapsedMs: time.Since(renderStart).Milliseconds(),
