@@ -7,14 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
-	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 	"time"
 )
 
@@ -27,8 +24,6 @@ var ltmlContentTypes = map[string]bool{
 	"text/xml":        true,
 	"":                true,
 }
-
-var nextRequestID uint64
 
 // renderHandler is an http.Handler for POST /render.
 type renderHandler struct {
@@ -249,62 +244,4 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	requestLogf(requestID, "completed: status=%d pdf_bytes=%d uploads=%d elapsed=%dms", http.StatusOK, n, uploadCount, time.Since(start).Milliseconds())
-}
-
-func newRequestID() string {
-	id := atomic.AddUint64(&nextRequestID, 1)
-	return fmt.Sprintf("%06d", id)
-}
-
-func requestLogf(requestID, format string, args ...any) {
-	log.Printf("serve-ltml: req=%s "+format, append([]any{requestID}, args...)...)
-}
-
-// validateUploadFilename checks that filename is a clean fs.FS-relative path
-// and returns the absolute destination path under uploadDir.
-func validateUploadFilename(filename, uploadDir string) (string, error) {
-	if filename == "" {
-		return "", fmt.Errorf("filename must not be empty")
-	}
-	if filename == "." || !fs.ValidPath(filename) {
-		return "", fmt.Errorf("filename must be a clean relative asset path")
-	}
-	return filepath.Join(uploadDir, filepath.FromSlash(filename)), nil
-}
-
-// saveUploadedFile writes the contents of part to destPath, creating parent
-// directories as needed.
-func saveUploadedFile(r io.Reader, destPath string) error {
-	if err := os.MkdirAll(filepath.Dir(destPath), 0o700); err != nil {
-		return err
-	}
-	f, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, r)
-	return err
-}
-
-// rawFilename extracts the "filename" parameter from a Content-Disposition
-// header without stripping directory components. The standard library's
-// Part.FileName() calls filepath.Base, which would discard path prefixes like
-// "assets/" that we want to preserve for nested asset placement.
-func rawFilename(contentDisposition string) string {
-	if contentDisposition == "" {
-		return ""
-	}
-	_, params, err := mime.ParseMediaType(contentDisposition)
-	if err != nil {
-		return ""
-	}
-	return params["filename"]
-}
-
-// isMaxBytesError reports whether err signals that the request body size limit
-// was exceeded (http.MaxBytesReader).
-func isMaxBytesError(err error) bool {
-	var mbe *http.MaxBytesError
-	return errors.As(err, &mbe)
 }
