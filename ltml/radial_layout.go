@@ -10,59 +10,8 @@ import (
 var errRadialNeedsDimension = errors.New("radial layout requires rows or cols")
 var errRadialNeedsAngles = errors.New("radial layout angles must contain at least one boundary")
 
-const radialAngleEpsilon = 1e-9
-
-type radialSweep uint8
-
-const (
-	radialSweepCCW radialSweep = iota
-	radialSweepCW
-)
-
-type radialAngleSpan struct {
-	StartAngle float64
-	EndAngle   float64
-}
-
-func isRadialLayoutManager(manager string) bool {
-	return manager == "radial" || manager == "radial-out"
-}
-
-func isRadialLayoutStyle(style *LayoutStyle) bool {
-	return style != nil && isRadialLayoutManager(style.manager)
-}
-
 func radialRowsGrowOutward(style *LayoutStyle) bool {
 	return style != nil && style.manager == "radial-out"
-}
-
-type radialPoint struct {
-	X float64
-	Y float64
-}
-
-type radialBounds struct {
-	MinX float64
-	MinY float64
-	MaxX float64
-	MaxY float64
-}
-
-type radialInterval struct {
-	MinX float64
-	MaxX float64
-}
-
-type radialSectorGeometry struct {
-	CenterX     float64
-	CenterY     float64
-	InnerRadius float64
-	OuterRadius float64
-	StartAngle  float64
-	EndAngle    float64
-	AnchorAngle float64
-	AnchorX     float64
-	AnchorY     float64
 }
 
 func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
@@ -102,7 +51,7 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 			if widget == nil {
 				continue
 			}
-			sector, ok := widget.(*StdSector)
+			sector, ok := widget.(radialCell)
 			if !ok {
 				panic(fmt.Errorf("radial layout child %T is not a sector", widget))
 			}
@@ -148,37 +97,6 @@ func inferRadialContainerDimensions(container Container) {
 			base.SetHeight(height)
 		}
 	}
-}
-
-func radialTrackBounds(innerRadius, outerRadius float64, rows, row, rowSpan int, rowsGrowOutward bool) (float64, float64) {
-	step := (outerRadius - innerRadius) / float64(rows)
-	if rowsGrowOutward {
-		inner := innerRadius + (step * float64(row))
-		outer := innerRadius + (step * float64(row+rowSpan))
-		return inner, outer
-	}
-	outer := outerRadius - (step * float64(row))
-	inner := outerRadius - (step * float64(row+rowSpan))
-	return inner, outer
-}
-
-func boundsForPoints(points []radialPoint) radialBounds {
-	if len(points) == 0 {
-		return radialBounds{}
-	}
-	bounds := radialBounds{
-		MinX: points[0].X,
-		MinY: points[0].Y,
-		MaxX: points[0].X,
-		MaxY: points[0].Y,
-	}
-	for _, point := range points[1:] {
-		bounds.MinX = min(bounds.MinX, point.X)
-		bounds.MinY = min(bounds.MinY, point.Y)
-		bounds.MaxX = max(bounds.MaxX, point.X)
-		bounds.MaxY = max(bounds.MaxY, point.Y)
-	}
-	return bounds
 }
 
 func deriveRadialGrid(widgets []Widget, order TableOrder, rowsHint, colsHint int) (*WidgetGrid, int, int, error) {
@@ -454,7 +372,7 @@ func radialCellWidgets(c Container) []Widget {
 	}
 	var widgets []Widget
 	for _, child := range c.Widgets() {
-		if _, ok := child.(*StdSector); !ok {
+		if _, ok := child.(radialCell); !ok {
 			continue
 		}
 		if widgetDisplayForRender(child, parentRepeats, flowPageIndex, physicalPageNo) {
@@ -464,19 +382,6 @@ func radialCellWidgets(c Container) []Widget {
 		}
 	}
 	return widgets
-}
-
-func radialPointAt(centerX, centerY, radius, angle float64) (float64, float64) {
-	theta := angle * math.Pi / 180
-	return centerX + radius*math.Cos(theta), centerY - radius*math.Sin(theta)
-}
-
-func rotatePagePoint(x, y, centerX, centerY, angle float64) (float64, float64) {
-	theta := angle * math.Pi / 180
-	dx := x - centerX
-	dy := y - centerY
-	return centerX + (dx * math.Cos(theta)) - (dy * math.Sin(theta)),
-		centerY + (dx * math.Sin(theta)) + (dy * math.Cos(theta))
 }
 
 func init() {
