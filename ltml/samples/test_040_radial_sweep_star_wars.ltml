@@ -7,7 +7,7 @@
     sector.1 { fill: Lavender; }
     sector.2 { fill: HoneyDew; }
     sector.3 { fill: Cornsilk; }
-    disc { layout: radial-out; rows: 3; cols: 6; base-angle: 180; inner-r: 0.6; font.size: 8.5; height: 4.2; align-self: center; }
+    disc { layout: radial-out; rows: 3; cols: 6; base-angle: 180; r0: 0.6; font.size: 8.5; height: 4.2; align-self: center; }
   </style>
 
   <page units="in" margin="0.5in" layout="vbox" layout.vpadding="9pt">

@@ -5,7 +5,7 @@
     <label left="0.7" top="0.45" font.size="19" font.weight="Bold">Radial Layout</label>
     <p left="0.7" top="0.82" width="6.2">A radial container behaves like a table wrapped around a circle. Some children below are explicit sectors, while direct labels and paragraphs are wrapped into implicit sectors at parse time.</p>
 
-    <disc left="1.0" top="1.55" width="5.6" height="5.6" rows="3" angles="0,40,85,130,180,230,285,330,360" base-angle="-90" inner-r="0.8">
+    <disc left="1.0" top="1.55" width="5.6" height="5.6" rows="3" angles="0,40,85,130,180,230,285,330,360" base-angle="-90" r0="0.8">
       <sector colspan="2" fill="AliceBlue" border="ring" padding="0.08" text-align="center" font.size="9" font.weight="Bold">Auto below midline</sector>
       <p colspan="3" padding="0.08" font.size="8.5">This paragraph is a direct child of the radial container, so LTML wraps it in an implicit sector and shapes its lines to the changing width of the wedge.</p>
       <sector angle="0" fill="Cornsilk" border="ring"><label font.weight="Bold">01</label></sector>

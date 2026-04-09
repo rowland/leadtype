@@ -36,7 +36,7 @@ type StdContainer struct {
 	centerXSet      bool
 	centerY         float64
 	centerYSet      bool
-	radiusValue     float64
+	outerRadius     float64
 	innerRadius     float64
 }
 
@@ -201,10 +201,10 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		c.centerYSet = true
 	}
 	if radius, ok := attrs["r"]; ok {
-		c.radiusValue = ParseMeasurement(radius, c.Units())
+		c.outerRadius = ParseMeasurement(radius, c.Units())
 	}
-	if innerRadius, ok := attrs["inner-r"]; ok {
-		c.innerRadius = ParseMeasurement(innerRadius, c.Units())
+	if radius0, ok := attrs["r0"]; ok {
+		c.innerRadius = ParseMeasurement(radius0, c.Units())
 	}
 	if split, ok := attrs["split"]; ok {
 		c.splitExplicit = true
@@ -245,8 +245,8 @@ func (c *StdContainer) radialInferredHeight() (float64, bool) {
 	if !isRadialLayoutStyle(c.layout) {
 		return 0, false
 	}
-	if c.radiusValue > 0 {
-		return (c.radiusValue * 2) + NonContentHeight(c), true
+	if c.outerRadius > 0 {
+		return (c.outerRadius * 2) + NonContentHeight(c), true
 	}
 	if c.WidthIsSet() {
 		diameter := max(ContentWidth(c), c.innerRadius*2)
@@ -261,8 +261,8 @@ func (c *StdContainer) radialInferredWidth() (float64, bool) {
 	if !isRadialLayoutStyle(c.layout) {
 		return 0, false
 	}
-	if c.radiusValue > 0 {
-		return (c.radiusValue * 2) + NonContentWidth(c), true
+	if c.outerRadius > 0 {
+		return (c.outerRadius * 2) + NonContentWidth(c), true
 	}
 	if c.HeightIsSet() {
 		diameter := max(ContentHeight(c), c.innerRadius*2)
@@ -281,8 +281,12 @@ func (c *StdContainer) CenterY() (float64, bool) {
 	return c.centerY, c.centerYSet
 }
 
+func (c *StdContainer) OuterRadius() float64 {
+	return c.outerRadius
+}
+
 func (c *StdContainer) RadiusValue() float64 {
-	return c.radiusValue
+	return c.OuterRadius()
 }
 
 func (c *StdContainer) InnerRadius() float64 {

@@ -430,7 +430,7 @@ func radialContainerGeometry(container Container) (centerX, centerY, innerRadius
 		if value, set := base.CenterY(); set {
 			centerY = ContentTop(container) + value
 		}
-		if value := base.RadiusValue(); value > 0 {
+		if value := base.OuterRadius(); value > 0 {
 			outerRadius = value
 		}
 		if value := base.InnerRadius(); value > 0 {

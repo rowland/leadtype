@@ -326,10 +326,10 @@ func TestLayoutRadialOut_RowZeroIsInnermostAndRowspanExtendsOutward(t *testing.T
 	container := positionedContainer(0, 0, 200, 200)
 	container.SetScope(&defaultScope)
 	container.SetAttrs(map[string]string{
-		"layout":  "radial-out",
-		"rows":    "3",
-		"cols":    "1",
-		"inner-r": "10",
+		"layout": "radial-out",
+		"rows":   "3",
+		"cols":   "1",
+		"r0":     "10",
 	})
 
 	s1 := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
@@ -360,6 +360,34 @@ func TestLayoutRadialOut_RowZeroIsInnermostAndRowspanExtendsOutward(t *testing.T
 	}
 	if got, want := s2.geometry.OuterRadius, 100.0; !floatEquals(got, want) {
 		t.Fatalf("row 2 outer radius = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutRadialTable_R0AliasSetsInnerRadius(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout": "radial",
+		"rows":   "1",
+		"cols":   "1",
+		"r":      "60",
+		"r0":     "10",
+	})
+
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(sector)
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got, want := sector.geometry.InnerRadius, 10.0; !floatEquals(got, want) {
+		t.Fatalf("r0 inner radius = %v, want %v", got, want)
+	}
+	if got, want := sector.geometry.OuterRadius, 60.0; !floatEquals(got, want) {
+		t.Fatalf("r outer radius = %v, want %v", got, want)
 	}
 }
 
@@ -457,11 +485,11 @@ func TestLayoutRadialOut_CWSweepPreservesInsideOutRowSemantics(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 200)
 	container.SetScope(&defaultScope)
 	container.SetAttrs(map[string]string{
-		"layout":  "radial-out",
-		"rows":    "1",
-		"cols":    "4",
-		"inner-r": "20",
-		"sweep":   "cw",
+		"layout": "radial-out",
+		"rows":   "1",
+		"cols":   "4",
+		"r0":     "20",
+		"sweep":  "cw",
 	})
 
 	sectors := []*StdSector{
@@ -505,11 +533,11 @@ func TestLayoutVBox_RadialChildWithWidthOnlyAndInnerRadiusDoesNotPanic(t *testin
 		t.Fatal(err)
 	}
 	radial.SetAttrs(map[string]string{
-		"layout":  "radial-out",
-		"rows":    "1",
-		"cols":    "1",
-		"inner-r": "43.2",
-		"width":   "100%",
+		"layout": "radial-out",
+		"rows":   "1",
+		"cols":   "1",
+		"r0":     "43.2",
+		"width":  "100%",
 	})
 	page.AddChild(radial)
 
@@ -548,11 +576,11 @@ func TestLayoutVBox_RadialChildWithHeightOnlyAndInnerRadiusDoesNotPanic(t *testi
 		t.Fatal(err)
 	}
 	radial.SetAttrs(map[string]string{
-		"layout":  "radial-out",
-		"rows":    "1",
-		"cols":    "1",
-		"inner-r": "43.2",
-		"height":  "120",
+		"layout": "radial-out",
+		"rows":   "1",
+		"cols":   "1",
+		"r0":     "43.2",
+		"height": "120",
 	})
 	page.AddChild(radial)
 

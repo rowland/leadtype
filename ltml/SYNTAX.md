@@ -215,7 +215,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `sweep`          | Radial sector sweep direction: `ccw` (default) or `cw`. This changes how sectors span between boundaries without changing what the angle numbers mean. |
 | `center-x`, `center-y` | Optional radial center coordinates in the container's content box. |
 | `r`              | Optional outer radius for radial layout. Otherwise LTML infers it from the smaller content dimension. |
-| `inner-r`        | Optional inner radius for radial layout. Default: `0`. |
+| `r0`             | Optional inner radius for radial layout. Preferred alias when paired with `r`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
 | `role` | Override the computed PDF structure type when `ua="true"`, for example `L` or `Table`. |
 
@@ -803,7 +803,7 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Row `0` is the outermost track; higher row numbers move inward.
 - `base-angle` rotates the whole radial grid.
 - A single distinct `angles` value means one full-circle sector.
-- `center-x`, `center-y`, `r`, and `inner-r` override inferred geometry.
+- `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
 - Inline text written directly in `<sector>` follows the arc.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
@@ -823,7 +823,7 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Row `0` is the innermost track; higher row numbers move outward.
 - `base-angle` rotates the whole radial grid.
 - A single distinct `angles` value means one full-circle sector.
-- `center-x`, `center-y`, `r`, and `inner-r` override inferred geometry.
+- `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
 - Inline text written directly inside `<sector>` follows the arc.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
