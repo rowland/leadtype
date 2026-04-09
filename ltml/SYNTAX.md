@@ -211,7 +211,8 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
 | `base-angle`     | Base angle in degrees for radial sector boundaries. Default: `0`. |
-| `angles`         | Comma-separated angular breakpoints relative to `base-angle`. When present, this determines the radial column boundaries. |
+| `angles`         | Comma-separated angular boundary bearings relative to `base-angle`. LTML normalizes, sorts, and deduplicates them before building sectors. |
+| `sweep`          | Radial sector sweep direction: `ccw` (default) or `cw`. This changes how sectors span between boundaries without changing what the angle numbers mean. |
 | `center-x`, `center-y` | Optional radial center coordinates in the container's content box. |
 | `r`              | Optional outer radius for radial layout. Otherwise LTML infers it from the smaller content dimension. |
 | `inner-r`        | Optional inner radius for radial layout. Default: `0`. |
@@ -787,14 +788,17 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 ### Radial Details
 
 - Use `rows` to specify concentric tracks and `cols` to specify angular slots.
-- If `angles` is present, it overrides equal angular slicing and determines the
-  column boundaries directly.
+- If `angles` is present, LTML treats the values as boundary bearings, then
+  normalizes, sorts, deduplicates, and closes the circle automatically.
 - At least one of `rows` or `cols` must be specified unless `angles` supplies
   the columns and the missing dimension can be derived from the children.
+- `sweep="ccw"` (default) spans each sector to the next boundary in ascending
+  order; `sweep="cw"` spans each sector to the previous boundary in the cycle.
 - `order="rows"` fills sectors around the circle before moving inward.
 - `order="cols"` fills sectors inward before advancing to the next angular slot.
 - Row `0` is the outermost track; higher row numbers move inward.
 - `base-angle` rotates the whole radial grid.
+- A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r`, and `inner-r` override inferred geometry.
 - Inline text written directly in `<sector>` follows the arc.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
@@ -804,14 +808,17 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 ### Radial-Out Details
 
 - Use `rows` to specify concentric tracks and `cols` to specify angular slots.
-- If `angles` is present, it overrides equal angular slicing and determines the
-  column boundaries directly.
+- If `angles` is present, LTML treats the values as boundary bearings, then
+  normalizes, sorts, deduplicates, and closes the circle automatically.
 - At least one of `rows` or `cols` must be specified unless `angles` supplies
   the columns and the missing dimension can be derived from the children.
+- `sweep="ccw"` (default) spans each sector to the next boundary in ascending
+  order; `sweep="cw"` spans each sector to the previous boundary in the cycle.
 - `order="rows"` fills sectors around the circle before moving outward.
 - `order="cols"` fills sectors outward before advancing to the next angular slot.
 - Row `0` is the innermost track; higher row numbers move outward.
 - `base-angle` rotates the whole radial grid.
+- A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r`, and `inner-r` override inferred geometry.
 - Inline text written directly inside `<sector>` follows the arc.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.

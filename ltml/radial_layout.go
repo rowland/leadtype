@@ -4,10 +4,25 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 )
 
 var errRadialNeedsDimension = errors.New("radial layout requires rows or cols")
-var errRadialNeedsAngles = errors.New("radial layout angles must contain at least two boundaries")
+var errRadialNeedsAngles = errors.New("radial layout angles must contain at least one boundary")
+
+const radialAngleEpsilon = 1e-9
+
+type radialSweep uint8
+
+const (
+	radialSweepCCW radialSweep = iota
+	radialSweepCW
+)
+
+type radialAngleSpan struct {
+	StartAngle float64
+	EndAngle   float64
+}
 
 func isRadialLayoutManager(manager string) bool {
 	return manager == "radial" || manager == "radial-out"
@@ -51,6 +66,7 @@ type radialSectorGeometry struct {
 }
 
 func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
+	inferRadialContainerDimensions(container)
 	cells := radialCellWidgets(container)
 	if len(cells) == 0 {
 		return
@@ -58,9 +74,9 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 
 	rowsHint, colsHint := container.Rows(), container.Cols()
 	if base, ok := container.(*StdContainer); ok && len(base.Angles()) > 0 {
-		colsFromAngles := len(base.Angles()) - 1
+		colsFromAngles := radialExplicitSectorCount(base.Angles())
 		if colsHint > 0 && colsHint != colsFromAngles {
-			panic(fmt.Errorf("radial cols=%d conflicts with %d angle spans", colsHint, colsFromAngles))
+			panic(fmt.Errorf("radial cols=%d conflicts with %d normalized angle spans", colsHint, colsFromAngles))
 		}
 		colsHint = colsFromAngles
 	}
@@ -69,13 +85,14 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 	if err != nil {
 		panic(err)
 	}
-	angles, err := radialBoundaries(container, cols)
+	spans, err := radialAngleSpans(container, cols)
 	if err != nil {
 		panic(err)
 	}
 	centerX, centerY, innerRadius, outerRadius := radialContainerGeometry(container)
 	if outerRadius <= innerRadius {
-		panic(fmt.Errorf("radial outer radius %g must be greater than inner radius %g", outerRadius, innerRadius))
+		debugf("invalid radial geometry: outer radius %g must be greater than inner radius %g\n", outerRadius, innerRadius)
+		return
 	}
 
 	rowsGrowOutward := radialRowsGrowOutward(style)
@@ -92,8 +109,8 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 			rowSpan := sector.RowSpan()
 			colSpan := sector.ColSpan()
 			inner, outer := radialTrackBounds(innerRadius, outerRadius, rows, row, rowSpan, rowsGrowOutward)
-			startAngle := angles[col]
-			endAngle := angles[col+colSpan]
+			startAngle := spans[col].StartAngle
+			endAngle := spans[col+colSpan-1].EndAngle
 			geometry := radialSectorGeometry{
 				CenterX:     centerX,
 				CenterY:     centerY,
@@ -113,6 +130,23 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 	}
 	if !container.WidthIsSet() {
 		container.SetWidth((outerRadius * 2) + NonContentWidth(container))
+	}
+}
+
+func inferRadialContainerDimensions(container Container) {
+	base, ok := container.(*StdContainer)
+	if !ok || !isRadialLayoutStyle(base.layout) {
+		return
+	}
+	if !base.WidthIsSet() {
+		if width, ok := base.radialInferredWidth(); ok {
+			base.SetWidth(width)
+		}
+	}
+	if !base.HeightIsSet() {
+		if height, ok := base.radialInferredHeight(); ok {
+			base.SetHeight(height)
+		}
 	}
 }
 
@@ -290,38 +324,99 @@ func radialColGrid(widgets []Widget, rows int) (*WidgetGrid, error) {
 	return grid, nil
 }
 
-func radialBoundaries(container Container, cols int) ([]float64, error) {
+func radialAngleSpans(container Container, cols int) ([]radialAngleSpan, error) {
 	baseAngle := 0.0
 	explicit := []float64(nil)
+	sweep := radialSweepCCW
 	if base, ok := container.(*StdContainer); ok {
 		baseAngle = base.BaseAngle()
 		explicit = append(explicit, base.Angles()...)
+		sweep = base.RadialSweep()
 	}
 	if len(explicit) > 0 {
-		if len(explicit) < 2 {
+		boundaries := radialNormalizedBoundaries(explicit)
+		if len(boundaries) == 0 {
 			return nil, errRadialNeedsAngles
 		}
-		angles := make([]float64, len(explicit))
-		prev := explicit[0]
-		angles[0] = baseAngle + prev
-		for i := 1; i < len(explicit); i++ {
-			if explicit[i] <= prev {
-				return nil, errors.New("radial angles must be strictly increasing")
-			}
-			prev = explicit[i]
-			angles[i] = baseAngle + explicit[i]
-		}
-		return angles, nil
+		return radialSpansFromBoundaries(boundaries, baseAngle, sweep), nil
 	}
 	if cols < 1 {
 		return nil, errRadialNeedsDimension
 	}
-	angles := make([]float64, cols+1)
+	boundaries := make([]float64, cols)
 	step := 360.0 / float64(cols)
-	for i := 0; i <= cols; i++ {
-		angles[i] = baseAngle + (step * float64(i))
+	for i := 0; i < cols; i++ {
+		boundaries[i] = step * float64(i)
 	}
-	return angles, nil
+	return radialSpansFromBoundaries(boundaries, baseAngle, sweep), nil
+}
+
+func radialExplicitSectorCount(explicit []float64) int {
+	return len(radialNormalizedBoundaries(explicit))
+}
+
+func radialNormalizedBoundaries(explicit []float64) []float64 {
+	if len(explicit) == 0 {
+		return nil
+	}
+	normalized := make([]float64, 0, len(explicit))
+	for _, angle := range explicit {
+		normalized = append(normalized, normalizeRadialAngle(angle))
+	}
+	sort.Float64s(normalized)
+	deduped := normalized[:0]
+	for _, angle := range normalized {
+		if len(deduped) == 0 || math.Abs(angle-deduped[len(deduped)-1]) > radialAngleEpsilon {
+			deduped = append(deduped, angle)
+		}
+	}
+	return append([]float64(nil), deduped...)
+}
+
+func normalizeRadialAngle(angle float64) float64 {
+	value := math.Mod(angle, 360)
+	if value < 0 {
+		value += 360
+	}
+	if math.Abs(value-360) <= radialAngleEpsilon {
+		return 0
+	}
+	return value
+}
+
+func radialSpansFromBoundaries(boundaries []float64, baseAngle float64, sweep radialSweep) []radialAngleSpan {
+	if len(boundaries) == 0 {
+		return nil
+	}
+	if len(boundaries) == 1 {
+		start := baseAngle + boundaries[0]
+		end := start + 360
+		if sweep == radialSweepCW {
+			end = start - 360
+		}
+		return []radialAngleSpan{{StartAngle: start, EndAngle: end}}
+	}
+
+	spans := make([]radialAngleSpan, len(boundaries))
+	for i, boundary := range boundaries {
+		start := baseAngle + boundary
+		if sweep == radialSweepCW {
+			prev := boundaries[(i+len(boundaries)-1)%len(boundaries)]
+			end := baseAngle + prev
+			if prev >= boundary-radialAngleEpsilon {
+				end -= 360
+			}
+			spans[i] = radialAngleSpan{StartAngle: start, EndAngle: end}
+			continue
+		}
+		next := boundaries[(i+1)%len(boundaries)]
+		end := baseAngle + next
+		if next <= boundary+radialAngleEpsilon {
+			end += 360
+		}
+		spans[i] = radialAngleSpan{StartAngle: start, EndAngle: end}
+	}
+	return spans
 }
 
 func radialContainerGeometry(container Container) (centerX, centerY, innerRadius, outerRadius float64) {

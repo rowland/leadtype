@@ -31,6 +31,7 @@ type StdContainer struct {
 	footerRows      int
 	baseAngle       float64
 	angles          []float64
+	radialSweep     radialSweep
 	centerX         float64
 	centerXSet      bool
 	centerY         float64
@@ -99,8 +100,10 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	if c.height != 0 {
 		return c.height
 	}
-	if isRadialLayoutStyle(c.layout) && c.radiusValue > 0 {
-		return (c.radiusValue * 2) + NonContentHeight(c)
+	if isRadialLayoutStyle(c.layout) {
+		if height, ok := c.radialInferredHeight(); ok {
+			return height
+		}
 	}
 	savedHeight, savedHeightPct, savedHeightRel, savedHeightSet :=
 		c.height, c.heightPct, c.heightRel, c.heightSet
@@ -115,8 +118,10 @@ func (c *StdContainer) PreferredWidth(w Writer) float64 {
 	if c.width != 0 {
 		return c.width
 	}
-	if isRadialLayoutStyle(c.layout) && c.radiusValue > 0 {
-		return (c.radiusValue * 2) + NonContentWidth(c)
+	if isRadialLayoutStyle(c.layout) {
+		if width, ok := c.radialInferredWidth(); ok {
+			return width
+		}
 	}
 	return c.StdWidget.PreferredWidth(w)
 }
@@ -166,6 +171,10 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		if value, err := strconv.ParseFloat(strings.TrimSpace(baseAngle), 64); err == nil {
 			c.baseAngle = value
 		}
+	}
+	c.radialSweep = radialSweepCCW
+	if sweep, ok := attrs["sweep"]; ok && strings.EqualFold(strings.TrimSpace(sweep), "cw") {
+		c.radialSweep = radialSweepCW
 	}
 	if angles, ok := attrs["angles"]; ok {
 		c.angles = c.angles[:0]
@@ -222,6 +231,42 @@ func (c *StdContainer) BaseAngle() float64 {
 
 func (c *StdContainer) Angles() []float64 {
 	return c.angles
+}
+
+func (c *StdContainer) RadialSweep() radialSweep {
+	return c.radialSweep
+}
+
+func (c *StdContainer) radialInferredHeight() (float64, bool) {
+	if !isRadialLayoutStyle(c.layout) {
+		return 0, false
+	}
+	if c.radiusValue > 0 {
+		return (c.radiusValue * 2) + NonContentHeight(c), true
+	}
+	if c.WidthIsSet() {
+		diameter := max(ContentWidth(c), c.innerRadius*2)
+		if diameter > 0 {
+			return diameter + NonContentHeight(c), true
+		}
+	}
+	return 0, false
+}
+
+func (c *StdContainer) radialInferredWidth() (float64, bool) {
+	if !isRadialLayoutStyle(c.layout) {
+		return 0, false
+	}
+	if c.radiusValue > 0 {
+		return (c.radiusValue * 2) + NonContentWidth(c), true
+	}
+	if c.HeightIsSet() {
+		diameter := max(ContentHeight(c), c.innerRadius*2)
+		if diameter > 0 {
+			return diameter + NonContentWidth(c), true
+		}
+	}
+	return 0, false
 }
 
 func (c *StdContainer) CenterX() (float64, bool) {

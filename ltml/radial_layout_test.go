@@ -180,6 +180,148 @@ func TestLayoutRadialTable_UsesExplicitAnglesAndBaseAngle(t *testing.T) {
 	}
 }
 
+func TestLayoutRadialTable_CWSweepUsesClockwiseQuarterSectors(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout": "radial",
+		"rows":   "1",
+		"cols":   "4",
+		"sweep":  "cw",
+	})
+
+	sectors := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	for _, sector := range sectors {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	expectations := []struct {
+		start float64
+		end   float64
+	}{
+		{0, -90},
+		{90, 0},
+		{180, 90},
+		{270, 180},
+	}
+	for i, want := range expectations {
+		if got := sectors[i].geometry.StartAngle; !floatEquals(got, want.start) {
+			t.Fatalf("sector %d start angle = %v, want %v", i+1, got, want.start)
+		}
+		if got := sectors[i].geometry.EndAngle; !floatEquals(got, want.end) {
+			t.Fatalf("sector %d end angle = %v, want %v", i+1, got, want.end)
+		}
+	}
+}
+
+func TestLayoutRadialTable_CWSweepNormalizesSortsAndDedupesExplicitAngles(t *testing.T) {
+	container := positionedContainer(0, 0, 240, 240)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout": "radial",
+		"rows":   "1",
+		"cols":   "4",
+		"sweep":  "cw",
+		"angles": "270,0,180,90,360",
+	})
+
+	sectors := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	for _, sector := range sectors {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	expectations := []struct {
+		start float64
+		end   float64
+	}{
+		{0, -90},
+		{90, 0},
+		{180, 90},
+		{270, 180},
+	}
+	for i, want := range expectations {
+		if got := sectors[i].geometry.StartAngle; !floatEquals(got, want.start) {
+			t.Fatalf("sector %d start angle = %v, want %v", i+1, got, want.start)
+		}
+		if got := sectors[i].geometry.EndAngle; !floatEquals(got, want.end) {
+			t.Fatalf("sector %d end angle = %v, want %v", i+1, got, want.end)
+		}
+	}
+}
+
+func TestLayoutRadialTable_SingleExplicitAngleProducesFullCircleSector(t *testing.T) {
+	containerCCW := positionedContainer(0, 0, 200, 200)
+	containerCCW.SetScope(&defaultScope)
+	containerCCW.SetAttrs(map[string]string{
+		"layout": "radial",
+		"rows":   "1",
+		"angles": "0",
+	})
+
+	sectorCCW := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sectorCCW.font = testSectorFont()
+	if err := sectorCCW.SetContainer(containerCCW); err != nil {
+		t.Fatal(err)
+	}
+	containerCCW.AddChild(sectorCCW)
+
+	LayoutRadialTable(containerCCW, containerCCW.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got, want := sectorCCW.geometry.StartAngle, 0.0; !floatEquals(got, want) {
+		t.Fatalf("ccw full-circle start angle = %v, want %v", got, want)
+	}
+	if got, want := sectorCCW.geometry.EndAngle, 360.0; !floatEquals(got, want) {
+		t.Fatalf("ccw full-circle end angle = %v, want %v", got, want)
+	}
+
+	containerCW := positionedContainer(0, 0, 200, 200)
+	containerCW.SetScope(&defaultScope)
+	containerCW.SetAttrs(map[string]string{
+		"layout": "radial",
+		"rows":   "1",
+		"angles": "0",
+		"sweep":  "cw",
+	})
+
+	sectorCW := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sectorCW.font = testSectorFont()
+	if err := sectorCW.SetContainer(containerCW); err != nil {
+		t.Fatal(err)
+	}
+	containerCW.AddChild(sectorCW)
+
+	LayoutRadialTable(containerCW, containerCW.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got, want := sectorCW.geometry.StartAngle, 0.0; !floatEquals(got, want) {
+		t.Fatalf("cw full-circle start angle = %v, want %v", got, want)
+	}
+	if got, want := sectorCW.geometry.EndAngle, -360.0; !floatEquals(got, want) {
+		t.Fatalf("cw full-circle end angle = %v, want %v", got, want)
+	}
+}
+
 func TestLayoutRadialOut_RowZeroIsInnermostAndRowspanExtendsOutward(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 200)
 	container.SetScope(&defaultScope)
@@ -311,6 +453,133 @@ func TestLayoutRadialOut_UsesExplicitAnglesAndBaseAngle(t *testing.T) {
 	}
 }
 
+func TestLayoutRadialOut_CWSweepPreservesInsideOutRowSemantics(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":  "radial-out",
+		"rows":    "1",
+		"cols":    "4",
+		"inner-r": "20",
+		"sweep":   "cw",
+	})
+
+	sectors := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	for _, sector := range sectors {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got, want := sectors[0].geometry.InnerRadius, 20.0; !floatEquals(got, want) {
+		t.Fatalf("innermost row inner radius = %v, want %v", got, want)
+	}
+	if got, want := sectors[0].geometry.OuterRadius, 100.0; !floatEquals(got, want) {
+		t.Fatalf("innermost row outer radius = %v, want %v", got, want)
+	}
+	if got, want := sectors[0].geometry.StartAngle, 0.0; !floatEquals(got, want) {
+		t.Fatalf("first clockwise sector start angle = %v, want %v", got, want)
+	}
+	if got, want := sectors[0].geometry.EndAngle, -90.0; !floatEquals(got, want) {
+		t.Fatalf("first clockwise sector end angle = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutVBox_RadialChildWithWidthOnlyAndInnerRadiusDoesNotPanic(t *testing.T) {
+	page := positionedContainer(0, 0, 360, 720)
+	page.SetScope(&defaultScope)
+	page.SetAttrs(map[string]string{"layout": "vbox"})
+
+	radial := &StdContainer{}
+	radial.SetScope(&defaultScope)
+	if err := radial.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	radial.SetAttrs(map[string]string{
+		"layout":  "radial-out",
+		"rows":    "1",
+		"cols":    "1",
+		"inner-r": "43.2",
+		"width":   "100%",
+	})
+	page.AddChild(radial)
+
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(radial); err != nil {
+		t.Fatal(err)
+	}
+	sector.AddText("Luke")
+	radial.AddChild(sector)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("LayoutVBox panicked for width-only radial child: %v", r)
+		}
+	}()
+
+	LayoutVBox(page, page.LayoutStyle(), &labelTestWriter{t: t})
+
+	if radial.Height() <= 0 {
+		t.Fatalf("radial height = %v, want > 0", radial.Height())
+	}
+	if sector.geometry.OuterRadius <= sector.geometry.InnerRadius {
+		t.Fatalf("sector radii = %v..%v, want outer > inner", sector.geometry.InnerRadius, sector.geometry.OuterRadius)
+	}
+}
+
+func TestLayoutVBox_RadialChildWithHeightOnlyAndInnerRadiusDoesNotPanic(t *testing.T) {
+	page := positionedContainer(0, 0, 360, 720)
+	page.SetScope(&defaultScope)
+	page.SetAttrs(map[string]string{"layout": "vbox"})
+
+	radial := &StdContainer{}
+	radial.SetScope(&defaultScope)
+	if err := radial.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	radial.SetAttrs(map[string]string{
+		"layout":  "radial-out",
+		"rows":    "1",
+		"cols":    "1",
+		"inner-r": "43.2",
+		"height":  "120",
+	})
+	page.AddChild(radial)
+
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(radial); err != nil {
+		t.Fatal(err)
+	}
+	sector.AddText("Leia")
+	radial.AddChild(sector)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("LayoutVBox panicked for height-only radial child: %v", r)
+		}
+	}()
+
+	LayoutVBox(page, page.LayoutStyle(), &labelTestWriter{t: t})
+
+	if radial.Width() <= 0 {
+		t.Fatalf("radial width = %v, want > 0", radial.Width())
+	}
+	if sector.geometry.OuterRadius <= sector.geometry.InnerRadius {
+		t.Fatalf("sector radii = %v..%v, want outer > inner", sector.geometry.InnerRadius, sector.geometry.OuterRadius)
+	}
+}
+
 func TestStdSector_OriginAliasesResolveToSectorReferencePoints(t *testing.T) {
 	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
 	sector.font = testSectorFont()
@@ -395,6 +664,36 @@ func TestStdSector_DrawContent_UsesCurvedTextUnlessAngleOverrides(t *testing.T) 
 	}
 	if len(w2.rotations) != 1 {
 		t.Fatalf("rotation count with explicit angle = %d, want 1", len(w2.rotations))
+	}
+}
+
+func TestStdSector_DrawContent_RightAlignedCurvedTextUsesSectorEndAngle(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	sector.SetAttrs(map[string]string{"text-align": "right"})
+	sector.AddText("Radial")
+	ax, ay := radialPointAt(100, 100, 40, -45)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 60,
+		StartAngle:  0,
+		EndAngle:    -90,
+		AnchorAngle: -45,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	w := &labelTestWriter{t: t}
+	if err := sector.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.curvedStarts) != 1 {
+		t.Fatalf("curved start count = %d, want 1", len(w.curvedStarts))
+	}
+	if got, want := w.curvedStarts[0], -90.0; !floatEquals(got, want) {
+		t.Fatalf("curved text start angle = %v, want %v", got, want)
 	}
 }
 
