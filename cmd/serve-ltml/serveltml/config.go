@@ -15,6 +15,7 @@ import (
 type Config struct {
 	Listen         string
 	BasePath       string
+	OutputPath     string
 	MaxUploadBytes int64
 	ReadTimeout    time.Duration
 	WriteTimeout   time.Duration
@@ -28,6 +29,7 @@ func parseConfig() (*Config, error) {
 	var (
 		listen         string
 		basePath       string
+		outputPath     string
 		maxUploadBytes int64
 		readTimeout    time.Duration
 		writeTimeout   time.Duration
@@ -36,6 +38,7 @@ func parseConfig() (*Config, error) {
 	flag.StringVar(&listen, "listen", ":8080", "address to listen on (LISTEN)")
 	flag.StringVar(&basePath, "assets", "", "path to static asset directory (ASSETS, required)")
 	flag.StringVar(&basePath, "a", "", "path to static asset directory (shorthand)")
+	flag.StringVar(&outputPath, "output-path", "", "root directory for file output (OUTPUT_PATH, optional; enables X-Output-File)")
 	flag.Int64Var(&maxUploadBytes, "max-upload-bytes", 32<<20, "maximum multipart request size in bytes (MAX_UPLOAD_BYTES)")
 	flag.DurationVar(&readTimeout, "read-timeout", 0, "HTTP server read timeout, e.g. 30s (READ_TIMEOUT)")
 	flag.DurationVar(&writeTimeout, "write-timeout", 0, "HTTP server write timeout, e.g. 60s (WRITE_TIMEOUT)")
@@ -53,9 +56,20 @@ func parseConfig() (*Config, error) {
 		return nil, fmt.Errorf("assets %q is not a directory", basePath)
 	}
 
+	if outputPath != "" {
+		info, err := os.Stat(outputPath)
+		if err != nil {
+			return nil, fmt.Errorf("output-path %q: %w", outputPath, err)
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("output-path %q is not a directory", outputPath)
+		}
+	}
+
 	return &Config{
 		Listen:         listen,
 		BasePath:       basePath,
+		OutputPath:     outputPath,
 		MaxUploadBytes: maxUploadBytes,
 		ReadTimeout:    readTimeout,
 		WriteTimeout:   writeTimeout,
