@@ -5,6 +5,7 @@ package serveltml
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -330,6 +331,229 @@ func TestHandler_MalformedLTMLReturnsBadRequest(t *testing.T) {
 	respBody := rr.Body.String()
 	if !strings.Contains(respBody, "invalid LTML:") || !strings.Contains(respBody, "XML syntax error") {
 		t.Fatalf("body = %q, want detailed invalid LTML parse message", respBody)
+	}
+}
+
+// newHandlerWithOutput returns a renderHandler with both BasePath and
+// OutputPath configured to separate temp directories.
+func newHandlerWithOutput(t *testing.T) (*renderHandler, string, string) {
+	t.Helper()
+	base := t.TempDir()
+	outputPath := t.TempDir()
+	cfg := &Config{
+		Listen:         ":0",
+		BasePath:       base,
+		OutputPath:     outputPath,
+		MaxUploadBytes: 32 << 20,
+	}
+	return newRenderHandler(cfg), base, outputPath
+}
+
+// TestHandler_FileOutputMode_Success verifies that X-Output-File triggers
+// JSON response and writes PDF + LTML to the output directory.
+func TestHandler_FileOutputMode_Success(t *testing.T) {
+	h, _, outputPath := newHandlerWithOutput(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rr.Code, rr.Body.String())
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+
+	var resp fileOutputResponse
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON response: %v", err)
+	}
+	if resp.Size <= 0 {
+		t.Errorf("size = %d, want > 0", resp.Size)
+	}
+	if resp.ElapsedMs < 0 {
+		t.Errorf("elapsed_ms = %d, want >= 0", resp.ElapsedMs)
+	}
+	if !strings.HasSuffix(resp.Path, "/report.pdf") {
+		t.Errorf("path = %q, want suffix /report.pdf", resp.Path)
+	}
+
+	// Verify files on disk.
+	pdfPath := filepath.Join(outputPath, filepath.FromSlash(resp.Path))
+	if info, err := os.Stat(pdfPath); err != nil {
+		t.Errorf("PDF not found at %q: %v", pdfPath, err)
+	} else if info.Size() != resp.Size {
+		t.Errorf("PDF on-disk size %d != JSON size %d", info.Size(), resp.Size)
+	}
+
+	ltmlPath := strings.TrimSuffix(pdfPath, ".pdf") + ".ltml"
+	if _, err := os.Stat(ltmlPath); err != nil {
+		t.Errorf("LTML not found at %q: %v", ltmlPath, err)
+	}
+}
+
+// TestHandler_FileOutputMode_WithUploads verifies that uploaded files are
+// copied to the output directory alongside the PDF and LTML.
+func TestHandler_FileOutputMode_WithUploads(t *testing.T) {
+	h, _, outputPath := newHandlerWithOutput(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+		{"file", "assets/logo.txt", "text/plain", "fake-asset-data"},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rr.Code, rr.Body.String())
+	}
+
+	var resp fileOutputResponse
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON response: %v", err)
+	}
+
+	// Derive ULID directory from the response path.
+	parts := strings.SplitN(resp.Path, "/", 2)
+	if len(parts) != 2 {
+		t.Fatalf("unexpected path format: %q", resp.Path)
+	}
+	ulidDir := filepath.Join(outputPath, parts[0])
+
+	uploadDest := filepath.Join(ulidDir, "assets", "logo.txt")
+	data, err := os.ReadFile(uploadDest)
+	if err != nil {
+		t.Errorf("upload not found at %q: %v", uploadDest, err)
+	} else if string(data) != "fake-asset-data" {
+		t.Errorf("upload content = %q, want %q", data, "fake-asset-data")
+	}
+}
+
+// TestHandler_FileOutputMode_NoOutputPath verifies that sending X-Output-File
+// when OutputPath is not configured returns a JSON 500 error.
+func TestHandler_FileOutputMode_NoOutputPath(t *testing.T) {
+	h, _ := newHandler(t) // OutputPath is empty
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+	var resp fileOutputError
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON error response: %v", err)
+	}
+	if resp.Error == "" {
+		t.Error("error field is empty")
+	}
+}
+
+// TestHandler_FileOutputMode_InvalidFilename verifies that an invalid
+// X-Output-File value returns a JSON 400 error.
+func TestHandler_FileOutputMode_InvalidFilename(t *testing.T) {
+	h, _, _ := newHandlerWithOutput(t)
+
+	cases := []string{".", "../escape", "/abs"}
+	for _, name := range cases {
+		t.Run(name, func(t *testing.T) {
+			body, ct := buildMultipart([][4]string{
+				{"ltml", "", "application/vnd.rowland.leadtype.ltml+xml", minimalLTML},
+			})
+			req := httptest.NewRequest(http.MethodPost, "/render", body)
+			req.Header.Set("Content-Type", ct)
+			req.Header.Set("X-Output-File", name)
+
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusBadRequest {
+				t.Errorf("filename=%q: status = %d, want 400", name, rr.Code)
+			}
+			if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+				t.Errorf("filename=%q: Content-Type = %q, want application/json", name, ct)
+			}
+		})
+	}
+}
+
+// TestHandler_FileOutputMode_RenderError_IsJSON verifies that render errors
+// are returned as JSON when X-Output-File is set.
+func TestHandler_FileOutputMode_RenderError_IsJSON(t *testing.T) {
+	h, _, _ := newHandlerWithOutput(t)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "", "<not-valid-xml>"},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+	var resp fileOutputError
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON error response: %v", err)
+	}
+	if resp.Error == "" {
+		t.Error("error field is empty")
+	}
+}
+
+// TestHandler_FileOutputMode_OversizedRequest_IsJSON verifies that 413 errors
+// are returned as JSON when X-Output-File is set.
+func TestHandler_FileOutputMode_OversizedRequest_IsJSON(t *testing.T) {
+	outputPath := t.TempDir()
+	cfg := &Config{
+		BasePath:       t.TempDir(),
+		OutputPath:     outputPath,
+		MaxUploadBytes: 10,
+	}
+	h := newRenderHandler(cfg)
+
+	body, ct := buildMultipart([][4]string{
+		{"ltml", "", "", strings.Repeat("X", 100)},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/render", body)
+	req.Header.Set("Content-Type", ct)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("status = %d, want 413", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
 	}
 }
 
