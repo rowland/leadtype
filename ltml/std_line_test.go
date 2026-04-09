@@ -170,3 +170,40 @@ func TestParse_LineTag(t *testing.T) {
 		t.Fatalf("style = %#v, want dotted pen", line.style)
 	}
 }
+
+func TestParse_LineTag_ClonesStyleForPrefixOverrides(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <line angle="90" height="1in" style="dotted" style.width="3pt" style.color="red" />
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.ltmls[0].Page(0)
+	if page == nil {
+		t.Fatal("page is nil")
+	}
+	line, ok := page.children[0].(*StdLine)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdLine", page.children[0])
+	}
+	if line.style == nil {
+		t.Fatal("style is nil, want cloned pen style")
+	}
+	base := PenStyleFor("dotted", page)
+	if line.style == base {
+		t.Fatal("line style reused shared dotted pen, want clone")
+	}
+	if got := line.style.width; got != 3 {
+		t.Fatalf("line style width = %v, want 3", got)
+	}
+	if got := line.style.color; got != NamedColor("red") {
+		t.Fatalf("line style color = %v, want red", got)
+	}
+	if got := base.width; got == 3 {
+		t.Fatalf("shared dotted pen width = %v, want unchanged", got)
+	}
+}

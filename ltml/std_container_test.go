@@ -25,3 +25,25 @@ func TestStdContainer_Path(t *testing.T) {
 		t.Errorf("Expected <%s>, got <%s>", e2, c2.Path())
 	}
 }
+
+func TestStdContainer_SetAttrs_ClonesLayoutForLayoutPrefixOverrides(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+
+	container := &StdContainer{}
+	container.SetScope(scope)
+	container.SetAttrs(map[string]string{
+		"layout":          "vbox",
+		"layout.vpadding": "9pt",
+	})
+
+	if container.LayoutStyle() == defaultLayouts["vbox"] {
+		t.Fatal("layout style reused shared vbox layout, want clone")
+	}
+	if got := container.LayoutStyle().VPadding(); got != 9 {
+		t.Fatalf("layout vpadding = %v, want 9", got)
+	}
+	if got := defaultLayouts["vbox"].VPadding(); got != 0 {
+		t.Fatalf("shared vbox vpadding = %v, want 0", got)
+	}
+}

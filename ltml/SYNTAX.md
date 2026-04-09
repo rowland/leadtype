@@ -112,7 +112,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin`      | Margin for all sides. |
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
-| `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. |
+| `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. Use `layout.*` for inline overrides such as `layout.vpadding="9pt"`. |
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
@@ -202,7 +202,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 
 | Attribute        | Description |
 |------------------|-------------|
-| `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). |
+| `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). Use `layout.*` for inline overrides. |
 | `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. Invalid values fall back to `ltr`. |
 | `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` and `radial-out` when `angles` determines the angular slots. |
 | `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. In `radial-out`, row `0` is innermost and higher rows move outward. |
@@ -448,13 +448,13 @@ Draws a line segment using the configured pen style.
 
 | Attribute | Description |
 |-----------|-------------|
-| `style` | Reference to a named `<pen>` style. |
+| `style` | Reference to a named `<pen>` style. Use `style.*` for inline overrides such as `style.width="2pt"` or `style.color="red"`. |
 | `angle` | Line angle in degrees. `0` points right; positive angles rotate clockwise in page coordinates. |
 | `length` | Optional explicit line length. |
 | `width`, `height` | Optional layout box dimensions used to infer the line length and placement when `length` is omitted. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
-| `border` | Optional enclosing widget border, separate from the line stroke. |
+| `border` | Optional enclosing widget border, separate from the line stroke. Use `border.*` to override the enclosing border pen inline. |
 | `alt` | When `ua="true"`, opt the line into tagged output and use this text as `/ActualText`. |
 | `role` | Override the default tagged role when `ua="true"`. Lines with `alt` default to `Figure`. |
 

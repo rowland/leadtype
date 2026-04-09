@@ -150,6 +150,10 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
 	}
+	if MapHasKeyPrefix(attrs, "layout.") {
+		c.layout = c.LayoutStyle().Clone()
+		c.layout.SetAttrsPrefix("layout.", attrs)
+	}
 	if order, ok := attrs["order"]; ok {
 		if order == "rows" {
 			c.order = TableOrderRows

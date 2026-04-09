@@ -35,24 +35,28 @@ func (ls *LayoutStyle) Layout(c Container, w Writer) {
 }
 
 func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {
-	if id, ok := attrs["id"]; ok {
+	ls.SetAttrsPrefix("", attrs)
+}
+
+func (ls *LayoutStyle) SetAttrsPrefix(prefix string, attrs map[string]string) {
+	if id, ok := attrs[prefix+"id"]; ok {
 		ls.id = id
 	}
-	if units, ok := attrs["units"]; ok {
+	if units, ok := attrs[prefix+"units"]; ok {
 		ls.units = Units(units)
 	}
-	if padding, ok := attrs["padding"]; ok {
+	if padding, ok := attrs[prefix+"padding"]; ok {
 		hvpadding := ParseMeasurement(padding, ls.units)
 		ls.hpadding = hvpadding
 		ls.vpadding = hvpadding
 	}
-	if hpadding, ok := attrs["hpadding"]; ok {
+	if hpadding, ok := attrs[prefix+"hpadding"]; ok {
 		ls.hpadding = ParseMeasurement(hpadding, ls.units)
 	}
-	if vpadding, ok := attrs["vpadding"]; ok {
+	if vpadding, ok := attrs[prefix+"vpadding"]; ok {
 		ls.vpadding = ParseMeasurement(vpadding, ls.units)
 	}
-	if manager, ok := attrs["manager"]; ok {
+	if manager, ok := attrs[prefix+"manager"]; ok {
 		ls.manager = manager
 	}
 }

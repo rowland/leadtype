@@ -237,9 +237,30 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if border, ok := attrs["border"]; ok {
 		widget.border = PenStyleFor(border, widget.scope)
 	}
+	if MapHasKeyPrefix(attrs, "border.") {
+		if widget.border == nil {
+			widget.border = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+		} else {
+			widget.border = widget.border.Clone()
+		}
+		widget.border.SetAttrs("border.", attrs)
+	}
 	for i, side := range sideNames {
 		if border, ok := attrs["border-"+side]; ok {
 			widget.borders[i] = PenStyleFor(border, widget.scope)
+		}
+		prefix := "border-" + side + "."
+		if MapHasKeyPrefix(attrs, prefix) {
+			base := widget.borders[i]
+			if base == nil {
+				base = widget.border
+			}
+			if base == nil {
+				widget.borders[i] = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+			} else {
+				widget.borders[i] = base.Clone()
+			}
+			widget.borders[i].SetAttrs(prefix, attrs)
 		}
 	}
 	if fill, ok := attrs["fill"]; ok {
