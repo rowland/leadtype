@@ -44,14 +44,14 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	w.Header().Set("X-Request-Id", requestID)
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Determine file output mode from the custom header.
 	outputFilename := r.Header.Get("X-Output-File")
 	fileOutputMode := outputFilename != ""
+
+	if r.Method != http.MethodPost {
+		httpError(w, fileOutputMode, "method not allowed", http.StatusMethodNotAllowed, 0)
+		return
+	}
 
 	if fileOutputMode {
 		if err := validateOutputFilename(outputFilename); err != nil {

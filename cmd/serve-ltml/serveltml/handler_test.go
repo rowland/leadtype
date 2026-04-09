@@ -256,6 +256,39 @@ func TestHandler_NonPostMethod(t *testing.T) {
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("status = %d, want 405", rr.Code)
 	}
+	if ct := rr.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/plain") {
+		t.Errorf("Content-Type = %q, want text/plain", ct)
+	}
+	if body := rr.Body.String(); !strings.Contains(body, "method not allowed") {
+		t.Errorf("body = %q, want method-not-allowed text", body)
+	}
+}
+
+// TestHandler_FileOutputMode_NonPostMethod_IsJSON verifies that file-output
+// requests get the JSON error shape even for method validation failures.
+func TestHandler_FileOutputMode_NonPostMethod_IsJSON(t *testing.T) {
+	h, _, _ := newHandlerWithOutput(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/render", nil)
+	req.Header.Set("X-Output-File", "report.pdf")
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want 405; body: %s", rr.Code, rr.Body.String())
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+
+	var resp fileOutputError
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decoding JSON error response: %v", err)
+	}
+	if resp.Error != "method not allowed" {
+		t.Errorf("error = %q, want %q", resp.Error, "method not allowed")
+	}
 }
 
 // TestHandler_TempDirRemovedAfterSuccess verifies that the request temp
