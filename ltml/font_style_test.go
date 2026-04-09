@@ -41,7 +41,19 @@ func (m *mockWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fi
 func (m *mockWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
 	return nil
 }
+func (m *mockWriter) Clip(fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	return nil
+}
+func (m *mockWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	return nil
+}
 func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }

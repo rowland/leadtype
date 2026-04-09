@@ -41,6 +41,9 @@ type labelTestWriter struct {
 	plainPrinted  []string
 	plainPages    []int
 	rotations     []rotationCall
+	curvedCount   int
+	curvedStarts  []float64
+	curvedOpts    []pdf.CurvedTextOptions
 	pageCount     int
 	rectPages     []int
 	fillRectPages []int
@@ -60,7 +63,29 @@ func (w *labelTestWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, borde
 func (w *labelTestWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
 	return nil
 }
+func (w *labelTestWriter) Clip(fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	w.curvedCount++
+	w.curvedStarts = append(w.curvedStarts, startAngle)
+	w.curvedOpts = append(w.curvedOpts, opts)
+	w.printed = append(w.printed, text)
+	w.printedPages = append(w.printedPages, w.pageCount)
+	return nil
+}
+func (w *labelTestWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	w.curvedCount++
+	w.curvedStarts = append(w.curvedStarts, startAngle)
+	w.curvedOpts = append(w.curvedOpts, opts)
+	w.plainPrinted = append(w.plainPrinted, text)
+	w.plainPages = append(w.plainPages, w.pageCount)
+	return nil
+}
 func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }

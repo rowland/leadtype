@@ -1526,6 +1526,32 @@ func TestPageWriter_PathRestoresGradientStateAfterClip(t *testing.T) {
 	check(t, strings.Contains(s, "sh\nQ\n"), "clip should paint shading and restore graphics state")
 }
 
+func TestPageWriter_ClipRestoresLastStateForFontColor(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	pw.SetFillColor(colors.HoneyDew)
+	pw.checkSetFillColor()
+
+	err := pw.Path(func() {
+		pw.MoveTo(0, 0)
+		pw.LineTo(10, 0)
+		pw.LineTo(10, 10)
+		pw.LineTo(0, 10)
+		pw.LineTo(0, 0)
+		check(t, pw.Clip(func() {
+			pw.SetFontColor(colors.Black)
+			pw.checkSetFontColor()
+		}) == nil, "Clip should succeed")
+	})
+	check(t, err == nil, "Path should succeed")
+	check(t, pw.last.fillColor == colors.HoneyDew, "clip should restore cached outer fill color")
+
+	pw.SetFontColor(colors.Black)
+	pw.checkSetFontColor()
+	expectI(t, 2, strings.Count(pw.stream.String(), "0 0 0 rg\n"))
+}
+
 func TestPageWriter_PaintSweepBandConstantColorSegment(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

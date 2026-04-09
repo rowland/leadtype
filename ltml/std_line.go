@@ -64,6 +64,17 @@ func (l *StdLine) SetAttrs(attrs map[string]string) {
 	if style, ok := attrs["style"]; ok {
 		l.style = PenStyleFor(style, l.scope)
 	}
+	if MapHasKeyPrefix(attrs, "style.") {
+		switch {
+		case l.style != nil:
+			l.style = l.style.Clone()
+		case l.scope != nil:
+			l.style = l.Style().Clone()
+		default:
+			l.style = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+		}
+		l.style.SetAttrs("style.", attrs)
+	}
 }
 
 func (l *StdLine) String() string {

@@ -55,6 +55,7 @@ type Widget interface {
 	Position() Position
 
 	Align() Align
+	SelfAlign() SelfAlign
 	Disabled() bool
 	Printed() bool
 	Visible() bool

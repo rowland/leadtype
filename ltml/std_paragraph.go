@@ -110,6 +110,9 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		if len(para) == 0 {
 			return nil
 		}
+		if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
+			return provider.drawSectorParagraph(p, w, provider.sectorParagraphLayoutFor(p, w))
+		}
 		indent := p.textIndent()
 		x := ContentLeft(p)
 		if p.suppressBullet {
@@ -138,6 +141,9 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 	if p.splitLines != nil {
 		return p.splitLines
 	}
+	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
+		return provider.sectorParagraphLayoutFor(p, w).lines
+	}
 	rt := p.RichText(w)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
@@ -147,6 +153,9 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 	if p.height != 0 {
 		return p.height
+	}
+	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
+		return NonContentHeight(p) + provider.sectorParagraphLayoutFor(p, w).total
 	}
 	return p.heightForLines(p.Lines(w, p.lineWidth()), w)
 }

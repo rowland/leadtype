@@ -26,6 +26,7 @@ type StdWidget struct {
 	position        Position
 	rowSpan         int
 	align           Align
+	selfAlign       SelfAlign
 	rotate          *float64
 	originX         string
 	originY         string
@@ -39,8 +40,17 @@ type StdWidget struct {
 	path            string
 }
 
+type sectorReferenceResolver interface {
+	ResolveSectorReferenceX(widget Widget) float64
+	ResolveSectorReferenceY(widget Widget) float64
+}
+
 func (widget *StdWidget) Align() Align {
 	return widget.align
+}
+
+func (widget *StdWidget) SelfAlign() SelfAlign {
+	return widget.selfAlign
 }
 
 func (widget *StdWidget) BeforePrint(Writer) error {
@@ -147,6 +157,18 @@ func (widget *StdWidget) Path() string {
 	return widget.path
 }
 
+func (widget *StdWidget) SetPath(path string) {
+	widget.path = path
+}
+
+func (widget *StdWidget) OriginXToken() string {
+	return widget.originX
+}
+
+func (widget *StdWidget) OriginYToken() string {
+	return widget.originY
+}
+
 func (widget *StdWidget) Position() Position {
 	return widget.position
 }
@@ -202,12 +224,43 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.align = AlignBottom
 		}
 	}
+	if alignSelf, ok := attrs["align-self"]; ok {
+		switch alignSelf {
+		case "start":
+			widget.selfAlign = SelfAlignStart
+		case "center":
+			widget.selfAlign = SelfAlignCenter
+		case "end":
+			widget.selfAlign = SelfAlignEnd
+		}
+	}
 	if border, ok := attrs["border"]; ok {
 		widget.border = PenStyleFor(border, widget.scope)
+	}
+	if MapHasKeyPrefix(attrs, "border.") {
+		if widget.border == nil {
+			widget.border = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+		} else {
+			widget.border = widget.border.Clone()
+		}
+		widget.border.SetAttrs("border.", attrs)
 	}
 	for i, side := range sideNames {
 		if border, ok := attrs["border-"+side]; ok {
 			widget.borders[i] = PenStyleFor(border, widget.scope)
+		}
+		prefix := "border-" + side + "."
+		if MapHasKeyPrefix(attrs, prefix) {
+			base := widget.borders[i]
+			if base == nil {
+				base = widget.border
+			}
+			if base == nil {
+				widget.borders[i] = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+			} else {
+				widget.borders[i] = base.Clone()
+			}
+			widget.borders[i].SetAttrs(prefix, attrs)
 		}
 	}
 	if fill, ok := attrs["fill"]; ok {
@@ -423,6 +476,11 @@ func (widget *StdWidget) AccessibilityRole() string {
 }
 
 func (widget *StdWidget) resolveLeft(value float64) float64 {
+	if widget.position == Relative && widget.container != nil {
+		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+			return resolver.ResolveSectorReferenceX(widget) + value + widget.shiftX
+		}
+	}
 	if widget.container != nil && value < 0 {
 		value = widget.container.Width() + value
 	}
@@ -434,6 +492,11 @@ func (widget *StdWidget) resolveLeft(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveRight(value float64) float64 {
+	if widget.position == Relative && widget.container != nil {
+		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+			return resolver.ResolveSectorReferenceX(widget) + value + widget.shiftX
+		}
+	}
 	if widget.container != nil && value <= 0 {
 		value = widget.container.Width() + value
 	}
@@ -445,6 +508,11 @@ func (widget *StdWidget) resolveRight(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveTop(value float64) float64 {
+	if widget.position == Relative && widget.container != nil {
+		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+			return resolver.ResolveSectorReferenceY(widget) + value + widget.shiftY
+		}
+	}
 	if widget.container != nil && value < 0 {
 		value = widget.container.Height() + value
 	}
@@ -456,6 +524,11 @@ func (widget *StdWidget) resolveTop(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveBottom(value float64) float64 {
+	if widget.position == Relative && widget.container != nil {
+		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+			return resolver.ResolveSectorReferenceY(widget) + value + widget.shiftY
+		}
+	}
 	if widget.container != nil && value <= 0 {
 		value = widget.container.Height() + value
 	}
@@ -480,6 +553,12 @@ func (widget *StdWidget) paintWithTransform(w Writer, fn func() error) error {
 }
 
 func (widget *StdWidget) OriginX() float64 {
+	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+		switch widget.originX {
+		case "start", "center", "end":
+			return resolver.ResolveSectorReferenceX(widget)
+		}
+	}
 	switch widget.originX {
 	case "center":
 		return (widget.Left() + widget.Right()) / 2
@@ -493,6 +572,12 @@ func (widget *StdWidget) OriginX() float64 {
 }
 
 func (widget *StdWidget) OriginY() float64 {
+	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+		switch widget.originY {
+		case "inner", "middle", "outer":
+			return resolver.ResolveSectorReferenceY(widget)
+		}
+	}
 	switch widget.originY {
 	case "middle":
 		return (widget.Top() + widget.Bottom()) / 2

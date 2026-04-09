@@ -112,7 +112,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin`      | Margin for all sides. |
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
-| `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`). Default: `vbox`. |
+| `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. Use `layout.*` for inline overrides such as `layout.vpadding="9pt"`. |
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
@@ -202,16 +202,64 @@ Supports the same layout and styling attributes as `<p>`, plus:
 
 | Attribute        | Description |
 |------------------|-------------|
-| `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). |
+| `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). Use `layout.*` for inline overrides. |
 | `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. Invalid values fall back to `ltr`. |
-| `cols`           | Number of columns (required for `table` layout). |
-| `rows`           | Number of rows (for column-order `table` layout). |
-| `order`          | Table fill order: `rows` (default) or `cols`. |
+| `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` and `radial-out` when `angles` determines the angular slots. |
+| `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. In `radial-out`, row `0` is innermost and higher rows move outward. |
+| `order`          | Grid fill order: `rows` (default) or `cols`. Used by `table`, `radial`, and `radial-out`. |
 | `split`          | Whether a direct page-child `table` may split by whole rows across pages. Defaults to `true` for table layouts. |
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
+| `base-angle`     | Base angle in degrees for radial sector boundaries. Default: `0`. |
+| `angles`         | Comma-separated angular boundary bearings relative to `base-angle`. LTML normalizes, sorts, and deduplicates them before building sectors. |
+| `sweep`          | Radial sector sweep direction: `ccw` (default) or `cw`. This changes how sectors span between boundaries without changing what the angle numbers mean. |
+| `center-x`, `center-y` | Optional radial center coordinates in the container's content box. |
+| `r`              | Optional outer radius for radial layout. Otherwise LTML infers it from the smaller content dimension. |
+| `r0`             | Optional inner radius for radial layout. Preferred alias when paired with `r`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
 | `role` | Override the computed PDF structure type when `ua="true"`, for example `L` or `Table`. |
+
+---
+
+### `<sector>` — Radial Cell
+
+`<sector>` is a container used inside a `layout="radial"` or `layout="radial-out"` parent. It behaves
+like a radial table cell: LTML assigns it one wedge or annular-sector region
+based on the parent grid, and the sector owns the special paint and layout
+behavior for that region.
+
+```xml
+<div layout="radial" rows="2" cols="6">
+  <sector colspan="2" fill="AliceBlue" border="solid">Curved arc text</sector>
+  <sector rowspan="2" colspan="2">
+    <p>Paragraphs wrap to the changing line width of the sector.</p>
+  </sector>
+</div>
+```
+
+Direct non-`<sector>` children of a radial container are wrapped in an
+implicit sector automatically. Their XML attributes are applied both to the
+implicit sector and to the original child widget.
+
+| Attribute | Description |
+|-----------|-------------|
+| `colspan`, `rowspan` | Span multiple radial slots, just like table cells. |
+| `facing` | Curved-text/content facing: `auto` (default), `upright`, or `upside-down`. |
+| `angle` | Absolute angle in degrees for sector content. Overrides the default tangent-based orientation. |
+| `text-align` | For inline sector text, anchor to the sector `left`/start, `center`, or `right`/end. |
+| `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` are radial aliases in addition to the normal box-relative values. |
+| `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` are radial aliases in addition to the normal box-relative values. |
+
+Sector text comes in two flavors:
+
+- Inline text written directly inside `<sector>` paints as curved text on the
+  sector's midpoint arc.
+- Nested widgets such as `<label>` and `<p>` use ordinary LTML paint/layout,
+  but the sector can rotate and clip them to the wedge.
+
+Paragraphs placed in a sector use true sector-aware wrapping. LTML computes
+the usable line width from the actual wedge shape for each line instead of
+wrapping to one fixed rectangle.
 
 ---
 
@@ -305,11 +353,14 @@ resolved plain text, including inline links and `<pageno>` output.
 
 ---
 
-### Planned Curved Text
+### Curved Text Roadmap
 
-Curved text is planned, but not yet implemented in LTML. The current direction
-is to add a dedicated curved-text element, likely `<textpath>`, after the PDF
-API for circle and ellipse text has stabilized.
+Curved text is available today for inline text written directly inside
+`<sector>` elements. LTML still does not have a general-purpose curved-text
+widget for arbitrary circular or path-based text outside radial sectors.
+
+The current direction is to add a dedicated curved-text element, likely
+`<textpath>`, after the PDF API for circle and ellipse text has stabilized.
 
 The planned LTML concepts mirror the PDF roadmap:
 
@@ -397,13 +448,13 @@ Draws a line segment using the configured pen style.
 
 | Attribute | Description |
 |-----------|-------------|
-| `style` | Reference to a named `<pen>` style. |
+| `style` | Reference to a named `<pen>` style. Use `style.*` for inline overrides such as `style.width="2pt"` or `style.color="red"`. |
 | `angle` | Line angle in degrees. `0` points right; positive angles rotate clockwise in page coordinates. |
 | `length` | Optional explicit line length. |
 | `width`, `height` | Optional layout box dimensions used to infer the line length and placement when `length` is omitted. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
-| `border` | Optional enclosing widget border, separate from the line stroke. |
+| `border` | Optional enclosing widget border, separate from the line stroke. Use `border.*` to override the enclosing border pen inline. |
 | `alt` | When `ua="true"`, opt the line into tagged output and use this text as `/ActualText`. |
 | `role` | Override the default tagged role when `ua="true"`. Lines with `alt` default to `Figure`. |
 
@@ -635,6 +686,7 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<hbox>` | `<div>`   | `layout="hbox"` |
 | `<vbox>` | `<div>`   | `layout="vbox"` |
 | `<table>` | `<div>` | `layout="table"` |
+| `<disc>` | `<div>` | `layout="radial"` |
 | `<layer>` | `<div>` | `position="relative"`, `width="100%"`, `height="100%"` |
 | `<br>`  | `<label>`  | *(empty line break)* |
 
@@ -692,6 +744,8 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 | `flow`     | Wrap children left-to-right, top-to-bottom like inline text. |
 | `absolute` | Children are positioned absolutely; no automatic layout. |
 | `relative` | Children use relative positioning. |
+| `radial`   | Grid layout on concentric tracks and angular sectors. Requires `rows`, `cols`, or explicit `angles` so LTML can derive the radial grid. |
+| `radial-out` | Radial grid layout that starts at the center and grows outward. Requires `rows`, `cols`, or explicit `angles` so LTML can derive the radial grid. |
 
 All layout managers except `absolute` and `relative` honor the `dir` attribute.
 When `dir="rtl"` is set on a container (or inherited from a parent), horizontal
@@ -706,6 +760,8 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Width defaults to content width of the container.
 - Use `align="top"` to pin an element to the top (header behavior).
 - Use `align="bottom"` to pin an element to the bottom (footer behavior).
+- Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control horizontal placement within the vbox row.
+- In `dir="rtl"`, `align-self="start"` means right and `align-self="end"` means left.
 - In `dir="rtl"`, children are flush against the right edge plus padding instead of the left.
 
 ### HBox Details
@@ -713,6 +769,8 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Children are laid out left to right.
 - Use `align="left"` to pin to the left side.
 - Use `align="right"` to pin to the right side.
+- Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control vertical placement within the hbox track.
+- In `hbox`, `align-self="start"` means top and `align-self="end"` means bottom.
 - Unaligned children share remaining width equally unless `width` is specified.
 - In `dir="rtl"`, stacking order reverses: children flow right to left, `align="left"` pins to the right side, and `align="right"` pins to the left side.
 
@@ -730,6 +788,56 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Children are placed left to right, wrapping to the next row when the container
   width is exceeded.
 - In `dir="rtl"`, children are placed right to left, wrapping back to the right edge.
+
+### Radial Details
+
+- Use `rows` to specify concentric tracks and `cols` to specify angular slots.
+- If `angles` is present, LTML treats the values as boundary bearings, then
+  normalizes, sorts, deduplicates, and closes the circle automatically.
+- At least one of `rows` or `cols` must be specified unless `angles` supplies
+  the columns and the missing dimension can be derived from the children.
+- `sweep="ccw"` (default) spans each sector to the next boundary in ascending
+  order; `sweep="cw"` spans each sector to the previous boundary in the cycle.
+- `order="rows"` fills sectors around the circle before moving inward.
+- `order="cols"` fills sectors inward before advancing to the next angular slot.
+- Row `0` is the outermost track; higher row numbers move inward.
+- `base-angle` rotates the whole radial grid.
+- A single distinct `angles` value means one full-circle sector.
+- `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
+- Inline text written directly in `<sector>` follows the arc.
+- Direct non-`<sector>` children are wrapped in implicit sectors automatically.
+- Positioned children inside a sector may use `origin-x="start|center|end"` and
+  `origin-y="inner|middle|outer"` to anchor to radial reference points.
+
+### Radial-Out Details
+
+- Use `rows` to specify concentric tracks and `cols` to specify angular slots.
+- If `angles` is present, LTML treats the values as boundary bearings, then
+  normalizes, sorts, deduplicates, and closes the circle automatically.
+- At least one of `rows` or `cols` must be specified unless `angles` supplies
+  the columns and the missing dimension can be derived from the children.
+- `sweep="ccw"` (default) spans each sector to the next boundary in ascending
+  order; `sweep="cw"` spans each sector to the previous boundary in the cycle.
+- `order="rows"` fills sectors around the circle before moving outward.
+- `order="cols"` fills sectors outward before advancing to the next angular slot.
+- Row `0` is the innermost track; higher row numbers move outward.
+- `base-angle` rotates the whole radial grid.
+- A single distinct `angles` value means one full-circle sector.
+- `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
+- Inline text written directly inside `<sector>` follows the arc.
+- Direct non-`<sector>` children are wrapped in implicit sectors automatically.
+- Positioned children inside a sector may use `origin-x="start|center|end"` and
+  `origin-y="inner|middle|outer"` to anchor to radial reference points.
+
+Example:
+
+```xml
+<div layout="radial" rows="3" angles="0,45,90,135,225,315,360" base-angle="-90" width="4in" height="4in">
+  <sector colspan="2">Curved title</sector>
+  <p colspan="2">This paragraph is wrapped by an implicit sector.</p>
+  <sector angle="0"><label>12</label></sector>
+</div>
+```
 
 ### Positioning Details
 

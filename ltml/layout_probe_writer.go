@@ -30,6 +30,18 @@ func (w *layoutProbeWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, bor
 func (w *layoutProbeWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
 	return nil
 }
+func (w *layoutProbeWriter) Clip(fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (w *layoutProbeWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	return nil
+}
+func (w *layoutProbeWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	return nil
+}
 func (w *layoutProbeWriter) EnableTaggedPDF(value bool)                               { w.base.EnableTaggedPDF(value) }
 func (w *layoutProbeWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
 func (w *layoutProbeWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {

@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 type StdContainer struct {
@@ -28,6 +29,15 @@ type StdContainer struct {
 	splitExplicit   bool
 	headerRows      int
 	footerRows      int
+	baseAngle       float64
+	angles          []float64
+	radialSweep     radialSweep
+	centerX         float64
+	centerXSet      bool
+	centerY         float64
+	centerYSet      bool
+	outerRadius     float64
+	innerRadius     float64
 }
 
 func (c *StdContainer) Cols() int {
@@ -90,6 +100,11 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	if c.height != 0 {
 		return c.height
 	}
+	if isRadialLayoutStyle(c.layout) {
+		if height, ok := c.radialInferredHeight(); ok {
+			return height
+		}
+	}
 	savedHeight, savedHeightPct, savedHeightRel, savedHeightSet :=
 		c.height, c.heightPct, c.heightRel, c.heightSet
 	LayoutContainer(c, newLayoutProbeWriter(w))
@@ -97,6 +112,18 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	c.height, c.heightPct, c.heightRel, c.heightSet =
 		savedHeight, savedHeightPct, savedHeightRel, savedHeightSet
 	return height
+}
+
+func (c *StdContainer) PreferredWidth(w Writer) float64 {
+	if c.width != 0 {
+		return c.width
+	}
+	if isRadialLayoutStyle(c.layout) {
+		if width, ok := c.radialInferredWidth(); ok {
+			return width
+		}
+	}
+	return c.StdWidget.PreferredWidth(w)
 }
 
 func (c *StdContainer) Order() TableOrder {
@@ -123,6 +150,10 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
 	}
+	if MapHasKeyPrefix(attrs, "layout.") {
+		c.layout = c.LayoutStyle().Clone()
+		c.layout.SetAttrsPrefix("layout.", attrs)
+	}
 	if order, ok := attrs["order"]; ok {
 		if order == "rows" {
 			c.order = TableOrderRows
@@ -139,6 +170,41 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		if value, err := strconv.Atoi(cols); err == nil {
 			c.cols = value
 		}
+	}
+	if baseAngle, ok := attrs["base-angle"]; ok {
+		if value, err := strconv.ParseFloat(strings.TrimSpace(baseAngle), 64); err == nil {
+			c.baseAngle = value
+		}
+	}
+	c.radialSweep = radialSweepCCW
+	if sweep, ok := attrs["sweep"]; ok && strings.EqualFold(strings.TrimSpace(sweep), "cw") {
+		c.radialSweep = radialSweepCW
+	}
+	if angles, ok := attrs["angles"]; ok {
+		c.angles = c.angles[:0]
+		for _, part := range strings.Split(angles, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			if value, err := strconv.ParseFloat(part, 64); err == nil {
+				c.angles = append(c.angles, value)
+			}
+		}
+	}
+	if centerX, ok := attrs["center-x"]; ok {
+		c.centerX = ParseMeasurement(centerX, c.Units())
+		c.centerXSet = true
+	}
+	if centerY, ok := attrs["center-y"]; ok {
+		c.centerY = ParseMeasurement(centerY, c.Units())
+		c.centerYSet = true
+	}
+	if radius, ok := attrs["r"]; ok {
+		c.outerRadius = ParseMeasurement(radius, c.Units())
+	}
+	if radius0, ok := attrs["r0"]; ok {
+		c.innerRadius = ParseMeasurement(radius0, c.Units())
 	}
 	if split, ok := attrs["split"]; ok {
 		c.splitExplicit = true
@@ -161,6 +227,70 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		c.paragraphStyle = c.ParagraphStyle().Clone()
 		c.paragraphStyle.SetAttrs("paragraph-style.", attrs)
 	}
+}
+
+func (c *StdContainer) BaseAngle() float64 {
+	return c.baseAngle
+}
+
+func (c *StdContainer) Angles() []float64 {
+	return c.angles
+}
+
+func (c *StdContainer) RadialSweep() radialSweep {
+	return c.radialSweep
+}
+
+func (c *StdContainer) radialInferredHeight() (float64, bool) {
+	if !isRadialLayoutStyle(c.layout) {
+		return 0, false
+	}
+	if c.outerRadius > 0 {
+		return (c.outerRadius * 2) + NonContentHeight(c), true
+	}
+	if c.WidthIsSet() {
+		diameter := max(ContentWidth(c), c.innerRadius*2)
+		if diameter > 0 {
+			return diameter + NonContentHeight(c), true
+		}
+	}
+	return 0, false
+}
+
+func (c *StdContainer) radialInferredWidth() (float64, bool) {
+	if !isRadialLayoutStyle(c.layout) {
+		return 0, false
+	}
+	if c.outerRadius > 0 {
+		return (c.outerRadius * 2) + NonContentWidth(c), true
+	}
+	if c.HeightIsSet() {
+		diameter := max(ContentHeight(c), c.innerRadius*2)
+		if diameter > 0 {
+			return diameter + NonContentWidth(c), true
+		}
+	}
+	return 0, false
+}
+
+func (c *StdContainer) CenterX() (float64, bool) {
+	return c.centerX, c.centerXSet
+}
+
+func (c *StdContainer) CenterY() (float64, bool) {
+	return c.centerY, c.centerYSet
+}
+
+func (c *StdContainer) OuterRadius() float64 {
+	return c.outerRadius
+}
+
+func (c *StdContainer) RadiusValue() float64 {
+	return c.OuterRadius()
+}
+
+func (c *StdContainer) InnerRadius() float64 {
+	return c.innerRadius
 }
 
 func (c *StdContainer) String() string {

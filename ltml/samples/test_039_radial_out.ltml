@@ -1,0 +1,31 @@
+<ltml>
+  <pen id="ring" width="0.6pt" color="#5b6470" />
+
+  <page units="in" layout="absolute">
+    <label left="0.7" top="0.45" font.size="19" font.weight="Bold">Radial Out Layout</label>
+    <p left="0.7" top="0.82" width="6.2">This variant starts at the center: row 0 is the innermost track, and each new row grows outward.</p>
+
+    <div left="1.0" top="1.55" width="5.6" height="5.6" layout="radial-out" rows="3" cols="6" base-angle="-90" r0="0.75" font.size="10">
+      <sector fill="Lavender" border="ring" font.weight="Bold">Cat</sector>
+      <sector fill="Lavender" border="ring" font.weight="Bold">Dog</sector>
+      <sector fill="Lavender" border="ring" font.weight="Bold">Fox</sector>
+      <sector fill="Lavender" border="ring" font.weight="Bold">Hare</sector>
+      <sector fill="Lavender" border="ring" font.weight="Bold">Owl</sector>
+      <sector fill="Lavender" border="ring" font.weight="Bold">Lynx</sector>
+
+      <sector fill="HoneyDew" border="ring" font.weight="Bold">Otter</sector>
+      <sector fill="HoneyDew" border="ring" font.weight="Bold">Panda</sector>
+      <sector fill="HoneyDew" border="ring" font.weight="Bold">Quail</sector>
+      <sector fill="HoneyDew" border="ring" font.weight="Bold">Raven</sector>
+      <sector fill="HoneyDew" border="ring" font.weight="Bold">Seal</sector>
+      <sector fill="HoneyDew" border="ring" font.weight="Bold">Tiger</sector>
+
+      <sector fill="Cornsilk" border="ring" font.weight="Bold">Badger</sector>
+      <sector fill="Cornsilk" border="ring" font.weight="Bold">Falcon</sector>
+      <sector fill="Cornsilk" border="ring" font.weight="Bold">Jaguar</sector>
+      <sector fill="Cornsilk" border="ring" font.weight="Bold">Koala</sector>
+      <sector fill="Cornsilk" border="ring" font.weight="Bold">Turtle</sector>
+      <sector fill="Cornsilk" border="ring" font.weight="Bold">Walrus</sector>
+    </div>
+  </page>
+</ltml>
