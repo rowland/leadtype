@@ -144,6 +144,8 @@ var pseudoMatchers = map[string]pseudoMatcher{
 	},
 }
 
+// compileSelectorList parses a possibly grouped selector string into compiled
+// selectors that can be matched repeatedly during rule evaluation.
 func compileSelectorList(selector string) (*compiledSelectorList, error) {
 	rawSelectors := splitRuleSelectors(selector)
 	list := &compiledSelectorList{selectors: make([]*compiledSelector, 0, len(rawSelectors))}
@@ -157,6 +159,8 @@ func compileSelectorList(selector string) (*compiledSelectorList, error) {
 	return list, nil
 }
 
+// splitRuleSelectors breaks a grouped selector list ("p, .note") into
+// individual selectors and removes empty items.
 func splitRuleSelectors(selector string) []string {
 	rawSelectors := strings.Split(selector, ",")
 	selectors := make([]string, 0, len(rawSelectors))
@@ -169,6 +173,8 @@ func splitRuleSelectors(selector string) []string {
 	return selectors
 }
 
+// compileSingleSelector parses one selector into ordered parts and
+// combinators, and computes its specificity metadata.
 func compileSingleSelector(selector string) (*compiledSelector, error) {
 	normalized := normalizeSelector(selector)
 	if normalized == "" {
@@ -211,6 +217,7 @@ func compileSingleSelector(selector string) (*compiledSelector, error) {
 	return &compiledSelector{parts: parts, specificity: spec, hasPseudo: hasPseudo}, nil
 }
 
+// normalizeSelector trims and canonicalizes spacing so tokenization is stable.
 func normalizeSelector(selector string) string {
 	selector = strings.TrimSpace(selector)
 	selector = reExtraSpaces.ReplaceAllLiteralString(selector, " ")
@@ -218,6 +225,8 @@ func normalizeSelector(selector string) string {
 	return selector
 }
 
+// tokenizeSelector converts a normalized selector into item and combinator
+// tokens while preserving descendant-space combinators.
 func tokenizeSelector(selector string) []string {
 	var tokens []string
 	var current strings.Builder
@@ -249,6 +258,8 @@ func tokenizeSelector(selector string) []string {
 	return tokens
 }
 
+// parseSelectorItem parses a single selector token such as "table.row:first-row"
+// into tag, id, classes, and pseudo-class components.
 func parseSelectorItem(token string) (selectorItem, error) {
 	var item selectorItem
 	base, pseudoText, _ := strings.Cut(token, ":")
@@ -271,6 +282,8 @@ func parseSelectorItem(token string) (selectorItem, error) {
 	return item, nil
 }
 
+// parseSelectorBase parses the non-pseudo selector component and assigns its
+// tag, id, and class values to item.
 func parseSelectorBase(base string, item *selectorItem) error {
 	if base == "" {
 		return nil
@@ -312,6 +325,7 @@ func parseSelectorBase(base string, item *selectorItem) error {
 	return nil
 }
 
+// parseSelectorPseudo validates and parses a supported pseudo-class expression.
 func parseSelectorPseudo(part string) (selectorPseudo, error) {
 	if part == "" {
 		return selectorPseudo{}, fmt.Errorf("invalid empty pseudo-class")

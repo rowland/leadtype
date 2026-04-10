@@ -116,6 +116,9 @@ func (scope *Scope) matchingRules(path string) []*Rule {
 	return matched
 }
 
+// EachPseudoRuleForWidget calls f for every pseudo-class Rule matching widget
+// in cascade order: lower tiers first, then lower specificity, then earlier
+// declarations.
 func (scope *Scope) EachPseudoRuleForWidget(widget Widget, resolver *selectorStructureResolver, f func(rule *Rule)) {
 	matched := scope.matchingPseudoRules(widget, resolver)
 	sort.SliceStable(matched, func(i, j int) bool {
