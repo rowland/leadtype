@@ -709,11 +709,39 @@ Style blocks use CSS-style selector syntax:
 | Pattern         | Matches |
 |-----------------|---------|
 | `p`             | All `<p>` elements |
+| `.classname`    | Elements with `class="classname"` |
 | `p.classname`   | `<p>` elements with `class="classname"` |
 | `p#myid`        | `<p>` elements with `id="myid"` |
 | `div p`         | `<p>` elements anywhere inside a `<div>` |
 | `div > p`       | `<p>` elements that are direct children of a `<div>` |
 | `p, span`       | All `<p>` and `<span>` elements |
+
+Selector names accept letters, digits, underscores, and hyphens in tags, ids,
+and classes, so selectors such as `my-widget`, `#hero-panel`, and `.demo-card`
+are valid.
+
+LTML supports these pseudo-classes:
+
+| Pseudo-class | Matches |
+|--------------|---------|
+| `:first-child` | The first direct child widget of a container. |
+| `:last-child` | The last direct child widget of a container. |
+| `:first-row` | Widgets anchored in row `0` of a `layout="table"` container. |
+| `:last-row` | Widgets anchored in the last row of a `layout="table"` container. |
+| `:first-col` | Widgets anchored in column `0` of a `layout="table"` container. |
+| `:last-col` | Widgets anchored in the last column of a `layout="table"` container. |
+| `:row-even`, `:row-odd` | Widgets in even/odd zero-based table rows. |
+| `:col-even`, `:col-odd` | Widgets in even/odd zero-based table columns. |
+| `:row-N` | Widgets anchored in zero-based table row `N`, for example `:row-2`. |
+| `:col-N` | Widgets anchored in zero-based table column `N`, for example `:col-1`. |
+
+Notes:
+
+- Row and column pseudo-classes apply only to direct children of a
+  `layout="table"` container.
+- Row and column numbering is zero-based.
+- For `rowspan` and `colspan`, LTML matches row/column pseudo-classes using the
+  widget's anchor cell rather than every covered cell.
 
 CSS-style `/* ... */` comments are ignored inside `<style>`. Rules inside
 `<!-- XML comments -->` are also parsed, allowing selectors to be commented out

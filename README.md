@@ -128,7 +128,7 @@ func main() {
 
 For more involved examples, see [`samples/test_003_hello_world.go`](samples/test_003_hello_world.go), [`samples/test_006_rich_text.go`](samples/test_006_rich_text.go), and [`samples/test_009_unicode_ttf.go`](samples/test_009_unicode_ttf.go).
 
-If you want to start from LTML instead of Go code, browse [`ltml/samples/`](ltml/samples/) and render them with [`cmd/render-ltml`](cmd/render-ltml).
+If you want to start from LTML instead of Go code, browse [`ltml/samples/`](ltml/samples/) and render them with [`cmd/render-ltml`](cmd/render-ltml). The sample set includes selector and pseudo-class examples such as [`ltml/samples/test_041_pseudo_classes.ltml`](ltml/samples/test_041_pseudo_classes.ltml).
 
 The `pdf` package also includes gradient fills, stroke gradients, clipping-based shading paints, and related drawing APIs. See [`pdf/README.md`](pdf/README.md) for package-specific usage notes.
 

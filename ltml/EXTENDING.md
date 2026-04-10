@@ -453,3 +453,9 @@ Attributes are applied to an element in this order (each overrides the previous)
 
 This mirrors a CSS-like cascade: inline styles win over rules, which win over
 defaults.
+
+Pseudo-class selectors such as `:first-child`, `:last-child`, `:row-even`, and
+`:col-2` are resolved after the document tree is fully built, then direct XML
+attributes are replayed so inline attributes still win. If you want a custom
+widget to participate in the same post-parse pseudo-class styling path, embed
+`StdWidget` or otherwise preserve its raw XML attributes for replay.
