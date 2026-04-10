@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"encoding/xml"
+	"io/fs"
 	"strings"
 )
 
@@ -43,6 +44,10 @@ func split2(s, sep string) (s1, s2 string) {
 		s2 = a[1]
 	}
 	return
+}
+
+func validAssetPath(name string) bool {
+	return name != "." && fs.ValidPath(name)
 }
 
 // type stringSlice []string

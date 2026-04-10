@@ -20,7 +20,38 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rowland/leadtype/ltml"
 )
+
+type renderLocalComponent struct {
+	ltml.StdComponent
+}
+
+var (
+	registerRenderLocalComponentOnce sync.Once
+	renderLocalComponentMu           sync.Mutex
+	renderLocalComponentBody         string
+)
+
+func (c *renderLocalComponent) SetBody(body string) {
+	c.StdComponent.SetBody(body)
+	renderLocalComponentMu.Lock()
+	defer renderLocalComponentMu.Unlock()
+	renderLocalComponentBody = c.Body()
+}
+
+func registerRenderLocalComponent(t *testing.T) {
+	t.Helper()
+	registerRenderLocalComponentOnce.Do(func() {
+		if err := ltml.RegisterTagExt("rendercomponenttest", "card", func() any { return &renderLocalComponent{} }); err != nil {
+			t.Fatalf("register component tag: %v", err)
+		}
+	})
+	renderLocalComponentMu.Lock()
+	renderLocalComponentBody = ""
+	renderLocalComponentMu.Unlock()
+}
 
 func TestBuildOptionalAssetFS_ExtraOverridesAssetsDir(t *testing.T) {
 	assetsDir := t.TempDir()
@@ -75,6 +106,40 @@ func TestBuildOptionalAssetFS_PreservesNestedAssetPathsFromAssetsDir(t *testing.
 	}
 	if string(data) != "nested" {
 		t.Fatalf("expected nested asset, got %q", data)
+	}
+}
+
+func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
+	registerRenderLocalComponent(t)
+
+	inputDir := t.TempDir()
+	inputFile := filepath.Join(inputDir, "report.ltml")
+	if err := os.WriteFile(inputFile, []byte(`
+<ltml xmlns:xt="rendercomponenttest">
+  <page>
+    <xt:card src="snippet.xml" />
+  </page>
+</ltml>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	assetsDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(assetsDir, "snippet.xml"), []byte("<p>from render local</p>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := renderLocal(inputFile, assetsDir, nil, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Len() == 0 {
+		t.Fatal("expected PDF output")
+	}
+
+	renderLocalComponentMu.Lock()
+	defer renderLocalComponentMu.Unlock()
+	if got, want := renderLocalComponentBody, "<p>from render local</p>"; got != want {
+		t.Fatalf("component body = %q, want %q", got, want)
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"testing/fstest"
 
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/internal/overlayfs"
@@ -77,6 +78,31 @@ func TestParse(t *testing.T) {
 		}
 		if doc == nil {
 			t.Error("doc is nil")
+		}
+	})
+
+	t.Run("WithAssetFS", func(t *testing.T) {
+		doc, err := Parse([]byte(`
+<ltml xmlns:xt="componenttest">
+  <page>
+    <xt:card src="snippet.xml" />
+  </page>
+</ltml>`), WithAssetFS(fstest.MapFS{
+			"snippet.xml": &fstest.MapFile{Data: []byte("<p>from parse option</p>")},
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if doc == nil {
+			t.Fatal("doc is nil")
+		}
+		page := doc.Page(0)
+		component, ok := page.Widgets()[0].(*testComponent)
+		if !ok {
+			t.Fatalf("first child = %T, want *testComponent", page.Widgets()[0])
+		}
+		if got, want := component.Body(), "<p>from parse option</p>"; got != want {
+			t.Fatalf("body = %q, want %q", got, want)
 		}
 	})
 }

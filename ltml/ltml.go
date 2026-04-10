@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
 )
@@ -17,23 +18,42 @@ type Doc struct {
 	scopes    []HasScope
 	rootScope Scope // per-document root scope; parent = &defaultScope
 	parseErr  error
+	assetFS   fs.FS
 }
 
-func (doc *Doc) Parse(b []byte) error {
+type ParseOption func(*Doc)
+
+func WithAssetFS(assetFS fs.FS) ParseOption {
+	return func(doc *Doc) {
+		doc.SetAssetFS(assetFS)
+	}
+}
+
+func newDocWithOptions(opts ...ParseOption) *Doc {
+	var doc Doc
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&doc)
+		}
+	}
+	return &doc
+}
+
+func (doc *Doc) parseBytes(b []byte) error {
 	r := bytes.NewReader(b)
-	return doc.ParseReader(r)
+	return doc.parseReader(r)
 }
 
-func (doc *Doc) ParseFile(filename string) error {
+func (doc *Doc) parseFile(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return doc.ParseReader(f)
+	return doc.parseReader(f)
 }
 
-func (doc *Doc) ParseReader(r io.Reader) error {
+func (doc *Doc) parseReader(r io.Reader) error {
 	dec := xml.NewDecoder(r)
 	dec.DefaultSpace = DefaultSpace
 
@@ -49,7 +69,20 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 		switch t := token.(type) {
 		case xml.StartElement:
 			traceStartElement(t)
-			doc.startElement(t)
+			created, isComponent := doc.startElement(t)
+			if isComponent && doc.parseErr == nil {
+				var decoded struct {
+					Body string `xml:",innerxml"`
+				}
+				if err := dec.DecodeElement(&decoded, &t); err != nil {
+					return err
+				}
+				if component, ok := created.(Component); ok {
+					component.SetBody(decoded.Body)
+				}
+				traceEndElement(xml.EndElement{Name: t.Name})
+				doc.endElement(xml.EndElement{Name: t.Name})
+			}
 		case xml.EndElement:
 			traceEndElement(t)
 			doc.endElement(t)
@@ -68,6 +101,10 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 	return nil
 }
 
+func (doc *Doc) SetAssetFS(assetFS fs.FS) {
+	doc.assetFS = assetFS
+}
+
 func (doc *Doc) Print(w Writer) (err error) {
 	for _, ltml := range doc.ltmls {
 		if err = ltml.Print(w); err != nil {
@@ -77,7 +114,7 @@ func (doc *Doc) Print(w Writer) (err error) {
 	return nil
 }
 
-func (doc *Doc) startElement(elem xml.StartElement) {
+func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	trueTag := elem.Name.Local
 	var defaultAttrs map[string]string
 	if elem.Name.Space == DefaultSpace {
@@ -90,8 +127,12 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if e == nil {
 		debugf("Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
 	}
+	isComponent := isComponentTag(elem.Name.Space, trueTag)
 	if ws, ok := e.(WantsScope); ok {
 		ws.SetScope(doc.scope())
+	}
+	if wd, ok := e.(WantsDoc); ok {
+		wd.SetDoc(doc)
 	}
 	var err error
 	if child, ok := e.(HasParent); ok {
@@ -224,6 +265,7 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			debugf("Adding rules: %s\n", err)
 		}
 	}
+	return e, isComponent
 }
 
 // applyPseudoRules performs a second pass over the parsed widget tree so rules
@@ -383,19 +425,19 @@ func (doc *Doc) scope() HasScope {
 	return &doc.rootScope
 }
 
-func Parse(b []byte) (*Doc, error) {
-	var doc Doc
-	return &doc, doc.Parse(b)
+func Parse(b []byte, opts ...ParseOption) (*Doc, error) {
+	doc := newDocWithOptions(opts...)
+	return doc, doc.parseBytes(b)
 }
 
-func ParseFile(filename string) (*Doc, error) {
-	var doc Doc
-	return &doc, doc.ParseFile(filename)
+func ParseFile(filename string, opts ...ParseOption) (*Doc, error) {
+	doc := newDocWithOptions(opts...)
+	return doc, doc.parseFile(filename)
 }
 
-func ParseReader(r io.Reader) (*Doc, error) {
-	var doc Doc
-	return &doc, doc.ParseReader(r)
+func ParseReader(r io.Reader, opts ...ParseOption) (*Doc, error) {
+	doc := newDocWithOptions(opts...)
+	return doc, doc.parseReader(r)
 }
 
 func traceStartElement(elem xml.StartElement) {

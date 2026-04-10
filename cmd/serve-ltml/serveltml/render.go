@@ -26,7 +26,7 @@ func renderLTML(ltmlBytes []byte, overlay *overlayFS, tmpDir string) (*os.File, 
 		return nil, fmt.Errorf("missing asset filesystem")
 	}
 
-	doc, err := ltml.Parse(ltmlBytes)
+	doc, err := ltml.Parse(ltmlBytes, ltml.WithAssetFS(overlay))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errInvalidLTML, err)
 	}
