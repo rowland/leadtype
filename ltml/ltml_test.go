@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/rowland/leadtype/afm_fonts"
+	"github.com/rowland/leadtype/internal/overlayfs"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/ttf_fonts"
@@ -148,12 +149,13 @@ func sampleOutputFile(name string, t *testing.T) string {
 
 func sampleAssetFS() (fs.FS, error) {
 	root := filepath.Dir(sampleFile("placeholder"))
-	assetDir := filepath.Join(root, "..", "..", "pdf", "testdata")
-	absAssetDir, err := filepath.Abs(assetDir)
+	repoRoot := filepath.Join(root, "..", "..")
+	absRepoRoot, err := filepath.Abs(repoRoot)
 	if err != nil {
 		return nil, err
 	}
-	return os.DirFS(absAssetDir), nil
+	assetDir := filepath.Join(absRepoRoot, "pdf", "testdata")
+	return overlayfs.New(os.DirFS(assetDir), os.DirFS(absRepoRoot)), nil
 }
 
 func TestSamples(t *testing.T) {
@@ -188,6 +190,7 @@ func TestSamples(t *testing.T) {
 		"test_028_table_split_headers",
 		"test_029_table_split_headers_footers",
 		"test_030_encodings",
+		"test_031_render_ltml_images",
 		"test_032_label_shrink_to_fit",
 		"test_034_svg_image",
 		"test_035_links",
@@ -196,6 +199,7 @@ func TestSamples(t *testing.T) {
 		"test_038_radial_layout",
 		"test_039_radial_out",
 		"test_040_radial_sweep_star_wars",
+		"test_041_pseudo_classes",
 	}
 
 	for _, sample := range samples {
