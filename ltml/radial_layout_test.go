@@ -25,7 +25,7 @@ func TestParse_RadialWrapsDirectChildInSector(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	radial := page.children[0].(*StdContainer)
 	if radial.LayoutStyle().manager != "radial" {
 		t.Fatalf("layout manager = %q, want radial", radial.LayoutStyle().manager)
@@ -65,7 +65,7 @@ func TestParse_RadialOutWrapsDirectChildInSector(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	radial := page.children[0].(*StdContainer)
 	if radial.LayoutStyle().manager != "radial-out" {
 		t.Fatalf("layout manager = %q, want radial-out", radial.LayoutStyle().manager)
@@ -105,7 +105,7 @@ func TestParse_DiscAliasBehavesLikeRadialContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	disc := page.children[0].(*StdContainer)
 	if disc.LayoutStyle().manager != "radial" {
 		t.Fatalf("layout manager = %q, want radial", disc.LayoutStyle().manager)

@@ -23,10 +23,10 @@ func parseDoc(t *testing.T, src string) *Doc {
 // firstPage returns the first page of the first ltml element in doc.
 func firstPage(t *testing.T, doc *Doc) *StdPage {
 	t.Helper()
-	if len(doc.ltmls) == 0 {
+	if doc.Root() == nil {
 		t.Fatal("no ltml elements in document")
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("no pages in document")
 	}

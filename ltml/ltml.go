@@ -6,6 +6,7 @@ package ltml
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -13,7 +14,7 @@ import (
 )
 
 type Doc struct {
-	ltmls     []*StdDocument
+	root      *StdDocument
 	stack     []any
 	scopes    []HasScope
 	rootScope Scope // per-document root scope; parent = &defaultScope
@@ -105,13 +106,22 @@ func (doc *Doc) SetAssetFS(assetFS fs.FS) {
 	doc.assetFS = assetFS
 }
 
-func (doc *Doc) Print(w Writer) (err error) {
-	for _, ltml := range doc.ltmls {
-		if err = ltml.Print(w); err != nil {
-			return
-		}
+func (doc *Doc) Root() *StdDocument {
+	return doc.root
+}
+
+func (doc *Doc) Page(i int) *StdPage {
+	if doc.root == nil {
+		return nil
 	}
-	return nil
+	return doc.root.Page(i)
+}
+
+func (doc *Doc) Print(w Writer) (err error) {
+	if doc.root == nil {
+		return nil
+	}
+	return doc.root.Print(w)
 }
 
 func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
@@ -182,8 +192,12 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		}
 	}
 	if d, ok := e.(*StdDocument); ok {
+		if doc.root != nil {
+			doc.parseErr = fmt.Errorf("multiple top-level ltml roots are not supported")
+			return e, isComponent
+		}
 		d.Scope.defaultRuleTier = 0
-		doc.ltmls = append(doc.ltmls, d)
+		doc.root = d
 	} else if page, ok := e.(*StdPage); ok {
 		page.Scope.defaultRuleTier = 1
 	}
@@ -272,8 +286,8 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 // that rely on structural pseudo-classes can be matched with layout context.
 func (doc *Doc) applyPseudoRules() {
 	resolver := newSelectorStructureResolver()
-	for _, root := range doc.ltmls {
-		doc.applyPseudoRulesToWidget(root, resolver)
+	if doc.root != nil {
+		doc.applyPseudoRulesToWidget(doc.root, resolver)
 	}
 }
 

@@ -657,7 +657,7 @@ func TestSample_TableSplitHeaders_SplitForHeightUsesBodyBand(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	var table *StdContainer
 	for _, child := range page.children {
 		if candidate, ok := child.(*StdContainer); ok && candidate.LayoutStyle().manager == "table" {
@@ -698,7 +698,7 @@ func TestSample_TableSplitHeaders_FirstPageLeavesPendingTail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	w := &labelTestWriter{t: t}
 	page.initFlowItems()
 	if err := page.preparePhysicalPage(w, true); err != nil {
@@ -721,7 +721,7 @@ func TestSample_TableSplitHeaders_SecondPagePreviewAcceptsTail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	w := &labelTestWriter{t: t}
 	page.initFlowItems()
 	if err := page.preparePhysicalPage(w, true); err != nil {
@@ -741,7 +741,7 @@ func TestSample_TableSplitHeadersFooters_FirstFragmentIncludesTableFooterRow(t *
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	var table *StdContainer
 	for _, child := range page.children {
 		if candidate, ok := child.(*StdContainer); ok && candidate.LayoutStyle().manager == "table" {
@@ -782,7 +782,7 @@ func TestSample_TableSplitHeadersFooters_FirstFragmentFooterFitsAbovePageFooter(
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	var table *StdContainer
 	for _, child := range page.children {
 		if candidate, ok := child.(*StdContainer); ok && candidate.LayoutStyle().manager == "table" {
@@ -835,7 +835,7 @@ func TestSample_TableSplitHeadersFooters_FirstFragmentFooterHasGapAbovePageFoote
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	var table *StdContainer
 	for _, child := range page.children {
 		if candidate, ok := child.(*StdContainer); ok && candidate.LayoutStyle().manager == "table" {

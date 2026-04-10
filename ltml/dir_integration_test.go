@@ -16,7 +16,7 @@ func TestParseAndLayout_DirInheritanceAffectsNestedFlowGeometry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parsed := doc.ltmls[0]
+	parsed := doc.Root()
 	page := parsed.Page(0)
 	flow, ok := page.Widgets()[0].(*StdContainer)
 	if !ok {
@@ -82,7 +82,7 @@ func TestParseAndPrint_RTLFlowOverflowMakesProgressAcrossPages(t *testing.T) {
 	if got := w.pageCount; got != 2 {
 		t.Fatalf("page count = %d, want 2", got)
 	}
-	if got := doc.ltmls[0].CurrentPhysicalPageNo(); got != 2 {
+	if got := doc.Root().CurrentPhysicalPageNo(); got != 2 {
 		t.Fatalf("physical page count = %d, want 2", got)
 	}
 }

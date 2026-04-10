@@ -152,7 +152,7 @@ func TestParse_LineTag(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("page is nil")
 	}
@@ -182,7 +182,7 @@ func TestParse_LineTag_ClonesStyleForPrefixOverrides(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("page is nil")
 	}

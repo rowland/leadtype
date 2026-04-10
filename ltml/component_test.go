@@ -50,13 +50,6 @@ func parsedTestComponent(t *testing.T, input string, assetFS fstest.MapFS) (*Doc
 	return doc, component
 }
 
-func (doc *Doc) Page(i int) *StdPage {
-	if len(doc.ltmls) == 0 {
-		return nil
-	}
-	return doc.ltmls[0].Page(i)
-}
-
 func TestComponent_CapturesInnerXMLAndPreservesSiblingParsing(t *testing.T) {
 	doc, component := parsedTestComponent(t, `
 <ltml xmlns:xt="componenttest">
@@ -176,5 +169,12 @@ func TestComponent_DisableNetworkAssetsOverridesDocumentSetting(t *testing.T) {
 </ltml>`))
 	if err == nil {
 		t.Fatal("expected global network disable error")
+	}
+}
+
+func TestParse_RejectsMultipleTopLevelRoots(t *testing.T) {
+	_, err := Parse([]byte(`<ltml></ltml><ltml></ltml>`))
+	if err == nil {
+		t.Fatal("expected multiple root parse error")
 	}
 }

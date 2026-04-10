@@ -602,9 +602,9 @@ func TestStdLabel_DrawContent_AngleSupportsDynamicContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc.ltmls[0].documentPageNo = 7
+	doc.Root().documentPageNo = 7
 
-	label := doc.ltmls[0].Page(0).children[0].(*StdLabel)
+	label := doc.Root().Page(0).children[0].(*StdLabel)
 	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
 
 	if err := label.DrawContent(w); err != nil {
@@ -628,9 +628,9 @@ func TestStdLabel_FittedRichText_DynamicContentUsesResolvedPageNumber(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc.ltmls[0].documentPageNo = 9
+	doc.Root().documentPageNo = 9
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	label, ok := page.children[0].(*StdLabel)
 	if !ok {
 		t.Fatalf("child type = %T, want *StdLabel", page.children[0])
@@ -675,7 +675,7 @@ func TestParse_LabelAndBrAlias(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("page is nil")
 	}
@@ -712,7 +712,7 @@ func TestParse_PredefinedInlineSpanAliases(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("page is nil")
 	}
