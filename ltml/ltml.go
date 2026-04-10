@@ -226,6 +226,8 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	}
 }
 
+// applyPseudoRules performs a second pass over the parsed widget tree so rules
+// that rely on structural pseudo-classes can be matched with layout context.
 func (doc *Doc) applyPseudoRules() {
 	resolver := newSelectorStructureResolver()
 	for _, root := range doc.ltmls {
@@ -233,6 +235,8 @@ func (doc *Doc) applyPseudoRules() {
 	}
 }
 
+// applyPseudoRulesToWidget walks the widget subtree, applying any pseudo-class
+// rules that match each widget in scope order.
 func (doc *Doc) applyPseudoRulesToWidget(widget Widget, resolver *selectorStructureResolver) {
 	if widget == nil {
 		return
@@ -249,6 +253,8 @@ func (doc *Doc) applyPseudoRulesToWidget(widget Widget, resolver *selectorStruct
 	}
 }
 
+// applyElementAttrs applies default attrs, matching selector rules, and direct
+// element attrs to a target in that precedence order.
 func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[string]string, pathOverride string) {
 	if target == nil {
 		return
@@ -285,6 +291,8 @@ func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[strin
 	}
 }
 
+// applyPseudoRuleAttrs applies matching pseudo-class selector attrs to a
+// widget, then reapplies its raw attrs so explicit element attrs remain final.
 func applyPseudoRuleAttrs(scope HasScope, target Widget, resolver *selectorStructureResolver) {
 	pseudoScope, ok := scope.(interface {
 		EachPseudoRuleForWidget(Widget, *selectorStructureResolver, func(*Rule))
