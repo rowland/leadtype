@@ -64,6 +64,7 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 			return doc.parseErr
 		}
 	}
+	doc.applyPseudoRules()
 	return nil
 }
 
@@ -170,6 +171,9 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if wrapper != nil {
 		applyElementAttrs(doc.scope(), wrapper, defaultAttrs, attrs, sourcePath)
 	}
+	if widget, ok := e.(interface{ SetRawAttrs(map[string]string) }); ok {
+		widget.SetRawAttrs(attrs)
+	}
 	if style, ok := e.(Styler); ok {
 		if st, ok := doc.scope().StyleFor(style.ID()); ok {
 			switch st := st.(type) {
@@ -222,6 +226,29 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	}
 }
 
+func (doc *Doc) applyPseudoRules() {
+	resolver := newSelectorStructureResolver()
+	for _, root := range doc.ltmls {
+		doc.applyPseudoRulesToWidget(root, resolver)
+	}
+}
+
+func (doc *Doc) applyPseudoRulesToWidget(widget Widget, resolver *selectorStructureResolver) {
+	if widget == nil {
+		return
+	}
+	scope := doc.scope()
+	if scoped, ok := widget.(interface{ Scope() HasScope }); ok && scoped.Scope() != nil {
+		scope = scoped.Scope()
+	}
+	applyPseudoRuleAttrs(scope, widget, resolver)
+	if container, ok := widget.(Container); ok {
+		for _, child := range container.Widgets() {
+			doc.applyPseudoRulesToWidget(child, resolver)
+		}
+	}
+}
+
 func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[string]string, pathOverride string) {
 	if target == nil {
 		return
@@ -258,7 +285,44 @@ func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[strin
 	}
 }
 
-func (doc *Doc) endElement(elem xml.EndElement) {
+func applyPseudoRuleAttrs(scope HasScope, target Widget, resolver *selectorStructureResolver) {
+	pseudoScope, ok := scope.(interface {
+		EachPseudoRuleForWidget(Widget, *selectorStructureResolver, func(*Rule))
+	})
+	if !ok {
+		return
+	}
+	rawCarrier, ok := target.(interface{ RawAttrs() map[string]string })
+	if !ok {
+		return
+	}
+	rawAttrs := rawCarrier.RawAttrs()
+	if len(rawAttrs) == 0 {
+		return
+	}
+	matched := false
+	if e, ok := any(target).(HasAttrs); ok {
+		pseudoScope.EachPseudoRuleForWidget(target, resolver, func(rule *Rule) {
+			matched = true
+			e.SetAttrs(rule.Attrs)
+		})
+		if matched {
+			e.SetAttrs(rawAttrs)
+		}
+	}
+	if e, ok := any(target).(HasAttrsPrefix); ok {
+		prefixMatched := false
+		pseudoScope.EachPseudoRuleForWidget(target, resolver, func(rule *Rule) {
+			prefixMatched = true
+			e.SetAttrs("", rule.Attrs)
+		})
+		if prefixMatched {
+			e.SetAttrs("", rawAttrs)
+		}
+	}
+}
+
+func (doc *Doc) endElement(_ xml.EndElement) {
 	doc.pop()
 }
 

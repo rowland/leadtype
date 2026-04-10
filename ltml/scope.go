@@ -108,7 +108,44 @@ func (scope *Scope) matchingRules(path string) []*Rule {
 	}
 	for _, rz := range scope.rules {
 		for _, rule := range rz.rules {
-			if rule.SelectorRegexp.MatchString(path) {
+			if rule.Compiled != nil && rule.Compiled.MatchesPath(path) {
+				matched = append(matched, rule)
+			}
+		}
+	}
+	return matched
+}
+
+func (scope *Scope) EachPseudoRuleForWidget(widget Widget, resolver *selectorStructureResolver, f func(rule *Rule)) {
+	matched := scope.matchingPseudoRules(widget, resolver)
+	sort.SliceStable(matched, func(i, j int) bool {
+		left, right := matched[i], matched[j]
+		if left.Tier != right.Tier {
+			return left.Tier < right.Tier
+		}
+		if cmp := left.Specificity.Compare(right.Specificity); cmp != 0 {
+			return cmp < 0
+		}
+		return left.Order < right.Order
+	})
+	for _, rule := range matched {
+		f(rule)
+	}
+}
+
+func (scope *Scope) matchingPseudoRules(widget Widget, resolver *selectorStructureResolver) []*Rule {
+	var matched []*Rule
+	if parent, ok := scope.parent.(interface {
+		matchingPseudoRules(Widget, *selectorStructureResolver) []*Rule
+	}); ok {
+		matched = append(matched, parent.matchingPseudoRules(widget, resolver)...)
+	}
+	for _, rz := range scope.rules {
+		for _, rule := range rz.rules {
+			if !rule.HasPseudo || rule.Compiled == nil {
+				continue
+			}
+			if rule.Compiled.MatchesWidget(widget, resolver) {
 				matched = append(matched, rule)
 			}
 		}

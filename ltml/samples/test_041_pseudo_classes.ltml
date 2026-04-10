@@ -1,0 +1,62 @@
+<ltml units="in" margin="0.55">
+  <pen id="edge" color="DarkBlue" width="2pt" />
+  <pen id="ordinal" color="Orange" width="2pt" pattern="dashed" />
+
+  <layout id="vbox" padding="8pt" />
+
+  <define id="card" tag="p" border="thin" padding="6pt" />
+  <define id="cell" tag="p" border="thin" padding="6pt" style.text-align="center" />
+
+  <style>
+    .demo-card:first-child { fill: HoneyDew; font.weight: Bold; }
+    .demo-card:last-child { fill: MistyRose; font.style: Italic; }
+
+    .demo-cell:first-row { fill: AliceBlue; }
+    .demo-cell:last-row { fill: LemonChiffon; }
+    .demo-cell:first-col { border-left: edge; }
+    .demo-cell:last-col { border-right: edge; }
+    .demo-cell:row-even { font.weight: Bold; }
+    .demo-cell:row-odd { font.style: Italic; }
+    .demo-cell:col-even { font.color: Blue; }
+    .demo-cell:col-odd { font.color: Red; }
+    .demo-cell:row-2 { border-top: ordinal; }
+    .demo-cell:col-2 { border-bottom: ordinal; }
+  </style>
+
+  <page>
+    <label font.size="18" font.weight="Bold">Pseudo-Class Selectors</label>
+    <p>This sample shows sibling, row, column, parity, and ordinal pseudo-classes applied through LTML style rules.</p>
+
+    <label font.weight="Bold">:first-child and :last-child</label>
+    <div width="100%">
+      <card class="demo-card">First child: green fill and bold text from <b>:first-child</b>.</card>
+      <card class="demo-card">Middle child: base card styling only.</card>
+      <card class="demo-card">Last child: rose fill and italic text from <b>:last-child</b>.</card>
+    </div>
+
+    <label font.weight="Bold">Table pseudo-classes</label>
+    <p>Rows are 0-based from top to bottom, columns are 0-based from left to right. The dashed accents mark <b>:row-2</b> and <b>:col-2</b>.</p>
+
+    <table order="rows" cols="4" width="100%" border="thin" padding="6pt">
+      <cell class="demo-cell">r0 c0</cell>
+      <cell class="demo-cell">r0 c1</cell>
+      <cell class="demo-cell">r0 c2</cell>
+      <cell class="demo-cell">r0 c3</cell>
+
+      <cell class="demo-cell">r1 c0</cell>
+      <cell class="demo-cell">r1 c1</cell>
+      <cell class="demo-cell">r1 c2</cell>
+      <cell class="demo-cell">r1 c3</cell>
+
+      <cell class="demo-cell">r2 c0</cell>
+      <cell class="demo-cell">r2 c1</cell>
+      <cell class="demo-cell">r2 c2</cell>
+      <cell class="demo-cell">r2 c3</cell>
+
+      <cell class="demo-cell">r3 c0</cell>
+      <cell class="demo-cell">r3 c1</cell>
+      <cell class="demo-cell">r3 c2</cell>
+      <cell class="demo-cell">r3 c3</cell>
+    </table>
+  </page>
+</ltml>

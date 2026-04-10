@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 )
@@ -38,6 +39,7 @@ type StdWidget struct {
 	invisible       bool
 	disabled        bool
 	path            string
+	rawAttrs        map[string]string
 }
 
 type sectorReferenceResolver interface {
@@ -159,6 +161,18 @@ func (widget *StdWidget) Path() string {
 
 func (widget *StdWidget) SetPath(path string) {
 	widget.path = path
+}
+
+func (widget *StdWidget) RawAttrs() map[string]string {
+	return widget.rawAttrs
+}
+
+func (widget *StdWidget) SetRawAttrs(attrs map[string]string) {
+	if len(attrs) == 0 {
+		widget.rawAttrs = nil
+		return
+	}
+	widget.rawAttrs = maps.Clone(attrs)
 }
 
 func (widget *StdWidget) OriginXToken() string {
@@ -332,6 +346,10 @@ func (widget *StdWidget) SetPrinted(value bool) {
 
 func (widget *StdWidget) SetScope(scope HasScope) {
 	widget.scope = scope
+}
+
+func (widget *StdWidget) Scope() HasScope {
+	return widget.scope
 }
 
 func (widget *StdWidget) SetVisible(value bool) {
