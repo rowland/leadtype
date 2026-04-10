@@ -52,7 +52,10 @@ func TestAttrsMapFromString_trailing_semicolon_optional(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestNewRule_stores_selector(t *testing.T) {
-	rule := NewRule("p", map[string]string{"font.size": "12"}, 0, 0)
+	rule, err := NewRule("p", map[string]string{"font.size": "12"}, 0, 0)
+	if err != nil {
+		t.Fatalf("NewRule: %v", err)
+	}
 	if rule.Selector != "p" {
 		t.Errorf("expected selector %q, got %q", "p", rule.Selector)
 	}
@@ -60,7 +63,10 @@ func TestNewRule_stores_selector(t *testing.T) {
 
 func TestNewRule_stores_attrs(t *testing.T) {
 	attrs := map[string]string{"font.size": "12", "font.weight": "Bold"}
-	rule := NewRule("p", attrs, 0, 0)
+	rule, err := NewRule("p", attrs, 0, 0)
+	if err != nil {
+		t.Fatalf("NewRule: %v", err)
+	}
 	if rule.Attrs["font.size"] != "12" {
 		t.Errorf("expected font.size=12, got %q", rule.Attrs["font.size"])
 	}
@@ -69,22 +75,31 @@ func TestNewRule_stores_attrs(t *testing.T) {
 	}
 }
 
-func TestNewRule_compiles_selector_regexp(t *testing.T) {
-	rule := NewRule("p", nil, 0, 0)
-	if rule.SelectorRegexp == nil {
-		t.Error("expected non-nil SelectorRegexp")
+func TestNewRule_compiles_selector(t *testing.T) {
+	rule, err := NewRule("p", nil, 0, 0)
+	if err != nil {
+		t.Fatalf("NewRule: %v", err)
+	}
+	if rule.Compiled == nil {
+		t.Error("expected non-nil compiled selector")
 	}
 }
 
-func TestNewRule_regexp_matches_selector(t *testing.T) {
-	rule := NewRule("p", nil, 0, 0)
-	if !rule.SelectorRegexp.MatchString("p") {
-		t.Error("rule regexp should match its own selector tag")
+func TestNewRule_matches_selector_path(t *testing.T) {
+	rule, err := NewRule("p", nil, 0, 0)
+	if err != nil {
+		t.Fatalf("NewRule: %v", err)
+	}
+	if !rule.Compiled.MatchesPath("p") {
+		t.Error("compiled selector should match its own selector tag")
 	}
 }
 
 func TestNewRule_stores_specificity_tier_and_order(t *testing.T) {
-	rule := NewRule("div.notice > p#hero.summary", nil, 4, 7)
+	rule, err := NewRule("div.notice > p#hero.summary", nil, 4, 7)
+	if err != nil {
+		t.Fatalf("NewRule: %v", err)
+	}
 	if rule.Tier != 4 {
 		t.Fatalf("expected tier 4, got %d", rule.Tier)
 	}
@@ -94,6 +109,12 @@ func TestNewRule_stores_specificity_tier_and_order(t *testing.T) {
 	want := Specificity{IDs: 1, Classes: 2, Tags: 2}
 	if rule.Specificity != want {
 		t.Fatalf("expected specificity %+v, got %+v", want, rule.Specificity)
+	}
+}
+
+func TestNewRule_rejects_unknown_pseudo(t *testing.T) {
+	if _, err := NewRule("p:wat", nil, 0, 0); err == nil {
+		t.Fatal("expected unknown pseudo-class error")
 	}
 }
 

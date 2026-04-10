@@ -30,26 +30,39 @@ func (s Specificity) Compare(other Specificity) int {
 // path matches the selector, the attributes are applied to that element before any
 // directly-specified attributes (so direct attributes take precedence).
 type Rule struct {
-	Selector       string
-	SelectorRegexp *regexp.Regexp
-	Attrs          map[string]string
-	Tier           int
-	Specificity    Specificity
-	Order          int
+	Selector     string
+	Compiled     *compiledSelectorList
+	Attrs        map[string]string
+	Tier         int
+	Specificity  Specificity
+	Order        int
+	HasPseudo    bool
 }
 
 // NewRule creates a Rule for the given selector string and attribute map. The
 // selector is compiled into a regexp once so matching during document layout is
 // fast. See selectors.go for supported selector syntax.
-func NewRule(selector string, attrs map[string]string, tier, order int) *Rule {
-	return &Rule{
-		Selector:       selector,
-		SelectorRegexp: regexpForSelector(selector),
-		Attrs:          attrs,
-		Tier:           tier,
-		Specificity:    specificityForSelector(selector),
-		Order:          order,
+func NewRule(selector string, attrs map[string]string, tier, order int) (*Rule, error) {
+	compiled, err := compileSelectorList(selector)
+	if err != nil {
+		return nil, err
 	}
+	hasPseudo := false
+	for _, item := range compiled.selectors {
+		if item.hasPseudo {
+			hasPseudo = true
+			break
+		}
+	}
+	return &Rule{
+		Selector:    selector,
+		Compiled:    compiled,
+		Attrs:       attrs,
+		Tier:        tier,
+		Specificity: specificityForSelector(selector),
+		Order:       order,
+		HasPseudo:   hasPseudo,
+	}, nil
 }
 
 // Rules is the in-memory representation of a <style> block. It holds zero or
@@ -88,7 +101,12 @@ func (r *Rules) AddText(text string) {
 	matches := reRule.FindAllStringSubmatch(text, -1)
 	for _, m := range matches {
 		for _, selector := range splitRuleSelectors(m[1]) {
-			r.rules = append(r.rules, NewRule(selector, attrsMapFromString(m[2]), r.tier, r.nextRuleOrder))
+			rule, err := NewRule(selector, attrsMapFromString(m[2]), r.tier, r.nextRuleOrder)
+			if err != nil {
+				r.parseErr = err
+				return
+			}
+			r.rules = append(r.rules, rule)
 			r.nextRuleOrder++
 		}
 	}

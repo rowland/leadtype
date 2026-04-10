@@ -47,6 +47,31 @@ func firstParagraph(t *testing.T, doc *Doc) *StdParagraph {
 	return p
 }
 
+func firstContainer(t *testing.T, doc *Doc) *StdContainer {
+	t.Helper()
+	page := firstPage(t, doc)
+	if len(page.children) == 0 {
+		t.Fatal("no children on first page")
+	}
+	c, ok := page.children[0].(*StdContainer)
+	if !ok {
+		t.Fatalf("first child is %T, not *StdContainer", page.children[0])
+	}
+	return c
+}
+
+func childParagraph(t *testing.T, container *StdContainer, index int) *StdParagraph {
+	t.Helper()
+	if index >= len(container.children) {
+		t.Fatalf("container child index %d out of range", index)
+	}
+	p, ok := container.children[index].(*StdParagraph)
+	if !ok {
+		t.Fatalf("child %d is %T, not *StdParagraph", index, container.children[index])
+	}
+	return p
+}
+
 // ----------------------------------------------------------------------------
 // Font size set by a tag rule
 // ----------------------------------------------------------------------------
@@ -257,6 +282,165 @@ func TestRules_integration_later_rule_wins(t *testing.T) {
 	}
 	if p.font.size != 18 {
 		t.Errorf("expected later rule (font.size=18) to win over earlier rule (font.size=10), got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_first_and_last_child_pseudos_apply(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>
+				p:first-child { font.size: 14; }
+				p:last-child { font.weight: Bold; }
+			</style>
+			<page>
+				<div>
+					<p>first</p>
+					<p>middle</p>
+					<p>last</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	container := firstContainer(t, doc)
+	first := childParagraph(t, container, 0)
+	middle := childParagraph(t, container, 1)
+	last := childParagraph(t, container, 2)
+
+	if first.font == nil || first.font.size != 14 {
+		t.Fatalf("first child font size = %#v, want 14", first.font)
+	}
+	if middle.font != nil && middle.font.size == 14 {
+		t.Fatal("middle child should not match :first-child")
+	}
+	if last.font == nil || last.font.weight != "Bold" {
+		t.Fatalf("last child font = %#v, want Bold weight", last.font)
+	}
+}
+
+func TestRules_integration_table_row_and_col_pseudos_apply(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>
+				p:first-row { font.size: 10; }
+				p:last-row { font.weight: Bold; }
+				p:first-col { font.style: Italic; }
+				p:last-col { font.size: 20; }
+				p:row-even { z-index: 2; }
+				p:row-odd { z-index: 3; }
+				p:col-even { alt: col-even; }
+				p:col-odd { alt: col-odd; }
+				p:row-1 { display: odd; }
+				p:col-1 { display: always; }
+			</style>
+			<page>
+				<div layout="table" cols="2" width="4">
+					<p>a</p>
+					<p>b</p>
+					<p>c</p>
+					<p>d</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	container := firstContainer(t, doc)
+	a := childParagraph(t, container, 0)
+	b := childParagraph(t, container, 1)
+	c := childParagraph(t, container, 2)
+	d := childParagraph(t, container, 3)
+
+	if a.font == nil || a.font.size != 10 || a.font.style != "Italic" {
+		t.Fatalf("cell a font = %#v, want first-row + first-col styles", a.font)
+	}
+	if a.zIndex != 2 || a.alt != "col-even" {
+		t.Fatalf("cell a z-index/alt = %d/%q, want 2/col-even", a.zIndex, a.alt)
+	}
+	if b.font == nil || b.font.size != 20 {
+		t.Fatalf("cell b font = %#v, want last-col size 20", b.font)
+	}
+	if b.display != DisplayAlways || b.alt != "col-odd" {
+		t.Fatalf("cell b display/alt = %q/%q, want always/col-odd", b.display, b.alt)
+	}
+	if c.zIndex != 3 || c.display != DisplayOdd {
+		t.Fatalf("cell c z-index/display = %d/%q, want 3/odd", c.zIndex, c.display)
+	}
+	if d.font == nil || d.font.weight != "Bold" {
+		t.Fatalf("cell d font = %#v, want Bold from :last-row", d.font)
+	}
+}
+
+func TestRules_integration_direct_attrs_override_pseudo_rules(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>p:first-child { font.size: 14; }</style>
+			<page>
+				<div>
+					<p font.size="22">hello</p>
+					<p>other</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	container := firstContainer(t, doc)
+	first := childParagraph(t, container, 0)
+	if first.font == nil || first.font.size != 22 {
+		t.Fatalf("first child font size = %#v, want direct attr override 22", first.font)
+	}
+}
+
+func TestRules_integration_row_and_col_pseudos_do_not_apply_outside_tables(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>
+				p:first-row { font.size: 14; }
+				p:col-0 { font.weight: Bold; }
+			</style>
+			<page>
+				<div>
+					<p>hello</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	container := firstContainer(t, doc)
+	first := childParagraph(t, container, 0)
+	if first.font != nil && (first.font.size == 14 || first.font.weight == "Bold") {
+		t.Fatalf("non-table child font = %#v, row/col pseudos should not apply", first.font)
+	}
+}
+
+func TestRules_integration_row_and_col_pseudos_use_anchor_cell_for_spans(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>
+				p:first-col { font.style: Italic; }
+				p:col-1 { font.weight: Bold; }
+				p:last-row { font.size: 18; }
+			</style>
+			<page>
+				<div layout="table" cols="2" width="4">
+					<p rowspan="2">a</p>
+					<p>b</p>
+					<p>c</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	container := firstContainer(t, doc)
+	a := childParagraph(t, container, 0)
+	b := childParagraph(t, container, 1)
+	c := childParagraph(t, container, 2)
+
+	if a.font == nil || a.font.style != "Italic" {
+		t.Fatalf("spanning cell font = %#v, want first-col match from anchor cell", a.font)
+	}
+	if a.font.weight == "Bold" || a.font.size == 18 {
+		t.Fatalf("spanning cell font = %#v, should not match col-1 or last-row from covered cells", a.font)
+	}
+	if b.font == nil || b.font.weight != "Bold" {
+		t.Fatalf("cell b font = %#v, want col-1 match", b.font)
+	}
+	if c.font == nil || c.font.size != 18 {
+		t.Fatalf("cell c font = %#v, want last-row match", c.font)
 	}
 }
 
