@@ -433,8 +433,73 @@ parsed and rendered through the PDF vector drawing path so unsupported SVG
 features are skipped with warnings to standard error rather than aborting the
 whole document when the rest of the file can still render.
 
+`<image>` loads its source lazily on first layout or render use, so its `src`
+resolution is consistent with other `src`-loading tags such as `<svg>`:
+
+- when an asset filesystem is attached, `src` must be a clean relative asset
+  path such as `logo.png` or `assets/logo.png`; LTML keeps that path virtual
+  and lets the writer read it through the configured asset filesystem
+- when no asset filesystem is attached, relative file paths are resolved
+  relative to the LTML document being parsed, while absolute paths remain
+  absolute
+- `http` and `https` URLs are supported only when document/network loading is
+  explicitly enabled; network assets are fetched lazily into a temp file and
+  cleaned up after rendering
+
 Images without `alt` remain decorative and are not added to the document's
 logical structure tree.
+
+---
+
+### `<svg>` — SVG Placement
+
+Places SVG content through the dedicated SVG rendering path. The built-in
+`<svg>` tag is a component-backed element, so `src` uses the same component
+body-loading behavior as other components, including document asset FS and
+optional network loading.
+
+```xml
+<svg src="logo.svg" width="2in" />
+```
+
+```xml
+<svg width="2in">
+  <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60">
+    <rect width="120" height="60" fill="#ffffff"/>
+    <circle cx="30" cy="30" r="18" fill="#88bbff"/>
+  </svg>
+</svg>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `src` | Optional path or URL to an external SVG document. When both `src` and inline SVG body are present, `src` wins. |
+| `width`, `height` | Optional explicit dimensions. If only one is supplied, the other is inferred from the SVG aspect ratio. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
+| `border` | Reference to a named `<pen>` style. |
+| `fill` | Reference to a named `<brush>` style for the LTML widget box, not the SVG document root. |
+| `alt` | When `ua="true"`, opt the SVG into tagged output and use this text as `/ActualText`. |
+| `role` | Override the default tagged role when `ua="true"`. SVGs with `alt` default to `Figure`. |
+
+LTML attributes affect page placement and widget styling only; they are not
+forwarded into the SVG XML. Inline SVG bodies should contain a full nested SVG
+document. External `src` content is loaded lazily into the component body on
+first use, so local assets and network SVGs follow the same render path as
+inline markup.
+
+Because `<svg>` is component-backed, its `src` is loaded into the component
+body lazily on first use, but its path and URL resolution rules match
+`<image>`:
+
+- when an asset filesystem is attached, `src` must be a clean relative asset
+  path and is read virtually from that asset filesystem
+- when no asset filesystem is attached, relative file paths are resolved
+  relative to the LTML document being parsed, while absolute paths remain
+  absolute
+- `http` and `https` URLs are supported only when document/network loading is
+  explicitly enabled; network assets are fetched lazily into a temp file and
+  cleaned up after rendering
 
 ---
 

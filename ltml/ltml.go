@@ -6,34 +6,65 @@ package ltml
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 type Doc struct {
-	ltmls     []*StdDocument
-	stack     []any
-	scopes    []HasScope
-	rootScope Scope // per-document root scope; parent = &defaultScope
-	parseErr  error
+	root         *StdDocument
+	stack        []any
+	scopes       []HasScope
+	rootScope    Scope // per-document root scope; parent = &defaultScope
+	parseErr     error
+	assetFS      fs.FS
+	sourceDir    string
+	assetSources *assetSourceManager
 }
 
-func (doc *Doc) Parse(b []byte) error {
+type ParseOption func(*Doc)
+
+func WithAssetFS(assetFS fs.FS) ParseOption {
+	return func(doc *Doc) {
+		doc.SetAssetFS(assetFS)
+	}
+}
+
+func newDocWithOptions(opts ...ParseOption) *Doc {
+	doc := &Doc{
+		assetSources: newAssetSourceManager(),
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(doc)
+		}
+	}
+	return doc
+}
+
+func (doc *Doc) parseBytes(b []byte) error {
 	r := bytes.NewReader(b)
-	return doc.ParseReader(r)
+	return doc.parseReader(r)
 }
 
-func (doc *Doc) ParseFile(filename string) error {
+func (doc *Doc) parseFile(filename string) error {
+	if abs, err := filepath.Abs(filename); err == nil {
+		doc.sourceDir = filepath.Dir(abs)
+	} else {
+		doc.sourceDir = filepath.Dir(filename)
+	}
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return doc.ParseReader(f)
+	return doc.parseReader(f)
 }
 
-func (doc *Doc) ParseReader(r io.Reader) error {
+func (doc *Doc) parseReader(r io.Reader) error {
 	dec := xml.NewDecoder(r)
 	dec.DefaultSpace = DefaultSpace
 
@@ -49,7 +80,20 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 		switch t := token.(type) {
 		case xml.StartElement:
 			traceStartElement(t)
-			doc.startElement(t)
+			created, capturesBody := doc.startElement(t)
+			if capturesBody && doc.parseErr == nil {
+				var decoded struct {
+					Body string `xml:",innerxml"`
+				}
+				if err := dec.DecodeElement(&decoded, &t); err != nil {
+					return err
+				}
+				if raw, ok := created.(RawBody); ok {
+					raw.SetBody(decoded.Body)
+				}
+				traceEndElement(xml.EndElement{Name: t.Name})
+				doc.endElement(xml.EndElement{Name: t.Name})
+			}
 		case xml.EndElement:
 			traceEndElement(t)
 			doc.endElement(t)
@@ -68,16 +112,57 @@ func (doc *Doc) ParseReader(r io.Reader) error {
 	return nil
 }
 
+func (doc *Doc) SetAssetFS(assetFS fs.FS) {
+	doc.assetFS = assetFS
+}
+
+func (doc *Doc) Root() *StdDocument {
+	return doc.root
+}
+
+func (doc *Doc) Page(i int) *StdPage {
+	if doc.root == nil {
+		return nil
+	}
+	return doc.root.Page(i)
+}
+
 func (doc *Doc) Print(w Writer) (err error) {
-	for _, ltml := range doc.ltmls {
-		if err = ltml.Print(w); err != nil {
-			return
+	if doc.root == nil {
+		return nil
+	}
+	if doc.assetFS != nil {
+		if assetSetter, ok := any(w).(interface{ SetAssetFS(fs.FS) }); ok {
+			assetSetter.SetAssetFS(doc.assetFS)
 		}
 	}
+	if err := doc.root.Print(w); err != nil {
+		doc.cleanupAssetSources()
+		return err
+	}
+	if registrar, ok := any(w).(interface{ RegisterWriteToCleanup(func()) }); ok {
+		registrar.RegisterWriteToCleanup(doc.cleanupAssetSources)
+		return nil
+	}
+	doc.cleanupAssetSources()
 	return nil
 }
 
-func (doc *Doc) startElement(elem xml.StartElement) {
+func (doc *Doc) resolveAssetSource(container Container, src string) (assetSourceRef, error) {
+	if doc == nil || doc.assetSources == nil {
+		return assetSourceRef{}, fmt.Errorf("asset sources are not initialized")
+	}
+	return doc.assetSources.resolve(doc, container, src)
+}
+
+func (doc *Doc) cleanupAssetSources() {
+	if doc == nil || doc.assetSources == nil {
+		return
+	}
+	doc.assetSources.cleanup()
+}
+
+func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	trueTag := elem.Name.Local
 	var defaultAttrs map[string]string
 	if elem.Name.Space == DefaultSpace {
@@ -90,8 +175,12 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 	if e == nil {
 		debugf("Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
 	}
+	capturesBody := isComponentTag(elem.Name.Space, trueTag)
 	if ws, ok := e.(WantsScope); ok {
 		ws.SetScope(doc.scope())
+	}
+	if wd, ok := e.(WantsDoc); ok {
+		wd.SetDoc(doc)
 	}
 	var err error
 	if child, ok := e.(HasParent); ok {
@@ -141,8 +230,12 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 		}
 	}
 	if d, ok := e.(*StdDocument); ok {
+		if doc.root != nil {
+			doc.parseErr = fmt.Errorf("multiple top-level ltml roots are not supported")
+			return e, capturesBody
+		}
 		d.Scope.defaultRuleTier = 0
-		doc.ltmls = append(doc.ltmls, d)
+		doc.root = d
 	} else if page, ok := e.(*StdPage); ok {
 		page.Scope.defaultRuleTier = 1
 	}
@@ -224,14 +317,18 @@ func (doc *Doc) startElement(elem xml.StartElement) {
 			debugf("Adding rules: %s\n", err)
 		}
 	}
+	if _, ok := e.(RawBody); ok {
+		capturesBody = true
+	}
+	return e, capturesBody
 }
 
 // applyPseudoRules performs a second pass over the parsed widget tree so rules
 // that rely on structural pseudo-classes can be matched with layout context.
 func (doc *Doc) applyPseudoRules() {
 	resolver := newSelectorStructureResolver()
-	for _, root := range doc.ltmls {
-		doc.applyPseudoRulesToWidget(root, resolver)
+	if doc.root != nil {
+		doc.applyPseudoRulesToWidget(doc.root, resolver)
 	}
 }
 
@@ -383,19 +480,19 @@ func (doc *Doc) scope() HasScope {
 	return &doc.rootScope
 }
 
-func Parse(b []byte) (*Doc, error) {
-	var doc Doc
-	return &doc, doc.Parse(b)
+func Parse(b []byte, opts ...ParseOption) (*Doc, error) {
+	doc := newDocWithOptions(opts...)
+	return doc, doc.parseBytes(b)
 }
 
-func ParseFile(filename string) (*Doc, error) {
-	var doc Doc
-	return &doc, doc.ParseFile(filename)
+func ParseFile(filename string, opts ...ParseOption) (*Doc, error) {
+	doc := newDocWithOptions(opts...)
+	return doc, doc.parseFile(filename)
 }
 
-func ParseReader(r io.Reader) (*Doc, error) {
-	var doc Doc
-	return &doc, doc.ParseReader(r)
+func ParseReader(r io.Reader, opts ...ParseOption) (*Doc, error) {
+	doc := newDocWithOptions(opts...)
+	return doc, doc.parseReader(r)
 }
 
 func traceStartElement(elem xml.StartElement) {

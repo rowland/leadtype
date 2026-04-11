@@ -27,7 +27,7 @@ func TestStdPageNo_ParseAndInlineParents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if len(page.children) != 3 {
 		t.Fatalf("child count = %d, want 3", len(page.children))
 	}
@@ -73,9 +73,9 @@ func TestStdPageNo_HiddenContributesNoVisibleText(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc.ltmls[0].documentPageNo = 7
+	doc.Root().documentPageNo = 7
 	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
-	p := doc.ltmls[0].Page(0).children[0].(*StdParagraph)
+	p := doc.Root().Page(0).children[0].(*StdParagraph)
 
 	if got := p.RichText(w).String(); got != "Hello world" {
 		t.Fatalf("paragraph text = %q, want %q", got, "Hello world")
@@ -92,9 +92,9 @@ func TestStdPageNo_FontOverrideOnlyAppliesToPageNumberText(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc.ltmls[0].documentPageNo = 3
+	doc.Root().documentPageNo = 3
 	w := ltpdf.NewDocWriter()
-	p := doc.ltmls[0].Page(0).children[0].(*StdParagraph)
+	p := doc.Root().Page(0).children[0].(*StdParagraph)
 	rt := p.RichText(w)
 	var gotText string
 	var regularFont string
@@ -141,7 +141,7 @@ func TestStdPageNo_PageNumberSequence(t *testing.T) {
 	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
 	want := []string{"Page 1", "Page 2", "Reset next", "Page 1", "Page 10", "Page 11"}
 	for i, expected := range want {
-		page := doc.ltmls[0].Page(i)
+		page := doc.Root().Page(i)
 		if err := page.BeforePrint(w); err != nil {
 			t.Fatal(err)
 		}

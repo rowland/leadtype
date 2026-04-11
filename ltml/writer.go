@@ -23,6 +23,9 @@ type Writer interface {
 	FontColor() colors.Color
 	Fonts() []*font.Font
 	FontSize() float64
+	ImageDimensions(data []byte) (width, height int, err error)
+	SVGDimensions(data []byte) (width, height int, err error)
+	SVGDimensionsFromFile(filename string) (width, height int, err error)
 	ImageDimensionsFromFile(filename string) (width, height int, err error)
 	LineSpacing() float64
 	SetLineCapStyle(style string) (prev string)
@@ -32,6 +35,9 @@ type Writer interface {
 	MoveTo(x, y float64)
 	NewPage()
 	Print(text string) (err error)
+	PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
+	PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
+	PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
 	PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
 	PrintParagraph(para []*rich_text.RichText, options options.Options)
 	PrintRichText(text *rich_text.RichText)

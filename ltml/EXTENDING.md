@@ -179,6 +179,27 @@ func init() {
 </ltml>
 ```
 
+### Component-backed custom tags
+
+If a custom tag needs to capture raw inner XML or load body content from a
+`src` attribute, register it as a component tag and embed `StdComponent`
+instead of a plain widget.
+
+Component-backed tags follow these source-loading rules:
+
+- with `WithAssetFS(...)`, file `src` values are read from the asset filesystem
+  and must be clean relative `fs.FS` paths; they stay as virtual asset paths
+  rather than being copied to temp files
+- without an asset filesystem, relative file `src` values resolve relative to
+  the LTML document path when parsed with `ParseFile`
+- `http` and `https` sources require document opt-in for network assets and are
+  fetched lazily to temp files on first use
+
+The built-in `<image>` tag now follows the same source-resolution rules even
+though it renders as a leaf graphic widget rather than a component body. Both
+`<image>` and component-backed tags load `src` lazily on first use instead of
+at parse time.
+
 ---
 
 ## Adding a Custom Style

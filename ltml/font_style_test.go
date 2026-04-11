@@ -76,6 +76,15 @@ func (m *mockWriter) Fonts() []*font.Font {
 	return m.fonts
 }
 func (m *mockWriter) FontSize() float64 { return m.setFontSize }
+func (m *mockWriter) ImageDimensions(data []byte) (int, int, error) {
+	return 0, 0, nil
+}
+func (m *mockWriter) SVGDimensions(data []byte) (int, int, error) {
+	return 0, 0, nil
+}
+func (m *mockWriter) SVGDimensionsFromFile(filename string) (int, int, error) {
+	return 0, 0, nil
+}
 func (m *mockWriter) ImageDimensionsFromFile(filename string) (int, int, error) {
 	return 0, 0, nil
 }
@@ -87,6 +96,15 @@ func (m *mockWriter) Loc() (float64, float64)             { return 0, 0 }
 func (m *mockWriter) MoveTo(x, y float64)                 {}
 func (m *mockWriter) NewPage()                            {}
 func (m *mockWriter) Print(text string) error             { return nil }
+func (m *mockWriter) PrintImage(data []byte, x, y float64, width, height *float64) (float64, float64, error) {
+	return 0, 0, nil
+}
+func (m *mockWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (float64, float64, error) {
+	return 0, 0, nil
+}
+func (m *mockWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
+	return 0, 0, nil
+}
 func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }

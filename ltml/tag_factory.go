@@ -15,6 +15,7 @@ type TagFactory func() any
 var (
 	reTag           = regexp.MustCompile(`^\w+$`)
 	registeredTags  = make(map[string]TagFactory)
+	componentTags   = make(map[string]bool)
 	errStdReserved  = errors.New("namespace '" + DefaultSpace + "' is reserved")
 	errBadNamespace = errors.New("namespace restricted to letters, numbers and the underscore")
 	errBadTag       = errors.New("namespace restricted to letters, numbers and the underscore")
@@ -38,9 +39,28 @@ func RegisterTag(namespace, tag string, f TagFactory) error {
 	return registerTag(namespace, tag, f)
 }
 
+func registerTagExt(namespace, tag string, f TagFactory) error {
+	if err := registerTag(namespace, tag, f); err != nil {
+		return err
+	}
+	componentTags[namespace+":"+tag] = true
+	return nil
+}
+
+func RegisterTagExt(namespace, tag string, f TagFactory) error {
+	if namespace == DefaultSpace {
+		return errStdReserved
+	}
+	return registerTagExt(namespace, tag, f)
+}
+
 func makeElement(namespace, tag string) any {
 	if f, ok := registeredTags[namespace+":"+tag]; ok {
 		return f()
 	}
 	return nil
+}
+
+func isComponentTag(namespace, tag string) bool {
+	return componentTags[namespace+":"+tag]
 }

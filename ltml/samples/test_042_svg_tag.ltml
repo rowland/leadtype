@@ -1,0 +1,17 @@
+<ltml units="in" margin="0.5">
+  <page layout="vbox" layout.vpadding="12pt" gap="12pt">
+    <label font.size="18" font.weight="Bold">Built-in SVG tag</label>
+    <p>The new standard &lt;svg&gt; widget supports both external SVG assets and inline full SVG documents.</p>
+
+    <svg src="test_034_scene.svg" width="2.3" border="dotted" padding="4pt" />
+
+    <svg width="2.3" border="dotted" padding="4pt">
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60">
+        <rect width="120" height="60" rx="8" ry="8" fill="#f7f2ea" stroke="#7a5c3e" stroke-width="2"/>
+        <path d="M12 48 L38 18 L58 36 L76 14 L108 46" fill="none" stroke="#2d6c8f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="92" cy="18" r="8" fill="#e88b2e"/>
+        <text x="60" y="54" text-anchor="middle" font-family="Helvetica" font-size="10" fill="#2d241b">inline svg</text>
+      </svg>
+    </svg>
+  </page>
+</ltml>

@@ -15,6 +15,7 @@ type StdDocument struct {
 	physicalPageNo        int
 	pendingStart          *int
 	ua                    bool
+	networkAssets         bool
 	compressPages         bool
 	compressToUnicode     bool
 	compressEmbeddedFonts bool
@@ -75,6 +76,10 @@ func (d *StdDocument) Print(w Writer) error {
 	return d.printWithIndexes(w)
 }
 
+func (d *StdDocument) NetworkAssetsEnabled() bool {
+	return d.networkAssets
+}
+
 func (d *StdDocument) SetAttrs(attrs map[string]string) {
 	d.StdPage.SetAttrs(attrs)
 	if value, ok := attrs["compress-pages"]; ok {
@@ -88,6 +93,9 @@ func (d *StdDocument) SetAttrs(attrs map[string]string) {
 	}
 	if value, ok := attrs["ua"]; ok {
 		d.ua = value == "true"
+	}
+	if value, ok := attrs["network-assets"]; ok {
+		d.networkAssets = value == "true"
 	}
 }
 

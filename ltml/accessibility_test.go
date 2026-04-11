@@ -15,7 +15,11 @@ import (
 func renderLTMLPDF(t *testing.T, input string, assetFS fs.FS) string {
 	t.Helper()
 
-	doc, err := Parse([]byte(input))
+	var opts []ParseOption
+	if assetFS != nil {
+		opts = append(opts, WithAssetFS(assetFS))
+	}
+	doc, err := Parse([]byte(input), opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,6 +259,31 @@ func TestLTML_GraphicArtifactRoleSuppressesAltTagging(t *testing.T) {
 	}
 	if !strings.Contains(pdfText, "/Artifact BMC") {
 		t.Fatalf("expected graphic artifact marked content for artifact role:\n%s", pdfText)
+	}
+}
+
+func TestLTML_SVGRequiresAlt(t *testing.T) {
+	withAlt := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <svg src="test_034_scene.svg" alt="logo" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS("samples"))
+	if !strings.Contains(withAlt, "/S /Figure") || !strings.Contains(withAlt, "/ActualText (logo)") {
+		t.Fatalf("expected figure with actual text for svg:\n%s", withAlt)
+	}
+
+	withoutAlt := renderLTMLPDF(t, `
+<ltml ua="true">
+  <page>
+    <svg src="test_034_scene.svg" width="32" height="32" />
+  </page>
+</ltml>`, os.DirFS("samples"))
+	if strings.Contains(withoutAlt, "/S /Figure") {
+		t.Fatalf("did not expect figure tag without svg alt:\n%s", withoutAlt)
+	}
+	if !strings.Contains(withoutAlt, "/Artifact BMC") {
+		t.Fatalf("expected decorative svg to render as artifact:\n%s", withoutAlt)
 	}
 }
 

@@ -11,37 +11,37 @@
     <table order="rows" cols="2" width="100%" border="thin" padding="8pt">
       <box>
         <lbl>JPEG width fixed to 1.8 in</lbl>
-        <image src="testimg.jpg" width="1.8" border="dotted" padding="3pt" />
+        <image src="../../pdf/testdata/testimg.jpg" width="1.8" border="dotted" padding="3pt" />
         <desc>height inferred from 227 x 149 px</desc>
       </box>
 
       <box>
         <lbl>JPEG height fixed to 1.4 in</lbl>
-        <image src="testimg.jpg" height="1.4" border="dotted" padding="3pt" />
+        <image src="../../pdf/testdata/testimg.jpg" height="1.4" border="dotted" padding="3pt" />
         <desc>width inferred from 227 x 149 px</desc>
       </box>
 
       <box>
         <lbl>JPEG native size from metadata</lbl>
-        <image src="testimg.jpg" border="dotted" padding="3pt" />
+        <image src="../../pdf/testdata/testimg.jpg" border="dotted" padding="3pt" />
         <desc>227 pt x 149 pt footprint</desc>
       </box>
 
       <box>
         <lbl>JPEG forced to 1.7 x 1.1 in</lbl>
-        <image src="testimg.jpg" width="1.7" height="1.1" border="dotted" padding="3pt" />
+        <image src="../../pdf/testdata/testimg.jpg" width="1.7" height="1.1" border="dotted" padding="3pt" />
         <desc>aspect ratio ignored</desc>
       </box>
 
       <box>
         <lbl>PNG width fixed to 2.4 in</lbl>
-        <image src="eidetic.png" width="2.4" border="dotted" padding="3pt" />
+        <image src="../../pdf/testdata/eidetic.png" width="2.4" border="dotted" padding="3pt" />
         <desc>height inferred from 226 x 79 px</desc>
       </box>
 
       <box>
         <lbl>PNG forced to 1.7 x 1.1 in</lbl>
-        <image src="eidetic.png" width="1.7" height="1.1" border="dotted" padding="3pt" />
+        <image src="../../pdf/testdata/eidetic.png" width="1.7" height="1.1" border="dotted" padding="3pt" />
         <desc>aspect ratio ignored</desc>
       </box>
     </table>

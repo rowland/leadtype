@@ -636,17 +636,21 @@ func dirToken(root string) (string, error) {
 }
 
 func renderLocal(absInput, assetsDir string, extraFiles []string, out io.Writer) error {
-	doc, err := ltml.ParseFile(absInput)
-	if err != nil {
-		return fmt.Errorf("parsing %s: %w", displayPath(absInput), err)
-	}
-
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
 	}
 	if cleanup != nil {
 		defer cleanup()
+	}
+
+	var opts []ltml.ParseOption
+	if assetFS != nil {
+		opts = append(opts, ltml.WithAssetFS(assetFS))
+	}
+	doc, err := ltml.ParseFile(absInput, opts...)
+	if err != nil {
+		return fmt.Errorf("parsing %s: %w", displayPath(absInput), err)
 	}
 
 	w := ltpdf.NewDocWriter()

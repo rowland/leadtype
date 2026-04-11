@@ -221,7 +221,7 @@ func TestParse_ShapeTags(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if len(page.children) != 7 {
 		t.Fatalf("child count = %d, want 7", len(page.children))
 	}

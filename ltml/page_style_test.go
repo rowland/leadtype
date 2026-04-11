@@ -38,7 +38,7 @@ func TestParsePageStyleTag_RegistersInDocumentScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ltml := doc.ltmls[0]
+	ltml := doc.Root()
 	ps, ok := ltml.PageStyleFor("book")
 	if !ok {
 		t.Fatal("page style 'book' not found in document scope")
@@ -60,7 +60,7 @@ func TestParsePageStyleTag_PageUsesCustomStyle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("expected a page, got nil")
 	}
@@ -81,7 +81,7 @@ func TestParsePageStyleTag_BuiltinStylesUnaffected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	if page == nil {
 		t.Fatal("expected a page, got nil")
 	}

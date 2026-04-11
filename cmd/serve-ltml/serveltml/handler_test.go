@@ -15,11 +15,46 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/rowland/leadtype/ltml"
 )
 
 // minimalLTML is a tiny valid LTML document used across handler tests.
 const minimalLTML = `<ltml></ltml>`
+
+type serveComponent struct {
+	ltml.StdComponent
+}
+
+var (
+	registerServeComponentOnce sync.Once
+	serveComponentMu           sync.Mutex
+	serveComponentBody         string
+)
+
+func (c *serveComponent) DrawContent(w ltml.Writer) error {
+	serveComponentMu.Lock()
+	defer serveComponentMu.Unlock()
+	serveComponentBody = c.Body()
+	if body := c.Body(); body == "" {
+		return fmt.Errorf("component body is empty")
+	}
+	return nil
+}
+
+func registerServeComponent(t *testing.T) {
+	t.Helper()
+	registerServeComponentOnce.Do(func() {
+		if err := ltml.RegisterTagExt("servecomponenttest", "card", func() any { return &serveComponent{} }); err != nil {
+			t.Fatalf("register component tag: %v", err)
+		}
+	})
+	serveComponentMu.Lock()
+	serveComponentBody = ""
+	serveComponentMu.Unlock()
+}
 
 // buildMultipart constructs a multipart/form-data body with the given parts.
 // Each element of parts is [fieldName, filename, contentType, body].
@@ -146,6 +181,34 @@ func TestHandler_ValidLTMLWithUploadedAsset(t *testing.T) {
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body: %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestRenderLTML_SetsParserAssetFSForUploadedComponentSrc(t *testing.T) {
+	registerServeComponent(t)
+
+	tmpDir := t.TempDir()
+	uploadDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(uploadDir, "snippet.xml"), []byte("<p>from uploaded asset</p>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	overlay := newOverlayFS(os.DirFS(uploadDir), os.DirFS(t.TempDir()))
+	pdfFile, err := renderLTML([]byte(`
+<ltml xmlns:xt="servecomponenttest">
+  <page>
+    <xt:card src="snippet.xml" />
+  </page>
+</ltml>`), overlay, tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdfFile.Close()
+
+	serveComponentMu.Lock()
+	defer serveComponentMu.Unlock()
+	if got, want := serveComponentBody, "<p>from uploaded asset</p>"; got != want {
+		t.Fatalf("component body = %q, want %q", got, want)
 	}
 }
 

@@ -46,7 +46,7 @@ func TestParse_LinkTargetAndIndexTags(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page := doc.ltmls[0].Page(0)
+	page := doc.Root().Page(0)
 	paragraph := page.children[0].(*StdParagraph)
 	if len(paragraph.textPieces) != 1 {
 		t.Fatalf("paragraph text piece count = %d, want 1", len(paragraph.textPieces))

@@ -5,19 +5,25 @@ package ltml
 
 import (
 	"fmt"
+	"strings"
 )
 
 type StdImage struct {
 	StdWidget
 	src string
+	doc *Doc
 }
 
 func (img *StdImage) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &img.StdWidget, "Figure", func() error {
-		if img.src == "" {
+		ref, err := img.assetSource()
+		if err != nil {
+			return err
+		}
+		if ref.identifier == "" {
 			return fmt.Errorf("image src must be specified")
 		}
-		_, _, err := w.PrintImageFile(img.src, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
+		_, _, err = w.PrintImageFile(ref.identifier, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
 		return err
 	})
 }
@@ -51,7 +57,18 @@ func (img *StdImage) PreferredWidth(w Writer) float64 {
 }
 
 func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
-	return w.ImageDimensionsFromFile(img.src)
+	ref, err := img.assetSource()
+	if err != nil {
+		return 0, 0, err
+	}
+	if ref.identifier == "" {
+		return 0, 0, nil
+	}
+	return w.ImageDimensionsFromFile(ref.identifier)
+}
+
+func (img *StdImage) SetDoc(doc *Doc) {
+	img.doc = doc
 }
 
 func (img *StdImage) SetAttrs(attrs map[string]string) {
@@ -59,6 +76,16 @@ func (img *StdImage) SetAttrs(attrs map[string]string) {
 	if src, ok := attrs["src"]; ok {
 		img.src = src
 	}
+}
+
+func (img *StdImage) assetSource() (assetSourceRef, error) {
+	if strings.TrimSpace(img.src) == "" {
+		return assetSourceRef{}, nil
+	}
+	if img.doc == nil {
+		return assetSourceRef{}, fmt.Errorf("image document is not set")
+	}
+	return img.doc.resolveAssetSource(img.container, img.src)
 }
 
 func (img *StdImage) String() string {
@@ -89,4 +116,5 @@ var _ HasAttrs = (*StdImage)(nil)
 var _ Identifier = (*StdImage)(nil)
 var _ Printer = (*StdImage)(nil)
 var _ WantsContainer = (*StdImage)(nil)
+var _ WantsDoc = (*StdImage)(nil)
 var _ WantsScope = (*StdImage)(nil)
