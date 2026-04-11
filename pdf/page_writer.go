@@ -1727,7 +1727,8 @@ func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, heigh
 
 func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	key := imageKey(data)
-	form, err := pw.dw.loadSVGForm(data, key)
+	key += ";stop-opacity=" + svgGradientStopOpacityMode(pw.options)
+	form, err := pw.dw.loadSVGForm(data, key, pw.options)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -2270,6 +2271,15 @@ func (pw *PageWriter) SetUnderline(underline bool) (prev bool) {
 	prev = pw.underline
 	pw.underline = underline
 	return
+}
+
+func (pw *PageWriter) SetSVGGradientStopOpacityMode(mode string) (prev string) {
+	prev = svgGradientStopOpacityMode(pw.options)
+	if pw.options == nil {
+		pw.options = options.Options{}
+	}
+	pw.options[svgGradientStopOpacityModeOption] = normalizeSVGGradientStopOpacityMode(mode)
+	return prev
 }
 
 func (pw *PageWriter) SetUnits(units string) {

@@ -4,7 +4,7 @@
     <p>This sample compares the same shared SVG fixtures rendered through LTML's built-in &lt;svg&gt; widget and the SVG-backed &lt;image&gt; path.</p>
 
     <label font.weight="Bold">Gradients, opacity, &lt;use&gt;, and clip paths</label>
-    <p>The first fixture exercises gradientUnits="userSpaceOnUse", gradientTransform, stop-opacity, and reused geometry clipped through a referenced shape.</p>
+    <p>The first fixture exercises gradientUnits="userSpaceOnUse", gradientTransform, opacity, and reused geometry clipped through a referenced shape.</p>
     <table cols="2" width="100%" order="rows">
       <div padding="6pt">
         <label font.weight="Bold">&lt;svg src&gt;</label>

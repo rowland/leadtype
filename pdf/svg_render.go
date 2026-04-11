@@ -35,8 +35,8 @@ func svgDimensions(data []byte) (width, height int, err error) {
 	return int(doc.Width + 0.5), int(doc.Height + 0.5), nil
 }
 
-func (dw *DocWriter) newSVGForm(doc *svg.Document) (*renderedForm, error) {
-	content := newContentWriter(dw, options.Options{"units": "pt"}, doc.Width, doc.Height)
+func (dw *DocWriter) newSVGForm(doc *svg.Document, renderOptions options.Options) (*renderedForm, error) {
+	content := newContentWriter(dw, renderOptions.Merge(options.Options{"units": "pt"}), doc.Width, doc.Height)
 	renderer := newSVGRenderer(doc, content, 0, 0, doc.Width, doc.Height)
 	if err := renderer.render(); err != nil {
 		return nil, err
@@ -414,6 +414,7 @@ type resolvedSVGGradient struct {
 	alphaStops   []alphaGradientStop
 	maskStops    []alphaGradientStop
 	uniformAlpha float64
+	flatAlpha    float64
 	varyingAlpha bool
 	firstColor   colors.Color
 }
@@ -593,6 +594,11 @@ func (r *svgRenderer) paintColorPath(segments []svg.Segment, style svg.Style, st
 				return r.fillSolidPath(style.Fill.Color, alpha, style.FillRule, blendMode)
 			}
 			if resolved.varyingAlpha {
+				if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+					return r.withScopedGraphicsState(resolved.flatAlpha, 1, blendMode, nil, "", nil, func() error {
+						return r.fillGradientPath(style, resolved)
+					})
+				}
 				maskForm, err := r.makeGradientAlphaMaskForm(segments, transform, style.FillRule, resolved)
 				if err != nil {
 					return err
@@ -616,8 +622,12 @@ func (r *svgRenderer) paintColorPath(segments []svg.Segment, style svg.Style, st
 			return r.strokeSolidPath(style, style.Stroke.Color, alpha, blendMode)
 		}
 		if resolved.varyingAlpha {
-			logSVGWarnings([]svg.Warning{{Element: "style", Message: "gradient stroke stop-opacity falls back to constant stroke opacity"}})
-			alpha = resolved.uniformAlpha
+			if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+				alpha = resolved.flatAlpha
+			} else {
+				logSVGWarnings([]svg.Warning{{Element: "style", Message: "gradient stroke stop-opacity falls back to constant stroke opacity"}})
+				alpha = resolved.uniformAlpha
+			}
 		} else {
 			alpha = resolved.uniformAlpha
 		}
@@ -881,9 +891,11 @@ func (r *svgRenderer) resolveGradient(ref string, opacityScale float64, segments
 		resolved.radial = radial
 	}
 	alphaMin := -1.0
+	alphaSum := 0.0
 	for i, stop := range def.Stops {
 		resolved.colorStops[i] = GradientStop{Position: stop.Position, Color: stop.Color}
 		alpha := clamp01(opacityScale * stop.Opacity)
+		alphaSum += alpha
 		resolved.alphaStops[i] = alphaGradientStop{Position: stop.Position, Alpha: alpha}
 		resolved.maskStops[i] = alphaGradientStop{Position: stop.Position, Alpha: clamp01(colorGray(stop.Color) * alpha)}
 		if i == 0 {
@@ -901,6 +913,7 @@ func (r *svgRenderer) resolveGradient(ref string, opacityScale float64, segments
 	}
 	if len(resolved.alphaStops) > 0 {
 		resolved.uniformAlpha = resolved.alphaStops[0].Alpha
+		resolved.flatAlpha = clamp01(alphaSum / float64(len(resolved.alphaStops)))
 	}
 	return resolved, nil
 }

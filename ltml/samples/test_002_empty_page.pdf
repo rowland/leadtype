@@ -50,7 +50,7 @@ endobj
 <<
 /Contents 8 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 39 
+/Length 36 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -60,14 +60,13 @@ endobj
 endobj
 8 0 obj
 <<
-/Length 39 
+/Length 36 
 >>
 stream
 /Artifact BMC
 EMC
 /Artifact BMC
 EMC
-ET
 endstream
 endobj
 xref
@@ -87,5 +86,5 @@ trailer
 /Size 9 
 >>
 startxref
-704
+701
 %%EOF

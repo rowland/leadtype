@@ -15,8 +15,8 @@
     </clipPath>
     <linearGradient id="hero-grad" x1="10" y1="28" x2="230" y2="110" gradientUnits="userSpaceOnUse" gradientTransform="rotate(-12 120 70)">
       <stop offset="0" stop-color="#0b5d81" />
-      <stop offset="0.55" stop-color="#56b8c7" stop-opacity="0.95" />
-      <stop offset="1" stop-color="#f38b56" stop-opacity="0.22" />
+      <stop offset="0.55" stop-color="#56b8c7" />
+      <stop offset="1" stop-color="#f38b56" />
     </linearGradient>
     <linearGradient id="badge-grad" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(24)">
       <stop offset="0" stop-color="#fff2c9" />

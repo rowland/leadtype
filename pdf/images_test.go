@@ -540,6 +540,32 @@ func TestDocWriter_PrintSVG_ReusesFormAcrossPages(t *testing.T) {
 	}
 }
 
+func TestDocWriter_PrintSVG_CacheSeparatesStopOpacityModes(t *testing.T) {
+	var buf bytes.Buffer
+	dw := NewDocWriter()
+	width := 120.0
+	if _, _, err := dw.PrintSVG(testSVGGradientOpacityFixture(), 0, 0, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	dw.SetSVGGradientStopOpacityMode("compatibility")
+	dw.NewPage()
+	if _, _, err := dw.PrintSVG(testSVGGradientOpacityFixture(), 0, 0, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if count := strings.Count(got, "/Subtype /Form"); count != 3 {
+		t.Fatalf("expected two cached SVG forms plus one soft-mask helper form, got %d\n%s", count, got)
+	}
+	for _, fragment := range []string{"/Fm0 Do", "/Fm1 Do"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+}
+
 func TestPageWriter_PrintSVG_GradientOpacityUsesSoftMask(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{"units": "pt"})
@@ -571,6 +597,33 @@ func TestPageWriter_PrintSVG_GradientOpacityUsesSoftMask(t *testing.T) {
 	}
 	if strings.Contains(got, "\nET\n") {
 		t.Fatalf("expected SVG-only output to avoid stray ET operators, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_PrintSVG_GradientOpacityCompatibilityModeUsesFlatAlpha(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "pt"})
+	if prev := pw.SetSVGGradientStopOpacityMode("compatibility"); prev != svgGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected default mode %q, got %q", svgGradientStopOpacityModeSoftMask, prev)
+	}
+	width := 120.0
+	if _, _, err := pw.PrintSVG(testSVGGradientOpacityFixture(), 0, 0, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	pw.close()
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if !strings.Contains(got, "/ca 0.56") {
+		t.Fatalf("expected compatibility mode to collapse stop-opacity to flat alpha 0.56, got:\n%s", got)
+	}
+	for _, fragment := range []string{"/SMask", "/Luminosity"} {
+		if strings.Contains(got, fragment) {
+			t.Fatalf("expected compatibility mode to avoid %q, got:\n%s", fragment, got)
+		}
 	}
 }
 

@@ -55,7 +55,7 @@ func runTest023SVGAdvanced() (string, error) {
 			return err
 		}
 
-		if err := drawSVGRowHeading(doc, 0.65, 1.04, "Gradient fixture: userSpaceOnUse, gradientTransform, stop-opacity, opacity, <use>, and clip-path."); err != nil {
+		if err := drawSVGRowHeading(doc, 0.65, 1.04, "Gradient fixture: userSpaceOnUse, gradientTransform, opacity, <use>, and clip-path."); err != nil {
 			return err
 		}
 		if err := drawSVGPanel(doc, 0.75, 1.28, 3.15, "PrintSVGFile(...)", func(width float64) (float64, float64, error) {

@@ -414,6 +414,26 @@ func TestDocWriter_SetOptions(t *testing.T) {
 	check(t, dw.options["units"] == "in", "Default units should be in")
 }
 
+func TestDocWriter_SetSVGGradientStopOpacityMode(t *testing.T) {
+	dw := NewDocWriter()
+	if prev := dw.SetSVGGradientStopOpacityMode("compatibility"); prev != svgGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected previous mode %q, got %q", svgGradientStopOpacityModeSoftMask, prev)
+	}
+	if got := svgGradientStopOpacityMode(dw.options); got != svgGradientStopOpacityModeFlat {
+		t.Fatalf("expected doc mode %q, got %q", svgGradientStopOpacityModeFlat, got)
+	}
+	pw := dw.NewPage()
+	if got := svgGradientStopOpacityMode(pw.options); got != svgGradientStopOpacityModeFlat {
+		t.Fatalf("expected page to inherit mode %q, got %q", svgGradientStopOpacityModeFlat, got)
+	}
+	if prev := dw.SetSVGGradientStopOpacityMode("soft-mask"); prev != svgGradientStopOpacityModeFlat {
+		t.Fatalf("expected previous mode %q, got %q", svgGradientStopOpacityModeFlat, prev)
+	}
+	if got := svgGradientStopOpacityMode(pw.options); got != svgGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected current page mode %q after doc update, got %q", svgGradientStopOpacityModeSoftMask, got)
+	}
+}
+
 func TestDocWriter_PathAPI_Integration(t *testing.T) {
 	var buf bytes.Buffer
 

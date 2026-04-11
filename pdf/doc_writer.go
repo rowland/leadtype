@@ -834,7 +834,7 @@ func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, erro
 	return image, name, nil
 }
 
-func (dw *DocWriter) loadSVGForm(data []byte, key string) (*cachedSVGForm, error) {
+func (dw *DocWriter) loadSVGForm(data []byte, key string, renderOptions options.Options) (*cachedSVGForm, error) {
 	if cached, ok := dw.svgForms[key]; ok {
 		return cached, nil
 	}
@@ -845,7 +845,7 @@ func (dw *DocWriter) loadSVGForm(data []byte, key string) (*cachedSVGForm, error
 	}
 	logSVGWarnings(warnings)
 
-	form, err := dw.newSVGForm(doc)
+	form, err := dw.newSVGForm(doc, renderOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -1129,6 +1129,19 @@ func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
 
 func (dw *DocWriter) SetOptions(options options.Options) {
 	dw.options = options
+}
+
+func (dw *DocWriter) SetSVGGradientStopOpacityMode(mode string) (prev string) {
+	prev = svgGradientStopOpacityMode(dw.options)
+	if dw.options == nil {
+		dw.options = options.Options{}
+	}
+	normalized := normalizeSVGGradientStopOpacityMode(mode)
+	dw.options[svgGradientStopOpacityModeOption] = normalized
+	if dw.curPage != nil {
+		dw.curPage.SetSVGGradientStopOpacityMode(normalized)
+	}
+	return prev
 }
 
 func (dw *DocWriter) SetUnderline(underline bool) (prev bool) {

@@ -52,7 +52,7 @@ endobj
 <<
 /Contents 54 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 32226 
+/Length 32223 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -498,7 +498,7 @@ endobj
 endobj
 54 0 obj
 <<
-/Length 32226 
+/Length 32223 
 >>
 stream
 /Artifact BMC
@@ -2169,7 +2169,6 @@ BT
 <000c> Tj
 ET
 Q
-ET
 endstream
 endobj
 55 0 obj
@@ -2519,17 +2518,17 @@ xref
 0000006014 00000 n
 0000006095 00000 n
 0000006175 00000 n
-0000038455 00000 n
-0000039141 00000 n
-0000039244 00000 n
-0000053542 00000 n
-0000054438 00000 n
-0000054571 00000 n
+0000038452 00000 n
+0000039138 00000 n
+0000039241 00000 n
+0000053539 00000 n
+0000054435 00000 n
+0000054568 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 61 
 >>
 startxref
-69669
+69666
 %%EOF
