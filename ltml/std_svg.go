@@ -17,10 +17,14 @@ func (svg *StdSVG) LayoutWidget(w Writer) {
 
 func (svg *StdSVG) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &svg.StdComponent.StdWidget, "Figure", func() error {
-		if strings.TrimSpace(svg.body) == "" {
+		body := svg.Body()
+		if strings.TrimSpace(body) == "" {
+			if err := svg.ensureBody(); err != nil {
+				return err
+			}
 			return fmt.Errorf("svg src or inline body must be specified")
 		}
-		_, _, err := w.PrintSVG([]byte(svg.body), ContentLeft(svg), ContentTop(svg), svg.widthForWriter(), svg.heightForWriter())
+		_, _, err := w.PrintSVG([]byte(body), ContentLeft(svg), ContentTop(svg), svg.widthForWriter(), svg.heightForWriter())
 		return err
 	})
 }
@@ -54,10 +58,14 @@ func (svg *StdSVG) PreferredWidth(w Writer) float64 {
 }
 
 func (svg *StdSVG) svgDimensions(w Writer) (width, height int, err error) {
-	if strings.TrimSpace(svg.body) == "" {
+	body := svg.Body()
+	if strings.TrimSpace(body) == "" {
+		if err := svg.ensureBody(); err != nil {
+			return 0, 0, err
+		}
 		return 0, 0, nil
 	}
-	return w.SVGDimensions([]byte(svg.body))
+	return w.SVGDimensions([]byte(body))
 }
 
 func (svg *StdSVG) SetAttrs(attrs map[string]string) {

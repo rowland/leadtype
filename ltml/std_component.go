@@ -17,10 +17,12 @@ import (
 
 type StdComponent struct {
 	StdContainer
-	body        string
-	src         string
-	srcExplicit bool
-	doc         *Doc
+	body              string
+	src               string
+	srcExplicit       bool
+	doc               *Doc
+	bodyLoadAttempted bool
+	bodyLoadErr       error
 }
 
 var networkAssetsDisabled atomic.Bool
@@ -30,6 +32,9 @@ func DisableNetworkAssets() {
 }
 
 func (c *StdComponent) Body() string {
+	if err := c.ensureBody(); err != nil {
+		return ""
+	}
 	return c.body
 }
 
@@ -38,6 +43,8 @@ func (c *StdComponent) SetBody(body string) {
 		return
 	}
 	c.body = body
+	c.bodyLoadAttempted = true
+	c.bodyLoadErr = nil
 }
 
 func (c *StdComponent) SetDoc(doc *Doc) {
@@ -50,16 +57,14 @@ func (c *StdComponent) SetAttrs(attrs map[string]string) {
 	if !ok || strings.TrimSpace(src) == "" {
 		return
 	}
-	c.src = strings.TrimSpace(src)
-	c.srcExplicit = true
-	body, err := c.loadBody(c.src)
-	if err != nil {
-		if c.doc != nil && c.doc.parseErr == nil {
-			c.doc.parseErr = err
-		}
-		return
+	src = strings.TrimSpace(src)
+	if c.src != src || !c.srcExplicit {
+		c.body = ""
+		c.bodyLoadAttempted = false
+		c.bodyLoadErr = nil
 	}
-	c.body = body
+	c.src = src
+	c.srcExplicit = true
 }
 
 func (c *StdComponent) loadBody(src string) (string, error) {
@@ -68,6 +73,24 @@ func (c *StdComponent) loadBody(src string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func (c *StdComponent) ensureBody() error {
+	if !c.srcExplicit || strings.TrimSpace(c.src) == "" {
+		return nil
+	}
+	if c.bodyLoadAttempted {
+		return c.bodyLoadErr
+	}
+	c.bodyLoadAttempted = true
+	body, err := c.loadBody(c.src)
+	if err != nil {
+		c.bodyLoadErr = err
+		return err
+	}
+	c.body = body
+	c.bodyLoadErr = nil
+	return nil
 }
 
 func loadAssetBytes(doc *Doc, container Container, src string) ([]byte, error) {

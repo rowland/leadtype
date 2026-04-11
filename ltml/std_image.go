@@ -5,17 +5,23 @@ package ltml
 
 import (
 	"fmt"
+	"strings"
 )
 
 type StdImage struct {
 	StdWidget
-	src  string
-	data []byte
-	doc  *Doc
+	src               string
+	data              []byte
+	doc               *Doc
+	dataLoadAttempted bool
+	dataLoadErr       error
 }
 
 func (img *StdImage) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &img.StdWidget, "Figure", func() error {
+		if err := img.ensureData(); err != nil {
+			return err
+		}
 		if len(img.data) == 0 {
 			return fmt.Errorf("image src must be specified")
 		}
@@ -53,6 +59,9 @@ func (img *StdImage) PreferredWidth(w Writer) float64 {
 }
 
 func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
+	if err := img.ensureData(); err != nil {
+		return 0, 0, err
+	}
 	if len(img.data) == 0 {
 		return 0, 0, nil
 	}
@@ -66,15 +75,31 @@ func (img *StdImage) SetDoc(doc *Doc) {
 func (img *StdImage) SetAttrs(attrs map[string]string) {
 	img.StdWidget.SetAttrs(attrs)
 	if src, ok := attrs["src"]; ok {
-		img.src = src
-		if data, err := loadAssetBytes(img.doc, img.container, src); err != nil {
-			if img.doc != nil && img.doc.parseErr == nil {
-				img.doc.parseErr = err
-			}
-		} else {
-			img.data = data
+		if img.src != src {
+			img.data = nil
+			img.dataLoadAttempted = false
+			img.dataLoadErr = nil
 		}
+		img.src = src
 	}
+}
+
+func (img *StdImage) ensureData() error {
+	if strings.TrimSpace(img.src) == "" {
+		return nil
+	}
+	if img.dataLoadAttempted {
+		return img.dataLoadErr
+	}
+	img.dataLoadAttempted = true
+	data, err := loadAssetBytes(img.doc, img.container, img.src)
+	if err != nil {
+		img.dataLoadErr = err
+		return err
+	}
+	img.data = data
+	img.dataLoadErr = nil
+	return nil
 }
 
 func (img *StdImage) String() string {

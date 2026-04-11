@@ -433,8 +433,8 @@ parsed and rendered through the PDF vector drawing path so unsupported SVG
 features are skipped with warnings to standard error rather than aborting the
 whole document when the rest of the file can still render.
 
-`<image>` loads its source during LTML parsing so its `src` resolution is
-consistent with other `src`-loading tags such as `<svg>`:
+`<image>` loads its source lazily on first layout or render use, so its `src`
+resolution is consistent with other `src`-loading tags such as `<svg>`:
 
 - when an asset filesystem is attached, `src` must be a clean relative asset
   path such as `logo.png` or `assets/logo.png`
@@ -482,12 +482,13 @@ optional network loading.
 
 LTML attributes affect page placement and widget styling only; they are not
 forwarded into the SVG XML. Inline SVG bodies should contain a full nested SVG
-document. External `src` content is loaded into the component body before
-rendering, so local assets and network SVGs follow the same render path as
+document. External `src` content is loaded lazily into the component body on
+first use, so local assets and network SVGs follow the same render path as
 inline markup.
 
 Because `<svg>` is component-backed, its `src` is loaded into the component
-body before rendering, but its path and URL resolution rules match `<image>`:
+body lazily on first use, but its path and URL resolution rules match
+`<image>`:
 
 - when an asset filesystem is attached, `src` must be a clean relative asset
   path and is loaded from that asset filesystem

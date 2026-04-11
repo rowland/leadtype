@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"io/fs"
 	"mime"
@@ -34,11 +35,14 @@ var (
 	renderLocalComponentBody         string
 )
 
-func (c *renderLocalComponent) SetBody(body string) {
-	c.StdComponent.SetBody(body)
+func (c *renderLocalComponent) DrawContent(w ltml.Writer) error {
 	renderLocalComponentMu.Lock()
 	defer renderLocalComponentMu.Unlock()
 	renderLocalComponentBody = c.Body()
+	if body := c.Body(); body == "" {
+		return fmt.Errorf("component body is empty")
+	}
+	return nil
 }
 
 func registerRenderLocalComponent(t *testing.T) {

@@ -34,11 +34,14 @@ var (
 	serveComponentBody         string
 )
 
-func (c *serveComponent) SetBody(body string) {
-	c.StdComponent.SetBody(body)
+func (c *serveComponent) DrawContent(w ltml.Writer) error {
 	serveComponentMu.Lock()
 	defer serveComponentMu.Unlock()
 	serveComponentBody = c.Body()
+	if body := c.Body(); body == "" {
+		return fmt.Errorf("component body is empty")
+	}
+	return nil
 }
 
 func registerServeComponent(t *testing.T) {

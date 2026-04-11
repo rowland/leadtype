@@ -53,7 +53,7 @@ func (w *imageTestWriter) PrintImage(data []byte, x, y float64, width, height *f
 }
 
 func TestStdImage_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg", data: []byte("fixture.jpg")}
+	img := &StdImage{data: []byte("fixture.jpg")}
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}, dataBySrc: map[string][]byte{"fixture.jpg": []byte("fixture.jpg")}}
 
 	if got := img.PreferredWidth(w); got != 144 {
@@ -65,7 +65,7 @@ func TestStdImage_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
 }
 
 func TestStdImage_PreferredHeight_InfersAspectRatioFromWidth(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg", data: []byte("fixture.jpg")}
+	img := &StdImage{data: []byte("fixture.jpg")}
 	img.SetWidth(72)
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}, dataBySrc: map[string][]byte{"fixture.jpg": []byte("fixture.jpg")}}
 
@@ -75,7 +75,7 @@ func TestStdImage_PreferredHeight_InfersAspectRatioFromWidth(t *testing.T) {
 }
 
 func TestStdImage_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg", data: []byte("fixture.jpg")}
+	img := &StdImage{data: []byte("fixture.jpg")}
 	img.SetHeight(48)
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}, dataBySrc: map[string][]byte{"fixture.jpg": []byte("fixture.jpg")}}
 
@@ -85,7 +85,7 @@ func TestStdImage_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
 }
 
 func TestStdImage_DrawContent_UsesContentBoxDimensions(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg", data: []byte("fixture.jpg")}
+	img := &StdImage{data: []byte("fixture.jpg")}
 	img.SetLeft(10)
 	img.SetTop(20)
 	img.SetWidth(120)
@@ -139,6 +139,12 @@ func TestParse_ImageTag(t *testing.T) {
 	if img.src != "fixture.jpg" {
 		t.Fatalf("src = %q, want %q", img.src, "fixture.jpg")
 	}
+	if len(img.data) != 0 {
+		t.Fatalf("data should not be loaded at parse time, got %q", string(img.data))
+	}
+	if err := img.ensureData(); err != nil {
+		t.Fatal(err)
+	}
 	if got := string(img.data); got != "image-data" {
 		t.Fatalf("data = %q, want image-data", got)
 	}
@@ -168,6 +174,12 @@ func TestParse_ImageTag_SrcLoadsRelativeToParsedFile(t *testing.T) {
 	if !ok {
 		t.Fatalf("child type = %T, want *StdImage", page.children[0])
 	}
+	if len(img.data) != 0 {
+		t.Fatalf("data should not be loaded at parse time, got %q", string(img.data))
+	}
+	if err := img.ensureData(); err != nil {
+		t.Fatal(err)
+	}
 	if got := string(img.data); got != "image-data" {
 		t.Fatalf("data = %q, want image-data", got)
 	}
@@ -192,6 +204,12 @@ func TestParse_ImageTag_NetworkSrcLoadsWhenEnabled(t *testing.T) {
 	img, ok := page.children[0].(*StdImage)
 	if !ok {
 		t.Fatalf("child type = %T, want *StdImage", page.children[0])
+	}
+	if len(img.data) != 0 {
+		t.Fatalf("data should not be loaded at parse time, got %q", string(img.data))
+	}
+	if err := img.ensureData(); err != nil {
+		t.Fatal(err)
 	}
 	if got := string(img.data); got != "image-data" {
 		t.Fatalf("data = %q, want image-data", got)

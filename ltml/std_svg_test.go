@@ -115,9 +115,9 @@ func TestStdSVG_DrawContent_UsesContentBoxDimensionsForInlineSVG(t *testing.T) {
 
 func TestStdSVG_DrawContent_UsesFilePathWhenSrcIsSet(t *testing.T) {
 	svg := &StdSVG{}
+	svg.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", `<svg xmlns="http://www.w3.org/2000/svg"></svg>`))))
 	svg.src = "fixture.svg"
 	svg.srcExplicit = true
-	svg.body = `<svg xmlns="http://www.w3.org/2000/svg"></svg>`
 	svg.SetLeft(10)
 	svg.SetTop(20)
 	w := &svgTestWriter{}
@@ -128,8 +128,8 @@ func TestStdSVG_DrawContent_UsesFilePathWhenSrcIsSet(t *testing.T) {
 	if len(w.inlineCalls) != 1 {
 		t.Fatalf("inline call count = %d, want 1", len(w.inlineCalls))
 	}
-	if got := w.inlineCalls[0].body; got != svg.body {
-		t.Fatalf("body = %q, want %q", got, svg.body)
+	if got := w.inlineCalls[0].body; got != `<svg xmlns="http://www.w3.org/2000/svg"></svg>` {
+		t.Fatalf("body = %q, want SVG loaded from src", got)
 	}
 }
 

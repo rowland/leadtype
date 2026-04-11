@@ -194,7 +194,9 @@ Component-backed tags follow these source-loading rules:
 - `http` and `https` sources require document opt-in for network assets
 
 The built-in `<image>` tag now follows the same source-resolution rules even
-though it renders as a leaf graphic widget rather than a component body.
+though it renders as a leaf graphic widget rather than a component body. Both
+`<image>` and component-backed tags load `src` lazily on first use instead of
+at parse time.
 
 ---
 

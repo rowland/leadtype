@@ -107,7 +107,7 @@ func TestComponent_SrcLoadsFromDocAssetFSAndIgnoresInlineBody(t *testing.T) {
 func TestComponent_SrcRejectsInvalidAssetPath(t *testing.T) {
 	registerTestComponentTag(t)
 
-	_, err := Parse([]byte(`
+	doc, err := Parse([]byte(`
 <ltml xmlns:xt="componenttest">
   <page>
     <xt:card src="../snippet.xml" />
@@ -115,8 +115,19 @@ func TestComponent_SrcRejectsInvalidAssetPath(t *testing.T) {
 </ltml>`), WithAssetFS(fstest.MapFS{
 		"snippet.xml": &fstest.MapFile{Data: []byte("unused")},
 	}))
-	if err == nil {
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Page(0)
+	component, ok := page.Widgets()[0].(*testComponent)
+	if !ok {
+		t.Fatalf("first child = %T, want *testComponent", page.Widgets()[0])
+	}
+	if err := component.ensureBody(); err == nil {
 		t.Fatal("expected invalid asset path error")
+	}
+	if got := component.Body(); got != "" {
+		t.Fatalf("body = %q, want empty on load failure", got)
 	}
 }
 
@@ -128,23 +139,34 @@ func TestComponent_NetworkAssetsRequireDocumentOptIn(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := Parse([]byte(`
+	doc, err := Parse([]byte(`
 <ltml xmlns:xt="componenttest">
   <page>
     <xt:card src="` + srv.URL + `" />
   </page>
 </ltml>`))
-	if err == nil {
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Page(0)
+	component, ok := page.Widgets()[0].(*testComponent)
+	if !ok {
+		t.Fatalf("first child = %T, want *testComponent", page.Widgets()[0])
+	}
+	if err := component.ensureBody(); err == nil {
 		t.Fatal("expected network-assets disabled error")
 	}
+	if got := component.Body(); got != "" {
+		t.Fatalf("body = %q, want empty when network assets are disabled", got)
+	}
 
-	_, component := parsedTestComponent(t, `
+	_, componentEnabled := parsedTestComponent(t, `
 <ltml xmlns:xt="componenttest" network-assets="true">
   <page>
     <xt:card src="`+srv.URL+`" />
   </page>
 </ltml>`, nil)
-	if got, want := component.Body(), "<p>remote body</p>"; got != want {
+	if got, want := componentEnabled.Body(), "<p>remote body</p>"; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
 }
@@ -163,14 +185,25 @@ func TestComponent_DisableNetworkAssetsOverridesDocumentSetting(t *testing.T) {
 	})
 	DisableNetworkAssets()
 
-	_, err := Parse([]byte(`
+	doc, err := Parse([]byte(`
 <ltml xmlns:xt="componenttest" network-assets="true">
   <page>
     <xt:card src="` + srv.URL + `" />
   </page>
 </ltml>`))
-	if err == nil {
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Page(0)
+	component, ok := page.Widgets()[0].(*testComponent)
+	if !ok {
+		t.Fatalf("first child = %T, want *testComponent", page.Widgets()[0])
+	}
+	if err := component.ensureBody(); err == nil {
 		t.Fatal("expected global network disable error")
+	}
+	if got := component.Body(); got != "" {
+		t.Fatalf("body = %q, want empty when network assets are globally disabled", got)
 	}
 }
 
