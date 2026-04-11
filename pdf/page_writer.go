@@ -1068,6 +1068,9 @@ func (pw *PageWriter) endPath() {
 
 func (pw *PageWriter) endText() {
 	pw.flushText()
+	if !pw.inText {
+		return
+	}
 	pw.tw.close()
 	pw.inText = false
 }

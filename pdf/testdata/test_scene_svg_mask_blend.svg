@@ -1,0 +1,41 @@
+<svg width="240" height="150" viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <style>
+      .panel { fill: #234b64; }
+      .overlay { mix-blend-mode: hard-light; }
+    </style>
+    <rect id="panel-shape" x="18" y="18" width="204" height="108" rx="22" />
+    <clipPath id="panel-clip">
+      <use xlink:href="#panel-shape" />
+    </clipPath>
+    <linearGradient id="mask-grad" x1="18" y1="18" x2="222" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#000000" />
+    </linearGradient>
+    <mask id="fade" maskUnits="userSpaceOnUse">
+      <g filter="url(#luminosity-noclip)">
+        <rect x="18" y="18" width="204" height="108" rx="22" fill="url(#mask-grad)" />
+      </g>
+    </mask>
+    <filter id="luminosity-noclip" x="0" y="0" width="240" height="150" filterUnits="userSpaceOnUse">
+      <feFlood flood-color="#ffffff" result="bg" />
+      <feBlend in="SourceGraphic" in2="bg" />
+    </filter>
+    <linearGradient id="overlay-grad" x1="18" y1="124" x2="222" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#55d5e0" />
+      <stop offset="1" stop-color="#ff8db0" />
+    </linearGradient>
+  </defs>
+  <rect width="240" height="150" fill="#f7f1e6" />
+  <use xlink:href="#panel-shape" class="panel" />
+  <g clip-path="url(#panel-clip)">
+    <circle cx="80" cy="74" r="44" fill="#f1c85e" opacity="0.82" />
+    <circle cx="150" cy="62" r="50" fill="#3e97c8" opacity="0.62" />
+    <rect x="34" y="92" width="170" height="16" rx="8" fill="#faf4ec" opacity="0.22" />
+  </g>
+  <g class="overlay" clip-path="url(#panel-clip)" mask="url(#fade)">
+    <path fill="url(#overlay-grad)" d="M18 92 C64 26 138 144 222 30 L222 126 L18 126 Z" />
+  </g>
+  <use xlink:href="#panel-shape" fill="none" stroke="#16394f" stroke-width="3" opacity="0.22" />
+  <rect x="28" y="28" width="56" height="10" rx="5" fill="#f8f0e4" opacity="0.45" />
+</svg>

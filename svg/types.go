@@ -14,7 +14,11 @@ type Document struct {
 	ViewBox   ViewBox
 	Children  []Node
 	ClipPaths map[string]*ClipPath
-	Classes   map[string]StyleSpec
+	Gradients map[string]*Gradient
+	Masks     map[string]*Mask
+	Filters   map[string]*Filter
+	Refs      map[string]Node
+	Classes   map[string]map[string]string
 	Warnings  []Warning
 }
 
@@ -35,6 +39,8 @@ type Common struct {
 	Transform   Transform
 	Style       StyleSpec
 	ClipPathRef string
+	MaskRef     string
+	FilterRef   string
 }
 
 func (c *Common) NodeCommon() *Common {
@@ -134,6 +140,48 @@ type Text struct {
 
 func (*Text) node() {}
 
+type Use struct {
+	Common
+	Href   string
+	X      float64
+	Y      float64
+	Width  float64
+	Height float64
+}
+
+func (*Use) node() {}
+
+type Mask struct {
+	Common
+	X            float64
+	Y            float64
+	Width        float64
+	Height       float64
+	Units        string
+	ContentUnits string
+	Children     []Node
+}
+
+func (*Mask) node() {}
+
+type Filter struct {
+	ID         string
+	X          float64
+	Y          float64
+	Width      float64
+	Height     float64
+	Units      string
+	Primitives []FilterPrimitive
+}
+
+type FilterPrimitive struct {
+	Kind       string
+	Result     string
+	In         string
+	In2        string
+	FloodColor colors.Color
+}
+
 type Point struct {
 	X float64
 	Y float64
@@ -157,6 +205,71 @@ type Paint struct {
 	Set   bool
 	None  bool
 	Color colors.Color
+	Ref   string
+}
+
+func (p Paint) IsGradient() bool {
+	return p.Ref != ""
+}
+
+type LengthUnit uint8
+
+const (
+	LengthNumber LengthUnit = iota
+	LengthPercent
+)
+
+type Length struct {
+	Value float64
+	Unit  LengthUnit
+}
+
+func (l Length) Resolve(relative float64) float64 {
+	if l.Unit == LengthPercent {
+		return relative * l.Value / 100.0
+	}
+	return l.Value
+}
+
+type GradientKind uint8
+
+const (
+	GradientLinear GradientKind = iota
+	GradientRadial
+)
+
+type Gradient struct {
+	ID           string
+	Kind         GradientKind
+	Units        string
+	SpreadMethod string
+	Href         string
+	Transform    Transform
+	Linear       LinearGradient
+	Radial       RadialGradient
+	Stops        []GradientStop
+}
+
+type LinearGradient struct {
+	X1 Length
+	Y1 Length
+	X2 Length
+	Y2 Length
+}
+
+type RadialGradient struct {
+	CX Length
+	CY Length
+	R  Length
+	FX Length
+	FY Length
+	FR Length
+}
+
+type GradientStop struct {
+	Position float64
+	Color    colors.Color
+	Opacity  float64
 }
 
 type StyleSpec struct {
@@ -177,6 +290,7 @@ type StyleSpec struct {
 	FontStyle     *string
 	FontWeight    *string
 	TextAnchor    *string
+	BlendMode     *string
 	Display       *string
 }
 
@@ -198,6 +312,7 @@ type Style struct {
 	FontStyle     string
 	FontWeight    string
 	TextAnchor    string
+	BlendMode     string
 	Display       string
 }
 
@@ -224,6 +339,7 @@ func DefaultStyle() Style {
 		FontStyle:     "normal",
 		FontWeight:    "normal",
 		TextAnchor:    "start",
+		BlendMode:     "normal",
 		Display:       "inline",
 	}
 }
@@ -246,7 +362,7 @@ func (spec StyleSpec) Resolve(parent Style) Style {
 		out.StrokeOpacity = *spec.StrokeOpacity
 	}
 	if spec.Opacity != nil {
-		out.Opacity = *spec.Opacity
+		out.Opacity *= *spec.Opacity
 	}
 	if spec.LineCap != nil {
 		out.LineCap = *spec.LineCap
@@ -280,6 +396,9 @@ func (spec StyleSpec) Resolve(parent Style) Style {
 	}
 	if spec.TextAnchor != nil {
 		out.TextAnchor = *spec.TextAnchor
+	}
+	if spec.BlendMode != nil {
+		out.BlendMode = *spec.BlendMode
 	}
 	if spec.Display != nil {
 		out.Display = *spec.Display

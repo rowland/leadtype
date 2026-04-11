@@ -1,0 +1,41 @@
+<svg width="240" height="160" viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <style>
+      .hero-fill { fill: url(#hero-grad); }
+      .mist { fill: #fff7ee; opacity: 0.24; }
+      .badge { fill: url(#badge-grad); stroke: #fff4e6; stroke-width: 1.3; opacity: 0.92; }
+      .dot { fill: url(#badge-grad); opacity: 0.90; }
+      .outline { fill: none; stroke: #20445d; stroke-width: 3; opacity: 0.25; }
+    </style>
+    <rect id="hero-window" x="18" y="20" width="204" height="92" rx="24" />
+    <circle id="accent-dot" cx="0" cy="0" r="8" />
+    <path id="spark" d="M0 -12 L4 -4 L13 -2 L6 3 L8 12 L0 7 L-8 12 L-6 3 L-13 -2 L-4 -4 Z" />
+    <clipPath id="hero-clip">
+      <use xlink:href="#hero-window" />
+    </clipPath>
+    <linearGradient id="hero-grad" x1="10" y1="28" x2="230" y2="110" gradientUnits="userSpaceOnUse" gradientTransform="rotate(-12 120 70)">
+      <stop offset="0" stop-color="#0b5d81" />
+      <stop offset="0.55" stop-color="#56b8c7" stop-opacity="0.95" />
+      <stop offset="1" stop-color="#f38b56" stop-opacity="0.22" />
+    </linearGradient>
+    <linearGradient id="badge-grad" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(24)">
+      <stop offset="0" stop-color="#fff2c9" />
+      <stop offset="1" stop-color="#ed6b5a" />
+    </linearGradient>
+  </defs>
+  <rect width="240" height="160" fill="#f7f2e7" />
+  <use xlink:href="#hero-window" fill="#1e4560" opacity="0.12" />
+  <g clip-path="url(#hero-clip)">
+    <rect class="hero-fill" x="18" y="20" width="204" height="92" />
+    <path class="mist" d="M-4 96 C44 52 96 134 148 88 C182 60 212 62 252 38 L252 118 L-4 118 Z" />
+    <path fill="#15425e" opacity="0.20" d="M-8 40 C36 82 92 4 148 44 C188 72 214 58 248 88 L248 0 L-8 0 Z" />
+    <use xlink:href="#spark" class="badge" x="58" y="60" transform="scale(1.75)" />
+    <use xlink:href="#spark" class="badge" x="122" y="46" transform="scale(1.45)" />
+    <use xlink:href="#spark" class="badge" x="184" y="72" transform="scale(1.2)" />
+  </g>
+  <use xlink:href="#hero-window" class="outline" />
+  <path fill="#193b53" opacity="0.18" d="M26 128 C70 116 132 116 214 138 L214 146 C140 132 78 132 26 142 Z" />
+  <use xlink:href="#accent-dot" class="dot" x="54" y="130" transform="scale(1.05)" />
+  <use xlink:href="#accent-dot" class="dot" x="82" y="134" transform="scale(0.7)" />
+  <use xlink:href="#accent-dot" class="dot" x="107" y="130" transform="scale(0.55)" />
+</svg>
