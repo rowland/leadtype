@@ -15,13 +15,14 @@ import (
 )
 
 type Doc struct {
-	root      *StdDocument
-	stack     []any
-	scopes    []HasScope
-	rootScope Scope // per-document root scope; parent = &defaultScope
-	parseErr  error
-	assetFS   fs.FS
-	sourceDir string
+	root         *StdDocument
+	stack        []any
+	scopes       []HasScope
+	rootScope    Scope // per-document root scope; parent = &defaultScope
+	parseErr     error
+	assetFS      fs.FS
+	sourceDir    string
+	assetSources *assetSourceManager
 }
 
 type ParseOption func(*Doc)
@@ -33,13 +34,15 @@ func WithAssetFS(assetFS fs.FS) ParseOption {
 }
 
 func newDocWithOptions(opts ...ParseOption) *Doc {
-	var doc Doc
+	doc := &Doc{
+		assetSources: newAssetSourceManager(),
+	}
 	for _, opt := range opts {
 		if opt != nil {
-			opt(&doc)
+			opt(doc)
 		}
 	}
-	return &doc
+	return doc
 }
 
 func (doc *Doc) parseBytes(b []byte) error {
@@ -128,7 +131,35 @@ func (doc *Doc) Print(w Writer) (err error) {
 	if doc.root == nil {
 		return nil
 	}
-	return doc.root.Print(w)
+	if doc.assetFS != nil {
+		if assetSetter, ok := any(w).(interface{ SetAssetFS(fs.FS) }); ok {
+			assetSetter.SetAssetFS(doc.assetFS)
+		}
+	}
+	if err := doc.root.Print(w); err != nil {
+		doc.cleanupAssetSources()
+		return err
+	}
+	if registrar, ok := any(w).(interface{ RegisterWriteToCleanup(func()) }); ok {
+		registrar.RegisterWriteToCleanup(doc.cleanupAssetSources)
+		return nil
+	}
+	doc.cleanupAssetSources()
+	return nil
+}
+
+func (doc *Doc) resolveAssetSource(container Container, src string) (assetSourceRef, error) {
+	if doc == nil || doc.assetSources == nil {
+		return assetSourceRef{}, fmt.Errorf("asset sources are not initialized")
+	}
+	return doc.assetSources.resolve(doc, container, src)
+}
+
+func (doc *Doc) cleanupAssetSources() {
+	if doc == nil || doc.assetSources == nil {
+		return
+	}
+	doc.assetSources.cleanup()
 }
 
 func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {

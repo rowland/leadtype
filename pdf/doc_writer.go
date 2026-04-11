@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -50,6 +51,7 @@ type DocWriter struct {
 	compressEmbeddedFonts bool
 	destinations          map[string]namedDestination
 	pendingTargetLinks    []*linkAnnotation
+	writeToCleanups       []func()
 }
 
 type cachedImage struct {
@@ -191,8 +193,24 @@ func (dw *DocWriter) AssetFS() fs.FS {
 	return dw.assetFS
 }
 
+func (dw *DocWriter) RegisterWriteToCleanup(fn func()) {
+	if fn == nil {
+		return
+	}
+	dw.writeToCleanups = append(dw.writeToCleanups, fn)
+}
+
+func (dw *DocWriter) runWriteToCleanups() {
+	for _, fn := range dw.writeToCleanups {
+		if fn != nil {
+			fn()
+		}
+	}
+	dw.writeToCleanups = nil
+}
+
 func (dw *DocWriter) readImageFile(filename string) ([]byte, error) {
-	if dw.assetFS == nil {
+	if filepath.IsAbs(filename) || dw.assetFS == nil {
 		return os.ReadFile(filename)
 	}
 	if !validAssetPath(filename) {
@@ -1084,6 +1102,7 @@ func (dw *DocWriter) Write(text []byte) (n int, err error) {
 
 // WriteTo implements io.WriterTo.
 func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
+	defer dw.runWriteToCleanups()
 	if len(dw.pages) == 0 {
 		dw.NewPage()
 	}

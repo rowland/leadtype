@@ -17,11 +17,19 @@ func (svg *StdSVG) LayoutWidget(w Writer) {
 
 func (svg *StdSVG) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &svg.StdComponent.StdWidget, "Figure", func() error {
-		body := svg.Body()
-		if strings.TrimSpace(body) == "" {
-			if err := svg.ensureBody(); err != nil {
+		if svg.srcExplicit && strings.TrimSpace(svg.src) != "" {
+			ref, err := svg.assetSource()
+			if err != nil {
 				return err
 			}
+			if ref.identifier == "" {
+				return fmt.Errorf("svg src or inline body must be specified")
+			}
+			_, _, err = w.PrintSVGFile(ref.identifier, ContentLeft(svg), ContentTop(svg), svg.widthForWriter(), svg.heightForWriter())
+			return err
+		}
+		body := svg.Body()
+		if strings.TrimSpace(body) == "" {
 			return fmt.Errorf("svg src or inline body must be specified")
 		}
 		_, _, err := w.PrintSVG([]byte(body), ContentLeft(svg), ContentTop(svg), svg.widthForWriter(), svg.heightForWriter())
@@ -58,11 +66,18 @@ func (svg *StdSVG) PreferredWidth(w Writer) float64 {
 }
 
 func (svg *StdSVG) svgDimensions(w Writer) (width, height int, err error) {
-	body := svg.Body()
-	if strings.TrimSpace(body) == "" {
-		if err := svg.ensureBody(); err != nil {
+	if svg.srcExplicit && strings.TrimSpace(svg.src) != "" {
+		ref, err := svg.assetSource()
+		if err != nil {
 			return 0, 0, err
 		}
+		if ref.identifier == "" {
+			return 0, 0, nil
+		}
+		return w.SVGDimensionsFromFile(ref.identifier)
+	}
+	body := svg.Body()
+	if strings.TrimSpace(body) == "" {
 		return 0, 0, nil
 	}
 	return w.SVGDimensions([]byte(body))

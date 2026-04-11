@@ -11,15 +11,24 @@ type svgTestWriter struct {
 	labelTestWriter
 	fileDimensions   map[string][2]int
 	inlineDimensions [2]int
-	inlineCalls      []svgPrintCall
+	inlineCalls      []svgInlinePrintCall
+	fileCalls        []svgFilePrintCall
 }
 
-type svgPrintCall struct {
+type svgInlinePrintCall struct {
 	body   string
 	x      float64
 	y      float64
 	width  *float64
 	height *float64
+}
+
+type svgFilePrintCall struct {
+	filename string
+	x        float64
+	y        float64
+	width    *float64
+	height   *float64
 }
 
 func (w *svgTestWriter) SVGDimensions(data []byte) (width, height int, err error) {
@@ -37,12 +46,23 @@ func (w *svgTestWriter) SVGDimensionsFromFile(filename string) (width, height in
 }
 
 func (w *svgTestWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	w.inlineCalls = append(w.inlineCalls, svgPrintCall{
+	w.inlineCalls = append(w.inlineCalls, svgInlinePrintCall{
 		body:   string(data),
 		x:      x,
 		y:      y,
 		width:  width,
 		height: height,
+	})
+	return 0, 0, nil
+}
+
+func (w *svgTestWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	w.fileCalls = append(w.fileCalls, svgFilePrintCall{
+		filename: filename,
+		x:        x,
+		y:        y,
+		width:    width,
+		height:   height,
 	})
 	return 0, 0, nil
 }
@@ -98,6 +118,9 @@ func TestStdSVG_DrawContent_UsesContentBoxDimensionsForInlineSVG(t *testing.T) {
 	if len(w.inlineCalls) != 1 {
 		t.Fatalf("inline call count = %d, want 1", len(w.inlineCalls))
 	}
+	if len(w.fileCalls) != 0 {
+		t.Fatalf("file call count = %d, want 0", len(w.fileCalls))
+	}
 	call := w.inlineCalls[0]
 	if call.x != 16 || call.y != 26 {
 		t.Fatalf("x,y = %v,%v, want 16,26", call.x, call.y)
@@ -125,11 +148,14 @@ func TestStdSVG_DrawContent_UsesFilePathWhenSrcIsSet(t *testing.T) {
 	if err := svg.DrawContent(w); err != nil {
 		t.Fatal(err)
 	}
-	if len(w.inlineCalls) != 1 {
-		t.Fatalf("inline call count = %d, want 1", len(w.inlineCalls))
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("file call count = %d, want 1", len(w.fileCalls))
 	}
-	if got := w.inlineCalls[0].body; got != `<svg xmlns="http://www.w3.org/2000/svg"></svg>` {
-		t.Fatalf("body = %q, want SVG loaded from src", got)
+	if len(w.inlineCalls) != 0 {
+		t.Fatalf("inline call count = %d, want 0", len(w.inlineCalls))
+	}
+	if got := w.fileCalls[0].filename; got != "fixture.svg" {
+		t.Fatalf("filename = %q, want fixture.svg", got)
 	}
 }
 
@@ -219,6 +245,20 @@ func TestParse_SVGTag_NetworkSrcLoadsBodyWhenEnabled(t *testing.T) {
 	svg, ok := page.children[0].(*StdSVG)
 	if !ok {
 		t.Fatalf("child type = %T, want *StdSVG", page.children[0])
+	}
+	ref1, err := svg.assetSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref2, err := svg.assetSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref1.kind != assetSourceNetworkTempFile || ref1.identifier == "" {
+		t.Fatalf("ref1 = %#v, want network temp file", ref1)
+	}
+	if ref1.identifier != ref2.identifier {
+		t.Fatalf("temp file should be reused, got %q then %q", ref1.identifier, ref2.identifier)
 	}
 	if got := svg.Body(); got == "" {
 		t.Fatal("expected network-loaded body to be retained")

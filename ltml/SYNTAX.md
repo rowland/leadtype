@@ -437,12 +437,14 @@ whole document when the rest of the file can still render.
 resolution is consistent with other `src`-loading tags such as `<svg>`:
 
 - when an asset filesystem is attached, `src` must be a clean relative asset
-  path such as `logo.png` or `assets/logo.png`
+  path such as `logo.png` or `assets/logo.png`; LTML keeps that path virtual
+  and lets the writer read it through the configured asset filesystem
 - when no asset filesystem is attached, relative file paths are resolved
   relative to the LTML document being parsed, while absolute paths remain
   absolute
 - `http` and `https` URLs are supported only when document/network loading is
-  explicitly enabled
+  explicitly enabled; network assets are fetched lazily into a temp file and
+  cleaned up after rendering
 
 Images without `alt` remain decorative and are not added to the document's
 logical structure tree.
@@ -491,12 +493,13 @@ body lazily on first use, but its path and URL resolution rules match
 `<image>`:
 
 - when an asset filesystem is attached, `src` must be a clean relative asset
-  path and is loaded from that asset filesystem
+  path and is read virtually from that asset filesystem
 - when no asset filesystem is attached, relative file paths are resolved
   relative to the LTML document being parsed, while absolute paths remain
   absolute
 - `http` and `https` URLs are supported only when document/network loading is
-  explicitly enabled
+  explicitly enabled; network assets are fetched lazily into a temp file and
+  cleaned up after rendering
 
 ---
 

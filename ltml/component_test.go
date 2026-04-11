@@ -102,6 +102,13 @@ func TestComponent_SrcLoadsFromDocAssetFSAndIgnoresInlineBody(t *testing.T) {
 	if got, want := component.Body(), "<p>from asset fs</p>"; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
+	ref, err := component.assetSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref.kind != assetSourceAssetFS || ref.identifier != "snippet.xml" {
+		t.Fatalf("ref = %#v, want assetFS snippet.xml", ref)
+	}
 }
 
 func TestComponent_SrcRejectsInvalidAssetPath(t *testing.T) {
@@ -166,6 +173,20 @@ func TestComponent_NetworkAssetsRequireDocumentOptIn(t *testing.T) {
     <xt:card src="`+srv.URL+`" />
   </page>
 </ltml>`, nil)
+	ref1, err := componentEnabled.assetSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref2, err := componentEnabled.assetSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref1.kind != assetSourceNetworkTempFile || ref1.identifier == "" {
+		t.Fatalf("ref1 = %#v, want network temp file", ref1)
+	}
+	if ref1.identifier != ref2.identifier {
+		t.Fatalf("temp file should be reused, got %q then %q", ref1.identifier, ref2.identifier)
+	}
 	if got, want := componentEnabled.Body(), "<p>remote body</p>"; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
@@ -234,8 +255,52 @@ func TestComponent_SrcLoadsRelativeToParsedFile(t *testing.T) {
 	if !ok {
 		t.Fatalf("first child = %T, want *testComponent", page.Widgets()[0])
 	}
+	ref, err := component.assetSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref.kind != assetSourceFile || ref.identifier != filepath.Join(dir, "snippet.xml") {
+		t.Fatalf("ref = %#v, want file %q", ref, filepath.Join(dir, "snippet.xml"))
+	}
 	if got, want := component.Body(), "<p>from relative file</p>"; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
+	}
+}
+
+func TestComponent_BodyRereadsLocalFileOnEachCall(t *testing.T) {
+	registerTestComponentTag(t)
+
+	dir := t.TempDir()
+	fixture := filepath.Join(dir, "snippet.xml")
+	if err := os.WriteFile(fixture, []byte("<p>one</p>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputPath := filepath.Join(dir, "doc.ltml")
+	if err := os.WriteFile(inputPath, []byte(`
+<ltml xmlns:xt="componenttest">
+  <page>
+    <xt:card src="snippet.xml" />
+  </page>
+</ltml>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc, err := ParseFile(inputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	component, ok := doc.Page(0).Widgets()[0].(*testComponent)
+	if !ok {
+		t.Fatalf("first child = %T, want *testComponent", doc.Page(0).Widgets()[0])
+	}
+	if got := component.Body(); got != "<p>one</p>" {
+		t.Fatalf("body = %q, want <p>one</p>", got)
+	}
+	if err := os.WriteFile(fixture, []byte("<p>two</p>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := component.Body(); got != "<p>two</p>" {
+		t.Fatalf("body after rewrite = %q, want <p>two</p>", got)
 	}
 }
 
