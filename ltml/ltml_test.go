@@ -117,43 +117,49 @@ func sampleFile(filename string) string {
 func writeSamplePDF(name string, outputFile string, t *testing.T) {
 	t.Helper()
 
-	doc, err := ParseFile(sampleFile(name + ".ltml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	f, err := os.Create(outputFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ttFonts, afmFonts, err := loadSampleFontSources()
-	if err != nil {
-		t.Fatal(err)
-	}
-	w := &ltpdf.DocWriter{DocWriter: pdf.NewDocWriter()}
-	w.AddFontSource(ttFonts)
-	w.AddFontSource(afmFonts)
 	if assetFS, err := sampleAssetFS(); err != nil {
 		t.Fatal(err)
-	} else if assetFS != nil {
-		w.SetAssetFS(assetFS)
-	}
-	// Tagged PDF accessibility is document-driven for LTML samples. Add
-	// ua="true" to the root <ltml> element to opt a sample in, or call
-	// w.EnableTaggedPDF(true) here to force tagged output for the whole suite.
-	if tagged, ok := os.LookupEnv("LTML_UA"); ok && tagged == "true" {
-		w.EnableTaggedPDF(tagged == "true")
-	}
+	} else {
+		doc, err := ParseFile(sampleFile(name + ".ltml"))
+		if err != nil && assetFS != nil {
+			doc, err = ParseFile(sampleFile(name+".ltml"), WithAssetFS(assetFS))
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if err := doc.Print(w); err != nil {
-		t.Errorf("Printing sample: %v", err)
-	}
+		f, err := os.Create(outputFile)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	w.WriteTo(f)
-	f.Close()
-	if *openSamplePDFs {
-		exec.Command("open", outputFile).Start()
+		ttFonts, afmFonts, err := loadSampleFontSources()
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := &ltpdf.DocWriter{DocWriter: pdf.NewDocWriter()}
+		w.AddFontSource(ttFonts)
+		w.AddFontSource(afmFonts)
+		if assetFS != nil {
+			w.SetAssetFS(assetFS)
+		}
+		// Tagged PDF accessibility is document-driven for LTML samples. Add
+		// ua="true" to the root <ltml> element to opt a sample in, or call
+		// w.EnableTaggedPDF(true) here to force tagged output for the whole suite.
+		if tagged, ok := os.LookupEnv("LTML_UA"); ok && tagged == "true" {
+			w.EnableTaggedPDF(tagged == "true")
+		}
+
+		if err := doc.Print(w); err != nil {
+			t.Errorf("Printing sample: %v", err)
+		}
+
+		w.WriteTo(f)
+		f.Close()
+		if *openSamplePDFs {
+			exec.Command("open", outputFile).Start()
+		}
+		return
 	}
 }
 
@@ -226,6 +232,7 @@ func TestSamples(t *testing.T) {
 		"test_039_radial_out",
 		"test_040_radial_sweep_star_wars",
 		"test_041_pseudo_classes",
+		"test_042_svg_tag",
 	}
 
 	for _, sample := range samples {

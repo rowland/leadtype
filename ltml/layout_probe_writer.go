@@ -50,6 +50,15 @@ func (w *layoutProbeWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse 
 func (w *layoutProbeWriter) FontColor() colors.Color { return w.base.FontColor() }
 func (w *layoutProbeWriter) Fonts() []*font.Font     { return w.base.Fonts() }
 func (w *layoutProbeWriter) FontSize() float64       { return w.base.FontSize() }
+func (w *layoutProbeWriter) ImageDimensions(data []byte) (width, height int, err error) {
+	return w.base.ImageDimensions(data)
+}
+func (w *layoutProbeWriter) SVGDimensions(data []byte) (width, height int, err error) {
+	return w.base.SVGDimensions(data)
+}
+func (w *layoutProbeWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
+	return w.base.SVGDimensionsFromFile(filename)
+}
 func (w *layoutProbeWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	return w.base.ImageDimensionsFromFile(filename)
 }
@@ -72,6 +81,15 @@ func (w *layoutProbeWriter) Polygon(x, y, r float64, sides int, border, fill, re
 	return nil
 }
 func (w *layoutProbeWriter) Print(text string) error { return nil }
+func (w *layoutProbeWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
+}
+func (w *layoutProbeWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
+}
+func (w *layoutProbeWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
+}
 func (w *layoutProbeWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return 0, 0, nil
 }

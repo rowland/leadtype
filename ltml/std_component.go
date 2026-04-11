@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 )
@@ -62,60 +63,66 @@ func (c *StdComponent) SetAttrs(attrs map[string]string) {
 }
 
 func (c *StdComponent) loadBody(src string) (string, error) {
-	if assetURL, err := url.Parse(src); err == nil && assetURL.Scheme != "" {
-		return c.loadURLBody(assetURL)
-	}
-	return c.loadFileBody(src)
-}
-
-func (c *StdComponent) loadFileBody(src string) (string, error) {
-	if c.doc != nil && c.doc.assetFS != nil {
-		if !validAssetPath(src) {
-			return "", fmt.Errorf("invalid asset path %q", src)
-		}
-		data, err := fs.ReadFile(c.doc.assetFS, src)
-		if err != nil {
-			return "", err
-		}
-		return string(data), nil
-	}
-	data, err := os.ReadFile(src)
+	data, err := loadAssetBytes(c.doc, c.container, src)
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (c *StdComponent) loadURLBody(assetURL *url.URL) (string, error) {
+func loadAssetBytes(doc *Doc, container Container, src string) ([]byte, error) {
+	if assetURL, err := url.Parse(src); err == nil && assetURL.Scheme != "" {
+		return loadURLAssetBytes(doc, container, src, assetURL)
+	}
+	return loadFileAssetBytes(doc, src)
+}
+
+func loadFileAssetBytes(doc *Doc, src string) ([]byte, error) {
+	if doc != nil && doc.assetFS != nil {
+		if !validAssetPath(src) {
+			return nil, fmt.Errorf("invalid asset path %q", src)
+		}
+		data, err := fs.ReadFile(doc.assetFS, src)
+		if err != nil {
+			return nil, err
+		}
+		return data, nil
+	}
+	if doc != nil && doc.sourceDir != "" && !filepath.IsAbs(src) {
+		src = filepath.Join(doc.sourceDir, src)
+	}
+	return os.ReadFile(src)
+}
+
+func loadURLAssetBytes(doc *Doc, container Container, src string, assetURL *url.URL) ([]byte, error) {
 	if assetURL == nil || !assetURL.IsAbs() {
-		return "", fmt.Errorf("component src URL must be absolute: %q", c.src)
+		return nil, fmt.Errorf("component src URL must be absolute: %q", src)
 	}
 	switch assetURL.Scheme {
 	case "http", "https":
 	default:
-		return "", fmt.Errorf("unsupported component src URL scheme %q", assetURL.Scheme)
+		return nil, fmt.Errorf("unsupported component src URL scheme %q", assetURL.Scheme)
 	}
 	if networkAssetsDisabled.Load() {
-		return "", fmt.Errorf("network assets are globally disabled")
+		return nil, fmt.Errorf("network assets are globally disabled")
 	}
-	doc := documentForContainer(c.container)
-	if doc == nil || !doc.NetworkAssetsEnabled() {
-		return "", fmt.Errorf("network assets are disabled for this document")
+	stdDoc := (*StdDocument)(nil)
+	if container != nil {
+		stdDoc = documentForContainer(container)
+	}
+	if stdDoc == nil || !stdDoc.NetworkAssetsEnabled() {
+		return nil, fmt.Errorf("network assets are disabled for this document")
 	}
 
 	resp, err := http.Get(assetURL.String())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("fetching %q returned %s", assetURL.String(), resp.Status)
+		return nil, fmt.Errorf("fetching %q returned %s", assetURL.String(), resp.Status)
 	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+	return io.ReadAll(resp.Body)
 }
 
 var _ Component = (*StdComponent)(nil)

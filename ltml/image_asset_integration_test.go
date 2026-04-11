@@ -32,15 +32,18 @@ func encodeTestPNG(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
-func renderWithAssetFS(t *testing.T, doc *Doc) string {
+func imageTestAssetFS(t *testing.T) fstest.MapFS {
 	t.Helper()
-	imageFS := fstest.MapFS{
+	return fstest.MapFS{
 		"logo.png": &fstest.MapFile{Data: encodeTestPNG(t)},
 		"logo.svg": &fstest.MapFile{Data: []byte(testSVGAsset)},
+		"warn.svg": &fstest.MapFile{Data: []byte(testSVGUnsupported)},
 	}
+}
 
+func renderDoc(t *testing.T, doc *Doc) string {
+	t.Helper()
 	w := ltpdf.NewDocWriter()
-	w.SetAssetFS(imageFS)
 	if err := doc.Print(w); err != nil {
 		t.Fatal(err)
 	}
@@ -51,15 +54,12 @@ func renderWithAssetFS(t *testing.T, doc *Doc) string {
 	return buf.String()
 }
 
-func renderDirectPDFWithAssetFS(t *testing.T) string {
+func renderDirectPDFWithAssetFS(t *testing.T, assetFS fstest.MapFS, name string) string {
 	t.Helper()
 	w := ltpdf.NewDocWriter()
-	w.SetAssetFS(fstest.MapFS{
-		"logo.png": &fstest.MapFile{Data: encodeTestPNG(t)},
-		"logo.svg": &fstest.MapFile{Data: []byte(testSVGAsset)},
-	})
+	w.SetAssetFS(assetFS)
 	w.NewPage()
-	if _, _, err := w.PrintImageFile("logo.png", 1, 1, nil, nil); err != nil {
+	if _, _, err := w.PrintImageFile(name, 1, 1, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
@@ -90,18 +90,19 @@ const testSVGUnsupported = `
 </svg>`
 
 func TestStdImage_UsesWriterAssetFS(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
 	doc, err := Parse([]byte(`
 <ltml>
   <page>
     <image src="logo.png" />
   </page>
-</ltml>`))
+</ltml>`), WithAssetFS(assetFS))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ltmlPDF := renderWithAssetFS(t, doc)
-	directPDF := renderDirectPDFWithAssetFS(t)
+	ltmlPDF := renderDoc(t, doc)
+	directPDF := renderDirectPDFWithAssetFS(t, assetFS, "logo.png")
 
 	for _, pdf := range []string{ltmlPDF, directPDF} {
 		if !strings.Contains(pdf, "/Subtype /Image") {
@@ -117,17 +118,18 @@ func TestStdImage_UsesWriterAssetFS(t *testing.T) {
 }
 
 func TestStdImage_UsesWriterAssetFS_SVG(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
 	doc, err := Parse([]byte(`
 <ltml>
   <page>
     <image src="logo.svg" />
   </page>
-</ltml>`))
+</ltml>`), WithAssetFS(assetFS))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pdf := renderWithAssetFS(t, doc)
+	pdf := renderDoc(t, doc)
 	if strings.Contains(pdf, "/Subtype /Image") {
 		t.Fatalf("expected SVG render path to avoid image XObjects, got:\n%s", pdf)
 	}
@@ -139,7 +141,57 @@ func TestStdImage_UsesWriterAssetFS_SVG(t *testing.T) {
 	}
 }
 
+func TestStdSVG_UsesWriterAssetFS(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <svg src="logo.svg" />
+  </page>
+</ltml>`), WithAssetFS(assetFS))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pdf := renderDoc(t, doc)
+	if strings.Contains(pdf, "/Subtype /Image") {
+		t.Fatalf("expected SVG widget render path to avoid image XObjects, got:\n%s", pdf)
+	}
+	if strings.Count(pdf, "/Subtype /Form") != 1 {
+		t.Fatalf("expected one cached SVG form, got:\n%s", pdf)
+	}
+	if !strings.Contains(pdf, "/Fm0 Do") {
+		t.Fatalf("expected page content to place cached SVG form, got:\n%s", pdf)
+	}
+}
+
+func TestStdSVG_InlineBody_RendersViaSVGForm(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <svg width="1.5">
+      ` + testSVGAsset + `
+    </svg>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pdf := renderDoc(t, doc)
+	if strings.Contains(pdf, "/Subtype /Image") {
+		t.Fatalf("expected inline SVG render path to avoid image XObjects, got:\n%s", pdf)
+	}
+	if strings.Count(pdf, "/Subtype /Form") != 1 {
+		t.Fatalf("expected one cached SVG form, got:\n%s", pdf)
+	}
+	if !strings.Contains(pdf, "/Fm0 Do") {
+		t.Fatalf("expected page content to place cached SVG form, got:\n%s", pdf)
+	}
+}
+
 func TestStdImage_TableLayoutWithAssetFS_UsesNonZeroInferredDimensions(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
 	doc, err := Parse([]byte(`
 <ltml units="in" margin="0.5">
   <page>
@@ -151,12 +203,12 @@ func TestStdImage_TableLayoutWithAssetFS_UsesNonZeroInferredDimensions(t *testin
       </div>
     </table>
   </page>
-</ltml>`))
+</ltml>`), WithAssetFS(assetFS))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pdf := renderWithAssetFS(t, doc)
+	pdf := renderDoc(t, doc)
 	matches := imageMatrixRE.FindAllStringSubmatch(pdf, -1)
 	if len(matches) != 3 {
 		t.Fatalf("image draw count = %d, want 3; pdf:\n%s", len(matches), pdf)
@@ -178,6 +230,7 @@ func TestStdImage_TableLayoutWithAssetFS_UsesNonZeroInferredDimensions(t *testin
 }
 
 func TestStdImage_TableLayoutWithAssetFS_SVGViewBoxUsesNonZeroInferredDimensions(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
 	doc, err := Parse([]byte(`
 <ltml units="in" margin="0.5">
   <page>
@@ -189,12 +242,12 @@ func TestStdImage_TableLayoutWithAssetFS_SVGViewBoxUsesNonZeroInferredDimensions
       </div>
     </table>
   </page>
-</ltml>`))
+</ltml>`), WithAssetFS(assetFS))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pdf := renderWithAssetFS(t, doc)
+	pdf := renderDoc(t, doc)
 	matches := formMatrixRE.FindAllStringSubmatch(pdf, -1)
 	if len(matches) != 3 {
 		t.Fatalf("form draw count = %d, want 3; pdf:\n%s", len(matches), pdf)
@@ -217,13 +270,89 @@ func TestStdImage_TableLayoutWithAssetFS_SVGViewBoxUsesNonZeroInferredDimensions
 	}
 }
 
+func TestStdSVG_TableLayoutWithAssetFS_UsesNonZeroInferredDimensions(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
+	doc, err := Parse([]byte(`
+<ltml units="in" margin="0.5">
+  <page>
+    <table order="rows" cols="1" width="100%">
+      <div layout="vbox" padding="6pt">
+        <svg src="logo.svg" width="1.5" border="dotted" padding="3pt" />
+        <svg src="logo.svg" height="0.75" border="dotted" padding="3pt" />
+        <svg src="logo.svg" border="dotted" padding="3pt" />
+      </div>
+    </table>
+  </page>
+</ltml>`), WithAssetFS(assetFS))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pdf := renderDoc(t, doc)
+	matches := formMatrixRE.FindAllStringSubmatch(pdf, -1)
+	if len(matches) != 3 {
+		t.Fatalf("form draw count = %d, want 3; pdf:\n%s", len(matches), pdf)
+	}
+	for i, match := range matches {
+		width, err := strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			t.Fatalf("parsing width %q: %v", match[1], err)
+		}
+		height, err := strconv.ParseFloat(match[2], 64)
+		if err != nil {
+			t.Fatalf("parsing height %q: %v", match[2], err)
+		}
+		if width <= 0 || height <= 0 {
+			t.Fatalf("form %d matrix width=%v height=%v, want both > 0; pdf:\n%s", i, width, height, pdf)
+		}
+	}
+}
+
+func TestStdSVG_TableLayoutWithInlineBody_UsesNonZeroInferredDimensions(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml units="in" margin="0.5">
+  <page>
+    <table order="rows" cols="1" width="100%">
+      <div layout="vbox" padding="6pt">
+        <svg width="1.5" border="dotted" padding="3pt">` + testSVGAsset + `</svg>
+        <svg height="0.75" border="dotted" padding="3pt">` + testSVGAsset + `</svg>
+        <svg border="dotted" padding="3pt">` + testSVGAsset + `</svg>
+      </div>
+    </table>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pdf := renderDoc(t, doc)
+	matches := formMatrixRE.FindAllStringSubmatch(pdf, -1)
+	if len(matches) != 3 {
+		t.Fatalf("form draw count = %d, want 3; pdf:\n%s", len(matches), pdf)
+	}
+	for i, match := range matches {
+		width, err := strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			t.Fatalf("parsing width %q: %v", match[1], err)
+		}
+		height, err := strconv.ParseFloat(match[2], 64)
+		if err != nil {
+			t.Fatalf("parsing height %q: %v", match[2], err)
+		}
+		if width <= 0 || height <= 0 {
+			t.Fatalf("form %d matrix width=%v height=%v, want both > 0; pdf:\n%s", i, width, height, pdf)
+		}
+	}
+}
+
 func TestStdImage_SVGUnsupportedFeaturesWarnAndContinue(t *testing.T) {
+	assetFS := imageTestAssetFS(t)
 	doc, err := Parse([]byte(`
 <ltml>
   <page>
     <image src="warn.svg" />
   </page>
-</ltml>`))
+</ltml>`), WithAssetFS(assetFS))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,9 +369,6 @@ func TestStdImage_SVGUnsupportedFeaturesWarnAndContinue(t *testing.T) {
 	}()
 
 	writer := ltpdf.NewDocWriter()
-	writer.SetAssetFS(fstest.MapFS{
-		"warn.svg": &fstest.MapFile{Data: []byte(testSVGUnsupported)},
-	})
 	if err := doc.Print(writer); err != nil {
 		t.Fatal(err)
 	}

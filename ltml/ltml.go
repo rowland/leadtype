@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ type Doc struct {
 	rootScope Scope // per-document root scope; parent = &defaultScope
 	parseErr  error
 	assetFS   fs.FS
+	sourceDir string
 }
 
 type ParseOption func(*Doc)
@@ -46,6 +48,11 @@ func (doc *Doc) parseBytes(b []byte) error {
 }
 
 func (doc *Doc) parseFile(filename string) error {
+	if abs, err := filepath.Abs(filename); err == nil {
+		doc.sourceDir = filepath.Dir(abs)
+	} else {
+		doc.sourceDir = filepath.Dir(filename)
+	}
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -70,16 +77,16 @@ func (doc *Doc) parseReader(r io.Reader) error {
 		switch t := token.(type) {
 		case xml.StartElement:
 			traceStartElement(t)
-			created, isComponent := doc.startElement(t)
-			if isComponent && doc.parseErr == nil {
+			created, capturesBody := doc.startElement(t)
+			if capturesBody && doc.parseErr == nil {
 				var decoded struct {
 					Body string `xml:",innerxml"`
 				}
 				if err := dec.DecodeElement(&decoded, &t); err != nil {
 					return err
 				}
-				if component, ok := created.(Component); ok {
-					component.SetBody(decoded.Body)
+				if raw, ok := created.(RawBody); ok {
+					raw.SetBody(decoded.Body)
 				}
 				traceEndElement(xml.EndElement{Name: t.Name})
 				doc.endElement(xml.EndElement{Name: t.Name})
@@ -137,7 +144,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	if e == nil {
 		debugf("Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
 	}
-	isComponent := isComponentTag(elem.Name.Space, trueTag)
+	capturesBody := isComponentTag(elem.Name.Space, trueTag)
 	if ws, ok := e.(WantsScope); ok {
 		ws.SetScope(doc.scope())
 	}
@@ -194,7 +201,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	if d, ok := e.(*StdDocument); ok {
 		if doc.root != nil {
 			doc.parseErr = fmt.Errorf("multiple top-level ltml roots are not supported")
-			return e, isComponent
+			return e, capturesBody
 		}
 		d.Scope.defaultRuleTier = 0
 		doc.root = d
@@ -279,7 +286,10 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 			debugf("Adding rules: %s\n", err)
 		}
 	}
-	return e, isComponent
+	if _, ok := e.(RawBody); ok {
+		capturesBody = true
+	}
+	return e, capturesBody
 }
 
 // applyPseudoRules performs a second pass over the parsed widget tree so rules

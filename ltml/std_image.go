@@ -9,15 +9,17 @@ import (
 
 type StdImage struct {
 	StdWidget
-	src string
+	src  string
+	data []byte
+	doc  *Doc
 }
 
 func (img *StdImage) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &img.StdWidget, "Figure", func() error {
-		if img.src == "" {
+		if len(img.data) == 0 {
 			return fmt.Errorf("image src must be specified")
 		}
-		_, _, err := w.PrintImageFile(img.src, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
+		_, _, err := w.PrintImage(img.data, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
 		return err
 	})
 }
@@ -51,13 +53,27 @@ func (img *StdImage) PreferredWidth(w Writer) float64 {
 }
 
 func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
-	return w.ImageDimensionsFromFile(img.src)
+	if len(img.data) == 0 {
+		return 0, 0, nil
+	}
+	return w.ImageDimensions(img.data)
+}
+
+func (img *StdImage) SetDoc(doc *Doc) {
+	img.doc = doc
 }
 
 func (img *StdImage) SetAttrs(attrs map[string]string) {
 	img.StdWidget.SetAttrs(attrs)
 	if src, ok := attrs["src"]; ok {
 		img.src = src
+		if data, err := loadAssetBytes(img.doc, img.container, src); err != nil {
+			if img.doc != nil && img.doc.parseErr == nil {
+				img.doc.parseErr = err
+			}
+		} else {
+			img.data = data
+		}
 	}
 }
 
@@ -89,4 +105,5 @@ var _ HasAttrs = (*StdImage)(nil)
 var _ Identifier = (*StdImage)(nil)
 var _ Printer = (*StdImage)(nil)
 var _ WantsContainer = (*StdImage)(nil)
+var _ WantsDoc = (*StdImage)(nil)
 var _ WantsScope = (*StdImage)(nil)

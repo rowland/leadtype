@@ -6,6 +6,8 @@ package ltml
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"testing/fstest"
@@ -169,6 +171,38 @@ func TestComponent_DisableNetworkAssetsOverridesDocumentSetting(t *testing.T) {
 </ltml>`))
 	if err == nil {
 		t.Fatal("expected global network disable error")
+	}
+}
+
+func TestComponent_SrcLoadsRelativeToParsedFile(t *testing.T) {
+	registerTestComponentTag(t)
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "snippet.xml"), []byte("<p>from relative file</p>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputPath := filepath.Join(dir, "doc.ltml")
+	if err := os.WriteFile(inputPath, []byte(`
+<ltml xmlns:xt="componenttest">
+  <page>
+    <xt:card src="snippet.xml" />
+  </page>
+</ltml>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc, err := ParseFile(inputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.Page(0)
+	component, ok := page.Widgets()[0].(*testComponent)
+	if !ok {
+		t.Fatalf("first child = %T, want *testComponent", page.Widgets()[0])
+	}
+	if got, want := component.Body(), "<p>from relative file</p>"; got != want {
+		t.Fatalf("body = %q, want %q", got, want)
 	}
 }
 

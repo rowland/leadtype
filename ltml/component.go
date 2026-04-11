@@ -3,9 +3,13 @@
 
 package ltml
 
+type RawBody interface {
+	SetBody(string)
+}
+
 type Component interface {
 	Container
-	SetBody(string)
+	RawBody
 }
 
 type WantsDoc interface {

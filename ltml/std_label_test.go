@@ -96,6 +96,15 @@ func (w *labelTestWriter) Fonts() []*font.Font {
 	return w.fonts
 }
 func (w *labelTestWriter) FontSize() float64 { return w.fontSize }
+func (w *labelTestWriter) ImageDimensions(data []byte) (width, height int, err error) {
+	return 0, 0, nil
+}
+func (w *labelTestWriter) SVGDimensions(data []byte) (width, height int, err error) {
+	return 0, 0, nil
+}
+func (w *labelTestWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
+	return 0, 0, nil
+}
 func (w *labelTestWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	return 0, 0, nil
 }
@@ -115,6 +124,15 @@ func (w *labelTestWriter) Print(text string) error {
 	w.plainPrinted = append(w.plainPrinted, text)
 	w.plainPages = append(w.plainPages, w.pageCount)
 	return nil
+}
+func (w *labelTestWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
+}
+func (w *labelTestWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
+}
+func (w *labelTestWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
+	return 0, 0, nil
 }
 func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return 0, 0, nil
