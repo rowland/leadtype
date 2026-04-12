@@ -1070,10 +1070,10 @@ func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, rever
 	})
 }
 
-func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, position float64, thickness float64) {
+func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, rise float64, position float64, thickness float64) {
 	saveWidth := pw.setLineWidth(thickness)
 	// TODO: rotate coordiates given angle
-	offsetY := position - pw.vTextAlignPts
+	offsetY := position + rise
 	pw.moveTo(loc1.X, loc1.Y+offsetY)
 	pw.lineTo(loc2.X, loc2.Y+offsetY)
 	pw.setLineWidth(saveWidth)
@@ -1396,10 +1396,10 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 		rise := pw.textRiseForPiece(p, savedVTextAlign)
 		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
 		if emit.emitDecorations && p.Underline {
-			pw.drawUnderline(loc1, loc2, p.UnderlinePosition, p.UnderlineThickness)
+			pw.drawUnderline(loc1, loc2, rise, p.UnderlinePosition, p.UnderlineThickness)
 		}
 		if emit.emitDecorations && p.Strikeout {
-			pw.drawUnderline(loc1, loc2, p.StrikeoutPosition, p.StrikeoutThickness)
+			pw.drawUnderline(loc1, loc2, rise, p.StrikeoutPosition, p.StrikeoutThickness)
 		}
 		if emit.emitLinks && (p.LinkURI != "" || p.LinkTarget != "") {
 			elem, _ := pw.structElemForLeaf(p)

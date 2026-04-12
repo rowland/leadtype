@@ -717,7 +717,7 @@ func TestPageWriter_flushText_VTextAlignRise(t *testing.T) {
 }
 
 func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
-	newWriter := func(vTextAlign string) (*PageWriter, float64) {
+	newWriter := func(vTextAlign string) (*PageWriter, float64, float64) {
 		dw := NewDocWriter()
 		fc, err := afm_fonts.Default()
 		if err != nil {
@@ -755,18 +755,23 @@ func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
 		case "below":
 			rise = -descent
 		}
-		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 - rise
-		return pw, expectedY
+		hWidth, _ := fonts[0].AdvanceWidth('H')
+		iWidth, _ := fonts[0].AdvanceWidth('i')
+		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 + rise
+		return pw, expectedY, 12 * (float64(hWidth+iWidth) / 1000.0)
 	}
 
-	baseWriter, baseY := newWriter("base")
-	topWriter, topY := newWriter("top")
+	baseWriter, baseY, baseWidth := newWriter("base")
+	topWriter, topY, topWidth := newWriter("top")
 
-	if !strings.Contains(baseWriter.stream.String(), g(baseY)+" l\n") {
-		t.Fatalf("expected base underline to include y coordinate %q, got:\n%s", g(baseY)+" l\n", baseWriter.stream.String())
+	baseUnderline := "0 " + g(baseY) + " m\n" + g(baseWidth) + " " + g(baseY) + " l\n"
+	topUnderline := "0 " + g(topY) + " m\n" + g(topWidth) + " " + g(topY) + " l\n"
+
+	if !strings.Contains(baseWriter.stream.String(), baseUnderline) {
+		t.Fatalf("expected base underline segment %q, got:\n%s", baseUnderline, baseWriter.stream.String())
 	}
-	if !strings.Contains(topWriter.stream.String(), g(topY)+" l\n") {
-		t.Fatalf("expected top-aligned underline to include y coordinate %q, got:\n%s", g(topY)+" l\n", topWriter.stream.String())
+	if !strings.Contains(topWriter.stream.String(), topUnderline) {
+		t.Fatalf("expected top-aligned underline segment %q, got:\n%s", topUnderline, topWriter.stream.String())
 	}
 	if g(baseY) == g(topY) {
 		t.Fatalf("expected underline positions to differ between base and top alignment")
