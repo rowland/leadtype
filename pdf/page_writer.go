@@ -549,6 +549,33 @@ var errPathAlreadyActive = errors.New("Manual path already active.")
 var errInvalidPolygonSides = errors.New("Polygon requires at least 3 sides.")
 var errInvalidStarPoints = errors.New("Star requires at least 5 points.")
 var errTransformInsideManualPath = errors.New("Transform not allowed during active manual path.")
+var errTextClipInsideManualPath = errors.New("Text clipping not allowed during active manual path.")
+
+type textEmissionOptions struct {
+	renderMode        int
+	applyFillColor    bool
+	applyStrokeState  bool
+	emitDecorations   bool
+	emitLinks         bool
+	emitAccessibility bool
+}
+
+var visibleTextEmission = textEmissionOptions{
+	applyFillColor:    true,
+	emitDecorations:   true,
+	emitLinks:         true,
+	emitAccessibility: true,
+}
+
+var clipTextEmission = textEmissionOptions{
+	renderMode: 7,
+}
+
+var fillStrokeClipTextEmission = textEmissionOptions{
+	renderMode:       6,
+	applyFillColor:   true,
+	applyStrokeState: true,
+}
 
 func (pw *PageWriter) beginManualPath() error {
 	if len(pw.pathStates) > 0 {
@@ -1080,6 +1107,16 @@ func (pw *PageWriter) flushText() {
 		return
 	}
 	pw.flushing = true
+	line := pw.line
+	pw.line = nil
+	pw.emitRichTextLine(line, visibleTextEmission)
+	pw.flushing = false
+}
+
+func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissionOptions) {
+	if line == nil {
+		return
+	}
 	savedFontColor := pw.fontColor
 	savedFontKey := pw.fontKey
 	savedFontSize := pw.fontSize
@@ -1087,15 +1124,27 @@ func (pw *PageWriter) flushText() {
 	savedWordSpacing := pw.wordSpacing
 	savedVTextAlign := pw.vTextAlign
 	savedVTextAlignPts := pw.vTextAlignPts
+	defer func() {
+		pw.fontColor = savedFontColor
+		pw.fontKey = savedFontKey
+		pw.fontSize = savedFontSize
+		pw.charSpacing = savedCharSpacing
+		pw.wordSpacing = savedWordSpacing
+		pw.vTextAlign = savedVTextAlign
+		pw.vTextAlignPts = savedVTextAlignPts
+	}()
 	pw.startText()
 	if pw.loc != pw.last.loc {
 		pw.tw.moveBy(pw.loc.X-pw.last.loc.X, pw.loc.Y-pw.last.loc.Y)
+	}
+	if emit.renderMode != 0 {
+		pw.tw.setRenderingMode(emit.renderMode)
 	}
 	loc1 := pw.loc
 	textLoc := loc1
 	usedPositionedText := false
 	var buf bytes.Buffer
-	merged := pw.line.Merge()
+	merged := line.Merge()
 	displayPieces := bidiDisplayPieces(merged)
 	// Iterate leaf pieces directly. TrueType leaves are encoded as big-endian
 	// uint16 glyph ID pairs. AFM/Type1 leaves use codepage-based encoding.
@@ -1104,7 +1153,7 @@ func (pw *PageWriter) flushText() {
 		textLoc.X += p.Width()
 		elem, tag := pw.structElemForLeaf(p)
 		closeMarkedContent := false
-		if elem != nil {
+		if emit.emitAccessibility && elem != nil {
 			closeMarkedContent = pw.beginTaggedContent(tag, elem)
 		}
 		closeActualText := false
@@ -1139,8 +1188,10 @@ func (pw *PageWriter) flushText() {
 				usePositionedGlyphs = p.CharSpacing != 0 || p.WordSpacing != 0
 			}
 
-			pw.SetFontColor(p.Color)
-			pw.checkSetFontColor()
+			if emit.applyFillColor {
+				pw.SetFontColor(p.Color)
+				pw.checkSetFontColor()
+			}
 			pw.fontKey = fk
 			pw.SetFontSize(p.FontSize)
 			pw.checkSetFont()
@@ -1159,7 +1210,9 @@ func (pw *PageWriter) flushText() {
 				// visual order, so we store the replacement text reversed to
 				// preserve logical codepoint order after its bidi wrappers are
 				// stripped during extraction tests.
-				closeActualText = pw.beginActualTextContent(reverseRunesString(p.Text))
+				if emit.emitAccessibility {
+					closeActualText = pw.beginActualTextContent(reverseRunesString(p.Text))
+				}
 				usedPositionedText = true
 				fontSize := p.FontSize
 				scale := fontSize * 0.001
@@ -1310,8 +1363,10 @@ func (pw *PageWriter) flushText() {
 						buf.WriteByte(byte(ch))
 					}
 				}
-				pw.SetFontColor(piece.Color)
-				pw.checkSetFontColor()
+				if emit.applyFillColor {
+					pw.SetFontColor(piece.Color)
+					pw.checkSetFontColor()
+				}
 				pw.fontKey = pw.dw.fontKey(piece.Font, cpi)
 				pw.SetFontSize(piece.FontSize)
 				pw.checkSetFont()
@@ -1334,19 +1389,19 @@ func (pw *PageWriter) flushText() {
 	}
 	// Link rectangles are derived from the final laid-out leaf pieces, so a
 	// wrapped or bidi-reordered link naturally becomes one annotation per line.
-	pw.line.VisitAll(func(p *rich_text.RichText) {
+	line.VisitAll(func(p *rich_text.RichText) {
 		if !p.IsLeaf() {
 			return
 		}
 		rise := pw.textRiseForPiece(p, savedVTextAlign)
 		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
-		if p.Underline {
+		if emit.emitDecorations && p.Underline {
 			pw.drawUnderline(loc1, loc2, p.UnderlinePosition, p.UnderlineThickness)
 		}
-		if p.Strikeout {
+		if emit.emitDecorations && p.Strikeout {
 			pw.drawUnderline(loc1, loc2, p.StrikeoutPosition, p.StrikeoutThickness)
 		}
-		if p.LinkURI != "" || p.LinkTarget != "" {
+		if emit.emitLinks && (p.LinkURI != "" || p.LinkTarget != "") {
 			elem, _ := pw.structElemForLeaf(p)
 			pw.addTextLinkAnnotation(rectangle{
 				x1: loc1.X,
@@ -1358,19 +1413,9 @@ func (pw *PageWriter) flushText() {
 		loc1 = loc2
 	})
 	pw.last.loc = pw.loc
-	pw.lineHeight = max(pw.lineHeight, pw.line.Leading()*pw.lineSpacing)
-	pw.loc.X += pw.line.Width()
+	pw.lineHeight = max(pw.lineHeight, line.Leading()*pw.lineSpacing)
+	pw.loc.X += line.Width()
 	// TODO: Adjust pw.loc.y if printing at an angle.
-
-	pw.fontColor = savedFontColor
-	pw.fontKey = savedFontKey
-	pw.fontSize = savedFontSize
-	pw.charSpacing = savedCharSpacing
-	pw.wordSpacing = savedWordSpacing
-	pw.vTextAlign = savedVTextAlign
-	pw.vTextAlignPts = savedVTextAlignPts
-	pw.line = nil
-	pw.flushing = false
 }
 
 func (pw *PageWriter) textRiseForPiece(p *rich_text.RichText, vTextAlign VerticalTextAlign) float64 {
@@ -1676,6 +1721,78 @@ func (pw *PageWriter) Print(text string) (err error) {
 		i = strings.IndexAny(text, "\t\r\n")
 	}
 	return pw.print(text)
+}
+
+func (pw *PageWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	return pw.clipRichTextWithOptions(text, clipTextEmission, fn)
+}
+
+func (pw *PageWriter) FillStrokeClipRichText(text *rich_text.RichText, fn func()) error {
+	return pw.clipRichTextWithOptions(text, fillStrokeClipTextEmission, fn)
+}
+
+func (pw *PageWriter) clipRichTextWithOptions(text *rich_text.RichText, emit textEmissionOptions, fn func()) error {
+	if text == nil || text.Len() == 0 {
+		return nil
+	}
+	if len(pw.pathStates) > 0 {
+		return errTextClipInsideManualPath
+	}
+	if pw.inText {
+		pw.endText()
+	} else if pw.line != nil {
+		pw.flushText()
+		if pw.inText {
+			pw.endText()
+		}
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	savedLast := pw.last
+	pw.gw.saveGraphicsState()
+	if emit.applyStrokeState {
+		pw.checkSetLineColor()
+		pw.checkSetLineWidth()
+		pw.checkSetLineDashPattern()
+	}
+	pw.startText()
+	pw.emitRichTextLine(text, emit)
+	pw.endText()
+	if fn != nil {
+		fn()
+	}
+	if pw.inText {
+		pw.endText()
+	} else if pw.line != nil {
+		pw.flushText()
+		if pw.inText {
+			pw.endText()
+		}
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+	pw.gw.restoreGraphicsState()
+	savedLast.loc = pw.loc
+	pw.last = savedLast
+	return nil
+}
+
+func (pw *PageWriter) ClipText(text string, fn func()) error {
+	piece, err := pw.richTextForString(text)
+	if err != nil {
+		return err
+	}
+	return pw.ClipRichText(piece, fn)
+}
+
+func (pw *PageWriter) FillStrokeClipText(text string, fn func()) error {
+	piece, err := pw.richTextForString(text)
+	if err != nil {
+		return err
+	}
+	return pw.FillStrokeClipRichText(piece, fn)
 }
 
 func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {

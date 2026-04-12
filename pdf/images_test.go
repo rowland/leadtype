@@ -143,6 +143,32 @@ func testSVGClippedUseGradientFixture() []byte {
 </svg>`)
 }
 
+func testSVGTextGradientFixture() []byte {
+	return []byte(`
+<svg width="160" height="48" viewBox="0 0 160 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="title-grad" x1="0" y1="0" x2="160" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f6f8b"/>
+      <stop offset="1" stop-color="#f39a5b"/>
+    </linearGradient>
+  </defs>
+  <text x="16" y="30" font-family="Helvetica" font-size="20" fill="url(#title-grad)" opacity="0.8">LeadType</text>
+</svg>`)
+}
+
+func testSVGTextGradientStrokeFixture() []byte {
+	return []byte(`
+<svg width="160" height="48" viewBox="0 0 160 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="stroke-grad" x1="0" y1="0" x2="160" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f6f8b"/>
+      <stop offset="1" stop-color="#f39a5b"/>
+    </linearGradient>
+  </defs>
+  <text x="16" y="30" font-family="Helvetica" font-size="20" fill="#222" stroke="url(#stroke-grad)">LeadType</text>
+</svg>`)
+}
+
 func mutatePNGInterlace(t *testing.T, data []byte, interlace byte) []byte {
 	t.Helper()
 	if !isPNG(data) {
@@ -682,6 +708,52 @@ func TestPageWriter_PrintSVG_UseDoesNotReclipReferencedNode(t *testing.T) {
 	}
 	if strings.Contains(got, "73.5 125 m\n346.5 125 l\n") {
 		t.Fatalf("expected <use> rendering to avoid replaying a transformed parent clip, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_PrintSVG_TextGradientUsesTextClip(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := newPageWriter(dw, options.Options{"units": "pt"})
+	width := 160.0
+	if _, _, err := pw.PrintSVG(testSVGTextGradientFixture(), 0, 0, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	pw.close()
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	for _, fragment := range []string{"7 Tr\n", "/Sh", "sh\n", "/ca 0.8"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected SVG text gradient output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+}
+
+func TestPageWriter_PrintSVG_TextGradientStrokeWarns(t *testing.T) {
+	msg := captureStderr(t, func() {
+		dw := NewDocWriter()
+		fc, err := afm_fonts.Default()
+		if err != nil {
+			t.Fatal(err)
+		}
+		dw.AddFontSource(fc)
+		pw := newPageWriter(dw, options.Options{"units": "pt"})
+		width := 160.0
+		if _, _, err := pw.PrintSVG(testSVGTextGradientStrokeFixture(), 0, 0, &width, nil); err != nil {
+			t.Fatal(err)
+		}
+		pw.close()
+	})
+	if !strings.Contains(msg, "svg: <text> stroke: gradient stroke on text is not yet implemented") {
+		t.Fatalf("expected text stroke gradient warning, got %q", msg)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/svg"
 )
 
@@ -1279,17 +1280,111 @@ func (r *svgRenderer) drawText(text *svg.Text, style svg.Style, transform svg.Tr
 		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("font %q unavailable: %v", style.FontFamily, err)}})
 		return nil
 	}
+	rich, err := r.pw.richTextForString(text.Body)
+	if err != nil {
+		return err
+	}
+	if rich == nil || rich.Len() == 0 {
+		return nil
+	}
 	startX := mapped.X
+	startXSVG := point.X
 	if style.TextAnchor != "" && style.TextAnchor != "start" {
-		if rich, err := r.pw.richTextForString(text.Body); err == nil {
-			switch strings.ToLower(style.TextAnchor) {
-			case "middle":
-				startX -= rich.Width() / 2
-			case "end":
-				startX -= rich.Width()
-			}
+		switch strings.ToLower(style.TextAnchor) {
+		case "middle":
+			startX -= rich.Width() / 2
+			startXSVG -= r.textWidthSVG(rich) / 2
+		case "end":
+			startX -= rich.Width()
+			startXSVG -= r.textWidthSVG(rich)
 		}
 	}
-	r.pw.MoveTo(startX, mapped.Y)
-	return r.pw.Print(text.Body)
+	blendMode := mapSVGBlendMode(style.BlendMode)
+	alpha := clamp01(style.Opacity * style.FillOpacity)
+	if style.Stroke.IsGradient() {
+		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "stroke", Message: "gradient stroke on text is not yet implemented"}})
+	}
+	if style.Fill.IsGradient() {
+		resolved, err := r.resolveTextGradient(style.Fill.Ref, alpha, rich, startXSVG, point.Y, transform)
+		if err != nil {
+			logSVGWarnings([]svg.Warning{{Element: "linearGradient", Message: err.Error()}})
+			if style.Fill.None {
+				return nil
+			}
+			return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
+				r.pw.SetFontColor(style.Fill.Color)
+				r.pw.MoveTo(startX, mapped.Y)
+				return r.pw.Print(text.Body)
+			})
+		}
+		if resolved.varyingAlpha {
+			if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+				alpha = resolved.flatAlpha
+			} else {
+				logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "fill", Message: "gradient text stop-opacity falls back to constant text opacity"}})
+				alpha = resolved.uniformAlpha
+			}
+		} else {
+			alpha = resolved.uniformAlpha
+		}
+		return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
+			r.pw.MoveTo(startX, mapped.Y)
+			var renderErr error
+			err := r.pw.ClipRichText(rich, func() {
+				switch {
+				case resolved.linear != nil:
+					renderErr = r.pw.PaintLinearGradient(resolved.linear)
+				case resolved.radial != nil:
+					renderErr = r.pw.PaintRadialGradient(resolved.radial)
+				}
+			})
+			if err != nil {
+				return err
+			}
+			return renderErr
+		})
+	}
+	if style.Fill.None {
+		return nil
+	}
+	return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
+		r.pw.SetFontColor(style.Fill.Color)
+		r.pw.MoveTo(startX, mapped.Y)
+		return r.pw.Print(text.Body)
+	})
+}
+
+func (r *svgRenderer) resolveTextGradient(ref string, opacityScale float64, text *rich_text.RichText, startX, baselineY float64, transform svg.Transform) (*resolvedSVGGradient, error) {
+	if text == nil {
+		return nil, fmt.Errorf("gradient text has no content")
+	}
+	width := r.textWidthSVG(text)
+	height := r.textHeightSVG(text)
+	if width <= 0 || height <= 0 {
+		return nil, fmt.Errorf("gradient text has no bounds")
+	}
+	minY := baselineY - r.textAscentSVG(text)
+	segments := svgRectSegments(startX, minY, width, height, 0, 0)
+	return r.resolveGradient(ref, opacityScale, segments, transform)
+}
+
+func (r *svgRenderer) textWidthSVG(text *rich_text.RichText) float64 {
+	if text == nil || r.scaleX == 0 {
+		return 0
+	}
+	return text.Width() / r.scaleX
+}
+
+func (r *svgRenderer) textAscentSVG(text *rich_text.RichText) float64 {
+	if text == nil || r.scaleY == 0 {
+		return 0
+	}
+	return text.Ascent() / r.scaleY
+}
+
+func (r *svgRenderer) textHeightSVG(text *rich_text.RichText) float64 {
+	if text == nil || r.scaleY == 0 {
+		return 0
+	}
+	return (text.Ascent() - text.Descent()) / r.scaleY
 }

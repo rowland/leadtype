@@ -69,6 +69,18 @@ func (w *labelTestWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (w *labelTestWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (w *labelTestWriter) ClipText(text string, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++

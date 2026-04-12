@@ -700,6 +700,22 @@ func (dw *DocWriter) Print(text string) (err error) {
 	return dw.CurPage().Print(text)
 }
 
+func (dw *DocWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	return dw.CurPage().ClipRichText(text, fn)
+}
+
+func (dw *DocWriter) FillStrokeClipRichText(text *rich_text.RichText, fn func()) error {
+	return dw.CurPage().FillStrokeClipRichText(text, fn)
+}
+
+func (dw *DocWriter) ClipText(text string, fn func()) error {
+	return dw.CurPage().ClipText(text, fn)
+}
+
+func (dw *DocWriter) FillStrokeClipText(text string, fn func()) error {
+	return dw.CurPage().FillStrokeClipText(text, fn)
+}
+
 func (dw *DocWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
 	dw.CurPage().PrintParagraph(para, options)
 }
