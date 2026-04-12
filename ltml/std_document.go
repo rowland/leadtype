@@ -11,15 +11,16 @@ import (
 
 type StdDocument struct {
 	StdPage
-	documentPageNo        int
-	physicalPageNo        int
-	pendingStart          *int
-	ua                    bool
-	networkAssets         bool
-	compressPages         bool
-	compressToUnicode     bool
-	compressEmbeddedFonts bool
-	renderContext         *documentRenderContext
+	documentPageNo             int
+	physicalPageNo             int
+	pendingStart               *int
+	ua                         bool
+	networkAssets              bool
+	compressPages              bool
+	compressToUnicode          bool
+	compressEmbeddedFonts      bool
+	svgGradientStopOpacityMode string
+	renderContext              *documentRenderContext
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -73,6 +74,7 @@ func (d *StdDocument) SetPendingStart(start int) {
 func (d *StdDocument) Print(w Writer) error {
 	applyWriterAccessibility(w, d)
 	d.applyWriterCompression(w)
+	d.applyWriterSVGCompatibility(w)
 	return d.printWithIndexes(w)
 }
 
@@ -97,6 +99,9 @@ func (d *StdDocument) SetAttrs(attrs map[string]string) {
 	if value, ok := attrs["network-assets"]; ok {
 		d.networkAssets = value == "true"
 	}
+	if value, ok := attrs["svg-gradient-stop-opacity-mode"]; ok {
+		d.svgGradientStopOpacityMode = value
+	}
 }
 
 func (d *StdDocument) applyWriterCompression(w Writer) {
@@ -108,6 +113,15 @@ func (d *StdDocument) applyWriterCompression(w Writer) {
 	}
 	if cw, ok := w.(interface{ CompressEmbeddedFonts(bool) *pdf.DocWriter }); ok {
 		cw.CompressEmbeddedFonts(d.compressEmbeddedFonts)
+	}
+}
+
+func (d *StdDocument) applyWriterSVGCompatibility(w Writer) {
+	if d.svgGradientStopOpacityMode == "" {
+		return
+	}
+	if sw, ok := w.(interface{ SetSVGGradientStopOpacityMode(string) string }); ok {
+		sw.SetSVGGradientStopOpacityMode(d.svgGradientStopOpacityMode)
 	}
 }
 

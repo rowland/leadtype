@@ -60,6 +60,7 @@ The root element. Attributes set here apply as defaults to all pages.
 | `compress-to-unicode` | If `true`, compress generated `ToUnicode` streams. Default: `false`. |
 | `compress-embedded-fonts` | If `true`, compress embedded font subset streams. Default: `false`. |
 | `ua` | If `true`, opt the whole document into tagged PDF output and accessibility structure generation. Default: `false`. |
+| `svg-gradient-stop-opacity-mode` | SVG gradient stop-opacity rendering mode. Use `compatibility` to collapse varying stop alpha to flat object opacity for broader PDF viewer compatibility. Default: `soft-mask`. |
 
 #### Tagged PDF Accessibility
 
@@ -99,6 +100,30 @@ If `ua` is absent or not `true`, LTML ignores widget accessibility attributes.
 The `ltml.TestSamples` harness follows the same document-driven rule, so sample
 PDFs remain untagged unless a sample opts in with `ua="true"` or the test
 helper explicitly forces tagged output on its writer.
+
+#### SVG Gradient Stop-Opacity Compatibility
+
+SVG fills that use varying `stop-opacity` can require PDF soft masks, and some
+renderers handle those less reliably than Chrome/PDFium. LTML exposes the PDF
+writer compatibility switch directly on the root document:
+
+```xml
+<ltml svg-gradient-stop-opacity-mode="compatibility">
+  <page>
+    <image src="hero.svg" width="4in" />
+  </page>
+</ltml>
+```
+
+Accepted values:
+
+- `soft-mask` — default high-fidelity rendering
+- `compatibility` — collapse varying stop alpha to a single flat object opacity
+
+Use `compatibility` when a document needs more consistent rendering in Preview
+or PDF.js and the slight loss of intra-gradient transparency is acceptable. See
+[docs/svg-rendering-compatibility.md](../docs/svg-rendering-compatibility.md)
+for the PDF and Go API versions of the same setting.
 
 ---
 
