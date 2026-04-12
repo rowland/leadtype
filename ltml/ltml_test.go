@@ -233,6 +233,7 @@ func TestSamples(t *testing.T) {
 		"test_040_radial_sweep_star_wars",
 		"test_041_pseudo_classes",
 		"test_042_svg_tag",
+		"test_043_svg_advanced",
 	}
 
 	for _, sample := range samples {

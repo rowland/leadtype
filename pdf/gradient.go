@@ -201,3 +201,56 @@ func buildGradientFunction(nextSeq func() int, stops []GradientStop) (fn seqGen,
 	objs = append(objs, sf)
 	return sf, objs
 }
+
+type alphaGradientStop struct {
+	Position float64
+	Alpha    float64
+}
+
+func newGrayExponentialFunction(seq, gen int, c0, c1 float64) *exponentialFunction {
+	f := new(exponentialFunction)
+	f.dictionaryObject.init(seq, gen)
+	f.dict["FunctionType"] = integer(2)
+	f.dict["Domain"] = newRealArray(0, 1)
+	f.dict["C0"] = newRealArray(c0)
+	f.dict["C1"] = newRealArray(c1)
+	f.dict["N"] = integer(1)
+	return f
+}
+
+func newGrayAxialShading(seq, gen int, x0, y0, x1, y1 float64, fn seqGen) *shadingDict {
+	s := new(shadingDict)
+	s.dictionaryObject.init(seq, gen)
+	s.dict["ShadingType"] = integer(2)
+	s.dict["ColorSpace"] = name("DeviceGray")
+	s.dict["Coords"] = newRealArray(x0, y0, x1, y1)
+	s.dict["Function"] = &indirectObjectRef{fn}
+	s.dict["Extend"] = array{boolean(true), boolean(true)}
+	return s
+}
+
+func buildAlphaGradientFunction(nextSeq func() int, stops []alphaGradientStop) (fn seqGen, allObjects []genWriter) {
+	if len(stops) == 2 {
+		ef := newGrayExponentialFunction(nextSeq(), 0, stops[0].Alpha, stops[1].Alpha)
+		return ef, []genWriter{ef}
+	}
+
+	n := len(stops) - 1
+	fns := make([]seqGen, n)
+	objs := make([]genWriter, 0, n+1)
+	bounds := make([]float64, n-1)
+	encode := make([]float64, 2*n)
+	for i := 0; i < n; i++ {
+		ef := newGrayExponentialFunction(nextSeq(), 0, stops[i].Alpha, stops[i+1].Alpha)
+		fns[i] = ef
+		objs = append(objs, ef)
+		encode[2*i] = 0
+		encode[2*i+1] = 1
+		if i < n-1 {
+			bounds[i] = stops[i+1].Position
+		}
+	}
+	sf := newStitchingFunction(nextSeq(), 0, fns, bounds, encode)
+	objs = append(objs, sf)
+	return sf, objs
+}

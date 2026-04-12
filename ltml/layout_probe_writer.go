@@ -36,6 +36,18 @@ func (w *layoutProbeWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (w *layoutProbeWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (w *layoutProbeWriter) ClipText(text string, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *layoutProbeWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }

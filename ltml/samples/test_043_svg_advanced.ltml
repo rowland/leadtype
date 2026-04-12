@@ -1,0 +1,35 @@
+<ltml units="in" margin="0.5">
+  <page layout="vbox" layout.vpadding="12pt" gap="12pt">
+    <label font.size="18" font.weight="Bold">Advanced SVG rendering</label>
+    <p>This sample compares the same shared SVG fixtures rendered through LTML's built-in &lt;svg&gt; widget and the SVG-backed &lt;image&gt; path.</p>
+
+    <label font.weight="Bold">Gradients, opacity, &lt;use&gt;, and clip paths</label>
+    <p>The first fixture exercises gradientUnits="userSpaceOnUse", gradientTransform, opacity, and reused geometry clipped through a referenced shape.</p>
+    <table cols="2" width="100%" order="rows">
+      <div padding="6pt">
+        <label font.weight="Bold">&lt;svg src&gt;</label>
+        <svg src="../../pdf/testdata/test_scene_svg_advanced_gradients.svg" width="3.0" border="dotted" padding="4pt" />
+      </div>
+      <div padding="6pt">
+        <label font.weight="Bold">&lt;image src=&quot;...svg&quot;&gt;</label>
+        <image src="../../pdf/testdata/test_scene_svg_advanced_gradients.svg" width="3.0" border="dotted" padding="4pt" />
+      </div>
+    </table>
+  </page>
+
+  <page layout="vbox" layout.vpadding="12pt" gap="12pt">
+    <label font.size="18" font.weight="Bold">Advanced SVG rendering</label>
+    <label font.weight="Bold">Masks and hard-light blending</label>
+    <p>The second fixture keeps the current mask markup style in view, including the supported filter-prep structure and a hard-light overlay rendered through both LTML entrypoints.</p>
+    <table cols="2" width="100%" order="rows">
+      <div padding="6pt">
+        <label font.weight="Bold">&lt;svg src&gt;</label>
+        <svg src="../../pdf/testdata/test_scene_svg_mask_blend.svg" width="3.0" border="dotted" padding="4pt" />
+      </div>
+      <div padding="6pt">
+        <label font.weight="Bold">&lt;image src=&quot;...svg&quot;&gt;</label>
+        <image src="../../pdf/testdata/test_scene_svg_mask_blend.svg" width="3.0" border="dotted" padding="4pt" />
+      </div>
+    </table>
+  </page>
+</ltml>

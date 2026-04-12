@@ -2,6 +2,7 @@ package svg
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -9,12 +10,22 @@ import (
 )
 
 func parseColor(text string) (Paint, error) {
-	text = strings.TrimSpace(strings.ToLower(text))
+	text = strings.TrimSpace(text)
 	if text == "" {
 		return Paint{}, fmt.Errorf("empty color")
 	}
-	if text == "none" {
+	lower := strings.ToLower(text)
+	if lower == "none" {
 		return Paint{Set: true, None: true}, nil
+	}
+	if strings.HasPrefix(lower, "url(") && strings.HasSuffix(lower, ")") {
+		ref := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "url("), ")"))
+		ref = strings.TrimSpace(strings.Trim(ref, `"'`))
+		ref = strings.TrimPrefix(ref, "#")
+		if ref == "" {
+			return Paint{}, fmt.Errorf("empty paint reference")
+		}
+		return Paint{Set: true, Ref: ref}, nil
 	}
 	if strings.HasPrefix(text, "#") {
 		switch len(text) {
@@ -40,7 +51,7 @@ func parseColor(text string) (Paint, error) {
 			return Paint{Set: true, Color: colors.Color(value)}, nil
 		}
 	}
-	if strings.HasPrefix(text, "rgb(") && strings.HasSuffix(text, ")") {
+	if strings.HasPrefix(lower, "rgb(") && strings.HasSuffix(lower, ")") {
 		body := strings.TrimSuffix(strings.TrimPrefix(text, "rgb("), ")")
 		parts := strings.Split(body, ",")
 		if len(parts) != 3 {
@@ -65,10 +76,62 @@ func parseColor(text string) (Paint, error) {
 		}
 		return Paint{Set: true, Color: colors.Color((rgb[0] << 16) | (rgb[1] << 8) | rgb[2])}, nil
 	}
-	if named, err := colors.NamedColor(text); err == nil {
+	if named, err := colors.NamedColor(lower); err == nil {
 		return Paint{Set: true, Color: named}, nil
 	}
 	return Paint{}, fmt.Errorf("unsupported color %q", text)
+}
+
+func parseLengthValue(text string) (Length, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return Length{}, fmt.Errorf("empty length")
+	}
+	if strings.HasSuffix(text, "%") {
+		value, err := strconv.ParseFloat(strings.TrimSuffix(text, "%"), 64)
+		if err != nil {
+			return Length{}, err
+		}
+		return Length{Value: value, Unit: LengthPercent}, nil
+	}
+	value, err := parseLength(text, 1)
+	if err != nil {
+		return Length{}, err
+	}
+	return Length{Value: value, Unit: LengthNumber}, nil
+}
+
+func mustLengthValue(text string, fallback Length) Length {
+	if strings.TrimSpace(text) == "" {
+		return fallback
+	}
+	if value, err := parseLengthValue(text); err == nil {
+		return value
+	}
+	return fallback
+}
+
+func parseUnitInterval(text string) (float64, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return 0, fmt.Errorf("empty unit interval")
+	}
+	if strings.HasSuffix(text, "%") {
+		value, err := strconv.ParseFloat(strings.TrimSuffix(text, "%"), 64)
+		if err != nil {
+			return 0, err
+		}
+		return clamp01(value / 100.0), nil
+	}
+	value, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return 0, err
+	}
+	return clamp01(value), nil
+}
+
+func clamp01(value float64) float64 {
+	return math.Max(0, math.Min(1, value))
 }
 
 func parseNumber(text string) (float64, error) {

@@ -8,9 +8,10 @@ import (
 
 type compressionTestWriter struct {
 	labelTestWriter
-	compressPages         bool
-	compressToUnicode     bool
-	compressEmbeddedFonts bool
+	compressPages              bool
+	compressToUnicode          bool
+	compressEmbeddedFonts      bool
+	svgGradientStopOpacityMode string
 }
 
 func (w *compressionTestWriter) CompressPages(value bool) *pdf.DocWriter {
@@ -26,6 +27,12 @@ func (w *compressionTestWriter) CompressToUnicode(value bool) *pdf.DocWriter {
 func (w *compressionTestWriter) CompressEmbeddedFonts(value bool) *pdf.DocWriter {
 	w.compressEmbeddedFonts = value
 	return nil
+}
+
+func (w *compressionTestWriter) SetSVGGradientStopOpacityMode(value string) string {
+	prev := w.svgGradientStopOpacityMode
+	w.svgGradientStopOpacityMode = value
+	return prev
 }
 
 func TestStdDocument_Print_AppliesCompressionAttrs(t *testing.T) {
@@ -63,5 +70,23 @@ func TestStdDocument_Print_DefaultCompressionAttrsFalse(t *testing.T) {
 	if w.compressPages || w.compressToUnicode || w.compressEmbeddedFonts {
 		t.Fatalf("compression flags = pages:%t toUnicode:%t embedded:%t, want all false",
 			w.compressPages, w.compressToUnicode, w.compressEmbeddedFonts)
+	}
+}
+
+func TestStdDocument_Print_AppliesSVGGradientStopOpacityMode(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml svg-gradient-stop-opacity-mode="compatibility">
+  <page><label>Hello</label></page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &compressionTestWriter{labelTestWriter: labelTestWriter{t: t}}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.svgGradientStopOpacityMode != "compatibility" {
+		t.Fatalf("svgGradientStopOpacityMode = %q, want compatibility", w.svgGradientStopOpacityMode)
 	}
 }

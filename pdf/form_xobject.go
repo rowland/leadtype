@@ -21,6 +21,18 @@ func (f *pdfForm) setResources(r *resources) {
 	f.dict["Resources"] = &indirectObjectRef{r}
 }
 
+func (f *pdfForm) setTransparencyGroup(colorSpace string) {
+	group := dictionary{
+		"S": name("Transparency"),
+		"I": boolean(true),
+		"K": boolean(false),
+	}
+	if colorSpace != "" {
+		group["CS"] = name(colorSpace)
+	}
+	f.dict["Group"] = group
+}
+
 type renderedForm struct {
 	form      *pdfForm
 	resources *resources

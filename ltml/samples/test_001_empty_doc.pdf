@@ -50,7 +50,7 @@ endobj
 <<
 /Contents 8 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 3 
+/Length 0 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -60,10 +60,9 @@ endobj
 endobj
 8 0 obj
 <<
-/Length 3 
+/Length 0 
 >>
 stream
-ET
 endstream
 endobj
 xref
@@ -83,5 +82,5 @@ trailer
 /Size 9 
 >>
 startxref
-666
+663
 %%EOF

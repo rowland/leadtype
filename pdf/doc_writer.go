@@ -45,6 +45,7 @@ type DocWriter struct {
 	svgForms              map[string]*cachedSVGForm
 	gradientShadings      map[string]string // gradient key → shading resource name
 	gradientPatterns      map[string]string // gradient key → pattern resource name
+	extGStates            map[string]string // graphics-state key → ExtGState resource name
 	assetFS               fs.FS
 	compressPages         bool
 	compressToUnicode     bool
@@ -104,6 +105,7 @@ func NewDocWriter() *DocWriter {
 		svgForms:         make(map[string]*cachedSVGForm),
 		gradientShadings: make(map[string]string),
 		gradientPatterns: make(map[string]string),
+		extGStates:       make(map[string]string),
 		destinations:     make(map[string]namedDestination),
 	}
 }
@@ -698,6 +700,22 @@ func (dw *DocWriter) Print(text string) (err error) {
 	return dw.CurPage().Print(text)
 }
 
+func (dw *DocWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	return dw.CurPage().ClipRichText(text, fn)
+}
+
+func (dw *DocWriter) FillStrokeClipRichText(text *rich_text.RichText, fn func()) error {
+	return dw.CurPage().FillStrokeClipRichText(text, fn)
+}
+
+func (dw *DocWriter) ClipText(text string, fn func()) error {
+	return dw.CurPage().ClipText(text, fn)
+}
+
+func (dw *DocWriter) FillStrokeClipText(text string, fn func()) error {
+	return dw.CurPage().FillStrokeClipText(text, fn)
+}
+
 func (dw *DocWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
 	dw.CurPage().PrintParagraph(para, options)
 }
@@ -832,7 +850,7 @@ func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, erro
 	return image, name, nil
 }
 
-func (dw *DocWriter) loadSVGForm(data []byte, key string) (*cachedSVGForm, error) {
+func (dw *DocWriter) loadSVGForm(data []byte, key string, renderOptions options.Options) (*cachedSVGForm, error) {
 	if cached, ok := dw.svgForms[key]; ok {
 		return cached, nil
 	}
@@ -843,7 +861,7 @@ func (dw *DocWriter) loadSVGForm(data []byte, key string) (*cachedSVGForm, error
 	}
 	logSVGWarnings(warnings)
 
-	form, err := dw.newSVGForm(doc)
+	form, err := dw.newSVGForm(doc, renderOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -872,6 +890,61 @@ func (dw *DocWriter) gradientKey(prefix string, coords []float64, stops []Gradie
 		fmt.Fprintf(h, "%s:%06x,", g(s.Position), int32(s.Color))
 	}
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (dw *DocWriter) alphaGradientKey(prefix string, coords []float64, stops []alphaGradientStop) string {
+	h := sha1.New()
+	fmt.Fprintf(h, "%s:", prefix)
+	for _, c := range coords {
+		fmt.Fprintf(h, "%s,", g(c))
+	}
+	for _, s := range stops {
+		fmt.Fprintf(h, "%s:%s,", g(s.Position), g(s.Alpha))
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (dw *DocWriter) extGStateKey(fillAlpha, strokeAlpha float64, blendMode string, maskForm seqGen, maskSubtype string, maskBackdrop []float64) string {
+	h := sha1.New()
+	fmt.Fprintf(h, "fill=%s;stroke=%s;bm=%s;mask=%s;", g(fillAlpha), g(strokeAlpha), blendMode, maskSubtype)
+	if maskForm != nil {
+		fmt.Fprintf(h, "form=%d/%d", maskForm.Seq(), maskForm.Gen())
+	}
+	if len(maskBackdrop) > 0 {
+		fmt.Fprintf(h, ";bc=")
+		for _, value := range maskBackdrop {
+			fmt.Fprintf(h, "%s,", g(value))
+		}
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (dw *DocWriter) registerExtGState(fillAlpha, strokeAlpha float64, blendMode string, maskForm seqGen, maskSubtype string, maskBackdrop []float64) (string, error) {
+	key := dw.extGStateKey(fillAlpha, strokeAlpha, blendMode, maskForm, maskSubtype, maskBackdrop)
+	if name, ok := dw.extGStates[key]; ok {
+		return name, nil
+	}
+	gs := newExtGState(dw.nextSeq(), 0)
+	if fillAlpha < 1 {
+		gs.setFillAlpha(fillAlpha)
+	}
+	if strokeAlpha < 1 {
+		gs.setStrokeAlpha(strokeAlpha)
+	}
+	if blendMode != "" && blendMode != "Normal" {
+		gs.setBlendMode(blendMode)
+	}
+	if maskForm != nil {
+		if maskSubtype == "" {
+			maskSubtype = "Luminosity"
+		}
+		gs.setSoftMask(maskForm, maskSubtype, maskBackdrop)
+	}
+	dw.file.body.add(gs)
+	name := fmt.Sprintf("GS%d", len(dw.extGStates))
+	dw.resources.setExtGState(name, &indirectObjectRef{gs})
+	dw.extGStates[key] = name
+	return name, nil
 }
 
 func (dw *DocWriter) registerLinearGradient(lg *LinearGradient, u *units, pageHeight float64) (string, error) {
@@ -924,6 +997,26 @@ func (dw *DocWriter) registerLinearShading(lg *LinearGradient, u *units, pageHei
 	return dw.registerShadingOnly("axial", coords, lg.Stops, func(fn seqGen) genWriter {
 		return newAxialShading(dw.nextSeq(), 0, x0, y0, x1, y1, fn)
 	})
+}
+
+func (dw *DocWriter) registerLinearAlphaShading(lg *LinearGradient, stops []alphaGradientStop, u *units, pageHeight float64) (string, error) {
+	x0, y0 := u.toPts(lg.X0), pageHeight-u.toPts(lg.Y0)
+	x1, y1 := u.toPts(lg.X1), pageHeight-u.toPts(lg.Y1)
+	coords := []float64{x0, y0, x1, y1}
+	key := dw.alphaGradientKey("alpha_axial", coords, stops)
+	if shName, ok := dw.gradientShadings[key]; ok {
+		return shName, nil
+	}
+	fn, fnObjs := buildAlphaGradientFunction(dw.nextSeq, stops)
+	for _, obj := range fnObjs {
+		dw.file.body.add(obj)
+	}
+	sh := newGrayAxialShading(dw.nextSeq(), 0, x0, y0, x1, y1, fn)
+	dw.file.body.add(sh)
+	shName := fmt.Sprintf("Sh%d", len(dw.gradientShadings))
+	dw.resources.setShading(shName, &indirectObjectRef{sh})
+	dw.gradientShadings[key] = shName
+	return shName, nil
 }
 
 func (dw *DocWriter) registerRadialShading(rg *RadialGradient, u *units, pageHeight float64) (string, error) {
@@ -1052,6 +1145,19 @@ func (dw *DocWriter) SetLineWidth(width float64, units string) (prev float64) {
 
 func (dw *DocWriter) SetOptions(options options.Options) {
 	dw.options = options
+}
+
+func (dw *DocWriter) SetSVGGradientStopOpacityMode(mode string) (prev string) {
+	prev = svgGradientStopOpacityMode(dw.options)
+	if dw.options == nil {
+		dw.options = options.Options{}
+	}
+	normalized := normalizeSVGGradientStopOpacityMode(mode)
+	dw.options[svgGradientStopOpacityModeOption] = normalized
+	if dw.curPage != nil {
+		dw.curPage.SetSVGGradientStopOpacityMode(normalized)
+	}
+	return prev
 }
 
 func (dw *DocWriter) SetUnderline(underline bool) (prev bool) {

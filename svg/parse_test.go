@@ -140,6 +140,82 @@ func TestParseInternalStyleClassFill(t *testing.T) {
 	}
 }
 
+func TestParseLinearGradientAndURLPaint(t *testing.T) {
+	doc, warnings, err := Parse([]byte(`<svg width="100" height="20"><defs><style>.grad{fill:url(#SVGID_1_);opacity:0.8;clip-path:url(#clip);}</style><clipPath id="clip"><rect width="100" height="20"/></clipPath><linearGradient id="SVGID_1_" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#112233"/><stop offset="1" style="stop-color:#445566;stop-opacity:0.4"/></linearGradient></defs><rect class="grad" width="100" height="20"/></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %+v", warnings)
+	}
+	gradient := doc.Gradients["SVGID_1_"]
+	if gradient == nil {
+		t.Fatal("expected linear gradient to be registered")
+	}
+	if gradient.Kind != GradientLinear {
+		t.Fatalf("gradient kind = %v, want linear", gradient.Kind)
+	}
+	if len(gradient.Stops) != 2 {
+		t.Fatalf("stop count = %d, want 2", len(gradient.Stops))
+	}
+	if gradient.Stops[1].Opacity != 0.4 {
+		t.Fatalf("stop opacity = %v, want 0.4", gradient.Stops[1].Opacity)
+	}
+	var rect *Rect
+	for _, child := range doc.Children {
+		if node, ok := child.(*Rect); ok {
+			rect = node
+			break
+		}
+	}
+	if rect == nil {
+		t.Fatalf("expected a drawable rect child, got %+v", doc.Children)
+	}
+	style := rect.Style.Resolve(DefaultStyle())
+	if style.Fill.Ref != "SVGID_1_" {
+		t.Fatalf("fill ref = %q, want SVGID_1_", style.Fill.Ref)
+	}
+	if rect.ClipPathRef != "clip" {
+		t.Fatalf("clip-path ref = %q, want clip", rect.ClipPathRef)
+	}
+	if style.Opacity != 0.8 {
+		t.Fatalf("opacity = %v, want 0.8", style.Opacity)
+	}
+}
+
+func TestParseUseMaskAndBlendMode(t *testing.T) {
+	doc, warnings, err := Parse([]byte(`<svg width="20" height="20" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><rect id="shape" width="10" height="10"/><mask id="mask" maskUnits="userSpaceOnUse"><rect width="20" height="20" fill="#ffffff"/></mask></defs><use xlink:href="#shape" x="5" y="6" style="mix-blend-mode:hard-light;mask:url(#mask)"/></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %+v", warnings)
+	}
+	if doc.Masks["mask"] == nil {
+		t.Fatal("expected mask definition to be registered")
+	}
+	var use *Use
+	for _, child := range doc.Children {
+		if node, ok := child.(*Use); ok {
+			use = node
+			break
+		}
+	}
+	if use == nil {
+		t.Fatalf("expected a use node child, got %+v", doc.Children)
+	}
+	if use.Href != "shape" {
+		t.Fatalf("href = %q, want shape", use.Href)
+	}
+	if use.MaskRef != "mask" {
+		t.Fatalf("mask ref = %q, want mask", use.MaskRef)
+	}
+	style := use.Style.Resolve(DefaultStyle())
+	if style.BlendMode != "hard-light" {
+		t.Fatalf("blend mode = %q, want hard-light", style.BlendMode)
+	}
+}
+
 func TestParseMetadataElementsAreIgnoredWithoutWarning(t *testing.T) {
 	doc, warnings, err := Parse([]byte(`<svg width="10" height="10"><title>Example</title><desc>Details</desc><rect width="10" height="10"/></svg>`))
 	if err != nil {

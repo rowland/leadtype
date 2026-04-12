@@ -414,6 +414,66 @@ func TestDocWriter_SetOptions(t *testing.T) {
 	check(t, dw.options["units"] == "in", "Default units should be in")
 }
 
+func TestDocWriter_SetSVGGradientStopOpacityMode(t *testing.T) {
+	dw := NewDocWriter()
+	if prev := dw.SetSVGGradientStopOpacityMode("compatibility"); prev != svgGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected previous mode %q, got %q", svgGradientStopOpacityModeSoftMask, prev)
+	}
+	if got := svgGradientStopOpacityMode(dw.options); got != svgGradientStopOpacityModeFlat {
+		t.Fatalf("expected doc mode %q, got %q", svgGradientStopOpacityModeFlat, got)
+	}
+	pw := dw.NewPage()
+	if got := svgGradientStopOpacityMode(pw.options); got != svgGradientStopOpacityModeFlat {
+		t.Fatalf("expected page to inherit mode %q, got %q", svgGradientStopOpacityModeFlat, got)
+	}
+	if prev := dw.SetSVGGradientStopOpacityMode("soft-mask"); prev != svgGradientStopOpacityModeFlat {
+		t.Fatalf("expected previous mode %q, got %q", svgGradientStopOpacityModeFlat, prev)
+	}
+	if got := svgGradientStopOpacityMode(pw.options); got != svgGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected current page mode %q after doc update, got %q", svgGradientStopOpacityModeSoftMask, got)
+	}
+}
+
+func TestDocWriter_ClipText(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	dw.MoveTo(72, 720)
+	if err := dw.ClipText("Hello", func() {
+		dw.Rectangle(0, 0, 18, 12, false, true)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(dw.CurPage().stream.String(), "7 Tr\n") {
+		t.Fatalf("expected DocWriter ClipText to delegate to current page, got:\n%s", dw.CurPage().stream.String())
+	}
+}
+
+func TestDocWriter_FillStrokeClipText(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	dw.MoveTo(72, 720)
+	if err := dw.FillStrokeClipText("Hello", nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(dw.CurPage().stream.String(), "6 Tr\n") {
+		t.Fatalf("expected DocWriter FillStrokeClipText to delegate to current page, got:\n%s", dw.CurPage().stream.String())
+	}
+}
+
 func TestDocWriter_PathAPI_Integration(t *testing.T) {
 	var buf bytes.Buffer
 

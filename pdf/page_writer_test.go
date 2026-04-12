@@ -528,6 +528,149 @@ func TestPageWriter_flushText(t *testing.T) {
 	expectS(t, "BT\n/F0 12 Tf\n(Hello, World!) Tj\n", pw.stream.String())
 }
 
+func TestPageWriter_ClipText(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	called := false
+	if err := pw.ClipText("Hello", func() {
+		called = true
+		pw.SetFillColor(red)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !called {
+		t.Fatal("expected ClipText callback to run")
+	}
+
+	got := pw.stream.String()
+	for _, fragment := range []string{"q\nBT\n", "/F0 12 Tf\n", "7 Tr\n", "(Hello) Tj\n", "ET\n", "Q\n"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected clipped text output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+	metrics, err := pw.MeasureText("Hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if delta := math.Abs(pw.loc.X - (72 + pw.units.toPts(metrics.Width))); delta > 0.001 {
+		t.Fatalf("expected ClipText to advance location to %.3f pt, got %.3f pt", 72+pw.units.toPts(metrics.Width), pw.loc.X)
+	}
+}
+
+func TestPageWriter_FillStrokeClipText(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetLineColor(red)
+	pw.SetLineWidth(2, "pt")
+	pw.MoveTo(72, 720)
+	if err := pw.FillStrokeClipText("Hello", func() {
+		pw.SetFillColor(green)
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := pw.stream.String()
+	for _, fragment := range []string{"6 Tr\n", "1 0 0 RG\n", "2 w\n", "(Hello) Tj\n"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected fill+stroke clipped text output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+}
+
+func TestPageWriter_ClipRichTextSuppressesDecorationsLinksAndAccessibility(t *testing.T) {
+	dw := NewDocWriter()
+	dw.EnableTaggedPDF(true)
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Helvetica", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err := rich_text.New("Hello", fonts, 12, options.Options{
+		"underline":    true,
+		"strikeout":    true,
+		"link_uri":     "https://example.com",
+		"char_spacing": 0.5,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	if err := pw.WithAccessibilityTag("P", AccessibilityOptions{}, func() {
+		if err := pw.ClipRichText(rt, nil); err != nil {
+			t.Fatal(err)
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := pw.stream.String()
+	for _, fragment := range []string{" BDC\n", "/ActualText", " S\n"} {
+		if strings.Contains(got, fragment) {
+			t.Fatalf("expected clipped rich text to suppress %q, got:\n%s", fragment, got)
+		}
+	}
+	if len(pw.page.annots) != 0 {
+		t.Fatalf("expected clipped rich text to avoid link annotations, got %d", len(pw.page.annots))
+	}
+}
+
+func TestPageWriter_ClipRichText_UnicodePositionedGlyphs(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	fc, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Arial", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err := rich_text.New("Hi", fonts, 12, options.Options{"char_spacing": 1.0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	if err := pw.ClipRichText(rt, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	got := pw.stream.String()
+	for _, fragment := range []string{"7 Tr\n", " Tm\n", "<"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected clipped rich text positioned glyph output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+}
+
 func TestPageWriter_SetVTextAlign(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
@@ -574,7 +717,7 @@ func TestPageWriter_flushText_VTextAlignRise(t *testing.T) {
 }
 
 func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
-	newWriter := func(vTextAlign string) (*PageWriter, float64) {
+	newWriter := func(vTextAlign string) (*PageWriter, float64, float64) {
 		dw := NewDocWriter()
 		fc, err := afm_fonts.Default()
 		if err != nil {
@@ -612,18 +755,23 @@ func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
 		case "below":
 			rise = -descent
 		}
-		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 - rise
-		return pw, expectedY
+		hWidth, _ := fonts[0].AdvanceWidth('H')
+		iWidth, _ := fonts[0].AdvanceWidth('i')
+		expectedY := float64(fonts[0].UnderlinePosition())*12/1000.0 + rise
+		return pw, expectedY, 12 * (float64(hWidth+iWidth) / 1000.0)
 	}
 
-	baseWriter, baseY := newWriter("base")
-	topWriter, topY := newWriter("top")
+	baseWriter, baseY, baseWidth := newWriter("base")
+	topWriter, topY, topWidth := newWriter("top")
 
-	if !strings.Contains(baseWriter.stream.String(), g(baseY)+" l\n") {
-		t.Fatalf("expected base underline to include y coordinate %q, got:\n%s", g(baseY)+" l\n", baseWriter.stream.String())
+	baseUnderline := "0 " + g(baseY) + " m\n" + g(baseWidth) + " " + g(baseY) + " l\n"
+	topUnderline := "0 " + g(topY) + " m\n" + g(topWidth) + " " + g(topY) + " l\n"
+
+	if !strings.Contains(baseWriter.stream.String(), baseUnderline) {
+		t.Fatalf("expected base underline segment %q, got:\n%s", baseUnderline, baseWriter.stream.String())
 	}
-	if !strings.Contains(topWriter.stream.String(), g(topY)+" l\n") {
-		t.Fatalf("expected top-aligned underline to include y coordinate %q, got:\n%s", g(topY)+" l\n", topWriter.stream.String())
+	if !strings.Contains(topWriter.stream.String(), topUnderline) {
+		t.Fatalf("expected top-aligned underline segment %q, got:\n%s", topUnderline, topWriter.stream.String())
 	}
 	if g(baseY) == g(topY) {
 		t.Fatalf("expected underline positions to differ between base and top alignment")
@@ -853,6 +1001,30 @@ func TestPageWriter_PathDiscardRestoresState(t *testing.T) {
 	}
 	if !strings.Contains(pw.stream.String(), "n\n") {
 		t.Fatalf("expected discarded path to emit new path operator, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_ClipTextInsideManualPath(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	err = pw.Path(func() {
+		pw.MoveTo(1, 1)
+		pw.LineTo(2, 2)
+		if clipErr := pw.ClipText("Hello", nil); clipErr != errTextClipInsideManualPath {
+			t.Fatalf("expected errTextClipInsideManualPath, got %v", clipErr)
+		}
+	})
+	if err != nil {
+		t.Fatalf("Path returned error: %v", err)
 	}
 }
 

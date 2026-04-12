@@ -47,6 +47,18 @@ func (m *mockWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (m *mockWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+func (m *mockWriter) ClipText(text string, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
 func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
