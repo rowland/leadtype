@@ -648,6 +648,21 @@ func TestPageWriter_PrintSVG_UseMaskAndBlendMode(t *testing.T) {
 	}
 }
 
+func TestPageWriter_PrintSVG_WarnsForIgnoredFilterRef(t *testing.T) {
+	msg := captureStderr(t, func() {
+		dw := NewDocWriter()
+		pw := newPageWriter(dw, options.Options{"units": "pt"})
+		width := 120.0
+		if _, _, err := pw.PrintSVG(testSVGUseMaskBlendFixture(), 0, 0, &width, nil); err != nil {
+			t.Fatal(err)
+		}
+		pw.close()
+	})
+	if !strings.Contains(msg, "svg: <g> filter: filter #luminosity-noclip is parsed but not yet rendered") {
+		t.Fatalf("expected ignored filter warning, got %q", msg)
+	}
+}
+
 func TestPageWriter_PrintSVG_UseDoesNotReclipReferencedNode(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{"units": "pt"})

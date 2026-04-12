@@ -137,6 +137,9 @@ func (r *svgRenderer) renderNode(node svg.Node, parentStyle svg.Style, parentTra
 	if style.Display == "none" {
 		return nil
 	}
+	if common.FilterRef != "" {
+		r.warnIgnoredFilter(node, common.FilterRef)
+	}
 	transform := parentTransform.Mul(common.Transform)
 	return r.withClip(common.ClipPathRef, transform, style, func() error {
 		if common.MaskRef != "" {
@@ -146,6 +149,48 @@ func (r *svgRenderer) renderNode(node svg.Node, parentStyle svg.Style, parentTra
 		}
 		return r.renderNodeBody(node, style, transform)
 	})
+}
+
+func (r *svgRenderer) warnIgnoredFilter(node svg.Node, filterRef string) {
+	element := svgNodeElementName(node)
+	if r.doc.Filters[filterRef] == nil {
+		logSVGWarnings([]svg.Warning{{Element: element, Attribute: "filter", Message: fmt.Sprintf("missing filter #%s", filterRef)}})
+		return
+	}
+	logSVGWarnings([]svg.Warning{{Element: element, Attribute: "filter", Message: fmt.Sprintf("filter #%s is parsed but not yet rendered", filterRef)}})
+}
+
+func svgNodeElementName(node svg.Node) string {
+	switch node.(type) {
+	case *svg.Group:
+		return "g"
+	case *svg.Defs:
+		return "defs"
+	case *svg.ClipPath:
+		return "clipPath"
+	case *svg.Mask:
+		return "mask"
+	case *svg.Use:
+		return "use"
+	case *svg.Line:
+		return "line"
+	case *svg.Rect:
+		return "rect"
+	case *svg.Circle:
+		return "circle"
+	case *svg.Ellipse:
+		return "ellipse"
+	case *svg.Polyline:
+		return "polyline"
+	case *svg.Polygon:
+		return "polygon"
+	case *svg.Path:
+		return "path"
+	case *svg.Text:
+		return "text"
+	default:
+		return "svg"
+	}
 }
 
 func (r *svgRenderer) renderNodeBody(node svg.Node, style svg.Style, transform svg.Transform) error {
