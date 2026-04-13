@@ -41,6 +41,14 @@ func TestOptions_FloatDefault(t *testing.T) {
 	expectF(t, 100.0, o.FloatDefault("4th", 100))
 }
 
+func TestOptions_IntDefault(t *testing.T) {
+	o := Options{"1st": "6", "2nd": 3, "3rd": 7.5, "4th": `33%`}
+	expectI(t, 98, o.IntDefault("missing", 98))
+	expectI(t, 6, o.IntDefault("1st", 0))
+	expectI(t, 3, o.IntDefault("2nd", -1))
+	expectI(t, 7, o.IntDefault("3rd", 100))
+	expectI(t, 100, o.IntDefault("4th", 100))
+}
 func TestOptions_Merge(t *testing.T) {
 	a := Options{"a": "a", "b": 1}
 	b := Options{"c": 3.5, "d": "d2"}
@@ -73,6 +81,12 @@ func expectB(t *testing.T, expected, actual bool) {
 func expectF(t *testing.T, expected, actual float64) {
 	if expected != actual {
 		t.Errorf("Expected %f, got %f", expected, actual)
+	}
+}
+
+func expectI(t *testing.T, expected, actual int) {
+	if expected != actual {
+		t.Errorf("Expected %d, got %d", expected, actual)
 	}
 }
 

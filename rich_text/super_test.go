@@ -19,6 +19,12 @@ func (st *SuperTest) AlmostEqual(expected, actual, delta float64, msg ...string)
 	}
 }
 
+func (st *SuperTest) AlmostEqualF32(expected, actual, delta float32, msg ...string) {
+	if math.Abs(float64(expected-actual)) > float64(delta) {
+		st.fail(float64(expected), float64(actual), false, msg...)
+	}
+}
+
 func (st *SuperTest) Equal(expected, actual any, msg ...string) {
 	if expected != actual {
 		st.fail(expected, actual, false, msg...)

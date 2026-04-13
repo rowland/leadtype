@@ -38,10 +38,10 @@ type RichText struct {
 	descent            float64
 	height             float64
 	lineGap            float64
-	StrikeoutPosition  float64
-	StrikeoutThickness float64
-	UnderlinePosition  float64
-	UnderlineThickness float64
+	StrikeoutPosition  float32
+	StrikeoutThickness float32
+	UnderlinePosition  float32
+	UnderlineThickness float32
 	width              float64
 	chars              int
 	CharSpacing        float64
@@ -75,17 +75,17 @@ var errNoFontSet = errors.New("No font set")
 //	              A bool, a string that evalutes to bool via strconv.ParseBool, a non-zero int or float64.
 func New(s string, fonts []*font.Font, fontSize float64, options options.Options) (*RichText, error) {
 	piece := &RichText{
-		Text:          s,
-		FontSize:      fontSize,
-		Color:         options.ColorDefault("color", colors.Black),
-		LinkURI:       options.StringDefault("link_uri", ""),
-		LinkTarget:    options.StringDefault("link_target", ""),
-		LinkID:        options.StringDefault("link_id", ""),
-		Underline:     options.BoolDefault("underline", false),
-		Strikeout:     options.BoolDefault("strikeout", false),
-		CharSpacing:   options.FloatDefault("char_spacing", 0),
-		WordSpacing:   options.FloatDefault("word_spacing", 0),
-		NoBreak:       options.BoolDefault("nobreak", false),
+		Text:        s,
+		FontSize:    fontSize,
+		Color:       options.ColorDefault("color", colors.Black),
+		LinkURI:     options.StringDefault("link_uri", ""),
+		LinkTarget:  options.StringDefault("link_target", ""),
+		LinkID:      options.StringDefault("link_id", ""),
+		Underline:   options.BoolDefault("underline", false),
+		Strikeout:   options.BoolDefault("strikeout", false),
+		CharSpacing: options.FloatDefault("char_spacing", 0),
+		WordSpacing: options.FloatDefault("word_spacing", 0),
+		NoBreak:     options.BoolDefault("nobreak", false),
 	}
 	var defaultFont *font.Font
 	if len(fonts) == 0 {
@@ -416,10 +416,10 @@ func (piece *RichText) measure() *RichText {
 	piece.descent = float64(metrics.Descent()) * fsize
 	piece.height = float64(piece.Font.Height()) * fsize
 	piece.lineGap = float64(metrics.LineGap()) * fsize
-	piece.StrikeoutPosition = float64(metrics.StrikeoutPosition()) * fsize
-	piece.StrikeoutThickness = float64(metrics.StrikeoutThickness()) * fsize
-	piece.UnderlinePosition = float64(metrics.UnderlinePosition()) * fsize
-	piece.UnderlineThickness = float64(metrics.UnderlineThickness()) * fsize
+	piece.StrikeoutPosition = float32(metrics.StrikeoutPosition()) * float32(fsize)
+	piece.StrikeoutThickness = float32(metrics.StrikeoutThickness()) * float32(fsize)
+	piece.UnderlinePosition = float32(metrics.UnderlinePosition()) * float32(fsize)
+	piece.UnderlineThickness = float32(metrics.UnderlineThickness()) * float32(fsize)
 	if piece.Font.SupportsArabic() && shaping.ContainsArabic(piece.Text) {
 		runes := []rune(piece.Text)
 		if shaped, err := piece.Font.Shaper.Shape(runes, piece.Font, float32(piece.FontSize)); err == nil && shaped != nil {
@@ -709,18 +709,18 @@ func (piece *RichText) Scale(scale float64, minFontSize float64) *RichText {
 
 func (piece *RichText) scaleClone(scale float64) *RichText {
 	clone := &RichText{
-		Text:          piece.Text,
-		Font:          piece.Font,
-		FontSize:      piece.FontSize,
-		Color:         piece.Color,
-		LinkURI:       piece.LinkURI,
-		LinkTarget:    piece.LinkTarget,
-		LinkID:        piece.LinkID,
-		Underline:     piece.Underline,
-		Strikeout:     piece.Strikeout,
-		CharSpacing:   piece.CharSpacing,
-		WordSpacing:   piece.WordSpacing,
-		NoBreak:       piece.NoBreak,
+		Text:        piece.Text,
+		Font:        piece.Font,
+		FontSize:    piece.FontSize,
+		Color:       piece.Color,
+		LinkURI:     piece.LinkURI,
+		LinkTarget:  piece.LinkTarget,
+		LinkID:      piece.LinkID,
+		Underline:   piece.Underline,
+		Strikeout:   piece.Strikeout,
+		CharSpacing: piece.CharSpacing,
+		WordSpacing: piece.WordSpacing,
+		NoBreak:     piece.NoBreak,
 	}
 	if piece.IsLeaf() {
 		clone.FontSize *= scale

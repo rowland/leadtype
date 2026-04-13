@@ -1070,12 +1070,49 @@ func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, rever
 	})
 }
 
-func (pw *PageWriter) drawUnderline(loc1 Location, loc2 Location, rise float64, position float64, thickness float64) {
+func lineCapStyleFromString(style string) (LineCapStyle, bool) {
+	switch style {
+	case "round_cap":
+		return RoundCap, true
+	case "projecting_square_cap":
+		return ProjectingSquareCap, true
+	case "butt_cap":
+		return ButtCap, true
+	default:
+		return ButtCap, false
+	}
+}
+
+func (pw *PageWriter) drawUnderline(
+	loc1 Location,
+	loc2 Location,
+	rise float64,
+	position float64,
+	thickness float64,
+	lineColor colors.Color,
+	hasLineColor bool,
+	lineCapStyleName string,
+) {
 	saveWidth := pw.setLineWidth(thickness)
+	saveCap := pw.LineCapStyle()
+	if lineCapStyle, ok := lineCapStyleFromString(lineCapStyleName); ok {
+		pw.SetLineCapStyle(lineCapStyle)
+	}
+	var saveLineColor colors.Color
+	saveLineGradient := pw.lineGradient
+	if hasLineColor {
+		pw.lineGradient = ""
+		saveLineColor = pw.SetLineColor(lineColor)
+	}
 	// TODO: rotate coordiates given angle
 	offsetY := position + rise
 	pw.moveTo(loc1.X, loc1.Y+offsetY)
 	pw.lineTo(loc2.X, loc2.Y+offsetY)
+	if hasLineColor {
+		pw.SetLineColor(saveLineColor)
+		pw.lineGradient = saveLineGradient
+	}
+	pw.SetLineCapStyle(saveCap)
 	pw.setLineWidth(saveWidth)
 }
 
@@ -1396,10 +1433,24 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 		rise := pw.textRiseForPiece(p, savedVTextAlign)
 		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
 		if emit.emitDecorations && p.Underline {
-			pw.drawUnderline(loc1, loc2, rise, p.UnderlinePosition, p.UnderlineThickness)
+			lineColor := colors.Color(0)
+			hasLineColor := false
+			capStyle := ""
+			if p.Font != nil {
+				lineColor, hasLineColor = p.Font.UnderlineColor()
+				capStyle = p.Font.UnderlineCapStyle()
+			}
+			pw.drawUnderline(loc1, loc2, rise, float64(p.UnderlinePosition), float64(p.UnderlineThickness), lineColor, hasLineColor, capStyle)
 		}
 		if emit.emitDecorations && p.Strikeout {
-			pw.drawUnderline(loc1, loc2, rise, p.StrikeoutPosition, p.StrikeoutThickness)
+			lineColor := colors.Color(0)
+			hasLineColor := false
+			capStyle := ""
+			if p.Font != nil {
+				lineColor, hasLineColor = p.Font.StrikeoutColor()
+				capStyle = p.Font.StrikeoutCapStyle()
+			}
+			pw.drawUnderline(loc1, loc2, rise, float64(p.StrikeoutPosition), float64(p.StrikeoutThickness), lineColor, hasLineColor, capStyle)
 		}
 		if emit.emitLinks && (p.LinkURI != "" || p.LinkTarget != "") {
 			elem, _ := pw.structElemForLeaf(p)
@@ -1695,6 +1746,18 @@ func (pw *PageWriter) newLine() {
 	pw.moveTo(pw.origin.X, pw.origin.Y-pw.lineHeight)
 }
 
+func (pw *PageWriter) paragraphNewLine(next *rich_text.RichText) {
+	pw.flushText()
+	if next != nil {
+		pw.lineHeight = next.Leading() * pw.lineSpacing
+	} else if pw.lineHeight == 0 {
+		if rt, err := pw.richTextForString("X"); err == nil {
+			pw.lineHeight = rt.Leading() * pw.lineSpacing
+		}
+	}
+	pw.moveTo(pw.origin.X, pw.origin.Y-pw.lineHeight)
+}
+
 func (pw *PageWriter) PageHeight() float64 {
 	return pw.units.fromPts(pw.pageHeight)
 }
@@ -1896,7 +1959,7 @@ func (pw *PageWriter) print(text string) (err error) {
 func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
 	pw.flushText()
 	width := pw.units.toPts(options.FloatDefault("width", pw.units.fromPts(pw.pageWidth-pw.loc.X)))
-	for _, p := range para {
+	for i, p := range para {
 		pw.origin = pw.loc
 		switch options.StringDefault("text-align", "left") {
 		case "center":
@@ -1935,7 +1998,11 @@ func (pw *PageWriter) PrintParagraph(para []*rich_text.RichText, options options
 			}
 		}
 		pw.PrintRichText(p)
-		pw.newLine()
+		var next *rich_text.RichText
+		if i+1 < len(para) {
+			next = para[i+1]
+		}
+		pw.paragraphNewLine(next)
 	}
 }
 

@@ -59,6 +59,66 @@ var line6 = []rtLinePiece{
 	{". This text is normal.", options.Options{}},
 }
 
+var line7 = []rtLinePiece{
+	{"This text is ", options.Options{}},
+	{"correct", options.Options{"underline": true, "underline_color": "green"}},
+	{".", options.Options{}},
+}
+
+var line8 = []rtLinePiece{
+	{"This text is ", options.Options{}},
+	{"incorrect", options.Options{"strikeout": true, "strikeout_color": "red"}},
+	{".", options.Options{}},
+}
+
+var line9 = []rtLinePiece{
+	{"Round cap underline: ", options.Options{}},
+	{"Sample", options.Options{
+		"underline":           true,
+		"underline_color":     "blue",
+		"underline_cap":       "round_cap",
+		"underline_thickness": 280,
+	}},
+}
+
+var line10 = []rtLinePiece{
+	{"Projecting square cap underline: ", options.Options{}},
+	{"Sample", options.Options{
+		"underline":           true,
+		"underline_color":     "blue",
+		"underline_cap":       "projecting_square_cap",
+		"underline_thickness": 280,
+	}},
+}
+
+var line11 = []rtLinePiece{
+	{"Butt cap underline: ", options.Options{}},
+	{"Sample", options.Options{
+		"underline":           true,
+		"underline_color":     "blue",
+		"underline_cap":       "butt_cap",
+		"underline_thickness": 280,
+	}},
+}
+
+var line12 = []rtLinePiece{
+	{"Thick underline: ", options.Options{}},
+	{"Sample", options.Options{
+		"underline":           true,
+		"underline_color":     "purple",
+		"underline_thickness": 500,
+	}},
+}
+
+var line13 = []rtLinePiece{
+	{"Thick strikeout: ", options.Options{}},
+	{"Sample", options.Options{
+		"strikeout":           true,
+		"strikeout_color":     "orange",
+		"strikeout_thickness": 500,
+	}},
+}
+
 func runTest006RichText() (string, error) {
 	return writeDoc("test_006_rich_text.pdf", func(doc *pdf.DocWriter) error {
 		ttfc, err := ttf_fonts.NewFromSystemFonts()
@@ -85,6 +145,13 @@ func runTest006RichText() (string, error) {
 			makeRtLine(doc, line4),
 			makeRtLine(doc, line5),
 			makeRtLine(doc, line6),
+			makeRtLine(doc, line7),
+			makeRtLine(doc, line8),
+			makeSizedRtLine(doc, line9, 24),
+			makeSizedRtLine(doc, line10, 24),
+			makeSizedRtLine(doc, line11, 24),
+			makeSizedRtLine(doc, line12, 20),
+			makeSizedRtLine(doc, line13, 20),
 		}
 		doc.PrintParagraph(lines, options.Options{})
 		return nil
@@ -92,13 +159,17 @@ func runTest006RichText() (string, error) {
 }
 
 func makeRtLine(doc *pdf.DocWriter, pieces []rtLinePiece) *rich_text.RichText {
+	return makeSizedRtLine(doc, pieces, 12)
+}
+
+func makeSizedRtLine(doc *pdf.DocWriter, pieces []rtLinePiece, size float64) *rich_text.RichText {
 	rt := &rich_text.RichText{}
 	for _, p := range pieces {
-		fonts, err := doc.SetFont("Arial", 12, p.options)
+		fonts, err := doc.SetFont("Arial", size, p.options)
 		if err != nil {
 			panic(err)
 		}
-		rt, err = rt.Add(p.s, fonts, 12, p.options)
+		rt, err = rt.Add(p.s, fonts, size, p.options)
 		if err != nil {
 			panic(err)
 		}

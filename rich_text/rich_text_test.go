@@ -639,8 +639,8 @@ func TestRichText_measure(t *testing.T) {
 	st.AlmostEqual(-2.119141, piece.descent, 0.001)
 	st.AlmostEqual(11.171875, piece.height, 0.001)
 	st.AlmostEqual(0.327148, piece.lineGap, 0.001)
-	st.AlmostEqual(-1.059570, piece.UnderlinePosition, 0.001)
-	st.AlmostEqual(0.732422, piece.UnderlineThickness, 0.001)
+	st.AlmostEqualF32(-1.059570, piece.UnderlinePosition, 0.001)
+	st.AlmostEqualF32(0.732422, piece.UnderlineThickness, 0.001)
 	st.AlmostEqual(28.344727, piece.width, 0.001)
 	st.Equal(5, piece.chars)
 }

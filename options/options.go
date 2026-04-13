@@ -66,6 +66,23 @@ func (this Options) FloatDefault(key string, def float64) float64 {
 	return def
 }
 
+func (this Options) IntDefault(key string, def int) int {
+	if value, ok := this[key]; ok {
+		switch value := value.(type) {
+		case int:
+			return value
+		case string:
+			if i, err := strconv.Atoi(value); err == nil {
+				return i
+			}
+			return def
+		case float64:
+			return int(value)
+		}
+	}
+	return def
+}
+
 func (this Options) Merge(other Options) Options {
 	result := make(Options, len(this)+len(other))
 	for k, v := range this {
@@ -89,4 +106,9 @@ func (this Options) StringDefault(key, def string) string {
 		}
 	}
 	return def
+}
+
+func (this Options) HasKey(key string) bool {
+	_, ok := this[key]
+	return ok
 }

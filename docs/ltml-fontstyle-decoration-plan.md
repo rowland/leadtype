@@ -1,127 +1,128 @@
-# LTML plan: optional underline/strikeout PenStyles + position overrides
+# LTML plan: optional underline/strikeout pen settings + position overrides
 
 ## Goal
 
 Allow LTML `FontStyle` to optionally carry:
 
-1. A `PenStyle` for underline.
-2. A `PenStyle` for strikeout.
+1. A style reference for underline rendering.
+2. A style reference for strikeout rendering.
 3. Numeric position overrides for underline and strikeout lines.
 
-The implementation should preserve existing behavior when these new fields are not provided.
+Implementation must remain layered: **no LTML types (for example `ltml.PenStyle`) should be pushed into `rich_text` or `pdf`**.
 
 ## Current state (high level)
 
-- LTML `FontStyle` currently supports `underline`/`strikeout` as booleans.
-- Drawing of text decorations is ultimately controlled in the PDF writer path, with default line position/thickness behavior driven by font metrics and writer logic.
-- LTML already has a reusable `PenStyle` type and style lookup via `PenStyleFor(...)`.
+- LTML `FontStyle` supports `underline` / `strikeout` booleans.
+- `ltml.PenStyle` already exists for line styling in LTML space.
+- Decoration lines are rendered in lower layers (`rich_text`/`pdf`) using font metrics and writer state.
 
 ## Proposed public LTML behavior
 
-### New font attributes in LTML
+### New attributes
 
-Add optional attributes on `FontStyle` and font-prefixed widget attributes:
+Add optional font attributes:
 
 - `font.underline-pen="<pen-id>"`
 - `font.strikeout-pen="<pen-id>"`
-- `font.underline-pos="<number><unit?>"` (line position override)
-- `font.strikeout-pos="<number><unit?>"` (line position override)
+- `font.underline-pos="<number><unit?>"`
+- `font.strikeout-pos="<number><unit?>"`
 
-Alias support for direct `label` font attributes:
+Inline aliases on label-like elements:
 
 - `underline-pen`, `strikeout-pen`, `underline-pos`, `strikeout-pos`
 
 ### Semantics
 
-- `underline=true` enables underline drawing; if `underline-pen` is unset, existing pen behavior remains.
-- `strikeout=true` enables strikeout drawing; if `strikeout-pen` is unset, existing pen behavior remains.
-- Position overrides are only applied for the corresponding enabled decoration.
-- Position values are offsets relative to the text baseline in the same coordinate convention used by existing decoration calculations.
-- Unset position override means “use existing font-metric-driven/default placement.”
+- `font.underline="true"` / `font.strikeout="true"` continue to control whether lines are drawn.
+- If a `*-pen` attr is absent, keep existing default decoration appearance.
+- If a `*-pos` attr is absent, keep existing font-metric/default placement.
+- Position overrides apply only when the corresponding decoration is enabled.
 
 ### Backward compatibility
 
-- Existing LTML and rich text behavior remains unchanged unless new attrs are present.
-- Existing boolean flags continue to work exactly as before.
+- Existing LTML remains unchanged unless the new attributes are set.
+- Existing AFM/simple and TTF paths must continue to work.
+
+## Layering strategy (key design constraint)
+
+To preserve architecture boundaries:
+
+1. LTML resolves `underline-pen` / `strikeout-pen` IDs to `ltml.PenStyle`.
+2. LTML **copies only primitive/lower-level fields** from `PenStyle` into text/font data used by `rich_text`.
+3. `rich_text` and `pdf` consume those copied fields using their own types (already-available lower-level types like `colors.Color`, numeric width, string pattern/cap, and numeric offsets), never `ltml.PenStyle`.
 
 ## Implementation plan
 
-## Phase 1: Extend LTML style model
+### Phase 1: Extend LTML `FontStyle`
 
-1. Update `ltml.FontStyle` to include optional decoration styling fields:
-   - `underlinePen *PenStyle`
-   - `strikeoutPen *PenStyle`
+1. Add optional fields on `ltml.FontStyle`:
+   - `underlinePenID string`
+   - `strikeoutPenID string`
    - `underlinePos *float64`
    - `strikeoutPos *float64`
-2. Extend `SetAttrs(...)` parsing to read the four new attributes.
-3. Resolve pen IDs via `PenStyleFor(...)` in current scope.
-4. Ensure `Clone()`, `Attrs()`, and `String()` include the new fields.
+2. Parse the new attrs in `SetAttrs(...)`.
+3. Preserve existing `Clone()`, `Attrs()`, and string/debug output behavior with the new fields included.
 
-## Phase 2: Writer contract for decoration overrides
+### Phase 2: Define lower-layer decoration payload (no LTML types)
 
-1. Extend LTML/PDF writer interfaces with optional setters for decoration style/position, for example:
-   - `SetUnderlinePenStyle(*PenStyle) (prev *PenStyle)`
-   - `SetStrikeoutPenStyle(*PenStyle) (prev *PenStyle)`
-   - `SetUnderlinePosition(*float64) (prev *float64)`
-   - `SetStrikeoutPosition(*float64) (prev *float64)`
-2. Propagate these through:
-   - `ltml.Writer` interface
-   - `layout_probe_writer`
-   - `pdf.DocWriter`
-   - `pdf.PageWriter`
-   - test doubles used in `ltml/std_label_test.go` and related tests.
-3. In `FontStyle.Apply(w)`, apply booleans first, then optional pen/position overrides.
+1. Introduce/extend decoration style fields in the structure that `rich_text` uses for rendering decisions (rich text piece/font payload), e.g.:
+   - underline/strikeout line color
+   - line width
+   - dash/pattern
+   - cap style
+   - optional position overrides
+2. Use only lower-level package types already available in those layers.
+3. Keep payload optional so nil/zero values mean “use existing defaults”.
 
-## Phase 3: PDF drawing behavior
+### Phase 3: Thread LTML pen values into rich text construction
 
-1. Add `PageWriter` draw-state fields for optional decoration pen + position overrides.
-2. During text decoration drawing:
-   - choose line color/width/pattern/cap from override pen when set;
-   - otherwise keep current defaults.
-3. Use explicit override position when set; otherwise keep current font-metric/default calculation.
-4. Keep baseline alignment behavior intact with top/middle/bottom text alignment tests.
+1. In LTML text construction path, resolve pen IDs with `PenStyleFor(...)`.
+2. Copy pen fields into the lower-layer decoration payload (not as `PenStyle`, but as scalar/color values).
+3. Thread `underlinePos` / `strikeoutPos` numeric overrides into the same payload.
+4. Ensure inheritance and inline override precedence are explicit and tested.
 
-## Phase 4: Validation and fallbacks
+### Phase 4: Apply payload in PDF text-decoration rendering
 
-1. Invalid pen ID: fallback to current default behavior (no hard error).
-2. Invalid numeric position: ignore attribute and preserve default placement.
-3. Document precedence rules:
-   - inline font attrs override inherited style values;
-   - unset override values do not clear defaults unless explicitly intended.
+1. Update decoration drawing path to read optional payload fields from rich text/font structures.
+2. If style payload exists, override decoration paint/stroke properties.
+3. If position override exists, use it; else keep current metric-driven/default Y calculations.
+4. Preserve existing behavior when payload fields are unset.
 
-## Phase 5: Tests
+### Phase 5: Validation and fallback
 
-### LTML unit tests
+1. Unknown pen ID: ignore style override and fall back to existing defaults.
+2. Invalid numeric position: ignore override.
+3. Keep rendering resilient (no hard failures for malformed decoration attrs).
 
-- `ltml/font_style_test.go` (or nearest existing test file):
-  - parse/clone/attrs/string coverage for new fields.
-- `ltml/std_label_test.go`:
-  - verify new attrs flow into writer state for each rich text segment.
-  - verify inheritance/override behavior when style + inline attrs are mixed.
+### Phase 6: Tests
 
-### PDF tests
+#### LTML tests
 
-- `pdf/page_writer_test.go`:
-  - underline with custom pen style writes expected line width/pattern/color ops.
-  - strikeout with custom pen style writes expected line ops.
-  - underline/strikeout position override changes Y coordinate deterministically.
-  - no regressions when overrides are nil.
+- Parse + cloning coverage for new attrs on `FontStyle`.
+- Rich text construction tests that confirm LTML pen attrs are converted into lower-layer payload values.
+- Precedence tests for inherited style vs inline attrs.
 
-### Integration smoke tests
+#### Lower-layer tests (`rich_text` / `pdf`)
 
-- Add/update LTML sample snippet with `font.underline-pen`, `font.strikeout-pen`, and position overrides.
-- Run full build/test (`go build ./...`, `go test ./...`).
+- Decoration rendering uses payload line style overrides when set.
+- Decoration rendering uses position overrides when set.
+- Regression tests verifying identical output when no new attrs are provided.
+
+#### Full checks
+
+- `go build ./...`
+- `go test ./...`
 
 ## Documentation updates
 
-1. Update `ltml/SYNTAX.md` font attribute tables with the four new attrs and examples.
-2. Update `ltml/EXTENDING.md` to describe how `PenStyle` can be reused for text decorations.
-3. Add a short migration note: feature is additive and optional.
+1. Update `ltml/SYNTAX.md` with the four new font attributes.
+2. Update `ltml/EXTENDING.md` to explain decoration styling flow and layering rule (LTML style IDs resolved in LTML, scalar values propagated downward).
+3. Add example snippet showing custom underline/strikeout styling and position overrides.
 
 ## Suggested rollout
 
-1. Land API + state plumbing with no behavior change first (safe refactor).
-2. Land drawing behavior + unit tests next.
-3. Land syntax/docs/sample updates last.
+1. Land attr parsing + payload plumbing first (no behavior change).
+2. Land rendering behavior and tests next.
+3. Land docs and samples last.
 
-This keeps review scope manageable and makes regressions easier to isolate.
+This keeps the change reviewable while enforcing package boundaries.

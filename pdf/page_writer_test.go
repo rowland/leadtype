@@ -778,6 +778,147 @@ func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
 	}
 }
 
+func TestPageWriter_flushText_DecorationCapOverrideRestoresLineCap(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	pw.SetLineCapStyle(RoundCap)
+	pw.MoveTo(72, 760)
+	pw.LineTo(96, 760)
+
+	if _, err := pw.SetFont("Courier", 12, options.Options{"underline_cap": "butt_cap"}); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetUnderline(true)
+	pw.MoveTo(72, 720)
+	if err := pw.Print("Hi"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	pw.MoveTo(72, 700)
+	pw.LineTo(96, 700)
+
+	got := pw.stream.String()
+	firstRound := strings.Index(got, "1 J\n")
+	if firstRound < 0 {
+		t.Fatalf("expected initial round cap command, got:\n%s", got)
+	}
+	butt := strings.Index(got[firstRound+1:], "0 J\n")
+	if butt < 0 {
+		t.Fatalf("expected underline cap override to emit butt cap command, got:\n%s", got)
+	}
+	butt += firstRound + 1
+	secondRound := strings.Index(got[butt+1:], "1 J\n")
+	if secondRound < 0 {
+		t.Fatalf("expected line cap to be restored after underline, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_flushText_DecorationWithoutCapOverridePreservesAmbientLineCap(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	pw.SetLineCapStyle(RoundCap)
+	pw.MoveTo(72, 760)
+	pw.LineTo(96, 760)
+
+	if _, err := pw.SetFont("Courier", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetUnderline(true)
+	pw.MoveTo(72, 720)
+	if err := pw.Print("Hi"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	if strings.Contains(pw.stream.String(), "0 J\n") {
+		t.Fatalf("expected underline without cap override to preserve ambient line cap, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_flushText_DecorationColorOverrideRestoresLineColor(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	pw.SetLineColor(colors.Black)
+	pw.MoveTo(72, 760)
+	pw.LineTo(96, 760)
+
+	if _, err := pw.SetFont("Courier", 12, options.Options{"underline_color": colors.Red}); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetUnderline(true)
+	pw.MoveTo(72, 720)
+	if err := pw.Print("Hi"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	pw.MoveTo(72, 700)
+	pw.LineTo(96, 700)
+
+	got := pw.stream.String()
+	firstRed := strings.Index(got, "1 0 0 RG\n")
+	if firstRed < 0 {
+		t.Fatalf("expected underline color override to emit red stroke color, got:\n%s", got)
+	}
+	restoredBlack := strings.Index(got[firstRed+1:], "0 0 0 RG\n")
+	if restoredBlack < 0 {
+		t.Fatalf("expected line color to be restored after underline, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_flushText_DecorationColorOverrideTemporarilySuppressesLineGradient(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if err := pw.SetLineLinearGradient(testLinearGradient()); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 760)
+	pw.LineTo(96, 760)
+
+	if _, err := pw.SetFont("Courier", 12, options.Options{"underline_color": colors.Red}); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetUnderline(true)
+	pw.MoveTo(72, 720)
+	if err := pw.Print("Hi"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	pw.MoveTo(72, 700)
+	pw.LineTo(96, 700)
+
+	got := pw.stream.String()
+	expectI(t, 2, strings.Count(got, "/Pattern CS"))
+	expectI(t, 2, strings.Count(got, "SCN"))
+	expectI(t, 1, strings.Count(got, "1 0 0 RG\n"))
+}
+
 func TestPageWriter_MoveToPreservesPendingTextSettings(t *testing.T) {
 	dw := NewDocWriter()
 	fc, err := afm_fonts.Default()
@@ -906,6 +1047,42 @@ func TestPageWriter_PrintParagraph_JustifyLeavesLastLineAtLeftEdge(t *testing.T)
 	lastBlock := got[lastBT:]
 	if strings.Contains(lastBlock, " Tc\n") || strings.Contains(lastBlock, " Tw\n") {
 		t.Fatalf("expected final line not to carry justification spacing, got:\n%s", lastBlock)
+	}
+}
+
+func TestPageWriter_PrintParagraph_UsesNextLineLeadingForAdvance(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts12, err := pw.SetFont("Courier", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	line1, err := rich_text.New("small", fonts12, 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fonts24, err := pw.SetFont("Courier", 24, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	line2, err := rich_text.New("BIG", fonts24, 24, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(72, 720)
+	startY := pw.loc.Y
+	pw.PrintParagraph([]*rich_text.RichText{line1, line2}, options.Options{})
+
+	expectedY := startY - (2 * line2.Leading() * pw.lineSpacing)
+	if delta := math.Abs(pw.loc.Y - expectedY); delta > 0.001 {
+		t.Fatalf("expected final Y %.3f pt using next-line leading, got %.3f pt", expectedY, pw.loc.Y)
 	}
 }
 
