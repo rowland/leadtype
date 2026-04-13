@@ -169,6 +169,26 @@ func testSVGTextGradientStrokeFixture() []byte {
 </svg>`)
 }
 
+func testSVGTextClipPathGradientFixture() []byte {
+	return []byte(`
+<svg width="180" height="120" viewBox="0 0 180 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="title-grad" x1="10" y1="0" x2="170" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f6f8b"/>
+      <stop offset="1" stop-color="#f39a5b"/>
+    </linearGradient>
+    <clipPath id="word-window">
+      <text x="12" y="58" font-family="Minimal" font-size="44">ROSE</text>
+    </clipPath>
+  </defs>
+  <rect width="180" height="120" fill="#f7f1e6"/>
+  <g clip-path="url(#word-window)">
+    <rect x="10" y="14" width="160" height="54" fill="url(#title-grad)"/>
+  </g>
+  <text x="12" y="108" font-family="Minimal" font-size="44" fill="#6b5a48">ROSE</text>
+</svg>`)
+}
+
 func mutatePNGInterlace(t *testing.T, data []byte, interlace byte) []byte {
 	t.Helper()
 	if !isPNG(data) {
@@ -734,6 +754,39 @@ func TestPageWriter_PrintSVG_TextGradientUsesTextClip(t *testing.T) {
 		if !strings.Contains(got, fragment) {
 			t.Fatalf("expected SVG text gradient output to contain %q, got:\n%s", fragment, got)
 		}
+	}
+}
+
+func TestPageWriter_PrintSVG_TextClipPathUsesTextClip(t *testing.T) {
+	var got string
+	msg := captureStderr(t, func() {
+		dw := NewDocWriter()
+		fc := testFontSource(t, "../ttf/testdata/minimal.ttf")
+		dw.AddFontSource(fc)
+		pw := newPageWriter(dw, options.Options{"units": "pt"})
+		width := 180.0
+		if _, _, err := pw.PrintSVG(testSVGTextClipPathGradientFixture(), 0, 0, &width, nil); err != nil {
+			t.Fatal(err)
+		}
+		pw.close()
+
+		var buf bytes.Buffer
+		if _, err := dw.WriteTo(&buf); err != nil {
+			t.Fatal(err)
+		}
+		got = buf.String()
+	})
+	for _, fragment := range []string{"7 Tr\n", "/Sh", "/Pattern", " scn\n"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected SVG text clip-path output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+	textOps := strings.Count(got, " Tj\n") + strings.Count(got, " TJ\n")
+	if textOps < 2 {
+		t.Fatalf("expected clipped text and unclipped reference text to emit separate text operators, got %d in:\n%s", textOps, got)
+	}
+	if strings.Contains(msg, "font-family") {
+		t.Fatalf("expected bundled TTF fixture to avoid missing-font warnings, got %q", msg)
 	}
 }
 

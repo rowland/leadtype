@@ -315,6 +315,13 @@ func (r *svgRenderer) withClip(clipRef string, parentTransform svg.Transform, st
 		return fn()
 	}
 	clipStyle := clip.Style.Resolve(style)
+	if len(clip.Children) == 1 {
+		if textNode, ok := clip.Children[0].(*svg.Text); ok {
+			textStyle := textNode.Style.Resolve(clipStyle)
+			textTransform := parentTransform.Mul(textNode.NodeCommon().Transform)
+			return r.clipWithText(textNode, textStyle, textTransform, fn)
+		}
+	}
 	var renderErr error
 	err := r.pw.Path(func() {
 		for _, child := range clip.Children {
@@ -337,6 +344,26 @@ func (r *svgRenderer) withClip(clipRef string, parentTransform svg.Transform, st
 		return err
 	}
 	return renderErr
+}
+
+func (r *svgRenderer) clipWithText(text *svg.Text, style svg.Style, transform svg.Transform, fn func() error) error {
+	layout, err := r.layoutText(text, style, transform)
+	if err != nil || layout == nil {
+		return err
+	}
+	return r.withPreparedTextState(style, func() error {
+		r.pw.MoveTo(layout.startX, layout.mappedY)
+		var renderErr error
+		err := r.pw.ClipRichText(layout.rich, func() {
+			if fn != nil {
+				renderErr = fn()
+			}
+		})
+		if err != nil {
+			return err
+		}
+		return renderErr
+	})
 }
 
 func (r *svgRenderer) pathForNode(node svg.Node) []svg.Segment {
@@ -1253,14 +1280,122 @@ func normalizeFontWeight(style svg.Style) string {
 }
 
 func (r *svgRenderer) drawText(text *svg.Text, style svg.Style, transform svg.Transform) error {
-	if text.Body == "" {
+	layout, err := r.layoutText(text, style, transform)
+	if err != nil || layout == nil {
+		return err
+	}
+	blendMode := mapSVGBlendMode(style.BlendMode)
+	alpha := clamp01(style.Opacity * style.FillOpacity)
+	if style.Stroke.IsGradient() {
+		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "stroke", Message: "gradient stroke on text is not yet implemented"}})
+	}
+	if style.Fill.IsGradient() {
+		resolved, err := r.resolveTextGradient(style.Fill.Ref, alpha, layout.rich, layout.startXSVG, layout.baselineY, transform)
+		if err != nil {
+			logSVGWarnings([]svg.Warning{{Element: "linearGradient", Message: err.Error()}})
+			if style.Fill.None {
+				return nil
+			}
+			return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
+				return r.withPreparedTextState(style, func() error {
+					r.pw.SetFontColor(style.Fill.Color)
+					r.pw.MoveTo(layout.startX, layout.mappedY)
+					return r.pw.Print(text.Body)
+				})
+			})
+		}
+		if resolved.varyingAlpha {
+			if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+				alpha = resolved.flatAlpha
+			} else {
+				logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "fill", Message: "gradient text stop-opacity falls back to constant text opacity"}})
+				alpha = resolved.uniformAlpha
+			}
+		} else {
+			alpha = resolved.uniformAlpha
+		}
+		return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
+			return r.withPreparedTextState(style, func() error {
+				r.pw.MoveTo(layout.startX, layout.mappedY)
+				var renderErr error
+				err := r.pw.ClipRichText(layout.rich, func() {
+					switch {
+					case resolved.linear != nil:
+						renderErr = r.pw.PaintLinearGradient(resolved.linear)
+					case resolved.radial != nil:
+						renderErr = r.pw.PaintRadialGradient(resolved.radial)
+					}
+				})
+				if err != nil {
+					return err
+				}
+				return renderErr
+			})
+		})
+	}
+	if style.Fill.None {
 		return nil
+	}
+	return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
+		return r.withPreparedTextState(style, func() error {
+			r.pw.SetFontColor(style.Fill.Color)
+			r.pw.MoveTo(layout.startX, layout.mappedY)
+			return r.pw.Print(text.Body)
+		})
+	})
+}
+
+type svgTextLayout struct {
+	rich      *rich_text.RichText
+	startX    float64
+	mappedY   float64
+	startXSVG float64
+	baselineY float64
+}
+
+func (r *svgRenderer) layoutText(text *svg.Text, style svg.Style, transform svg.Transform) (*svgTextLayout, error) {
+	if text.Body == "" {
+		return nil, nil
 	}
 	if transform.B != 0 || transform.C != 0 || transform.A != 1 || transform.D != 1 {
 		logSVGWarnings([]svg.Warning{{Element: "text", Message: "text transforms beyond translation are not yet implemented"}})
 	}
 	point := transform.Apply(svg.Point{X: text.X, Y: text.Y})
 	mapped := r.mapPoint(point)
+	var rich *rich_text.RichText
+	err := r.withPreparedTextState(style, func() error {
+		var err error
+		rich, err = r.pw.richTextForString(text.Body)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if rich == nil || rich.Len() == 0 {
+		return nil, nil
+	}
+	startX := mapped.X
+	startXSVG := point.X
+	if style.TextAnchor != "" && style.TextAnchor != "start" {
+		switch strings.ToLower(style.TextAnchor) {
+		case "middle":
+			startX -= rich.Width() / 2
+			startXSVG -= r.textWidthSVG(rich) / 2
+		case "end":
+			startX -= rich.Width()
+			startXSVG -= r.textWidthSVG(rich)
+		}
+	}
+	return &svgTextLayout{
+		rich:      rich,
+		startX:    startX,
+		mappedY:   mapped.Y,
+		startXSVG: startXSVG,
+		baselineY: point.Y,
+	}, nil
+}
+
+func (r *svgRenderer) withPreparedTextState(style svg.Style, fn func() error) error {
 	savedFonts := append([]*font.Font(nil), r.pw.fonts...)
 	savedFontSize := r.pw.fontSize
 	savedFontColor := r.pw.fontColor
@@ -1280,78 +1415,10 @@ func (r *svgRenderer) drawText(text *svg.Text, style svg.Style, transform svg.Tr
 		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("font %q unavailable: %v", style.FontFamily, err)}})
 		return nil
 	}
-	rich, err := r.pw.richTextForString(text.Body)
-	if err != nil {
-		return err
-	}
-	if rich == nil || rich.Len() == 0 {
+	if fn == nil {
 		return nil
 	}
-	startX := mapped.X
-	startXSVG := point.X
-	if style.TextAnchor != "" && style.TextAnchor != "start" {
-		switch strings.ToLower(style.TextAnchor) {
-		case "middle":
-			startX -= rich.Width() / 2
-			startXSVG -= r.textWidthSVG(rich) / 2
-		case "end":
-			startX -= rich.Width()
-			startXSVG -= r.textWidthSVG(rich)
-		}
-	}
-	blendMode := mapSVGBlendMode(style.BlendMode)
-	alpha := clamp01(style.Opacity * style.FillOpacity)
-	if style.Stroke.IsGradient() {
-		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "stroke", Message: "gradient stroke on text is not yet implemented"}})
-	}
-	if style.Fill.IsGradient() {
-		resolved, err := r.resolveTextGradient(style.Fill.Ref, alpha, rich, startXSVG, point.Y, transform)
-		if err != nil {
-			logSVGWarnings([]svg.Warning{{Element: "linearGradient", Message: err.Error()}})
-			if style.Fill.None {
-				return nil
-			}
-			return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
-				r.pw.SetFontColor(style.Fill.Color)
-				r.pw.MoveTo(startX, mapped.Y)
-				return r.pw.Print(text.Body)
-			})
-		}
-		if resolved.varyingAlpha {
-			if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
-				alpha = resolved.flatAlpha
-			} else {
-				logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "fill", Message: "gradient text stop-opacity falls back to constant text opacity"}})
-				alpha = resolved.uniformAlpha
-			}
-		} else {
-			alpha = resolved.uniformAlpha
-		}
-		return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
-			r.pw.MoveTo(startX, mapped.Y)
-			var renderErr error
-			err := r.pw.ClipRichText(rich, func() {
-				switch {
-				case resolved.linear != nil:
-					renderErr = r.pw.PaintLinearGradient(resolved.linear)
-				case resolved.radial != nil:
-					renderErr = r.pw.PaintRadialGradient(resolved.radial)
-				}
-			})
-			if err != nil {
-				return err
-			}
-			return renderErr
-		})
-	}
-	if style.Fill.None {
-		return nil
-	}
-	return r.withScopedGraphicsState(alpha, 1, blendMode, nil, "", nil, func() error {
-		r.pw.SetFontColor(style.Fill.Color)
-		r.pw.MoveTo(startX, mapped.Y)
-		return r.pw.Print(text.Body)
-	})
+	return fn()
 }
 
 func (r *svgRenderer) resolveTextGradient(ref string, opacityScale float64, text *rich_text.RichText, startX, baselineY float64, transform svg.Transform) (*resolvedSVGGradient, error) {
