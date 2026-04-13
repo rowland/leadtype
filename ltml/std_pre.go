@@ -15,6 +15,8 @@ const preTabWidth = 4
 type StdPre struct {
 	StdWidget
 	rawText string
+	src     string
+	doc     *Doc
 	lines   []string
 }
 
@@ -100,58 +102,32 @@ func (p *StdPre) AccessibilityText() string {
 
 func (p *StdPre) SetAttrs(attrs map[string]string) {
 	p.StdWidget.SetAttrs(attrs)
+	if src, ok := attrs["src"]; ok {
+		p.src = strings.TrimSpace(src)
+	}
+}
+
+func (p *StdPre) SetDoc(doc *Doc) {
+	p.doc = doc
 }
 
 func (p *StdPre) Lines() []string {
+	if strings.TrimSpace(p.src) != "" {
+		text, err := p.sourceText()
+		if err != nil {
+			return []string{""}
+		}
+		return normalizedPreLines(text)
+	}
 	if p.lines != nil {
 		return p.lines
 	}
-	text := strings.ReplaceAll(p.rawText, "\t", strings.Repeat(" ", preTabWidth))
-	if text == "" {
-		p.lines = []string{""}
-		return p.lines
-	}
-
-	lines := strings.Split(text, "\n")
-	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
-		lines = lines[1:]
-	}
-	if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
-		lines = lines[:len(lines)-1]
-	}
-	if len(lines) == 0 {
-		p.lines = []string{""}
-		return p.lines
-	}
-
-	indent := -1
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		count := 0
-		for count < len(line) && line[count] == ' ' {
-			count++
-		}
-		if indent == -1 || count < indent {
-			indent = count
-		}
-	}
-	if indent > 0 {
-		for i, line := range lines {
-			if strings.TrimSpace(line) == "" {
-				lines[i] = ""
-				continue
-			}
-			lines[i] = line[indent:]
-		}
-	}
-	p.lines = lines
+	p.lines = normalizedPreLines(p.rawText)
 	return p.lines
 }
 
 func (p *StdPre) String() string {
-	return fmt.Sprintf("StdPre %s", &p.StdWidget)
+	return fmt.Sprintf("StdPre src=%s %s", p.src, &p.StdWidget)
 }
 
 func (p *StdPre) lineHeight(w Writer) float64 {
@@ -177,8 +153,78 @@ func init() {
 	registerTag(DefaultSpace, "pre", func() any { return &StdPre{} })
 }
 
+func (p *StdPre) sourceText() (string, error) {
+	ref, err := p.assetSource()
+	if err != nil {
+		return "", err
+	}
+	if ref.identifier == "" {
+		return "", nil
+	}
+	data, err := readAssetSource(p.doc, ref)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (p *StdPre) assetSource() (assetSourceRef, error) {
+	if strings.TrimSpace(p.src) == "" {
+		return assetSourceRef{}, nil
+	}
+	if p.doc == nil {
+		return assetSourceRef{}, fmt.Errorf("pre document is not set")
+	}
+	return p.doc.resolveAssetSource(p.container, p.src)
+}
+
+func normalizedPreLines(text string) []string {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	text = strings.ReplaceAll(text, "\t", strings.Repeat(" ", preTabWidth))
+	if text == "" {
+		return []string{""}
+	}
+
+	lines := strings.Split(text, "\n")
+	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) == 0 {
+		return []string{""}
+	}
+
+	indent := -1
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		count := 0
+		for count < len(line) && line[count] == ' ' {
+			count++
+		}
+		if indent == -1 || count < indent {
+			indent = count
+		}
+	}
+	if indent > 0 {
+		for i, line := range lines {
+			if strings.TrimSpace(line) == "" {
+				lines[i] = ""
+				continue
+			}
+			lines[i] = line[indent:]
+		}
+	}
+	return lines
+}
+
 var _ HasAttrs = (*StdPre)(nil)
 var _ HasText = (*StdPre)(nil)
 var _ Identifier = (*StdPre)(nil)
 var _ Printer = (*StdPre)(nil)
 var _ WantsContainer = (*StdPre)(nil)
+var _ WantsDoc = (*StdPre)(nil)
