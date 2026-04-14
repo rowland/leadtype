@@ -1128,10 +1128,6 @@ func (pw *PageWriter) drawUnderline(
 func pieceUnderlineStyle(p *rich_text.RichText) (position, thickness float64, lineColor colors.Color, hasLineColor bool, capStyle string, linePattern string, hasLinePattern bool) {
 	position = float64(p.UnderlinePosition)
 	thickness = float64(p.UnderlineThickness)
-	if p.Font != nil {
-		lineColor, hasLineColor = p.Font.UnderlineColor()
-		capStyle = p.Font.UnderlineCapStyle()
-	}
 	if p.Decoration != nil {
 		line := p.Decoration.Underline
 		if line.HasPosition {
@@ -1158,10 +1154,6 @@ func pieceUnderlineStyle(p *rich_text.RichText) (position, thickness float64, li
 func pieceStrikeoutStyle(p *rich_text.RichText) (position, thickness float64, lineColor colors.Color, hasLineColor bool, capStyle string, linePattern string, hasLinePattern bool) {
 	position = float64(p.StrikeoutPosition)
 	thickness = float64(p.StrikeoutThickness)
-	if p.Font != nil {
-		lineColor, hasLineColor = p.Font.StrikeoutColor()
-		capStyle = p.Font.StrikeoutCapStyle()
-	}
 	if p.Decoration != nil {
 		line := p.Decoration.Strikeout
 		if line.HasPosition {

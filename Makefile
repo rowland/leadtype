@@ -1,6 +1,5 @@
 .PHONY: binaries test samples ltml-samples ltml-samples-open ltml-image-sample-local ltml-image-sample-remote
 
-SAMPLES := $(sort $(wildcard samples/*/*.go))
 BIN_DIR := bin
 BINARY_PKGS := ./cmd/render-ltml ./cmd/serve-ltml ./ttdump
 LTML_IMAGE_SAMPLE := ltml/samples/test_031_render_ltml_images.ltml
@@ -22,10 +21,7 @@ test:
 	go test ./...
 
 samples:
-	@for sample in $(SAMPLES); do \
-		echo "==> go run $$sample"; \
-		go run $$sample || exit $$?; \
-	done
+	go run ./samples -all
 
 ltml-samples:
 	LTML_UA=true go test ./ltml -count=1 -run TestSamples -write-sample-pdfs

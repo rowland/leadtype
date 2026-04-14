@@ -778,7 +778,7 @@ func TestPageWriter_flushText_VTextAlignAdjustsUnderline(t *testing.T) {
 	}
 }
 
-func TestPageWriter_flushText_DecorationCapOverrideRestoresLineCap(t *testing.T) {
+func TestPageWriter_flushText_DecorationPayloadCapOverrideRestoresLineCap(t *testing.T) {
 	dw := NewDocWriter()
 	fc, err := afm_fonts.Default()
 	if err != nil {
@@ -791,14 +791,20 @@ func TestPageWriter_flushText_DecorationCapOverrideRestoresLineCap(t *testing.T)
 	pw.MoveTo(72, 760)
 	pw.LineTo(96, 760)
 
-	if _, err := pw.SetFont("Courier", 12, options.Options{"underline_cap": "butt_cap"}); err != nil {
+	if _, err := pw.SetFont("Courier", 12, options.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	pw.SetUnderline(true)
+	rt, err := rich_text.New("Hi", pw.Fonts(), 12, options.Options{
+		"underline": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Underline: rich_text.DecorationLineOverrides{CapStyle: "butt_cap"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	pw.MoveTo(72, 720)
-	if err := pw.Print("Hi"); err != nil {
-		t.Fatal(err)
-	}
+	pw.PrintRichText(rt)
 	pw.flushText()
 
 	pw.MoveTo(72, 700)
@@ -848,7 +854,7 @@ func TestPageWriter_flushText_DecorationWithoutCapOverridePreservesAmbientLineCa
 	}
 }
 
-func TestPageWriter_flushText_DecorationColorOverrideRestoresLineColor(t *testing.T) {
+func TestPageWriter_flushText_DecorationPayloadColorOverrideRestoresLineColor(t *testing.T) {
 	dw := NewDocWriter()
 	fc, err := afm_fonts.Default()
 	if err != nil {
@@ -861,14 +867,20 @@ func TestPageWriter_flushText_DecorationColorOverrideRestoresLineColor(t *testin
 	pw.MoveTo(72, 760)
 	pw.LineTo(96, 760)
 
-	if _, err := pw.SetFont("Courier", 12, options.Options{"underline_color": colors.Red}); err != nil {
+	if _, err := pw.SetFont("Courier", 12, options.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	pw.SetUnderline(true)
+	rt, err := rich_text.New("Hi", pw.Fonts(), 12, options.Options{
+		"underline": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Underline: rich_text.DecorationLineOverrides{Color: colors.Red, HasColor: true},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	pw.MoveTo(72, 720)
-	if err := pw.Print("Hi"); err != nil {
-		t.Fatal(err)
-	}
+	pw.PrintRichText(rt)
 	pw.flushText()
 
 	pw.MoveTo(72, 700)
@@ -885,7 +897,7 @@ func TestPageWriter_flushText_DecorationColorOverrideRestoresLineColor(t *testin
 	}
 }
 
-func TestPageWriter_flushText_DecorationColorOverrideTemporarilySuppressesLineGradient(t *testing.T) {
+func TestPageWriter_flushText_DecorationPayloadColorOverrideTemporarilySuppressesLineGradient(t *testing.T) {
 	dw := NewDocWriter()
 	fc, err := afm_fonts.Default()
 	if err != nil {
@@ -900,14 +912,20 @@ func TestPageWriter_flushText_DecorationColorOverrideTemporarilySuppressesLineGr
 	pw.MoveTo(72, 760)
 	pw.LineTo(96, 760)
 
-	if _, err := pw.SetFont("Courier", 12, options.Options{"underline_color": colors.Red}); err != nil {
+	if _, err := pw.SetFont("Courier", 12, options.Options{}); err != nil {
 		t.Fatal(err)
 	}
-	pw.SetUnderline(true)
+	rt, err := rich_text.New("Hi", pw.Fonts(), 12, options.Options{
+		"underline": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Underline: rich_text.DecorationLineOverrides{Color: colors.Red, HasColor: true},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	pw.MoveTo(72, 720)
-	if err := pw.Print("Hi"); err != nil {
-		t.Fatal(err)
-	}
+	pw.PrintRichText(rt)
 	pw.flushText()
 
 	pw.MoveTo(72, 700)
@@ -919,7 +937,7 @@ func TestPageWriter_flushText_DecorationColorOverrideTemporarilySuppressesLineGr
 	expectI(t, 1, strings.Count(got, "1 0 0 RG\n"))
 }
 
-func TestPageWriter_flushText_DecorationPayloadOverridesFontDecorationSettings(t *testing.T) {
+func TestPageWriter_flushText_DecorationPayloadOverridesAmbientDecorationSettings(t *testing.T) {
 	dw := NewDocWriter()
 	fc, err := afm_fonts.Default()
 	if err != nil {
@@ -930,10 +948,8 @@ func TestPageWriter_flushText_DecorationPayloadOverridesFontDecorationSettings(t
 
 	pw.SetLineCapStyle(ButtCap)
 	pw.SetLineColor(colors.Black)
-	if _, err := pw.SetFont("Courier", 12, options.Options{
-		"underline_color": colors.Green,
-		"underline_cap":   "butt_cap",
-	}); err != nil {
+	pw.SetLineDashPattern("solid")
+	if _, err := pw.SetFont("Courier", 12, options.Options{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -968,10 +984,7 @@ func TestPageWriter_flushText_DecorationPayloadOverridesFontDecorationSettings(t
 		t.Fatalf("expected payload position override to move underline to %q, got:\n%s", expectedLine, got)
 	}
 	if strings.Count(got, "1 0 0 RG\n") != 1 {
-		t.Fatalf("expected payload color override to win over font color override, got:\n%s", got)
-	}
-	if strings.Contains(got, "0 1 0 RG\n") {
-		t.Fatalf("did not expect font underline color override when payload is set, got:\n%s", got)
+		t.Fatalf("expected payload color override to apply, got:\n%s", got)
 	}
 	if !strings.Contains(got, "1 J\n") {
 		t.Fatalf("expected payload cap override to emit round cap, got:\n%s", got)
