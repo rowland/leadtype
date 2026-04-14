@@ -69,6 +69,20 @@ func TestFont_Matches_DistinguishesDecorationColorOverrides(t *testing.T) {
 	check(t, color == colors.Green, "UnderlineColor should return explicit override.")
 }
 
+func TestFont_Matches_DistinguishesDecorationMetricOverrides(t *testing.T) {
+	metrics, err := afm.LoadFont("data/fonts/Helvetica.afm")
+	if err != nil {
+		t.Skip(err)
+	}
+	f1 := &Font{metrics: metrics}
+	f2 := &Font{metrics: metrics, underlinePosition: -123, underlinePositionSet: true}
+	f3 := &Font{metrics: metrics, underlinePosition: -123, underlinePositionSet: true}
+
+	check(t, !f1.Matches(f2), "Fonts with different underline position overrides should not match.")
+	check(t, f2.Matches(f3), "Fonts with matching underline position overrides should match.")
+	check(t, f2.UnderlinePosition() == -123, "UnderlinePosition should return explicit override.")
+}
+
 func TestDecorationColorOption_IgnoresInvalidStrings(t *testing.T) {
 	_, ok := decorationColorOption(options.Options{"underline_color": "not-a-color"}, "underline_color")
 	check(t, !ok, "Invalid decoration colors should be ignored.")

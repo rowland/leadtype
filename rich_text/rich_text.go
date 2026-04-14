@@ -34,6 +34,7 @@ type RichText struct {
 	LinkID             string
 	Underline          bool
 	Strikeout          bool
+	Decoration         *DecorationOverrides
 	ascent             float64
 	descent            float64
 	height             float64
@@ -83,6 +84,7 @@ func New(s string, fonts []*font.Font, fontSize float64, options options.Options
 		LinkID:      options.StringDefault("link_id", ""),
 		Underline:   options.BoolDefault("underline", false),
 		Strikeout:   options.BoolDefault("strikeout", false),
+		Decoration:  decorationOverridesOption(options, "decoration"),
 		CharSpacing: options.FloatDefault("char_spacing", 0),
 		WordSpacing: options.FloatDefault("word_spacing", 0),
 		NoBreak:     options.BoolDefault("nobreak", false),
@@ -398,6 +400,11 @@ func (piece *RichText) MatchesAttributes(other *RichText) bool {
 		piece.LinkID == other.LinkID &&
 		piece.Underline == other.Underline &&
 		piece.Strikeout == other.Strikeout &&
+		piece.Decoration.Equal(other.Decoration) &&
+		piece.StrikeoutPosition == other.StrikeoutPosition &&
+		piece.StrikeoutThickness == other.StrikeoutThickness &&
+		piece.UnderlinePosition == other.UnderlinePosition &&
+		piece.UnderlineThickness == other.UnderlineThickness &&
 		piece.CharSpacing == other.CharSpacing &&
 		piece.WordSpacing == other.WordSpacing
 }
@@ -718,6 +725,7 @@ func (piece *RichText) scaleClone(scale float64) *RichText {
 		LinkID:      piece.LinkID,
 		Underline:   piece.Underline,
 		Strikeout:   piece.Strikeout,
+		Decoration:  piece.Decoration,
 		CharSpacing: piece.CharSpacing,
 		WordSpacing: piece.WordSpacing,
 		NoBreak:     piece.NoBreak,
@@ -731,6 +739,15 @@ func (piece *RichText) scaleClone(scale float64) *RichText {
 		clone.pieces[i] = child.scaleClone(scale)
 	}
 	return clone
+}
+
+func decorationOverridesOption(opts options.Options, key string) *DecorationOverrides {
+	value, ok := opts[key]
+	if !ok {
+		return nil
+	}
+	overrides, _ := value.(*DecorationOverrides)
+	return overrides
 }
 
 // WordsToWidth splits the text at the last breaking point before width is exceeded, making use of the previously-allocated and marked flags

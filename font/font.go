@@ -194,12 +194,20 @@ func (font *Font) Matches(other *Font) bool {
 		font.subType == other.subType &&
 		font.RuneSet == other.RuneSet &&
 		font.RelativeSize == other.RelativeSize &&
+		font.strikeoutPosition == other.strikeoutPosition &&
+		font.strikeoutThickness == other.strikeoutThickness &&
 		font.strikeoutColor == other.strikeoutColor &&
 		font.strikeoutCapStyle == other.strikeoutCapStyle &&
+		font.underlinePosition == other.underlinePosition &&
+		font.underlineThickness == other.underlineThickness &&
 		font.underlineColor == other.underlineColor &&
 		font.underlineCapStyle == other.underlineCapStyle &&
+		font.strikeoutPositionSet == other.strikeoutPositionSet &&
+		font.strikeoutThicknessSet == other.strikeoutThicknessSet &&
 		font.strikeoutColorSet == other.strikeoutColorSet &&
 		font.strikeoutCapStyleSet == other.strikeoutCapStyleSet &&
+		font.underlinePositionSet == other.underlinePositionSet &&
+		font.underlineThicknessSet == other.underlineThicknessSet &&
 		font.underlineColorSet == other.underlineColorSet &&
 		font.underlineCapStyleSet == other.underlineCapStyleSet &&
 		stringSlicesEqual(font.Ranges, other.Ranges)
