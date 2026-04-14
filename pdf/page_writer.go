@@ -1092,11 +1092,17 @@ func (pw *PageWriter) drawUnderline(
 	lineColor colors.Color,
 	hasLineColor bool,
 	lineCapStyleName string,
+	linePattern string,
+	hasLinePattern bool,
 ) {
 	saveWidth := pw.setLineWidth(thickness)
 	saveCap := pw.LineCapStyle()
 	if lineCapStyle, ok := lineCapStyleFromString(lineCapStyleName); ok {
 		pw.SetLineCapStyle(lineCapStyle)
+	}
+	savePattern := ""
+	if hasLinePattern {
+		savePattern = pw.SetLineDashPattern(linePattern)
 	}
 	var saveLineColor colors.Color
 	saveLineGradient := pw.lineGradient
@@ -1112,8 +1118,63 @@ func (pw *PageWriter) drawUnderline(
 		pw.SetLineColor(saveLineColor)
 		pw.lineGradient = saveLineGradient
 	}
+	if hasLinePattern {
+		pw.SetLineDashPattern(savePattern)
+	}
 	pw.SetLineCapStyle(saveCap)
 	pw.setLineWidth(saveWidth)
+}
+
+func pieceUnderlineStyle(p *rich_text.RichText) (position, thickness float64, lineColor colors.Color, hasLineColor bool, capStyle string, linePattern string, hasLinePattern bool) {
+	position = float64(p.UnderlinePosition)
+	thickness = float64(p.UnderlineThickness)
+	if p.Decoration != nil {
+		line := p.Decoration.Underline
+		if line.HasPosition {
+			position = line.Position
+		}
+		if line.HasWidth {
+			thickness = line.Width
+		}
+		if line.HasColor {
+			lineColor = line.Color
+			hasLineColor = true
+		}
+		if line.CapStyle != "" {
+			capStyle = line.CapStyle
+		}
+		if line.HasPattern {
+			linePattern = line.Pattern
+			hasLinePattern = true
+		}
+	}
+	return
+}
+
+func pieceStrikeoutStyle(p *rich_text.RichText) (position, thickness float64, lineColor colors.Color, hasLineColor bool, capStyle string, linePattern string, hasLinePattern bool) {
+	position = float64(p.StrikeoutPosition)
+	thickness = float64(p.StrikeoutThickness)
+	if p.Decoration != nil {
+		line := p.Decoration.Strikeout
+		if line.HasPosition {
+			position = line.Position
+		}
+		if line.HasWidth {
+			thickness = line.Width
+		}
+		if line.HasColor {
+			lineColor = line.Color
+			hasLineColor = true
+		}
+		if line.CapStyle != "" {
+			capStyle = line.CapStyle
+		}
+		if line.HasPattern {
+			linePattern = line.Pattern
+			hasLinePattern = true
+		}
+	}
+	return
 }
 
 func (pw *PageWriter) endGraph() {
@@ -1433,24 +1494,12 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 		rise := pw.textRiseForPiece(p, savedVTextAlign)
 		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
 		if emit.emitDecorations && p.Underline {
-			lineColor := colors.Color(0)
-			hasLineColor := false
-			capStyle := ""
-			if p.Font != nil {
-				lineColor, hasLineColor = p.Font.UnderlineColor()
-				capStyle = p.Font.UnderlineCapStyle()
-			}
-			pw.drawUnderline(loc1, loc2, rise, float64(p.UnderlinePosition), float64(p.UnderlineThickness), lineColor, hasLineColor, capStyle)
+			position, thickness, lineColor, hasLineColor, capStyle, linePattern, hasLinePattern := pieceUnderlineStyle(p)
+			pw.drawUnderline(loc1, loc2, rise, position, thickness, lineColor, hasLineColor, capStyle, linePattern, hasLinePattern)
 		}
 		if emit.emitDecorations && p.Strikeout {
-			lineColor := colors.Color(0)
-			hasLineColor := false
-			capStyle := ""
-			if p.Font != nil {
-				lineColor, hasLineColor = p.Font.StrikeoutColor()
-				capStyle = p.Font.StrikeoutCapStyle()
-			}
-			pw.drawUnderline(loc1, loc2, rise, float64(p.StrikeoutPosition), float64(p.StrikeoutThickness), lineColor, hasLineColor, capStyle)
+			position, thickness, lineColor, hasLineColor, capStyle, linePattern, hasLinePattern := pieceStrikeoutStyle(p)
+			pw.drawUnderline(loc1, loc2, rise, position, thickness, lineColor, hasLineColor, capStyle, linePattern, hasLinePattern)
 		}
 		if emit.emitLinks && (p.LinkURI != "" || p.LinkTarget != "") {
 			elem, _ := pw.structElemForLeaf(p)

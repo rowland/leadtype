@@ -4,6 +4,7 @@
 package main
 
 import (
+	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
@@ -61,62 +62,49 @@ var line6 = []rtLinePiece{
 
 var line7 = []rtLinePiece{
 	{"This text is ", options.Options{}},
-	{"correct", options.Options{"underline": true, "underline_color": "green"}},
+	{"correct", options.Options{
+		"underline": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Underline: rich_text.DecorationLineOverrides{Color: 0x00FF00, HasColor: true},
+		},
+	}},
 	{".", options.Options{}},
 }
 
 var line8 = []rtLinePiece{
 	{"This text is ", options.Options{}},
-	{"incorrect", options.Options{"strikeout": true, "strikeout_color": "red"}},
+	{"incorrect", options.Options{
+		"strikeout": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Strikeout: rich_text.DecorationLineOverrides{Color: 0xFF0000, HasColor: true},
+		},
+	}},
 	{".", options.Options{}},
 }
 
 var line9 = []rtLinePiece{
 	{"Round cap underline: ", options.Options{}},
-	{"Sample", options.Options{
-		"underline":           true,
-		"underline_color":     "blue",
-		"underline_cap":       "round_cap",
-		"underline_thickness": 280,
-	}},
+	{"Sample", underlineDecoration(0x0000FF, "round_cap", 24*280.0/1000.0, "")},
 }
 
 var line10 = []rtLinePiece{
 	{"Projecting square cap underline: ", options.Options{}},
-	{"Sample", options.Options{
-		"underline":           true,
-		"underline_color":     "blue",
-		"underline_cap":       "projecting_square_cap",
-		"underline_thickness": 280,
-	}},
+	{"Sample", underlineDecoration(0x0000FF, "projecting_square_cap", 24*280.0/1000.0, "")},
 }
 
 var line11 = []rtLinePiece{
 	{"Butt cap underline: ", options.Options{}},
-	{"Sample", options.Options{
-		"underline":           true,
-		"underline_color":     "blue",
-		"underline_cap":       "butt_cap",
-		"underline_thickness": 280,
-	}},
+	{"Sample", underlineDecoration(0x0000FF, "butt_cap", 24*280.0/1000.0, "")},
 }
 
 var line12 = []rtLinePiece{
 	{"Thick underline: ", options.Options{}},
-	{"Sample", options.Options{
-		"underline":           true,
-		"underline_color":     "purple",
-		"underline_thickness": 500,
-	}},
+	{"Sample", underlineDecoration(0x800080, "", 20*500.0/1000.0, "")},
 }
 
 var line13 = []rtLinePiece{
 	{"Thick strikeout: ", options.Options{}},
-	{"Sample", options.Options{
-		"strikeout":           true,
-		"strikeout_color":     "orange",
-		"strikeout_thickness": 500,
-	}},
+	{"Sample", strikeoutDecoration(0xFFA500, "", 20*500.0/1000.0, "")},
 }
 
 func runTest006RichText() (string, error) {
@@ -175,4 +163,40 @@ func makeSizedRtLine(doc *pdf.DocWriter, pieces []rtLinePiece, size float64) *ri
 		}
 	}
 	return rt
+}
+
+func underlineDecoration(color colors.Color, capStyle string, width float64, pattern string) options.Options {
+	line := rich_text.DecorationLineOverrides{
+		Color:      color,
+		HasColor:   true,
+		Width:      width,
+		HasWidth:   width > 0,
+		CapStyle:   capStyle,
+		Pattern:    pattern,
+		HasPattern: pattern != "",
+	}
+	return options.Options{
+		"underline": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Underline: line,
+		},
+	}
+}
+
+func strikeoutDecoration(color colors.Color, capStyle string, width float64, pattern string) options.Options {
+	line := rich_text.DecorationLineOverrides{
+		Color:      color,
+		HasColor:   true,
+		Width:      width,
+		HasWidth:   width > 0,
+		CapStyle:   capStyle,
+		Pattern:    pattern,
+		HasPattern: pattern != "",
+	}
+	return options.Options{
+		"strikeout": true,
+		"decoration": &rich_text.DecorationOverrides{
+			Strikeout: line,
+		},
+	}
 }

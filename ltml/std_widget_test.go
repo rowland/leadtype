@@ -103,3 +103,69 @@ func TestStdWidget_SetAttrs_SideBorderPrefixOverridesCloneMainBorderWhenNeeded(t
 		t.Fatalf("top border pattern = %q, want %q", got, widget.border.pattern)
 	}
 }
+
+func TestStdWidget_SetAttrs_FontDecorationOverridesCloneAndApplyFontOverrides(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+	if err := scope.AddStyle(&PenStyle{id: "accent", color: NamedColor("red"), width: 2, pattern: "dotted", cap: "round_cap"}); err != nil {
+		t.Fatal(err)
+	}
+
+	widget := &StdWidget{}
+	widget.SetScope(scope)
+	widget.font = defaultFont.Clone()
+	widget.font.SetScope(scope)
+
+	widget.SetAttrs(map[string]string{
+		"units":              "cm",
+		"font.underline-pen": "accent",
+		"font.underline-pos": "1",
+	})
+
+	if widget.font == nil {
+		t.Fatal("font is nil, want cloned font style")
+	}
+	if widget.font.underlinePenID != "accent" {
+		t.Fatalf("underlinePenID = %q, want accent", widget.font.underlinePenID)
+	}
+	if widget.font.underlinePos == nil || *widget.font.underlinePos != FromUnits(1, "cm") {
+		t.Fatalf("underlinePos = %v, want 1cm in points", widget.font.underlinePos)
+	}
+}
+
+func TestStdWidget_SetAttrs_FontDecorationOverridesPreserveInheritedDecorationOverrides(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+
+	base := defaultFont.Clone()
+	base.SetScope(scope)
+	base.SetAttrs("font.", map[string]string{
+		"font.underline-pos": "4pt",
+		"font.strikeout-pos": "7pt",
+		"font.strikeout-pen": "dashed",
+	})
+
+	widget := &StdWidget{}
+	widget.SetScope(scope)
+	widget.font = base
+
+	widget.SetAttrs(map[string]string{
+		"font.underline-pen": "dotted",
+	})
+
+	if widget.font == nil {
+		t.Fatal("font is nil, want cloned font style")
+	}
+	if widget.font.underlinePenID != "dotted" {
+		t.Fatalf("underlinePenID = %q, want dotted", widget.font.underlinePenID)
+	}
+	if widget.font.underlinePos == nil || *widget.font.underlinePos != 4 {
+		t.Fatalf("underlinePos = %v, want inherited 4pt", widget.font.underlinePos)
+	}
+	if widget.font.strikeoutPos == nil || *widget.font.strikeoutPos != 7 {
+		t.Fatalf("strikeoutPos = %v, want inherited 7pt", widget.font.strikeoutPos)
+	}
+	if widget.font.strikeoutPenID != "dashed" {
+		t.Fatalf("strikeoutPenID = %q, want inherited dashed", widget.font.strikeoutPenID)
+	}
+}

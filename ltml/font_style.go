@@ -10,6 +10,7 @@ import (
 
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/ttf"
 )
 
@@ -22,6 +23,7 @@ type fontEntry struct {
 }
 
 type FontStyle struct {
+	scope   HasScope
 	id      string
 	entries []fontEntry
 	size    float64
@@ -32,6 +34,14 @@ type FontStyle struct {
 	underline  bool
 	weight     string
 	lineHeight float64
+
+	underlinePenID string
+	strikeoutPenID string
+	underlinePos   *float64
+	strikeoutPos   *float64
+
+	decorationPayload *rich_text.DecorationOverrides
+	decorationCached  bool
 }
 
 func (fs *FontStyle) Apply(w Writer) {
@@ -174,6 +184,8 @@ var defaultFont = &FontStyle{
 //	size     – shared point size for all fonts in the chain.
 //	color, weight, style, strikeout, underline, line-height – as before.
 func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
+	fs.decorationCached = false
+	fs.decorationPayload = nil
 	if id, ok := attrs[prefix+"id"]; ok {
 		fs.id = id
 	}
@@ -237,6 +249,18 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if lineHeight, ok := attrs[prefix+"line-height"]; ok {
 		fs.lineHeight, _ = strconv.ParseFloat(lineHeight, 64)
 	}
+	if underlinePenID, ok := attrs[prefix+"underline-pen"]; ok {
+		fs.underlinePenID = strings.TrimSpace(underlinePenID)
+	}
+	if strikeoutPenID, ok := attrs[prefix+"strikeout-pen"]; ok {
+		fs.strikeoutPenID = strings.TrimSpace(strikeoutPenID)
+	}
+	if underlinePos, ok := attrs[prefix+"underline-pos"]; ok {
+		fs.underlinePos = parseOptionalMeasurement(strings.TrimSpace(underlinePos), "pt")
+	}
+	if strikeoutPos, ok := attrs[prefix+"strikeout-pos"]; ok {
+		fs.strikeoutPos = parseOptionalMeasurement(strings.TrimSpace(strikeoutPos), "pt")
+	}
 }
 
 // splitCommaTrimmed splits s by commas and trims whitespace, omitting empties.
@@ -266,16 +290,112 @@ func (fs *FontStyle) String() string {
 	for i, e := range fs.entries {
 		names[i] = e.name
 	}
-	return fmt.Sprintf("FontStyle id=%s name=%s size=%f color=%v strikeout=%t style=%s underline=%t weight=%s line-height=%f",
-		fs.id, strings.Join(names, ","), fs.size, fs.color, fs.strikeout, fs.style, fs.underline, fs.weight, fs.lineHeight)
+	return fmt.Sprintf("FontStyle id=%s name=%s size=%f color=%v strikeout=%t strikeout-pen=%s strikeout-pos=%s style=%s underline=%t underline-pen=%s underline-pos=%s weight=%s line-height=%f",
+		fs.id, strings.Join(names, ","), fs.size, fs.color, fs.strikeout, fs.strikeoutPenID, formatOptionalFloat(fs.strikeoutPos),
+		fs.style, fs.underline, fs.underlinePenID, formatOptionalFloat(fs.underlinePos), fs.weight, fs.lineHeight)
 }
 
 func (fs *FontStyle) RichTextOptions() options.Options {
-	return options.Options{
+	opts := options.Options{
 		"color":     fs.color,
 		"strikeout": fs.strikeout,
 		"underline": fs.underline,
 	}
+	if decoration := fs.decorationOverrides(); decoration != nil {
+		opts["decoration"] = decoration
+	}
+	return opts
+}
+
+func (fs *FontStyle) SetScope(scope HasScope) {
+	fs.scope = scope
+	fs.decorationCached = false
+	fs.decorationPayload = nil
+}
+
+func (fs *FontStyle) decorationOverrides() *rich_text.DecorationOverrides {
+	if fs.decorationCached {
+		return fs.decorationPayload
+	}
+	fs.decorationCached = true
+	var payload rich_text.DecorationOverrides
+	hasAny := false
+	if line, ok := fs.decorationLineOverrides(fs.underlinePenID, fs.underlinePos); ok {
+		payload.Underline = line
+		hasAny = true
+	}
+	if line, ok := fs.decorationLineOverrides(fs.strikeoutPenID, fs.strikeoutPos); ok {
+		payload.Strikeout = line
+		hasAny = true
+	}
+	if hasAny {
+		fs.decorationPayload = &payload
+	}
+	return fs.decorationPayload
+}
+
+func (fs *FontStyle) decorationLineOverrides(penID string, pos *float64) (rich_text.DecorationLineOverrides, bool) {
+	var line rich_text.DecorationLineOverrides
+	hasAny := false
+	if pen := fs.resolveDecorationPen(penID); pen != nil {
+		line.Color = pen.color
+		line.HasColor = true
+		line.Width = pen.width
+		line.HasWidth = true
+		line.Pattern = pen.pattern
+		if line.Pattern == "" {
+			line.Pattern = defaultPenPattern
+		}
+		line.HasPattern = true
+		line.CapStyle = pen.Cap()
+		hasAny = true
+	}
+	if pos != nil {
+		line.Position = *pos
+		line.HasPosition = true
+		hasAny = true
+	}
+	return line, hasAny
+}
+
+func (fs *FontStyle) resolveDecorationPen(id string) *PenStyle {
+	if fs.scope == nil || strings.TrimSpace(id) == "" {
+		return nil
+	}
+	if style, ok := fs.scope.StyleFor(id); ok {
+		pen, _ := style.(*PenStyle)
+		return pen
+	}
+	if style, ok := fs.scope.StyleFor("pen_" + id); ok {
+		pen, _ := style.(*PenStyle)
+		return pen
+	}
+	return nil
+}
+
+func parseOptionalMeasurement(measurement string, units Units) *float64 {
+	if measurement == "" {
+		return nil
+	}
+	if matches := reMeasurement.FindStringSubmatch(measurement); len(matches) >= 4 {
+		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
+			value := FromUnits(v, Units(matches[3]))
+			return &value
+		}
+		return nil
+	}
+	if v, err := strconv.ParseFloat(measurement, 64); err == nil {
+		value := FromUnits(v, units)
+		return &value
+	}
+	return nil
+}
+
+func formatOptionalFloat(value *float64) string {
+	if value == nil {
+		return ""
+	}
+	return strconv.FormatFloat(*value, 'f', -1, 64)
 }
 
 func FontStyleFor(id string, scope HasScope) *FontStyle {
@@ -288,6 +408,7 @@ func FontStyleFor(id string, scope HasScope) *FontStyle {
 
 var _ HasAttrsPrefix = (*FontStyle)(nil)
 var _ Styler = (*FontStyle)(nil)
+var _ WantsScope = (*FontStyle)(nil)
 
 func init() {
 	registerTag(DefaultSpace, "font", func() any { return &FontStyle{} })

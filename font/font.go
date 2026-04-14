@@ -5,9 +5,7 @@ package font
 
 import (
 	"fmt"
-	"strconv"
 
-	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/shaping"
 )
@@ -33,58 +31,14 @@ type Font struct {
 	// (e.g. Arabic). It is set automatically by New when the winning FontSource
 	// implements ShaperSource.
 	Shaper shaping.Shaper
-
-	strikeoutPosition  int16
-	strikeoutThickness int16
-	strikeoutColor     colors.Color
-	strikeoutCapStyle  string
-	underlinePosition  int16
-	underlineThickness int16
-	underlineColor     colors.Color
-	underlineCapStyle  string
-
-	strikeoutPositionSet  bool
-	strikeoutThicknessSet bool
-	strikeoutColorSet     bool
-	strikeoutCapStyleSet  bool
-	underlinePositionSet  bool
-	underlineThicknessSet bool
-	underlineColorSet     bool
-	underlineCapStyleSet  bool
 }
 
 func New(family string, options options.Options, fontSources FontSources) (*Font, error) {
-	strikeoutPosition, strikeoutPositionSet := decorationInt16Option(options, "strikeout_position")
-	strikeoutThickness, strikeoutThicknessSet := decorationInt16Option(options, "strikeout_thickness")
-	strikeoutColor, strikeoutColorSet := decorationColorOption(options, "strikeout_color")
-	strikeoutCapStyle, strikeoutCapStyleSet := decorationLineCapStyleOption(options, "strikeout_cap")
-
-	underlinePosition, underlinePositionSet := decorationInt16Option(options, "underline_position")
-	underlineThickness, underlineThicknessSet := decorationInt16Option(options, "underline_thickness")
-	underlineColor, underlineColorSet := decorationColorOption(options, "underline_color")
-	underlineCapStyle, underlineCapStyleSet := decorationLineCapStyleOption(options, "underline_cap")
-
 	font := &Font{
-		family:                family,
-		Weight:                options.StringDefault("weight", ""),
-		style:                 options.StringDefault("style", ""),
-		RelativeSize:          options.FloatDefault("relative_size", 100) / 100.0,
-		strikeoutPosition:     strikeoutPosition,
-		strikeoutThickness:    strikeoutThickness,
-		strikeoutColor:        strikeoutColor,
-		strikeoutCapStyle:     strikeoutCapStyle,
-		underlinePosition:     underlinePosition,
-		underlineThickness:    underlineThickness,
-		underlineColor:        underlineColor,
-		underlineCapStyle:     underlineCapStyle,
-		strikeoutPositionSet:  strikeoutPositionSet,
-		strikeoutThicknessSet: strikeoutThicknessSet,
-		strikeoutColorSet:     strikeoutColorSet,
-		strikeoutCapStyleSet:  strikeoutCapStyleSet,
-		underlinePositionSet:  underlinePositionSet,
-		underlineThicknessSet: underlineThicknessSet,
-		underlineColorSet:     underlineColorSet,
-		underlineCapStyleSet:  underlineCapStyleSet,
+		family:       family,
+		Weight:       options.StringDefault("weight", ""),
+		style:        options.StringDefault("style", ""),
+		RelativeSize: options.FloatDefault("relative_size", 100) / 100.0,
 	}
 	if Ranges, ok := options["ranges"]; ok {
 		switch Ranges := Ranges.(type) {
@@ -194,14 +148,6 @@ func (font *Font) Matches(other *Font) bool {
 		font.subType == other.subType &&
 		font.RuneSet == other.RuneSet &&
 		font.RelativeSize == other.RelativeSize &&
-		font.strikeoutColor == other.strikeoutColor &&
-		font.strikeoutCapStyle == other.strikeoutCapStyle &&
-		font.underlineColor == other.underlineColor &&
-		font.underlineCapStyle == other.underlineCapStyle &&
-		font.strikeoutColorSet == other.strikeoutColorSet &&
-		font.strikeoutCapStyleSet == other.strikeoutCapStyleSet &&
-		font.underlineColorSet == other.underlineColorSet &&
-		font.underlineCapStyleSet == other.underlineCapStyleSet &&
 		stringSlicesEqual(font.Ranges, other.Ranges)
 }
 
@@ -225,31 +171,11 @@ func (font *Font) SupportsArabic() bool {
 }
 
 func (font *Font) StrikeoutPosition() int {
-	if font.strikeoutPositionSet {
-		return int(font.strikeoutPosition)
-	}
 	return font.metrics.StrikeoutPosition()
 }
 
 func (font *Font) StrikeoutThickness() int {
-	if font.strikeoutThicknessSet {
-		return int(font.strikeoutThickness)
-	}
 	return font.metrics.StrikeoutThickness()
-}
-
-func (font *Font) StrikeoutColor() (colors.Color, bool) {
-	if font.strikeoutColorSet {
-		return font.strikeoutColor, true
-	}
-	return 0, false
-}
-
-func (font *Font) StrikeoutCapStyle() string {
-	if font.strikeoutCapStyleSet {
-		return font.strikeoutCapStyle
-	}
-	return ""
 }
 
 func (font *Font) Style() string {
@@ -261,31 +187,11 @@ func (font *Font) SubType() string {
 }
 
 func (font *Font) UnderlinePosition() int {
-	if font.underlinePositionSet {
-		return int(font.underlinePosition)
-	}
 	return font.metrics.UnderlinePosition()
 }
 
 func (font *Font) UnderlineThickness() int {
-	if font.underlineThicknessSet {
-		return int(font.underlineThickness)
-	}
 	return font.metrics.UnderlineThickness()
-}
-
-func (font *Font) UnderlineColor() (colors.Color, bool) {
-	if font.underlineColorSet {
-		return font.underlineColor, true
-	}
-	return 0, false
-}
-
-func (font *Font) UnderlineCapStyle() string {
-	if font.underlineCapStyleSet {
-		return font.underlineCapStyle
-	}
-	return ""
 }
 
 func (font *Font) UnitsPerEm() int {
@@ -353,84 +259,4 @@ func stringSlicesEqual(sl1, sl2 []string) bool {
 		}
 	}
 	return true
-}
-
-func normalizeDecorationLineCapStyle(style string) string {
-	switch style {
-	case "butt_cap", "round_cap", "projecting_square_cap":
-		return style
-	default:
-		return ""
-	}
-}
-
-func decorationColorOption(opts options.Options, key string) (colors.Color, bool) {
-	value, ok := opts[key]
-	if !ok {
-		return 0, false
-	}
-	switch value := value.(type) {
-	case colors.Color:
-		return value, true
-	case string:
-		color, err := colors.NamedColor(value)
-		if err != nil {
-			return 0, false
-		}
-		return color, true
-	case int:
-		return colors.Color(value), true
-	case int32:
-		return colors.Color(value), true
-	default:
-		return 0, false
-	}
-}
-
-func decorationLineCapStyleOption(opts options.Options, key string) (string, bool) {
-	value, ok := opts[key]
-	if !ok {
-		return "", false
-	}
-	style, ok := value.(string)
-	if !ok {
-		return "", false
-	}
-	style = normalizeDecorationLineCapStyle(style)
-	if style == "" {
-		return "", false
-	}
-	return style, true
-}
-
-func decorationInt16Option(opts options.Options, key string) (int16, bool) {
-	value, ok := opts[key]
-	if !ok {
-		return 0, false
-	}
-	switch value := value.(type) {
-	case int:
-		return int16InRange(value)
-	case int16:
-		return value, true
-	case int32:
-		return int16InRange(int(value))
-	case float64:
-		return int16InRange(int(value))
-	case string:
-		i, err := strconv.Atoi(value)
-		if err != nil {
-			return 0, false
-		}
-		return int16InRange(i)
-	default:
-		return 0, false
-	}
-}
-
-func int16InRange(value int) (int16, bool) {
-	if value < -32768 || value > 32767 {
-		return 0, false
-	}
-	return int16(value), true
 }

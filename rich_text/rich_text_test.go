@@ -110,6 +110,71 @@ func TestNewRichText_English(t *testing.T) {
 	st.Equal(fonts[0], rt.Font, "Should be tagged with Arial font.")
 }
 
+func TestNewRichText_AttachesDecorationOverrides(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	fonts := ttf_fonts.Families("Arial")
+	decoration := &DecorationOverrides{
+		Underline: DecorationLineOverrides{
+			Color:       colors.Red,
+			HasColor:    true,
+			Width:       1.5,
+			HasWidth:    true,
+			Pattern:     "dashed",
+			HasPattern:  true,
+			CapStyle:    "round_cap",
+			Position:    -2,
+			HasPosition: true,
+		},
+	}
+	rt, err := New("abc", fonts, 10, options.Options{"decoration": decoration})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rt.Decoration != decoration {
+		t.Fatalf("expected decoration pointer to be preserved")
+	}
+}
+
+func TestRichText_Merge_DistinguishesDecorationOverridesByValue(t *testing.T) {
+	left := &RichText{
+		Text:       "a",
+		Font:       &font.Font{},
+		FontSize:   12,
+		Color:      colors.Black,
+		Decoration: &DecorationOverrides{Underline: DecorationLineOverrides{Width: 1, HasWidth: true}},
+	}
+	right := &RichText{
+		Text:       "b",
+		Font:       &font.Font{},
+		FontSize:   12,
+		Color:      colors.Black,
+		Decoration: &DecorationOverrides{Underline: DecorationLineOverrides{Width: 2, HasWidth: true}},
+	}
+	merged := (&RichText{pieces: []*RichText{left, right}}).Merge()
+	if merged.IsLeaf() {
+		t.Fatalf("expected pieces with different decoration overrides to remain separate")
+	}
+	if len(merged.pieces) != 2 {
+		t.Fatalf("expected 2 pieces, got %d", len(merged.pieces))
+	}
+}
+
+func TestRichText_CloneAndScale_PreserveDecorationPointer(t *testing.T) {
+	decoration := &DecorationOverrides{Underline: DecorationLineOverrides{Width: 1, HasWidth: true}}
+	piece := &RichText{
+		Text:       "abc",
+		Font:       &font.Font{},
+		FontSize:   12,
+		Decoration: decoration,
+	}
+	if piece.Clone().Decoration != decoration {
+		t.Fatalf("Clone should preserve decoration pointer")
+	}
+	if piece.Scale(0.5, 6).Decoration != decoration {
+		t.Fatalf("Scale should preserve decoration pointer")
+	}
+}
+
 func TestMeasure_ArabicTextWithLatinOnlyFontSkipsShaper(t *testing.T) {
 	p := &RichText{
 		Text:     "مرحبا",

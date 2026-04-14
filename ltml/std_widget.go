@@ -292,8 +292,17 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		widget.font = FontStyleFor(font, widget.scope)
 	}
 	if MapHasKeyPrefix(attrs, "font.") {
-		widget.font = widget.Font().Clone()
-		widget.font.SetAttrs("font.", attrs)
+		baseFont := widget.font
+		if baseFont == nil {
+			if widget.container != nil {
+				baseFont = widget.container.Font()
+			} else {
+				baseFont = defaultFont
+			}
+		}
+		widget.font = baseFont.Clone()
+		widget.font.SetScope(widget.scope)
+		widget.font.SetAttrs("font.", normalizeFontDecorationMeasurementAttrs(attrs, "font.", widget.Units()))
 	}
 	if colSpan, ok := attrs["colspan"]; ok {
 		widget.colSpan, _ = strconv.Atoi(colSpan)
@@ -329,6 +338,21 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if value, ok := attrs["role"]; ok {
 		widget.role = strings.TrimSpace(value)
 	}
+}
+
+func normalizeFontDecorationMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
+	normalized := maps.Clone(attrs)
+	for _, key := range []string{"underline-pos", "strikeout-pos"} {
+		fullKey := prefix + key
+		value, ok := normalized[fullKey]
+		if !ok {
+			continue
+		}
+		if points := parseOptionalMeasurement(strings.TrimSpace(value), units); points != nil {
+			normalized[fullKey] = strconv.FormatFloat(*points, 'f', -1, 64) + "pt"
+		}
+	}
+	return normalized
 }
 
 func (widget *StdWidget) SetContainer(container Container) error {

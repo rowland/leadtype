@@ -166,6 +166,10 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `font.style`       | Font style (`Italic`, `Oblique`, or empty for normal). |
 | `font.underline`   | `true` or `false`. |
 | `font.strikeout`   | `true` or `false`. |
+| `font.underline-pen` | Reference to a named `<pen>` style used for underline stroke settings. |
+| `font.strikeout-pen` | Reference to a named `<pen>` style used for strikeout stroke settings. |
+| `font.underline-pos` | Underline position as an LTML measurement. |
+| `font.strikeout-pos` | Strikeout position as an LTML measurement. |
 | `font.line-height` | Line spacing multiplier (e.g., `1.5`). |
 | `style`            | Reference to a named `<para>` style. |
 | `style.text-align` | Text alignment: `left`, `center`, `right`, `justify`. |
@@ -589,6 +593,19 @@ styles) before the content that uses them.
 <font id="title" name="Helvetica" size="24" color="navy" weight="Bold" />
 ```
 
+```xml
+<pen id="accent-line" color="tomato" width="1.5pt" pattern="dashed" cap="round_cap" />
+<font
+  id="accented"
+  name="Helvetica"
+  size="14"
+  underline="true"
+  font.underline-pen="accent-line"
+  font.underline-pos="-1pt"
+  strikeout="true"
+  font.strikeout-pos="0.08in" />
+```
+
 | Attribute     | Description |
 |---------------|-------------|
 | `id`          | Name used to reference this style. |
@@ -599,6 +616,10 @@ styles) before the content that uses them.
 | `style`       | `Italic`, `Oblique`, or omit for normal. |
 | `underline`   | `true` or `false`. |
 | `strikeout`   | `true` or `false`. |
+| `underline-pen` | Reference to a named `<pen>` style used for underline stroke settings. |
+| `strikeout-pen` | Reference to a named `<pen>` style used for strikeout stroke settings. |
+| `underline-pos` | Underline position as an LTML measurement. |
+| `strikeout-pos` | Strikeout position as an LTML measurement. |
 | `line-height` | Line spacing multiplier. |
 
 **Default font:** Helvetica 12pt.

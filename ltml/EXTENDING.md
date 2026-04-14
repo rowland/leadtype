@@ -275,6 +275,13 @@ references, the built-in `BrushStyleFor` / `PenStyleFor` helpers look up only
 `BrushStyle` / `PenStyle` objects. Custom style types must be applied
 explicitly by elements that understand them.
 
+Text decoration styling follows the same boundary rule. LTML font attributes
+such as `font.underline-pen`, `font.strikeout-pen`, `font.underline-pos`, and
+`font.strikeout-pos` are resolved inside LTML. Named pen styles are looked up in
+LTML space, measurements are resolved to points there, and only scalar
+render-time values are propagated into `rich_text` / `pdf`. Lower layers do
+not receive `ltml.PenStyle` values directly.
+
 ---
 
 ## Adding a Custom Layout Manager

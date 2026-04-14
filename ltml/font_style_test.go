@@ -278,6 +278,76 @@ func TestFontStyle_String_MultipleEntries(t *testing.T) {
 	}
 }
 
+func TestFontStyle_SetAttrs_DecorationOverrides(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+	if err := scope.AddStyle(&PenStyle{id: "accent", color: colors.Red, width: 1.5, pattern: "dashed", cap: "round_cap"}); err != nil {
+		t.Fatal(err)
+	}
+
+	var fs FontStyle
+	fs.SetScope(scope)
+	fs.SetAttrs("font.", map[string]string{
+		"font.underline-pen": "accent",
+		"font.strikeout-pos": "0.25in",
+		"font.underline-pos": "1cm",
+		"font.strikeout-pen": "missing",
+	})
+
+	if fs.underlinePenID != "accent" {
+		t.Fatalf("expected underline pen id to be recorded")
+	}
+	if fs.strikeoutPenID != "missing" {
+		t.Fatalf("expected strikeout pen id to be recorded")
+	}
+	if fs.underlinePos == nil || *fs.underlinePos != FromUnits(1, "cm") {
+		t.Fatalf("expected underline position in points, got %v", fs.underlinePos)
+	}
+	if fs.strikeoutPos == nil || *fs.strikeoutPos != 18 {
+		t.Fatalf("expected strikeout position in points, got %v", fs.strikeoutPos)
+	}
+
+	opts := fs.RichTextOptions()
+	decoration, _ := opts["decoration"].(*rich_text.DecorationOverrides)
+	if decoration == nil {
+		t.Fatalf("expected decoration payload")
+	}
+	opts2 := fs.RichTextOptions()
+	decoration2, _ := opts2["decoration"].(*rich_text.DecorationOverrides)
+	if decoration2 != decoration {
+		t.Fatalf("expected decoration payload to be cached and reused")
+	}
+	if !decoration.Underline.HasColor || decoration.Underline.Color != colors.Red {
+		t.Fatalf("expected underline color override from pen")
+	}
+	if !decoration.Underline.HasWidth || decoration.Underline.Width != 1.5 {
+		t.Fatalf("expected underline width override from pen")
+	}
+	if !decoration.Underline.HasPattern || decoration.Underline.Pattern != "dashed" {
+		t.Fatalf("expected underline dash override from pen")
+	}
+	if decoration.Underline.CapStyle != "round_cap" {
+		t.Fatalf("expected underline cap override from pen")
+	}
+	if !decoration.Underline.HasPosition || decoration.Underline.Position != FromUnits(1, "cm") {
+		t.Fatalf("expected underline position override")
+	}
+	if decoration.Strikeout.HasColor || decoration.Strikeout.HasWidth || decoration.Strikeout.HasPattern || decoration.Strikeout.CapStyle != "" {
+		t.Fatalf("did not expect missing pen id to synthesize style overrides")
+	}
+	if !decoration.Strikeout.HasPosition || decoration.Strikeout.Position != 18 {
+		t.Fatalf("expected strikeout position override")
+	}
+}
+
+func TestFontStyle_SetAttrs_InvalidDecorationMeasurementIsUnset(t *testing.T) {
+	var fs FontStyle
+	fs.SetAttrs("font.", map[string]string{"font.underline-pos": "bogus"})
+	if fs.underlinePos != nil {
+		t.Fatalf("expected invalid underline-pos to remain unset")
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsRune(s, substr))
 }

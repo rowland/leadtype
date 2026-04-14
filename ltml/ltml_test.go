@@ -234,6 +234,7 @@ func TestSamples(t *testing.T) {
 		"test_041_pseudo_classes",
 		"test_042_svg_tag",
 		"test_043_svg_advanced",
+		"test_044_decoration_overrides",
 	}
 
 	for _, sample := range samples {

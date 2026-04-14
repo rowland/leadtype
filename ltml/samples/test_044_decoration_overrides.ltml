@@ -1,0 +1,90 @@
+<ltml>
+  <pen id="underline_warm" color="Tomato" width="1.4pt" pattern="solid" cap="round_cap" />
+  <pen id="underline_cool" color="Teal" width="1.5pt" pattern="dashed" cap="round_cap" />
+  <pen id="underline_gold" color="Goldenrod" width="1.4pt" pattern="solid" cap="round_cap" />
+  <pen id="underline_plum" color="MediumVioletRed" width="1.5pt" pattern="dotted" cap="round_cap" />
+  <pen id="strike_soft" color="SteelBlue" width="1.5pt" pattern="dashed" cap="butt_cap" />
+  <pen id="strike_bold" color="DarkOrange" width="1.8pt" pattern="solid" cap="butt_cap" />
+  <pen id="frame" color="#556270" width="0.8pt" />
+
+  <font
+    id="warm_under"
+    name="Helvetica"
+    size="15"
+    underline="true"
+    underline-pen="underline_warm"
+    underline-pos="-1.5pt" />
+
+  <font
+    id="cool_under"
+    name="Helvetica"
+    size="15"
+    underline="true"
+    underline-pen="underline_cool"
+    underline-pos="-2.5pt" />
+
+  <font
+    id="double_mark"
+    name="Helvetica"
+    size="15"
+    underline="true"
+    underline-pen="underline_gold"
+    underline-pos="-1.5pt"
+    strikeout="true"
+    strikeout-pen="strike_soft"
+    strikeout-pos="4.5pt" />
+
+  <para id="topbox" valign="top" text-align="left" />
+
+  <page units="in" layout="absolute">
+    <label left="0.7" top="0.42" font.size="19" font.weight="Bold">Decoration Overrides</label>
+    <p left="0.7" top="0.78" width="6.2">
+      Shared pen styles drive underline and strikeout appearance. Inline overrides can change one decoration detail while keeping inherited settings intact.
+    </p>
+
+    <label left="0.7" top="1.32" font.weight="Bold">Underline styles</label>
+
+    <label left="0.7" top="1.62" width="2.95" padding="8pt" border="frame" fill="OldLace" font="warm_under">
+      Solid accent underline
+    </label>
+    <label left="3.85" top="1.62" width="2.95" padding="8pt" border="frame" fill="HoneyDew" font="cool_under">
+      Dashed offset underline
+    </label>
+
+    <label left="0.7" top="2.36" font.weight="Bold">Partial override keeps inherited settings</label>
+
+    <label left="0.7" top="2.66" width="2.95" padding="8pt" border="frame" fill="AliceBlue" font="warm_under">
+      Base underline settings
+    </label>
+    <label left="3.85" top="2.66" width="2.95" padding="8pt" border="frame" fill="LavenderBlush" font="warm_under" font.strikeout-pos="5pt" font.strikeout-pen="strike_soft" font.strikeout="true">
+      Add strikeout
+    </label>
+
+    <label left="0.7" top="3.4" font.weight="Bold">Inline span position override</label>
+
+    <p left="0.7" top="3.7" width="6.1" padding="8pt" border="frame" fill="WhiteSmoke" font="warm_under">
+      Shared baseline
+      <span font.underline-pen="underline_plum" font.underline-pos="-4pt"> lower underline </span>
+      shared again
+      <span font="double_mark"> plus strikeout </span>
+    </p>
+
+    <label left="0.7" top="4.62" font.weight="Bold">Baseline vs top-aligned box</label>
+
+    <p left="0.7" top="4.92" width="2.95" height="0.95" padding="8pt" border="frame" fill="MintCream" font="warm_under">
+      Baseline box
+    </p>
+    <p left="3.85" top="4.92" width="2.95" height="0.95" padding="8pt" border="frame" fill="MistyRose" font="warm_under" style="topbox">
+      Top aligned box
+    </p>
+
+    <label left="0.7" top="6" font.weight="Bold">Combined decoration pens</label>
+
+    <label left="0.7" top="6.3" width="2.95" padding="8pt" border="frame" fill="Cornsilk" font="double_mark">
+      Light strikeout pair
+    </label>
+    <label left="3.85" top="6.3" width="2.95" padding="8pt" border="frame" fill="Lavender" font="double_mark" font.strikeout-pen="strike_bold">
+      Bold strikeout pair
+    </label>
+  </page>
+</ltml>
