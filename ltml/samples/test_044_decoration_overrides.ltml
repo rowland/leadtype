@@ -3,7 +3,7 @@
   <pen id="underline_cool" color="Teal" width="1.5pt" pattern="dashed" cap="round_cap" />
   <pen id="underline_gold" color="Goldenrod" width="1.4pt" pattern="solid" cap="round_cap" />
   <pen id="underline_plum" color="MediumVioletRed" width="1.5pt" pattern="dotted" cap="round_cap" />
-  <pen id="strike_soft" color="SteelBlue" width="1.1pt" pattern="dotted" cap="butt_cap" />
+  <pen id="strike_soft" color="SteelBlue" width="1.5pt" pattern="dashed" cap="butt_cap" />
   <pen id="strike_bold" color="DarkOrange" width="1.8pt" pattern="solid" cap="butt_cap" />
   <pen id="frame" color="#556270" width="0.8pt" />
 
@@ -57,7 +57,7 @@
       Base underline settings
     </label>
     <label left="3.85" top="2.66" width="2.95" padding="8pt" border="frame" fill="LavenderBlush" font="warm_under" font.strikeout-pos="5pt" font.strikeout-pen="strike_soft" font.strikeout="true">
-      Add strikeout only
+      Add strikeout
     </label>
 
     <label left="0.7" top="3.4" font.weight="Bold">Inline span position override</label>
