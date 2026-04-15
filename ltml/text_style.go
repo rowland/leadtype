@@ -22,11 +22,11 @@ func (ts *TextStyle) ID() string {
 	return ts.id
 }
 
-func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
-	if id, ok := attrs[prefix+"id"]; ok {
+func (ts *TextStyle) SetAttrs(attrs map[string]string) {
+	if id, ok := attrs["id"]; ok {
 		ts.id = id
 	}
-	if textAlign, ok := attrs[prefix+"text-align"]; ok {
+	if textAlign, ok := attrs["text-align"]; ok {
 		ts.textAlignSet = true
 		switch textAlign {
 		case "left":
@@ -39,7 +39,7 @@ func (ts *TextStyle) SetAttrs(prefix string, attrs map[string]string) {
 			ts.textAlign = HAlignJustify
 		}
 	}
-	if vAlign, ok := attrs[prefix+"valign"]; ok {
+	if vAlign, ok := attrs["valign"]; ok {
 		switch vAlign {
 		case "top":
 			ts.vAlign = VAlignTop
@@ -67,5 +67,5 @@ func (ts *TextStyle) String() string {
 	return fmt.Sprintf("id=%s text-align=%s valign=%s", ts.id, ts.textAlign, ts.vAlign)
 }
 
-var _ HasAttrsPrefix = (*TextStyle)(nil)
+var _ HasAttrs = (*TextStyle)(nil)
 var _ Styler = (*TextStyle)(nil)

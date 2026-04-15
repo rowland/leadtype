@@ -280,7 +280,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 				style = fs
 			case *ParagraphStyle:
 				ps := st.Clone()
-				ps.SetAttrs("", attrs)
+				ps.SetAttrs(attrs)
 				style = ps
 			case *PenStyle:
 				ps := st.Clone()
@@ -371,21 +371,6 @@ func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[strin
 		}
 		e.SetAttrs(attrs)
 	}
-	if e, ok := target.(HasAttrsPrefix); ok {
-		e.SetAttrs("", defaultAttrs)
-		path := pathOverride
-		if path == "" {
-			if p, ok := target.(HasPath); ok {
-				path = p.Path()
-			}
-		}
-		if path != "" {
-			scope.EachRuleFor(path, func(rule *Rule) {
-				e.SetAttrs("", rule.Attrs)
-			})
-		}
-		e.SetAttrs("", attrs)
-	}
 }
 
 // applyPseudoRuleAttrs applies matching pseudo-class selector attrs to a
@@ -413,16 +398,6 @@ func applyPseudoRuleAttrs(scope HasScope, target Widget, resolver *selectorStruc
 		})
 		if matched {
 			e.SetAttrs(rawAttrs)
-		}
-	}
-	if e, ok := any(target).(HasAttrsPrefix); ok {
-		prefixMatched := false
-		pseudoScope.EachPseudoRuleForWidget(target, resolver, func(rule *Rule) {
-			prefixMatched = true
-			e.SetAttrs("", rule.Attrs)
-		})
-		if prefixMatched {
-			e.SetAttrs("", rawAttrs)
 		}
 	}
 }

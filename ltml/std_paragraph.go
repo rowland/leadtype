@@ -235,7 +235,7 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	}
 	if MapHasKeyPrefix(attrs, "style.") {
 		p.paragraphStyle = p.ParagraphStyle().Clone()
-		p.paragraphStyle.SetAttrs("style.", attrs)
+		p.paragraphStyle.SetAttrs(filterMapAttrs("style.", attrs))
 	}
 	if bullet, ok := attrs["bullet"]; ok {
 		p.bullet = BulletStyleFor(bullet, p.scope)
