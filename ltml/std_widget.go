@@ -288,7 +288,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		} else {
 			widget.fill = widget.fill.Clone()
 		}
-		widget.fill.SetAttrs("fill.", normalizeBrushMeasurementAttrs(attrs, "fill.", widget.Units()))
+		widget.fill.SetAttrs(addUnits(filterMapAttrs("fill.", attrs), widget.Units()))
 	}
 	if font, ok := attrs["font"]; ok {
 		widget.font = FontStyleFor(font, widget.scope)
