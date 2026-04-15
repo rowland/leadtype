@@ -94,6 +94,8 @@ func (bs *BrushStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if kind, ok := attrs[prefix+"kind"]; ok {
 		bs.kind = BrushKind(strings.TrimSpace(kind))
 	}
+	var units Units = "pt"
+	units.SetAttrs(attrs)
 	if color, ok := attrs[prefix+"color"]; ok {
 		bs.color = NamedColor(color)
 	}
@@ -119,18 +121,18 @@ func (bs *BrushStyle) SetAttrs(prefix string, attrs map[string]string) {
 		switch bs.Kind() {
 		case BrushKindRadialGradient:
 			gradient := bs.ensureRadialGradient()
-			gradient.X0 = parseFloatAttr(attrs, prefix+"x0", gradient.X0)
-			gradient.Y0 = parseFloatAttr(attrs, prefix+"y0", gradient.Y0)
-			gradient.X1 = parseFloatAttr(attrs, prefix+"x1", gradient.X1)
-			gradient.Y1 = parseFloatAttr(attrs, prefix+"y1", gradient.Y1)
+			gradient.X0 = parseMeasurementAttr(attrs, prefix+"x0", units, gradient.X0)
+			gradient.Y0 = parseMeasurementAttr(attrs, prefix+"y0", units, gradient.Y0)
+			gradient.X1 = parseMeasurementAttr(attrs, prefix+"x1", units, gradient.X1)
+			gradient.Y1 = parseMeasurementAttr(attrs, prefix+"y1", units, gradient.Y1)
 		case BrushKindImage:
 			// Ignore gradient geometry when explicitly configured as an image brush.
 		default:
 			gradient := bs.ensureLinearGradient()
-			gradient.X0 = parseFloatAttr(attrs, prefix+"x0", gradient.X0)
-			gradient.Y0 = parseFloatAttr(attrs, prefix+"y0", gradient.Y0)
-			gradient.X1 = parseFloatAttr(attrs, prefix+"x1", gradient.X1)
-			gradient.Y1 = parseFloatAttr(attrs, prefix+"y1", gradient.Y1)
+			gradient.X0 = parseMeasurementAttr(attrs, prefix+"x0", units, gradient.X0)
+			gradient.Y0 = parseMeasurementAttr(attrs, prefix+"y0", units, gradient.Y0)
+			gradient.X1 = parseMeasurementAttr(attrs, prefix+"x1", units, gradient.X1)
+			gradient.Y1 = parseMeasurementAttr(attrs, prefix+"y1", units, gradient.Y1)
 			if bs.kind == "" {
 				bs.kind = BrushKindLinearGradient
 			}
@@ -138,8 +140,8 @@ func (bs *BrushStyle) SetAttrs(prefix string, attrs map[string]string) {
 	}
 	if hasAnyAttr(attrs, prefix+"r0", prefix+"r1") {
 		gradient := bs.ensureRadialGradient()
-		gradient.R0 = parseFloatAttr(attrs, prefix+"r0", gradient.R0)
-		gradient.R1 = parseFloatAttr(attrs, prefix+"r1", gradient.R1)
+		gradient.R0 = parseMeasurementAttr(attrs, prefix+"r0", units, gradient.R0)
+		gradient.R1 = parseMeasurementAttr(attrs, prefix+"r1", units, gradient.R1)
 		if bs.kind == "" {
 			bs.kind = BrushKindRadialGradient
 		}
@@ -251,6 +253,14 @@ func parseFloatAttr(attrs map[string]string, key string, defaultValue float64) f
 		return defaultValue
 	}
 	return parsed
+}
+
+func parseMeasurementAttr(attrs map[string]string, key string, units Units, defaultValue float64) float64 {
+	value, ok := attrs[key]
+	if !ok {
+		return defaultValue
+	}
+	return ParseMeasurement(strings.TrimSpace(value), units)
 }
 
 func hasAnyAttr(attrs map[string]string, keys ...string) bool {

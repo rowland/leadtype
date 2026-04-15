@@ -142,17 +142,26 @@ Deliverables:
 - Interface and concrete writer support.
 - Tests ensuring state restoration after gradient/image painting.
 
-### Phase 3: Background fill for Label/Paragraph
+### Phase 3: Shared widget background fill
 
-1. Replace `BrushStyle.Apply(...)` + `Rectangle2(...fill=true...)` assumption with brush-aware painting path:
+1. Replace `BrushStyle.Apply(...)` + `Rectangle2(...fill=true...)` assumption in `StdWidget.PaintBackground(...)` with a brush-aware painting path:
    - solid: current behavior.
    - gradient: build rect path, clip, paint gradient.
    - image: build rect path, clip, paint image according to fit/repeat.
-2. Ensure border drawing remains unchanged and layered above background.
+2. Keep this shared-path work generic:
+   - widgets that rely on `StdWidget.PaintBackground(...)` should inherit the new behavior automatically;
+   - widgets with custom background/fill geometry (for example sectors or shape primitives) should continue owning their own specialized logic.
+3. Ensure border drawing remains unchanged and layered above background.
+4. Fold in at least one LTML sample page during implementation so the authoring model is exercised while the shared path is still under review.
+5. Keep layout spacing semantics straight while authoring samples:
+   - widget `padding` controls interior box inset;
+   - layout `padding` is shorthand for layout `hpadding` plus `vpadding`;
+   - layout `padding` is not interchangeable with widget `padding`.
 
 Deliverables:
-- New background rendering behavior for all widgets that use `StdWidget.PaintBackground`.
+- New background rendering behavior for standard widgets that use `StdWidget.PaintBackground`.
 - Regression tests for existing solid-fill outputs.
+- At least one sample-driven LTML check proving the shared path works without widget-specific background code in `Label` or `Paragraph`.
 
 ### Phase 4: Text fill without clipping
 
