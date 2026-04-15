@@ -294,17 +294,11 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		widget.font = FontStyleFor(font, widget.scope)
 	}
 	if MapHasKeyPrefix(attrs, "font.") {
-		baseFont := widget.font
-		if baseFont == nil {
-			if widget.container != nil {
-				baseFont = widget.container.Font()
-			} else {
-				baseFont = defaultFont
-			}
-		}
+		baseFont := widget.Font()
 		widget.font = baseFont.Clone()
 		widget.font.SetScope(widget.scope)
-		widget.font.SetAttrs("font.", normalizeFontDecorationMeasurementAttrs(attrs, "font.", widget.Units()))
+		// widget.font.SetAttrs("font.", normalizeFontDecorationMeasurementAttrs(attrs, "font.", widget.Units()))
+		widget.font.SetAttrs(addUnits(filterMapAttrs("font.", attrs), widget.Units()))
 	}
 	if colSpan, ok := attrs["colspan"]; ok {
 		widget.colSpan, _ = strconv.Atoi(colSpan)
@@ -573,20 +567,20 @@ func offsetRadialGradient(source *pdf.RadialGradient, x, y float64) *pdf.RadialG
 	return &clone
 }
 
-func normalizeFontDecorationMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
-	normalized := maps.Clone(attrs)
-	for _, key := range []string{"underline-pos", "strikeout-pos"} {
-		fullKey := prefix + key
-		value, ok := normalized[fullKey]
-		if !ok {
-			continue
-		}
-		if points := parseOptionalMeasurement(strings.TrimSpace(value), units); points != nil {
-			normalized[fullKey] = strconv.FormatFloat(*points, 'f', -1, 64) + "pt"
-		}
-	}
-	return normalized
-}
+// func normalizeFontDecorationMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
+// 	normalized := maps.Clone(attrs)
+// 	for _, key := range []string{"underline-pos", "strikeout-pos"} {
+// 		fullKey := prefix + key
+// 		value, ok := normalized[fullKey]
+// 		if !ok {
+// 			continue
+// 		}
+// 		if points := parseOptionalMeasurement(strings.TrimSpace(value), units); points != nil {
+// 			normalized[fullKey] = strconv.FormatFloat(*points, 'f', -1, 64) + "pt"
+// 		}
+// 	}
+// 	return normalized
+// }
 
 func normalizeBrushMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
 	normalized := maps.Clone(attrs)

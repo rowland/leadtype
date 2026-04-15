@@ -276,7 +276,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 				style = bs
 			case *FontStyle:
 				fs := st.Clone()
-				fs.SetAttrs("", attrs)
+				fs.SetAttrs(attrs)
 				style = fs
 			case *ParagraphStyle:
 				ps := st.Clone()
