@@ -87,19 +87,19 @@ func (bs *BrushStyle) Kind() BrushKind {
 	return BrushKindSolid
 }
 
-func (bs *BrushStyle) SetAttrs(prefix string, attrs map[string]string) {
-	if id, ok := attrs[prefix+"id"]; ok {
+func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
+	if id, ok := attrs["id"]; ok {
 		bs.id = id
-	}
-	if kind, ok := attrs[prefix+"kind"]; ok {
-		bs.kind = BrushKind(strings.TrimSpace(kind))
 	}
 	var units Units = "pt"
 	units.SetAttrs(attrs)
-	if color, ok := attrs[prefix+"color"]; ok {
+	if kind, ok := attrs["kind"]; ok {
+		bs.kind = BrushKind(strings.TrimSpace(kind))
+	}
+	if color, ok := attrs["color"]; ok {
 		bs.color = NamedColor(color)
 	}
-	if stops, ok := attrs[prefix+"stops"]; ok {
+	if stops, ok := attrs["stops"]; ok {
 		parsedStops := parseGradientStops(stops)
 		if bs.Kind() == BrushKindRadialGradient {
 			gradient := bs.ensureRadialGradient()
@@ -113,60 +113,60 @@ func (bs *BrushStyle) SetAttrs(prefix string, attrs map[string]string) {
 		}
 	}
 	if hasAnyAttr(attrs,
-		prefix+"x0",
-		prefix+"y0",
-		prefix+"x1",
-		prefix+"y1",
+		"x0",
+		"y0",
+		"x1",
+		"y1",
 	) {
 		switch bs.Kind() {
 		case BrushKindRadialGradient:
 			gradient := bs.ensureRadialGradient()
-			gradient.X0 = parseMeasurementAttr(attrs, prefix+"x0", units, gradient.X0)
-			gradient.Y0 = parseMeasurementAttr(attrs, prefix+"y0", units, gradient.Y0)
-			gradient.X1 = parseMeasurementAttr(attrs, prefix+"x1", units, gradient.X1)
-			gradient.Y1 = parseMeasurementAttr(attrs, prefix+"y1", units, gradient.Y1)
+			gradient.X0 = parseMeasurementAttr(attrs, "x0", units, gradient.X0)
+			gradient.Y0 = parseMeasurementAttr(attrs, "y0", units, gradient.Y0)
+			gradient.X1 = parseMeasurementAttr(attrs, "x1", units, gradient.X1)
+			gradient.Y1 = parseMeasurementAttr(attrs, "y1", units, gradient.Y1)
 		case BrushKindImage:
 			// Ignore gradient geometry when explicitly configured as an image brush.
 		default:
 			gradient := bs.ensureLinearGradient()
-			gradient.X0 = parseMeasurementAttr(attrs, prefix+"x0", units, gradient.X0)
-			gradient.Y0 = parseMeasurementAttr(attrs, prefix+"y0", units, gradient.Y0)
-			gradient.X1 = parseMeasurementAttr(attrs, prefix+"x1", units, gradient.X1)
-			gradient.Y1 = parseMeasurementAttr(attrs, prefix+"y1", units, gradient.Y1)
+			gradient.X0 = parseMeasurementAttr(attrs, "x0", units, gradient.X0)
+			gradient.Y0 = parseMeasurementAttr(attrs, "y0", units, gradient.Y0)
+			gradient.X1 = parseMeasurementAttr(attrs, "x1", units, gradient.X1)
+			gradient.Y1 = parseMeasurementAttr(attrs, "y1", units, gradient.Y1)
 			if bs.kind == "" {
 				bs.kind = BrushKindLinearGradient
 			}
 		}
 	}
-	if hasAnyAttr(attrs, prefix+"r0", prefix+"r1") {
+	if hasAnyAttr(attrs, "r0", "r1") {
 		gradient := bs.ensureRadialGradient()
-		gradient.R0 = parseMeasurementAttr(attrs, prefix+"r0", units, gradient.R0)
-		gradient.R1 = parseMeasurementAttr(attrs, prefix+"r1", units, gradient.R1)
+		gradient.R0 = parseMeasurementAttr(attrs, "r0", units, gradient.R0)
+		gradient.R1 = parseMeasurementAttr(attrs, "r1", units, gradient.R1)
 		if bs.kind == "" {
 			bs.kind = BrushKindRadialGradient
 		}
 	}
 	if hasAnyAttr(attrs,
-		prefix+"src",
-		prefix+"fit",
-		prefix+"anchor",
-		prefix+"repeat",
-		prefix+"opacity",
+		"src",
+		"fit",
+		"anchor",
+		"repeat",
+		"opacity",
 	) {
 		image := bs.ensureImage()
-		if value, ok := attrs[prefix+"src"]; ok {
+		if value, ok := attrs["src"]; ok {
 			image.Src = strings.TrimSpace(value)
 		}
-		if value, ok := attrs[prefix+"fit"]; ok {
+		if value, ok := attrs["fit"]; ok {
 			image.Fit = strings.TrimSpace(value)
 		}
-		if value, ok := attrs[prefix+"anchor"]; ok {
+		if value, ok := attrs["anchor"]; ok {
 			image.Anchor = strings.TrimSpace(value)
 		}
-		if value, ok := attrs[prefix+"repeat"]; ok {
+		if value, ok := attrs["repeat"]; ok {
 			image.Repeat = strings.TrimSpace(value)
 		}
-		image.Opacity = parseFloatAttr(attrs, prefix+"opacity", image.Opacity)
+		image.Opacity = parseFloatAttr(attrs, "opacity", image.Opacity)
 		if bs.kind == "" {
 			bs.kind = BrushKindImage
 		}
@@ -191,7 +191,7 @@ func BrushStyleFor(id string, scope HasScope) *BrushStyle {
 	return bs
 }
 
-var _ HasAttrsPrefix = (*BrushStyle)(nil)
+var _ HasAttrs = (*BrushStyle)(nil)
 var _ Styler = (*BrushStyle)(nil)
 
 func init() {

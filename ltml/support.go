@@ -45,6 +45,14 @@ func filterMapAttrs(prefix string, attrs map[string]string) map[string]string {
 	return result
 }
 
+func addUnits(attrs map[string]string, units Units) map[string]string {
+	if _, ok := attrs["units"]; ok {
+		return attrs
+	}
+	attrs["units"] = string(units)
+	return attrs
+}
+
 func split2(s, sep string) (s1, s2 string) {
 	a := strings.SplitN(s, sep, 2)
 	if len(a) > 0 {

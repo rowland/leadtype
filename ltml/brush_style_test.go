@@ -4,7 +4,7 @@ import "testing"
 
 func TestBrushStyleSetAttrsSolidDefaults(t *testing.T) {
 	var bs BrushStyle
-	bs.SetAttrs("", map[string]string{
+	bs.SetAttrs(map[string]string{
 		"id":    "primary",
 		"color": "Gold",
 	})
@@ -25,13 +25,13 @@ func TestBrushStyleSetAttrsSolidDefaults(t *testing.T) {
 
 func TestBrushStyleSetAttrsLinearGradient(t *testing.T) {
 	var bs BrushStyle
-	bs.SetAttrs("fill.", map[string]string{
-		"fill.kind":  "linear-gradient",
-		"fill.x0":    "1.5",
-		"fill.y0":    "2.5",
-		"fill.x1":    "31.5",
-		"fill.y1":    "42.5",
-		"fill.stops": "0:#112233, 0.5:Gold, 1:#445566",
+	bs.SetAttrs(map[string]string{
+		"kind":  "linear-gradient",
+		"x0":    "1.5",
+		"y0":    "2.5",
+		"x1":    "31.5",
+		"y1":    "42.5",
+		"stops": "0:#112233, 0.5:Gold, 1:#445566",
 	})
 
 	if bs.Kind() != BrushKindLinearGradient {
@@ -56,15 +56,15 @@ func TestBrushStyleSetAttrsLinearGradient(t *testing.T) {
 
 func TestBrushStyleSetAttrsRadialGradient(t *testing.T) {
 	var bs BrushStyle
-	bs.SetAttrs("fill.", map[string]string{
-		"fill.kind":  "radial-gradient",
-		"fill.x0":    "10",
-		"fill.y0":    "11",
-		"fill.r0":    "12",
-		"fill.x1":    "20",
-		"fill.y1":    "21",
-		"fill.r1":    "22",
-		"fill.stops": "0:#000000,1:#ffffff",
+	bs.SetAttrs(map[string]string{
+		"kind":  "radial-gradient",
+		"x0":    "10",
+		"y0":    "11",
+		"r0":    "12",
+		"x1":    "20",
+		"y1":    "21",
+		"r1":    "22",
+		"stops": "0:#000000,1:#ffffff",
 	})
 
 	if bs.Kind() != BrushKindRadialGradient {
@@ -86,13 +86,13 @@ func TestBrushStyleSetAttrsRadialGradient(t *testing.T) {
 
 func TestBrushStyleSetAttrsImage(t *testing.T) {
 	var bs BrushStyle
-	bs.SetAttrs("fill.", map[string]string{
-		"fill.kind":    "image",
-		"fill.src":     "docs/assets/metal-movable-type-banner.jpg",
-		"fill.fit":     "cover",
-		"fill.anchor":  "center",
-		"fill.repeat":  "tile",
-		"fill.opacity": "0.35",
+	bs.SetAttrs(map[string]string{
+		"kind":    "image",
+		"src":     "docs/assets/metal-movable-type-banner.jpg",
+		"fit":     "cover",
+		"anchor":  "center",
+		"repeat":  "tile",
+		"opacity": "0.35",
 	})
 
 	if bs.Kind() != BrushKindImage {
@@ -114,18 +114,18 @@ func TestBrushStyleSetAttrsImage(t *testing.T) {
 
 func TestBrushStyleCloneDeepCopiesNestedBrushData(t *testing.T) {
 	original := &BrushStyle{}
-	original.SetAttrs("fill.", map[string]string{
-		"fill.kind":    "radial-gradient",
-		"fill.x0":      "1",
-		"fill.y0":      "2",
-		"fill.r0":      "3",
-		"fill.x1":      "4",
-		"fill.y1":      "5",
-		"fill.r1":      "6",
-		"fill.stops":   "0:#111111,1:#999999",
-		"fill.src":     "ignored-by-kind.png",
-		"fill.fit":     "contain",
-		"fill.opacity": "0.8",
+	original.SetAttrs(map[string]string{
+		"kind":    "radial-gradient",
+		"x0":      "1",
+		"y0":      "2",
+		"r0":      "3",
+		"x1":      "4",
+		"y1":      "5",
+		"r1":      "6",
+		"stops":   "0:#111111,1:#999999",
+		"src":     "ignored-by-kind.png",
+		"fit":     "contain",
+		"opacity": "0.8",
 	})
 	original.image = &BrushImageStyle{
 		Src:     "docs/assets/metal-movable-type-banner.jpg",

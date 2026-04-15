@@ -272,7 +272,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 			switch st := st.(type) {
 			case *BrushStyle:
 				bs := st.Clone()
-				bs.SetAttrs("", attrs)
+				bs.SetAttrs(attrs)
 				style = bs
 			case *FontStyle:
 				fs := st.Clone()
