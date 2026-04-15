@@ -35,16 +35,6 @@ func MapHasAnyKey(attrs map[string]string, keys ...string) bool {
 	return false
 }
 
-func filterMapAttrs(prefix string, attrs map[string]string) map[string]string {
-	result := make(map[string]string)
-	for k, v := range attrs {
-		if strings.HasPrefix(k, prefix) {
-			result[strings.TrimPrefix(k, prefix)] = v
-		}
-	}
-	return result
-}
-
 func split2(s, sep string) (s1, s2 string) {
 	a := strings.SplitN(s, sep, 2)
 	if len(a) > 0 {

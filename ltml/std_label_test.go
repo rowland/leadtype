@@ -149,12 +149,6 @@ func (w *labelTestWriter) PrintSVGFile(filename string, x, y float64, width, hei
 func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return 0, 0, nil
 }
-func (w *labelTestWriter) PaintImageFile(filename string, x, y, width, height float64) error {
-	_, _, err := w.PrintImageFile(filename, x, y, &width, &height)
-	return err
-}
-func (w *labelTestWriter) PaintLinearGradient(lg *pdf.LinearGradient) error { return nil }
-func (w *labelTestWriter) PaintRadialGradient(rg *pdf.RadialGradient) error { return nil }
 func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {
 	w.paragraphOpts = append(w.paragraphOpts, opts)
 	for _, line := range para {
@@ -212,9 +206,6 @@ func (w *labelTestWriter) SetFillColor(value any) (prev colors.Color) {
 	}
 	return prev
 }
-func (w *labelTestWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error  { return nil }
-func (w *labelTestWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error  { return nil }
-func (w *labelTestWriter) ClearFillGradient()                                  {}
 func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) { return 0 }
 func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
 func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return w.lineSpacing }

@@ -6,9 +6,8 @@ import "github.com/rowland/leadtype/colors"
 // text run. It is intended to be treated as immutable and shared across many
 // leaf pieces.
 type DecorationOverrides struct {
-	Underline  DecorationLineOverrides
-	Strikeout  DecorationLineOverrides
-	TextStroke DecorationStrokeOverrides
+	Underline DecorationLineOverrides
+	Strikeout DecorationLineOverrides
 }
 
 type DecorationLineOverrides struct {
@@ -21,13 +20,6 @@ type DecorationLineOverrides struct {
 	HasWidth    bool
 	HasPattern  bool
 	HasPosition bool
-}
-
-type DecorationStrokeOverrides struct {
-	Color    colors.Color
-	Width    float64
-	HasColor bool
-	HasWidth bool
 }
 
 func (line DecorationLineOverrides) Equal(other DecorationLineOverrides) bool {
@@ -47,6 +39,5 @@ func (overrides *DecorationOverrides) Equal(other *DecorationOverrides) bool {
 		return overrides == other
 	}
 	return overrides.Underline.Equal(other.Underline) &&
-		overrides.Strikeout.Equal(other.Strikeout) &&
-		overrides.TextStroke == other.TextStroke
+		overrides.Strikeout.Equal(other.Strikeout)
 }

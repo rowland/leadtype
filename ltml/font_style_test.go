@@ -120,11 +120,8 @@ func (m *mockWriter) PrintSVGFile(filename string, x, y float64, width, height *
 func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }
-func (m *mockWriter) PaintImageFile(filename string, x, y, width, height float64) error { return nil }
-func (m *mockWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                  { return nil }
-func (m *mockWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                  { return nil }
-func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options)   {}
-func (m *mockWriter) PrintRichText(text *rich_text.RichText)                            {}
+func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
+func (m *mockWriter) PrintRichText(text *rich_text.RichText)                          {}
 func (m *mockWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }
@@ -144,9 +141,6 @@ func (m *mockWriter) Polygon(x, y, r float64, sides int, border, fill, reverse b
 func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)                          {}
 func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
 func (m *mockWriter) SetFillColor(v any) colors.Color                                  { return 0 }
-func (m *mockWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error               { return nil }
-func (m *mockWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error               { return nil }
-func (m *mockWriter) ClearFillGradient()                                               {}
 func (m *mockWriter) SetLineColor(v colors.Color) colors.Color                         { return 0 }
 func (m *mockWriter) SetLineDashPattern(p string) string                               { return "" }
 func (m *mockWriter) SetLineSpacing(ls float64) float64                                { return 0 }
@@ -343,27 +337,6 @@ func TestFontStyle_SetAttrs_DecorationOverrides(t *testing.T) {
 	}
 	if !decoration.Strikeout.HasPosition || decoration.Strikeout.Position != 18 {
 		t.Fatalf("expected strikeout position override")
-	}
-}
-
-func TestFontStyle_RichTextOptions_IncludesTextStroke(t *testing.T) {
-	var fs FontStyle
-	fs.SetAttrs("font.", map[string]string{
-		"font.color":        "White",
-		"font.stroke-color": "Black",
-		"font.stroke-width": "0.75pt",
-	})
-
-	opts := fs.RichTextOptions()
-	decoration, _ := opts["decoration"].(*rich_text.DecorationOverrides)
-	if decoration == nil {
-		t.Fatal("expected decoration payload")
-	}
-	if !decoration.TextStroke.HasColor || decoration.TextStroke.Color != colors.Black {
-		t.Fatalf("stroke color = %v, want %v", decoration.TextStroke.Color, colors.Black)
-	}
-	if !decoration.TextStroke.HasWidth || decoration.TextStroke.Width != 0.75 {
-		t.Fatalf("stroke width = %v, want 0.75", decoration.TextStroke.Width)
 	}
 }
 

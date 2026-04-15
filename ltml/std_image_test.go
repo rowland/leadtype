@@ -73,14 +73,8 @@ func (w *imageTestWriter) PrintImageFile(filename string, x, y float64, width, h
 	return 0, 0, nil
 }
 
-func (w *imageTestWriter) PaintImageFile(filename string, x, y, width, height float64) error {
-	_, _, err := w.PrintImageFile(filename, x, y, &width, &height)
-	return err
-}
-
 func TestStdImage_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg"}
-	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
+	img := &StdImage{src: "fixture.jpg", doc: newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data")))}
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}
 
 	if got := img.PreferredWidth(w); got != 144 {
@@ -92,8 +86,7 @@ func TestStdImage_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
 }
 
 func TestStdImage_PreferredHeight_InfersAspectRatioFromWidth(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg"}
-	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
+	img := &StdImage{src: "fixture.jpg", doc: newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data")))}
 	img.SetWidth(72)
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}
 
@@ -103,8 +96,7 @@ func TestStdImage_PreferredHeight_InfersAspectRatioFromWidth(t *testing.T) {
 }
 
 func TestStdImage_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg"}
-	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
+	img := &StdImage{src: "fixture.jpg", doc: newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data")))}
 	img.SetHeight(48)
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}
 
@@ -114,8 +106,7 @@ func TestStdImage_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
 }
 
 func TestStdImage_DrawContent_UsesContentBoxDimensions(t *testing.T) {
-	img := &StdImage{src: "fixture.jpg"}
-	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
+	img := &StdImage{src: "fixture.jpg", doc: newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data")))}
 	img.SetLeft(10)
 	img.SetTop(20)
 	img.SetWidth(120)

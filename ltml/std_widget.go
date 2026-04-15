@@ -6,15 +6,11 @@ package ltml
 import (
 	"fmt"
 	"maps"
-	"math"
 	"strconv"
 	"strings"
-
-	"github.com/rowland/leadtype/pdf"
 )
 
 type StdWidget struct {
-	doc       *Doc
 	units     Units
 	container Container
 	scope     HasScope
@@ -141,14 +137,16 @@ func (widget *StdWidget) LayoutWidget(w Writer) {
 }
 
 func (widget *StdWidget) PaintBackground(w Writer) error {
-	if widget.fill == nil {
-		return nil
+	if widget.fill != nil {
+		widget.fill.Apply(w)
+		w.Rectangle2(
+			widget.Left()+widget.MarginLeft(),
+			widget.Top()+widget.MarginTop(),
+			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
+			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
+			false, true, widget.corners, false, false)
 	}
-	x, y, width, height := widget.backgroundRect()
-	if width <= 0 || height <= 0 {
-		return nil
-	}
-	return widget.paintBrushInRect(w, widget.fill, x, y, width, height)
+	return nil
 }
 
 func (widget *StdWidget) Path() string {
@@ -288,7 +286,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		} else {
 			widget.fill = widget.fill.Clone()
 		}
-		widget.fill.SetAttrs("fill.", normalizeBrushMeasurementAttrs(attrs, "fill.", widget.Units()))
+		widget.fill.SetAttrs("fill.", attrs)
 	}
 	if font, ok := attrs["font"]; ok {
 		widget.font = FontStyleFor(font, widget.scope)
@@ -342,237 +340,6 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	}
 }
 
-func (widget *StdWidget) backgroundRect() (x, y, width, height float64) {
-	return widget.Left() + widget.MarginLeft(),
-		widget.Top() + widget.MarginTop(),
-		widget.Width() - widget.MarginLeft() - widget.MarginRight(),
-		widget.Height() - widget.MarginTop() - widget.MarginBottom()
-}
-
-// paintBrushInRect is the shared widget-box brush painter used by standard
-// widgets that rely on StdWidget.PaintBackground. Widgets with custom fill
-// geometry, such as sectors or shape primitives, continue to own their own
-// background logic.
-func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, width, height float64) error {
-	if brush == nil {
-		return nil
-	}
-	switch brush.Kind() {
-	case BrushKindLinearGradient:
-		if brush.linearGradient == nil {
-			return nil
-		}
-		gradient := offsetLinearGradient(brush.linearGradient, x, y)
-		return widget.paintClippedRect(w, x, y, width, height, func() error {
-			return w.PaintLinearGradient(gradient)
-		})
-	case BrushKindRadialGradient:
-		if brush.radialGradient == nil {
-			return nil
-		}
-		gradient := offsetRadialGradient(brush.radialGradient, x, y)
-		return widget.paintClippedRect(w, x, y, width, height, func() error {
-			return w.PaintRadialGradient(gradient)
-		})
-	case BrushKindImage:
-		return widget.paintImageBrushInRect(w, brush.image, x, y, width, height)
-	default:
-		brush.Apply(w)
-		w.Rectangle2(x, y, width, height, false, true, widget.corners, false, false)
-		return nil
-	}
-}
-
-func (widget *StdWidget) paintClippedRect(w Writer, x, y, width, height float64, paint func() error) error {
-	var paintErr error
-	if err := w.Path(func() {
-		w.Rectangle2(x, y, width, height, false, false, widget.corners, true, false)
-		if err := w.Clip(func() {
-			paintErr = paint()
-		}); err != nil && paintErr == nil {
-			paintErr = err
-		}
-	}); err != nil {
-		return err
-	}
-	if paintErr != nil {
-		return paintErr
-	}
-	return nil
-}
-
-func (widget *StdWidget) paintImageBrushInRect(w Writer, image *BrushImageStyle, x, y, width, height float64) error {
-	if image == nil || strings.TrimSpace(image.Src) == "" {
-		return fmt.Errorf("brush image src must be specified")
-	}
-	ref, err := widget.resolveBrushImageSource(image.Src)
-	if err != nil {
-		return err
-	}
-	if ref.identifier == "" {
-		return fmt.Errorf("brush image src %q did not resolve to an asset", image.Src)
-	}
-
-	tileX, tileY, tileWidth, tileHeight := x, y, width, height
-	repeatMode := normalizeBrushRepeat(image)
-	fitMode := normalizeBrushFit(image)
-
-	if fitMode != "stretch" || repeatMode != "no-repeat" {
-		imageWidth, imageHeight, err := w.ImageDimensionsFromFile(ref.identifier)
-		if err == nil && imageWidth > 0 && imageHeight > 0 {
-			tileWidth, tileHeight = resolveBrushImageSize(fitMode, width, height, float64(imageWidth), float64(imageHeight))
-			tileX, tileY = resolveBrushAnchor(normalizeBrushAnchor(image), x, y, width, height, tileWidth, tileHeight)
-		}
-	}
-	if fitMode == "tile" && repeatMode == "no-repeat" {
-		repeatMode = "repeat"
-	}
-
-	return widget.paintClippedRect(w, x, y, width, height, func() error {
-		return paintRepeatedBrushImage(w, ref.identifier, tileX, tileY, tileWidth, tileHeight, x, y, width, height, repeatMode)
-	})
-}
-
-func (widget *StdWidget) resolveBrushImageSource(src string) (assetSourceRef, error) {
-	if widget.doc != nil {
-		return widget.doc.resolveAssetSource(widget.container, src)
-	}
-	return resolveAssetSourceRef(nil, widget.container, src)
-}
-
-func normalizeBrushFit(image *BrushImageStyle) string {
-	if image == nil || strings.TrimSpace(image.Fit) == "" {
-		return "stretch"
-	}
-	return strings.TrimSpace(strings.ToLower(image.Fit))
-}
-
-func normalizeBrushAnchor(image *BrushImageStyle) string {
-	if image == nil || strings.TrimSpace(image.Anchor) == "" {
-		return "center"
-	}
-	return strings.TrimSpace(strings.ToLower(image.Anchor))
-}
-
-func normalizeBrushRepeat(image *BrushImageStyle) string {
-	if image == nil || strings.TrimSpace(image.Repeat) == "" {
-		return "no-repeat"
-	}
-	return strings.TrimSpace(strings.ToLower(image.Repeat))
-}
-
-func resolveBrushImageSize(fit string, boxWidth, boxHeight, imageWidth, imageHeight float64) (width, height float64) {
-	if imageWidth <= 0 || imageHeight <= 0 {
-		return boxWidth, boxHeight
-	}
-	switch fit {
-	case "contain":
-		scale := math.Min(boxWidth/imageWidth, boxHeight/imageHeight)
-		return imageWidth * scale, imageHeight * scale
-	case "cover":
-		scale := math.Max(boxWidth/imageWidth, boxHeight/imageHeight)
-		return imageWidth * scale, imageHeight * scale
-	case "tile":
-		return imageWidth, imageHeight
-	default:
-		return boxWidth, boxHeight
-	}
-}
-
-func resolveBrushAnchor(anchor string, x, y, width, height, contentWidth, contentHeight float64) (drawX, drawY float64) {
-	switch anchor {
-	case "top":
-		return x + (width-contentWidth)/2, y
-	case "bottom":
-		return x + (width-contentWidth)/2, y + height - contentHeight
-	case "left":
-		return x, y + (height-contentHeight)/2
-	case "right":
-		return x + width - contentWidth, y + (height-contentHeight)/2
-	case "top-left":
-		return x, y
-	case "top-right":
-		return x + width - contentWidth, y
-	case "bottom-left":
-		return x, y + height - contentHeight
-	case "bottom-right":
-		return x + width - contentWidth, y + height - contentHeight
-	default:
-		return x + (width-contentWidth)/2, y + (height-contentHeight)/2
-	}
-}
-
-func paintRepeatedBrushImage(w Writer, filename string, tileX, tileY, tileWidth, tileHeight, clipX, clipY, clipWidth, clipHeight float64, repeatMode string) error {
-	if tileWidth <= 0 || tileHeight <= 0 {
-		return nil
-	}
-	repeatX := repeatMode == "repeat" || repeatMode == "repeat-x"
-	repeatY := repeatMode == "repeat" || repeatMode == "repeat-y"
-
-	startX := tileX
-	startY := tileY
-	if repeatX {
-		for startX > clipX {
-			startX -= tileWidth
-		}
-	}
-	if repeatY {
-		for startY > clipY {
-			startY -= tileHeight
-		}
-	}
-
-	endX := tileX + tileWidth
-	endY := tileY + tileHeight
-	if repeatX {
-		endX = clipX + clipWidth
-	}
-	if repeatY {
-		endY = clipY + clipHeight
-	}
-
-	for drawY := startY; drawY < endY; drawY += tileHeight {
-		if !repeatY && drawY != startY {
-			break
-		}
-		for drawX := startX; drawX < endX; drawX += tileWidth {
-			if !repeatX && drawX != startX {
-				break
-			}
-			if err := w.PaintImageFile(filename, drawX, drawY, tileWidth, tileHeight); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func offsetLinearGradient(source *pdf.LinearGradient, x, y float64) *pdf.LinearGradient {
-	if source == nil {
-		return nil
-	}
-	clone := *source
-	clone.X0 += x
-	clone.Y0 += y
-	clone.X1 += x
-	clone.Y1 += y
-	clone.Stops = append([]pdf.GradientStop(nil), source.Stops...)
-	return &clone
-}
-
-func offsetRadialGradient(source *pdf.RadialGradient, x, y float64) *pdf.RadialGradient {
-	if source == nil {
-		return nil
-	}
-	clone := *source
-	clone.X0 += x
-	clone.Y0 += y
-	clone.X1 += x
-	clone.Y1 += y
-	clone.Stops = append([]pdf.GradientStop(nil), source.Stops...)
-	return &clone
-}
-
 func normalizeFontDecorationMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
 	normalized := maps.Clone(attrs)
 	for _, key := range []string{"underline-pos", "strikeout-pos"} {
@@ -588,19 +355,6 @@ func normalizeFontDecorationMeasurementAttrs(attrs map[string]string, prefix str
 	return normalized
 }
 
-func normalizeBrushMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
-	normalized := maps.Clone(attrs)
-	for _, key := range []string{"x0", "y0", "x1", "y1", "r0", "r1"} {
-		fullKey := prefix + key
-		value, ok := normalized[fullKey]
-		if !ok {
-			continue
-		}
-		normalized[fullKey] = strconv.FormatFloat(ParseMeasurement(strings.TrimSpace(value), units), 'f', -1, 64)
-	}
-	return normalized
-}
-
 func (widget *StdWidget) SetContainer(container Container) error {
 	widget.container = container
 	return nil
@@ -608,10 +362,6 @@ func (widget *StdWidget) SetContainer(container Container) error {
 
 func (widget *StdWidget) SetDisabled(value bool) {
 	widget.disabled = value
-}
-
-func (widget *StdWidget) SetDoc(doc *Doc) {
-	widget.doc = doc
 }
 
 func (widget *StdWidget) SetPrinted(value bool) {
