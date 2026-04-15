@@ -34,20 +34,22 @@ func (ps *PenStyle) ID() string {
 	return ps.id
 }
 
-func (ps *PenStyle) SetAttrs(prefix string, attrs map[string]string) {
-	if id, ok := attrs[prefix+"id"]; ok {
+func (ps *PenStyle) SetAttrs(attrs map[string]string) {
+	if id, ok := attrs["id"]; ok {
 		ps.id = id
 	}
-	if color, ok := attrs[prefix+"color"]; ok {
+	if color, ok := attrs["color"]; ok {
 		ps.color = NamedColor(color)
 	}
-	if width, ok := attrs[prefix+"width"]; ok {
-		ps.width = ParseMeasurement(width, "pt")
+	var units Units = "pt"
+	units.SetAttrs(attrs)
+	if width, ok := attrs["width"]; ok {
+		ps.width = ParseMeasurement(width, units)
 	}
-	if pattern, ok := attrs[prefix+"pattern"]; ok {
+	if pattern, ok := attrs["pattern"]; ok {
 		ps.pattern = pattern
 	}
-	if cap, ok := attrs[prefix+"cap"]; ok {
+	if cap, ok := attrs["cap"]; ok {
 		switch cap {
 		case "round_cap", "projecting_square_cap", "butt_cap":
 			ps.cap = cap
@@ -83,7 +85,7 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 	return ps
 }
 
-var _ HasAttrsPrefix = (*PenStyle)(nil)
+var _ HasAttrs = (*PenStyle)(nil)
 var _ Styler = (*PenStyle)(nil)
 
 func init() {

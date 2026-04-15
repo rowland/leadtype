@@ -284,7 +284,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 				style = ps
 			case *PenStyle:
 				ps := st.Clone()
-				ps.SetAttrs("", attrs)
+				ps.SetAttrs(attrs)
 				style = ps
 			}
 		}
