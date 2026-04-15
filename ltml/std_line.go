@@ -73,7 +73,7 @@ func (l *StdLine) SetAttrs(attrs map[string]string) {
 		default:
 			l.style = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
 		}
-		l.style.SetAttrs("style.", attrs)
+		l.style.SetAttrs(addUnits(filterMapAttrs("style.", attrs), l.Units()))
 	}
 }
 

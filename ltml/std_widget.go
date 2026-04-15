@@ -259,7 +259,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		} else {
 			widget.border = widget.border.Clone()
 		}
-		widget.border.SetAttrs("border.", attrs)
+		widget.border.SetAttrs(addUnits(filterMapAttrs("border.", attrs), widget.Units()))
 	}
 	for i, side := range sideNames {
 		if border, ok := attrs["border-"+side]; ok {
@@ -276,7 +276,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			} else {
 				widget.borders[i] = base.Clone()
 			}
-			widget.borders[i].SetAttrs(prefix, attrs)
+			widget.borders[i].SetAttrs(addUnits(filterMapAttrs(prefix, attrs), widget.Units()))
 		}
 	}
 	if fill, ok := attrs["fill"]; ok {
