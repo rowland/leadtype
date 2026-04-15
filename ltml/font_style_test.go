@@ -346,6 +346,27 @@ func TestFontStyle_SetAttrs_DecorationOverrides(t *testing.T) {
 	}
 }
 
+func TestFontStyle_RichTextOptions_IncludesTextStroke(t *testing.T) {
+	var fs FontStyle
+	fs.SetAttrs("font.", map[string]string{
+		"font.color":        "White",
+		"font.stroke-color": "Black",
+		"font.stroke-width": "0.75pt",
+	})
+
+	opts := fs.RichTextOptions()
+	decoration, _ := opts["decoration"].(*rich_text.DecorationOverrides)
+	if decoration == nil {
+		t.Fatal("expected decoration payload")
+	}
+	if !decoration.TextStroke.HasColor || decoration.TextStroke.Color != colors.Black {
+		t.Fatalf("stroke color = %v, want %v", decoration.TextStroke.Color, colors.Black)
+	}
+	if !decoration.TextStroke.HasWidth || decoration.TextStroke.Width != 0.75 {
+		t.Fatalf("stroke width = %v, want 0.75", decoration.TextStroke.Width)
+	}
+}
+
 func TestFontStyle_SetAttrs_InvalidDecorationMeasurementIsUnset(t *testing.T) {
 	var fs FontStyle
 	fs.SetAttrs("font.", map[string]string{"font.underline-pos": "bogus"})

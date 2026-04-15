@@ -598,6 +598,76 @@ func TestPageWriter_FillStrokeClipText(t *testing.T) {
 	}
 }
 
+func TestPageWriter_PrintRichText_VisibleFillAndStroke(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Helvetica", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err := rich_text.New("Hello", fonts, 12, options.Options{
+		"color": colors.White,
+		"decoration": &rich_text.DecorationOverrides{
+			TextStroke: rich_text.DecorationStrokeOverrides{
+				Color:    colors.DarkBlue,
+				Width:    0.75,
+				HasColor: true,
+				HasWidth: true,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(72, 720)
+	pw.PrintRichText(rt)
+	pw.flushText()
+
+	got := pw.stream.String()
+	for _, fragment := range []string{"2 Tr\n", "0 0 0.5451 RG\n", "0.75 w\n", "(Hello) Tj\n", "0 Tr\n"} {
+		if !strings.Contains(got, fragment) {
+			t.Fatalf("expected visible fill+stroke text output to contain %q, got:\n%s", fragment, got)
+		}
+	}
+}
+
+func TestPageWriter_PrintRichText_WithoutTextStrokeDoesNotEmitRenderMode(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Helvetica", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err := rich_text.New("Plain", fonts, 12, options.Options{
+		"color": colors.Black,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(72, 720)
+	pw.PrintRichText(rt)
+	pw.flushText()
+
+	got := pw.stream.String()
+	if strings.Contains(got, " Tr\n") {
+		t.Fatalf("expected normal visible text to avoid render-mode commands, got:\n%s", got)
+	}
+}
+
 func TestPageWriter_ClipRichTextSuppressesDecorationsLinksAndAccessibility(t *testing.T) {
 	dw := NewDocWriter()
 	dw.EnableTaggedPDF(true)
