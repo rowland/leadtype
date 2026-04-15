@@ -7,18 +7,14 @@
 
   <page layout="vbox">
     <label font.size="19" font.weight="Bold">Widget background brushes</label>
-    <p width="100%">
-      Gradient and image background fills are routed through shared widget background painting.
-    </p>
+    <p>Gradient and image background fills are routed through shared widget background painting.</p>
 
-    <div layout="vbox" width="100%" border="thin" padding="10pt" corners="0.25" fill="linear-gradient">
+    <vbox width="100%" border="thin" padding="10pt" corners="0.25" fill="linear-gradient">
       <label font.size="15" font.weight="Bold" font.color="White">Container gradient background</label>
-      <p font.color="WhiteSmoke">
-        A plain div uses the same shared widget background brush path as labels and paragraphs.
-      </p>
-    </div>
+      <p font.color="WhiteSmoke">A plain div uses the same shared widget background brush path as labels and paragraphs.</p>
+    </vbox>
 
-    <table cols="2" width="100%" order="rows">
+    <table cols="2" order="rows">
       <label padding="10pt" border="thin" fill="radial-gradient">
         Label with radial brush background
       </label>
@@ -29,12 +25,12 @@
       </p>
     </table>
 
-    <div layout="vbox" width="100%" border="thin" padding="10pt" corners="0.25" font="contrast" fill="metal"
+    <vbox border="thin" padding="10pt" corners="0.25" font="contrast" fill="metal"
       fill.fit="tile"
       fill.repeat="repeat-x"
       fill.anchor="top-left">
       <label font.weight="Bold">Tiled image background</label>
       <p>This panel uses tile sizing plus horizontal repeat to exercise the clip-oriented image background path.</p>
-    </div>
+    </vbox>
   </page>
 </ltml>
