@@ -105,6 +105,11 @@ func (w *layoutProbeWriter) PrintSVGFile(filename string, x, y float64, width, h
 func (w *layoutProbeWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return 0, 0, nil
 }
+func (w *layoutProbeWriter) PaintImageFile(filename string, x, y, width, height float64) error {
+	return nil
+}
+func (w *layoutProbeWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                { return nil }
+func (w *layoutProbeWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                { return nil }
 func (w *layoutProbeWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
 func (w *layoutProbeWriter) PrintRichText(text *rich_text.RichText)                          {}
 func (w *layoutProbeWriter) Rectangle(x, y, width, height float64, border bool, fill bool)   {}
@@ -119,6 +124,9 @@ func (w *layoutProbeWriter) Rotate(angle, x, y float64, fn func()) error {
 func (w *layoutProbeWriter) SetFillColor(value any) (prev colors.Color) {
 	return w.base.FontColor()
 }
+func (w *layoutProbeWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error { return nil }
+func (w *layoutProbeWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error { return nil }
+func (w *layoutProbeWriter) ClearFillGradient()                                 {}
 func (w *layoutProbeWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	return w.base.SetFont(name, size, opts)
 }

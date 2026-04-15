@@ -41,6 +41,12 @@ type Writer interface {
 	PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
 	PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
 	PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error)
+	// PaintImageFile is the clip-oriented image-as-fill operation used by LTML
+	// background/text fill code. Unlike generic image placement, callers are
+	// expected to establish any clipping region before invoking it.
+	PaintImageFile(filename string, x, y, width, height float64) error
+	PaintLinearGradient(lg *pdf.LinearGradient) error
+	PaintRadialGradient(rg *pdf.RadialGradient) error
 	PrintParagraph(para []*rich_text.RichText, options options.Options)
 	PrintRichText(text *rich_text.RichText)
 	Path(fn func()) error
@@ -52,6 +58,9 @@ type Writer interface {
 	AddFont(family string, options options.Options) ([]*font.Font, error)
 	SetFont(name string, size float64, options options.Options) ([]*font.Font, error)
 	SetFillColor(value any) (prev colors.Color)
+	SetFillLinearGradient(lg *pdf.LinearGradient) error
+	SetFillRadialGradient(rg *pdf.RadialGradient) error
+	ClearFillGradient()
 	SetLineColor(value colors.Color) (prev colors.Color)
 	SetLineDashPattern(pattern string) (prev string)
 	SetLineSpacing(lineSpacing float64) (prev float64)

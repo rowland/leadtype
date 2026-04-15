@@ -73,6 +73,11 @@ func (w *imageTestWriter) PrintImageFile(filename string, x, y float64, width, h
 	return 0, 0, nil
 }
 
+func (w *imageTestWriter) PaintImageFile(filename string, x, y, width, height float64) error {
+	_, _, err := w.PrintImageFile(filename, x, y, &width, &height)
+	return err
+}
+
 func TestStdImage_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
 	img := &StdImage{src: "fixture.jpg", doc: newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data")))}
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}

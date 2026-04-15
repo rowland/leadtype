@@ -6,6 +6,8 @@ package pdf
 import (
 	"bytes"
 	"fmt"
+	"image"
+	"image/color"
 	"image/jpeg"
 	"math"
 	"strings"
@@ -1974,6 +1976,41 @@ func TestPageWriter_ClipRestoresLastStateForFontColor(t *testing.T) {
 	pw.SetFontColor(colors.Black)
 	pw.checkSetFontColor()
 	expectI(t, 2, strings.Count(pw.stream.String(), "0 0 0 rg\n"))
+}
+
+func TestPageWriter_ClipRestoresLastStateAfterPrintImage(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	pw.SetFillColor(colors.HoneyDew)
+	pw.checkSetFillColor()
+	check(t, pw.SetFillLinearGradient(testLinearGradient()) == nil, "outer fill gradient should be set")
+	outerGradient := pw.fillGradient
+
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	img.Set(0, 0, color.RGBA{R: 0x33, G: 0x66, B: 0x99, A: 0xff})
+	img.Set(1, 0, color.RGBA{R: 0xaa, G: 0xbb, B: 0xcc, A: 0xff})
+	img.Set(0, 1, color.RGBA{R: 0xcc, G: 0x55, B: 0x33, A: 0xff})
+	img.Set(1, 1, color.RGBA{R: 0x22, G: 0x44, B: 0x66, A: 0xff})
+
+	err := pw.Path(func() {
+		pw.MoveTo(0, 0)
+		pw.LineTo(10, 0)
+		pw.LineTo(10, 10)
+		pw.LineTo(0, 10)
+		pw.LineTo(0, 0)
+		check(t, pw.Clip(func() {
+			_, _, err := pw.PrintImage(mustEncodePNG(t, img), 1, 1, floatPtr(2), nil)
+			check(t, err == nil, "PrintImage should succeed inside Clip")
+		}) == nil, "Clip should succeed")
+	})
+	check(t, err == nil, "Path should succeed")
+	check(t, pw.last.fillColor == colors.HoneyDew, "clip should restore cached outer fill color after image paint")
+	expectS(t, outerGradient, pw.fillGradient)
+
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "q\nW\nn\n"), "clip should save graphics state, clip, and clear the path")
+	check(t, strings.Contains(s, " Do\nQ\n"), "clip should draw the image XObject and restore graphics state")
 }
 
 func TestPageWriter_PaintSweepBandConstantColorSegment(t *testing.T) {
