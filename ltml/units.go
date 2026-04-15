@@ -46,4 +46,24 @@ func ParseMeasurement(measurement string, units Units) float64 {
 	return 0
 }
 
+// ParseOptionalMeasurement parses units out of a measurement, if present, and multiplies by unit conversion.
+// If the measurement is empty, returns nil.
+func ParseOptionalMeasurement(measurement string, units Units) *float64 {
+	if measurement == "" {
+		return nil
+	}
+	if matches := reMeasurement.FindStringSubmatch(measurement); len(matches) >= 4 {
+		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
+			value := FromUnits(v, Units(matches[3]))
+			return &value
+		}
+		return nil
+	}
+	if v, err := strconv.ParseFloat(measurement, 64); err == nil {
+		value := FromUnits(v, units)
+		return &value
+	}
+	return nil
+}
+
 var _ HasAttrs = (*Units)(nil)

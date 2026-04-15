@@ -169,11 +169,9 @@ var defaultFont = &FontStyle{
 	size:    defaultFontSize,
 }
 
-// SetAttrs applies XML attributes to the FontStyle.  The prefix is prepended to
-// every attribute key before lookup (e.g. "font." when attrs are inline on
-// another element, "" when the element is a <font> element itself).
+// SetAttrs applies XML attributes to the FontStyle.
 //
-// Supported attributes (shown without prefix):
+// Supported attributes:
 //
 //	name     – comma-separated list of font-family names, defining the fallback
 //	           chain.  A single name is backward-compatible with the old API.
@@ -186,14 +184,14 @@ var defaultFont = &FontStyle{
 //	           same point size.  Example: "1.0 | 0.9"
 //	size     – shared point size for all fonts in the chain.
 //	color, weight, style, strikeout, underline, line-height – as before.
-func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
+func (fs *FontStyle) SetAttrs(attrs map[string]string) {
 	fs.decorationCached = false
 	fs.decorationPayload = nil
-	if id, ok := attrs[prefix+"id"]; ok {
+	if id, ok := attrs["id"]; ok {
 		fs.id = id
 	}
 	// Process "name" first so that "ranges" and "sizes" have entries to target.
-	if name, ok := attrs[prefix+"name"]; ok {
+	if name, ok := attrs["name"]; ok {
 		names := splitCommaTrimmed(name)
 		newEntries := make([]fontEntry, len(names))
 		for i, n := range names {
@@ -204,7 +202,7 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 		}
 		fs.entries = newEntries
 	}
-	if rangesAttr, ok := attrs[prefix+"ranges"]; ok {
+	if rangesAttr, ok := attrs["ranges"]; ok {
 		groups := splitPipe(rangesAttr)
 		for i, group := range groups {
 			if i >= len(fs.entries) {
@@ -217,7 +215,7 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 			}
 		}
 	}
-	if sizesAttr, ok := attrs[prefix+"sizes"]; ok {
+	if sizesAttr, ok := attrs["sizes"]; ok {
 		groups := splitPipe(sizesAttr)
 		for i, group := range groups {
 			if i >= len(fs.entries) {
@@ -228,47 +226,53 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 			}
 		}
 	}
-	if size, ok := attrs[prefix+"size"]; ok {
+	if size, ok := attrs["size"]; ok {
 		var err error
 		if fs.size, err = strconv.ParseFloat(size, 64); err != nil {
 			fs.size = defaultFontSize
 		}
 	}
-	if color, ok := attrs[prefix+"color"]; ok {
+	if color, ok := attrs["color"]; ok {
 		fs.color = NamedColor(color)
 	}
-	if strokeColor, ok := attrs[prefix+"stroke-color"]; ok {
-		fs.strokeColor = NamedColor(strokeColor)
+
+	var units Units = "pt"
+	units.SetAttrs(attrs)
+
+	if strokeColor, ok := attrs["stroke-color"]; ok {
+		fs.strokeColor = NamedColor(strings.TrimSpace(strokeColor))
 	}
-	if strokeWidth, ok := attrs[prefix+"stroke-width"]; ok {
-		fs.strokeWidth = parseOptionalMeasurement(strings.TrimSpace(strokeWidth), "pt")
+	if strokeWidth, ok := attrs["stroke-width"]; ok {
+		fs.strokeWidth = ParseOptionalMeasurement(strings.TrimSpace(strokeWidth), units)
 	}
-	if strikeout, ok := attrs[prefix+"strikeout"]; ok {
+	if strikeout, ok := attrs["strikeout"]; ok {
 		fs.strikeout = (strikeout == "true")
 	}
-	if style, ok := attrs[prefix+"style"]; ok {
+	if style, ok := attrs["style"]; ok {
 		fs.style = style
 	}
-	if underline, ok := attrs[prefix+"underline"]; ok {
+	if underline, ok := attrs["underline"]; ok {
 		fs.underline = (underline == "true")
 	}
-	if weight, ok := attrs[prefix+"weight"]; ok {
+	if weight, ok := attrs["weight"]; ok {
 		fs.weight = weight
 	}
-	if lineHeight, ok := attrs[prefix+"line-height"]; ok {
-		fs.lineHeight, _ = strconv.ParseFloat(lineHeight, 64)
+	if lineHeight, ok := attrs["line-height"]; ok {
+		if h, err := strconv.ParseFloat(lineHeight, 64); err == nil {
+			fs.lineHeight = h
+		}
 	}
-	if underlinePenID, ok := attrs[prefix+"underline-pen"]; ok {
+	if underlinePenID, ok := attrs["underline-pen"]; ok {
 		fs.underlinePenID = strings.TrimSpace(underlinePenID)
 	}
-	if strikeoutPenID, ok := attrs[prefix+"strikeout-pen"]; ok {
+	if strikeoutPenID, ok := attrs["strikeout-pen"]; ok {
 		fs.strikeoutPenID = strings.TrimSpace(strikeoutPenID)
 	}
-	if underlinePos, ok := attrs[prefix+"underline-pos"]; ok {
-		fs.underlinePos = parseOptionalMeasurement(strings.TrimSpace(underlinePos), "pt")
+	if underlinePos, ok := attrs["underline-pos"]; ok {
+		fs.underlinePos = ParseOptionalMeasurement(strings.TrimSpace(underlinePos), units)
 	}
-	if strikeoutPos, ok := attrs[prefix+"strikeout-pos"]; ok {
-		fs.strikeoutPos = parseOptionalMeasurement(strings.TrimSpace(strikeoutPos), "pt")
+	if strikeoutPos, ok := attrs["strikeout-pos"]; ok {
+		fs.strikeoutPos = ParseOptionalMeasurement(strings.TrimSpace(strikeoutPos), units)
 	}
 }
 
@@ -399,24 +403,6 @@ func (fs *FontStyle) resolveDecorationPen(id string) *PenStyle {
 	return nil
 }
 
-func parseOptionalMeasurement(measurement string, units Units) *float64 {
-	if measurement == "" {
-		return nil
-	}
-	if matches := reMeasurement.FindStringSubmatch(measurement); len(matches) >= 4 {
-		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
-			value := FromUnits(v, Units(matches[3]))
-			return &value
-		}
-		return nil
-	}
-	if v, err := strconv.ParseFloat(measurement, 64); err == nil {
-		value := FromUnits(v, units)
-		return &value
-	}
-	return nil
-}
-
 func formatOptionalFloat(value *float64) string {
 	if value == nil {
 		return ""
@@ -432,7 +418,7 @@ func FontStyleFor(id string, scope HasScope) *FontStyle {
 	return nil
 }
 
-var _ HasAttrsPrefix = (*FontStyle)(nil)
+var _ HasAttrs = (*FontStyle)(nil)
 var _ Styler = (*FontStyle)(nil)
 var _ WantsScope = (*FontStyle)(nil)
 

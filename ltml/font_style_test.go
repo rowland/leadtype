@@ -35,40 +35,50 @@ func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font,
 	}
 	return m.Fonts(), nil
 }
+
 func (m *mockWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }
+
 func (m *mockWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
 	return nil
 }
+
 func (m *mockWriter) Clip(fn func()) error {
 	if fn != nil {
 		fn()
 	}
 	return nil
 }
+
 func (m *mockWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	if fn != nil {
 		fn()
 	}
 	return nil
 }
+
 func (m *mockWriter) ClipText(text string, fn func()) error {
 	if fn != nil {
 		fn()
 	}
 	return nil
 }
+
 func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+
 func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
+
 func (m *mockWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
+
 func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
+
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontCalls = append(m.setFontCalls, name)
 	m.setFontName = name
@@ -80,26 +90,34 @@ func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([
 	}
 	return m.Fonts(), nil
 }
+
 func (m *mockWriter) FontColor() colors.Color { return 0 }
+
 func (m *mockWriter) Fonts() []*font.Font {
 	if len(m.fonts) == 0 && m.t != nil {
 		m.fonts = defaultTestFonts(m.t)
 	}
 	return m.fonts
 }
+
 func (m *mockWriter) FontSize() float64 { return m.setFontSize }
+
 func (m *mockWriter) ImageDimensions(data []byte) (int, int, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) SVGDimensions(data []byte) (int, int, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) SVGDimensionsFromFile(filename string) (int, int, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) ImageDimensionsFromFile(filename string) (int, int, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) LineSpacing() float64                { return 1.0 }
 func (m *mockWriter) SetLineCapStyle(style string) string { return "" }
 func (m *mockWriter) Line(x, y, angle, length float64)    {}
@@ -108,39 +126,49 @@ func (m *mockWriter) Loc() (float64, float64)             { return 0, 0 }
 func (m *mockWriter) MoveTo(x, y float64)                 {}
 func (m *mockWriter) NewPage()                            {}
 func (m *mockWriter) Print(text string) error             { return nil }
+
 func (m *mockWriter) PrintImage(data []byte, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
 	return 0, 0, nil
 }
+
 func (m *mockWriter) PaintImageFile(filename string, x, y, width, height float64) error { return nil }
 func (m *mockWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                  { return nil }
 func (m *mockWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                  { return nil }
 func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options)   {}
 func (m *mockWriter) PrintRichText(text *rich_text.RichText)                            {}
+
 func (m *mockWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }
+
 func (m *mockWriter) Path(fn func()) error {
 	fn()
 	return nil
 }
+
 func (m *mockWriter) Rotate(angle, x, y float64, fn func()) error {
 	if fn != nil {
 		fn()
 	}
 	return nil
 }
+
 func (m *mockWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
+
 func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)                          {}
 func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
 func (m *mockWriter) SetFillColor(v any) colors.Color                                  { return 0 }
@@ -153,20 +181,24 @@ func (m *mockWriter) SetLineSpacing(ls float64) float64                         
 func (m *mockWriter) SetLineWidth(w float64)                                           {}
 func (m *mockWriter) SetStrikeout(s bool) bool                                         { return false }
 func (m *mockWriter) SetUnderline(u bool) bool                                         { return false }
+
 func (m *mockWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
+
 func (m *mockWriter) Stroke() error              { return nil }
 func (m *mockWriter) Strikeout() bool            { return false }
 func (m *mockWriter) Underline() bool            { return false }
 func (m *mockWriter) EnableTaggedPDF(value bool) {}
 func (m *mockWriter) TaggedPDFEnabled() bool     { return false }
+
 func (m *mockWriter) WithAccessibilityArtifact(fn func()) error {
 	if fn != nil {
 		fn()
 	}
 	return nil
 }
+
 func (m *mockWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
 	if fn != nil {
 		fn()
@@ -176,7 +208,7 @@ func (m *mockWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOpti
 
 func TestFontStyle_SetAttrs_SingleName(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("", map[string]string{"name": "Helvetica", "size": "12"})
+	fs.SetAttrs(map[string]string{"name": "Helvetica", "size": "12"})
 	if len(fs.entries) != 1 {
 		t.Fatalf("expected 1 entry, got %d", len(fs.entries))
 	}
@@ -190,7 +222,7 @@ func TestFontStyle_SetAttrs_SingleName(t *testing.T) {
 
 func TestFontStyle_SetAttrs_MultipleNames(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("", map[string]string{"name": "Helvetica, Arial Unicode MS, Courier"})
+	fs.SetAttrs(map[string]string{"name": "Helvetica, Arial Unicode MS, Courier"})
 	if len(fs.entries) != 3 {
 		t.Fatalf("expected 3 entries, got %d", len(fs.entries))
 	}
@@ -207,7 +239,7 @@ func TestFontStyle_SetAttrs_MultipleNames(t *testing.T) {
 
 func TestFontStyle_SetAttrs_Ranges(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("", map[string]string{
+	fs.SetAttrs(map[string]string{
 		"name":   "Helvetica, NotoSansCJK",
 		"ranges": " | CJK Unified Ideographs",
 	})
@@ -224,7 +256,7 @@ func TestFontStyle_SetAttrs_Ranges(t *testing.T) {
 
 func TestFontStyle_SetAttrs_Sizes(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("", map[string]string{
+	fs.SetAttrs(map[string]string{
 		"name":  "Helvetica, NotoSansCJK",
 		"sizes": "1.0 | 0.9",
 	})
@@ -241,10 +273,10 @@ func TestFontStyle_SetAttrs_Sizes(t *testing.T) {
 
 func TestFontStyle_SetAttrs_Prefix(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("font.", map[string]string{
-		"font.name":  "Helvetica, Arial",
-		"font.size":  "14",
-		"font.sizes": "1.0 | 0.85",
+	fs.SetAttrs(map[string]string{
+		"name":  "Helvetica, Arial",
+		"size":  "14",
+		"sizes": "1.0 | 0.85",
 	})
 	if len(fs.entries) != 2 {
 		t.Fatalf("expected 2 entries, got %d", len(fs.entries))
@@ -259,7 +291,7 @@ func TestFontStyle_SetAttrs_Prefix(t *testing.T) {
 
 func TestFontStyle_Clone_DeepCopiesEntries(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("", map[string]string{
+	fs.SetAttrs(map[string]string{
 		"name":   "Helvetica, NotoSansCJK",
 		"ranges": " | CJK Unified Ideographs",
 	})
@@ -273,7 +305,7 @@ func TestFontStyle_Clone_DeepCopiesEntries(t *testing.T) {
 
 func TestFontStyle_String_MultipleEntries(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("", map[string]string{"name": "Helvetica, Arial"})
+	fs.SetAttrs(map[string]string{"name": "Helvetica, Arial"})
 	s := fs.String()
 	if s == "" {
 		t.Error("String() returned empty")
@@ -293,11 +325,11 @@ func TestFontStyle_SetAttrs_DecorationOverrides(t *testing.T) {
 
 	var fs FontStyle
 	fs.SetScope(scope)
-	fs.SetAttrs("font.", map[string]string{
-		"font.underline-pen": "accent",
-		"font.strikeout-pos": "0.25in",
-		"font.underline-pos": "1cm",
-		"font.strikeout-pen": "missing",
+	fs.SetAttrs(map[string]string{
+		"underline-pen": "accent",
+		"strikeout-pos": "0.25in",
+		"underline-pos": "1cm",
+		"strikeout-pen": "missing",
 	})
 
 	if fs.underlinePenID != "accent" {
@@ -348,10 +380,10 @@ func TestFontStyle_SetAttrs_DecorationOverrides(t *testing.T) {
 
 func TestFontStyle_RichTextOptions_IncludesTextStroke(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("font.", map[string]string{
-		"font.color":        "White",
-		"font.stroke-color": "Black",
-		"font.stroke-width": "0.75pt",
+	fs.SetAttrs(map[string]string{
+		"color":        "White",
+		"stroke-color": "Black",
+		"stroke-width": "0.75pt",
 	})
 
 	opts := fs.RichTextOptions()
@@ -369,7 +401,7 @@ func TestFontStyle_RichTextOptions_IncludesTextStroke(t *testing.T) {
 
 func TestFontStyle_SetAttrs_InvalidDecorationMeasurementIsUnset(t *testing.T) {
 	var fs FontStyle
-	fs.SetAttrs("font.", map[string]string{"font.underline-pos": "bogus"})
+	fs.SetAttrs(map[string]string{"underline-pos": "bogus"})
 	if fs.underlinePos != nil {
 		t.Fatalf("expected invalid underline-pos to remain unset")
 	}

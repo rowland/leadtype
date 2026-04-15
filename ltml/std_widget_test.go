@@ -117,7 +117,7 @@ func TestStdWidget_SetAttrs_FontDecorationOverridesCloneAndApplyFontOverrides(t 
 	widget.font.SetScope(scope)
 
 	widget.SetAttrs(map[string]string{
-		"units":              "cm",
+		"font.units":         "cm",
 		"font.underline-pen": "accent",
 		"font.underline-pos": "1",
 	})
@@ -139,10 +139,10 @@ func TestStdWidget_SetAttrs_FontDecorationOverridesPreserveInheritedDecorationOv
 
 	base := defaultFont.Clone()
 	base.SetScope(scope)
-	base.SetAttrs("font.", map[string]string{
-		"font.underline-pos": "4pt",
-		"font.strikeout-pos": "7pt",
-		"font.strikeout-pen": "dashed",
+	base.SetAttrs(map[string]string{
+		"underline-pos": "4pt",
+		"strikeout-pos": "7pt",
+		"strikeout-pen": "dashed",
 	})
 
 	widget := &StdWidget{}
