@@ -620,6 +620,8 @@ styles) before the content that uses them.
 | `strikeout-pen` | Reference to a named `<pen>` style used for strikeout stroke settings. |
 | `underline-pos` | Underline position as an LTML measurement. |
 | `strikeout-pos` | Strikeout position as an LTML measurement. |
+| `stroke-color` | Optional text stroke color for filled-and-stroked visible text. |
+| `stroke-width` | Optional text stroke width as an LTML measurement (commonly in `pt`). |
 | `line-height` | Line spacing multiplier. |
 
 **Default font:** Helvetica 12pt.

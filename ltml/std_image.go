@@ -11,7 +11,6 @@ import (
 type StdImage struct {
 	StdWidget
 	src string
-	doc *Doc
 }
 
 func (img *StdImage) DrawContent(w Writer) error {
@@ -65,10 +64,6 @@ func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
 		return 0, 0, nil
 	}
 	return w.ImageDimensionsFromFile(ref.identifier)
-}
-
-func (img *StdImage) SetDoc(doc *Doc) {
-	img.doc = doc
 }
 
 func (img *StdImage) SetAttrs(attrs map[string]string) {

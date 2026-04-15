@@ -35,6 +35,9 @@ type FontStyle struct {
 	weight     string
 	lineHeight float64
 
+	strokeColor colors.Color
+	strokeWidth *float64
+
 	underlinePenID string
 	strikeoutPenID string
 	underlinePos   *float64
@@ -234,6 +237,12 @@ func (fs *FontStyle) SetAttrs(prefix string, attrs map[string]string) {
 	if color, ok := attrs[prefix+"color"]; ok {
 		fs.color = NamedColor(color)
 	}
+	if strokeColor, ok := attrs[prefix+"stroke-color"]; ok {
+		fs.strokeColor = NamedColor(strokeColor)
+	}
+	if strokeWidth, ok := attrs[prefix+"stroke-width"]; ok {
+		fs.strokeWidth = parseOptionalMeasurement(strings.TrimSpace(strokeWidth), "pt")
+	}
 	if strikeout, ok := attrs[prefix+"strikeout"]; ok {
 		fs.strikeout = (strikeout == "true")
 	}
@@ -328,6 +337,10 @@ func (fs *FontStyle) decorationOverrides() *rich_text.DecorationOverrides {
 		payload.Strikeout = line
 		hasAny = true
 	}
+	if stroke, ok := fs.decorationStrokeOverrides(); ok {
+		payload.TextStroke = stroke
+		hasAny = true
+	}
 	if hasAny {
 		fs.decorationPayload = &payload
 	}
@@ -356,6 +369,19 @@ func (fs *FontStyle) decorationLineOverrides(penID string, pos *float64) (rich_t
 		hasAny = true
 	}
 	return line, hasAny
+}
+
+func (fs *FontStyle) decorationStrokeOverrides() (rich_text.DecorationStrokeOverrides, bool) {
+	var stroke rich_text.DecorationStrokeOverrides
+	hasAny := false
+	if fs.strokeWidth != nil && *fs.strokeWidth > 0 {
+		stroke.Width = *fs.strokeWidth
+		stroke.HasWidth = true
+		stroke.Color = fs.strokeColor
+		stroke.HasColor = true
+		hasAny = true
+	}
+	return stroke, hasAny
 }
 
 func (fs *FontStyle) resolveDecorationPen(id string) *PenStyle {

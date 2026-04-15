@@ -562,6 +562,7 @@ type textEmissionOptions struct {
 
 var visibleTextEmission = textEmissionOptions{
 	applyFillColor:    true,
+	applyStrokeState:  true,
 	emitDecorations:   true,
 	emitLinks:         true,
 	emitAccessibility: true,
@@ -1177,6 +1178,22 @@ func pieceStrikeoutStyle(p *rich_text.RichText) (position, thickness float64, li
 	return
 }
 
+func pieceTextStrokeStyle(p *rich_text.RichText) (lineColor colors.Color, lineWidth float64, hasStroke bool) {
+	if p == nil || p.Decoration == nil {
+		return 0, 0, false
+	}
+	stroke := p.Decoration.TextStroke
+	if !stroke.HasWidth || stroke.Width <= 0 {
+		return 0, 0, false
+	}
+	lineWidth = stroke.Width
+	lineColor = colors.Black
+	if stroke.HasColor {
+		lineColor = stroke.Color
+	}
+	return lineColor, lineWidth, true
+}
+
 func (pw *PageWriter) endGraph() {
 	if pw.inPath {
 		pw.endPath()
@@ -1218,6 +1235,8 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 	savedFontColor := pw.fontColor
 	savedFontKey := pw.fontKey
 	savedFontSize := pw.fontSize
+	savedLineColor := pw.lineColor
+	savedLineWidth := pw.lineWidth
 	savedCharSpacing := pw.charSpacing
 	savedWordSpacing := pw.wordSpacing
 	savedVTextAlign := pw.vTextAlign
@@ -1226,6 +1245,8 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 		pw.fontColor = savedFontColor
 		pw.fontKey = savedFontKey
 		pw.fontSize = savedFontSize
+		pw.lineColor = savedLineColor
+		pw.lineWidth = savedLineWidth
 		pw.charSpacing = savedCharSpacing
 		pw.wordSpacing = savedWordSpacing
 		pw.vTextAlign = savedVTextAlign
@@ -1238,6 +1259,7 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 	if emit.renderMode != 0 {
 		pw.tw.setRenderingMode(emit.renderMode)
 	}
+	currentRenderMode := emit.renderMode
 	loc1 := pw.loc
 	textLoc := loc1
 	usedPositionedText := false
@@ -1255,6 +1277,21 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 			closeMarkedContent = pw.beginTaggedContent(tag, elem)
 		}
 		closeActualText := false
+		renderMode := emit.renderMode
+		lineColor, lineWidth, hasTextStroke := pieceTextStrokeStyle(p)
+		if emit.applyStrokeState && hasTextStroke {
+			renderMode = 2
+		}
+		if emit.applyStrokeState && hasTextStroke {
+			pw.SetLineColor(lineColor)
+			pw.checkSetLineColor()
+			pw.setLineWidth(lineWidth)
+			pw.checkSetLineWidth()
+		}
+		if renderMode != currentRenderMode {
+			pw.tw.setRenderingMode(renderMode)
+			currentRenderMode = renderMode
+		}
 		if p.Font.SubType() == "TrueType" {
 			fk := pw.dw.fontKeyUnicode(p.Font)
 			psName := p.Font.PostScriptName()
@@ -1512,6 +1549,9 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 		}
 		loc1 = loc2
 	})
+	if currentRenderMode != 0 {
+		pw.tw.setRenderingMode(0)
+	}
 	pw.last.loc = pw.loc
 	pw.lineHeight = max(pw.lineHeight, line.Leading()*pw.lineSpacing)
 	pw.loc.X += line.Width()
