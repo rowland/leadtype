@@ -152,12 +152,13 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	}
 	if MapHasKeyPrefix(attrs, "layout.") {
 		c.layout = c.LayoutStyle().Clone()
-		c.layout.SetAttrsPrefix("layout.", attrs)
+		c.layout.SetAttrs(addUnits(filterMapAttrs("layout.", attrs), c.Units()))
 	}
 	if order, ok := attrs["order"]; ok {
-		if order == "rows" {
+		switch order {
+		case "rows":
 			c.order = TableOrderRows
-		} else if order == "cols" {
+		case "cols":
 			c.order = TableOrderCols
 		}
 	}
@@ -225,7 +226,7 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	}
 	if MapHasKeyPrefix(attrs, "paragraph-style.") {
 		c.paragraphStyle = c.ParagraphStyle().Clone()
-		c.paragraphStyle.SetAttrs("paragraph-style.", attrs)
+		c.paragraphStyle.SetAttrs(filterMapAttrs("paragraph-style.", attrs))
 	}
 }
 

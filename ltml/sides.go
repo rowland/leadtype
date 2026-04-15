@@ -51,9 +51,9 @@ func (sides *Sides) SetAll(value string, units Units) {
 
 var sideNames = [4]string{"top", "right", "bottom", "left"}
 
-func (sides *Sides) SetAttrs(prefix string, attrs map[string]string, units Units) {
+func (sides *Sides) SetAttrs(attrs map[string]string, units Units) {
 	for i, name := range sideNames {
-		if value, ok := attrs[prefix+name]; ok {
+		if value, ok := attrs[name]; ok {
 			sides[i].Set(ParseMeasurement(value, units))
 		}
 	}

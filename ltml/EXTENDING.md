@@ -214,16 +214,13 @@ type Styler interface {
 ```
 
 They are stored in the scope and looked up by `id`. To participate in attribute
-parsing, implement `HasAttrsPrefix`:
+parsing, implement `HasAttrs`:
 
 ```go
-type HasAttrsPrefix interface {
-    SetAttrs(prefix string, attrs map[string]string)
+type HasAttrs interface {
+    SetAttrs(attrs map[string]string)
 }
 ```
-
-The `prefix` parameter allows the same `SetAttrs` method to handle both
-definition-time attributes (prefix `""`) and inline overrides (prefix `"mystyle."`).
 
 ### Example: a custom gradient style
 
@@ -240,14 +237,14 @@ func (gs *GradientStyle) Apply(w ltml.Writer) {
     // apply gradient via writer methods
 }
 
-func (gs *GradientStyle) SetAttrs(prefix string, attrs map[string]string) {
-    if id, ok := attrs[prefix+"id"]; ok {
+func (gs *GradientStyle) SetAttrs(attrs map[string]string) {
+    if id, ok := attrs["id"]; ok {
         gs.id = id
     }
-    if c, ok := attrs[prefix+"start"]; ok {
+    if c, ok := attrs["start"]; ok {
         gs.startColor = ltml.NamedColor(c)
     }
-    if c, ok := attrs[prefix+"end"]; ok {
+    if c, ok := attrs["end"]; ok {
         gs.endColor = ltml.NamedColor(c)
     }
 }

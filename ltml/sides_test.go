@@ -53,10 +53,9 @@ func TestSides_SetAttrs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			var sides Sides
-			sides.SetAttrs(tc.prefix, tc.attrs, "")
+			sides.SetAttrs(filterMapAttrs(tc.prefix, tc.attrs), "")
 			assertSides(t, sides, tc.expected)
 		})
 	}

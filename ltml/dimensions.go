@@ -62,17 +62,21 @@ func (d *Dimensions) PaddingLeft() float64 {
 }
 
 func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
-	d.sides.SetAttrs("", attrs, units)
+	d.sides.SetAttrs(attrs, units)
 
 	if margin, ok := attrs["margin"]; ok {
 		d.margin.SetAll(margin, units)
 	}
-	d.margin.SetAttrs("margin-", attrs, units)
+	if MapHasKeyPrefix(attrs, "margin-") {
+		d.margin.SetAttrs(filterMapAttrs("margin-", attrs), units)
+	}
 
 	if padding, ok := attrs["padding"]; ok {
 		d.padding.SetAll(padding, units)
 	}
-	d.padding.SetAttrs("padding-", attrs, units)
+	if MapHasKeyPrefix(attrs, "padding-") {
+		d.padding.SetAttrs(filterMapAttrs("padding-", attrs), units)
+	}
 
 	if corners, ok := attrs["corners"]; ok {
 		d.corners.SetAll(corners, units)

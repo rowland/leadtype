@@ -27,9 +27,9 @@ func (ps *ParagraphStyle) Clone() *ParagraphStyle {
 	return &clone
 }
 
-func (ps *ParagraphStyle) SetAttrs(prefix string, attrs map[string]string) {
-	ps.TextStyle.SetAttrs(prefix, attrs)
-	if bullet, ok := attrs[prefix+"bullet"]; ok {
+func (ps *ParagraphStyle) SetAttrs(attrs map[string]string) {
+	ps.TextStyle.SetAttrs(attrs)
+	if bullet, ok := attrs["bullet"]; ok {
 		ps.bullet = BulletStyleFor(bullet, ps.scope)
 	}
 }
@@ -55,7 +55,7 @@ func ParagraphStyleFor(id string, scope HasScope) *ParagraphStyle {
 
 var defaultParagraphStyle = &ParagraphStyle{}
 
-var _ HasAttrsPrefix = (*ParagraphStyle)(nil)
+var _ HasAttrs = (*ParagraphStyle)(nil)
 var _ Styler = (*ParagraphStyle)(nil)
 var _ WantsScope = (*ParagraphStyle)(nil)
 
