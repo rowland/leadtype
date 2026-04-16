@@ -15,6 +15,7 @@ type paintedImageCall struct {
 	y        float64
 	width    float64
 	height   float64
+	opacity  float64
 }
 
 type backgroundFillTestWriter struct {
@@ -61,13 +62,14 @@ func (w *backgroundFillTestWriter) PaintRadialGradient(rg *pdf.RadialGradient) e
 	return nil
 }
 
-func (w *backgroundFillTestWriter) PaintImageFile(filename string, x, y, width, height float64) error {
+func (w *backgroundFillTestWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
 	w.imagePaints = append(w.imagePaints, paintedImageCall{
 		filename: filename,
 		x:        x,
 		y:        y,
 		width:    width,
 		height:   height,
+		opacity:  opacity,
 	})
 	return nil
 }
@@ -226,10 +228,11 @@ func TestStdWidgetPaintBackground_ImageRepeatTilesWithinClip(t *testing.T) {
 	widget.fill = &BrushStyle{
 		kind: BrushKindImage,
 		image: &BrushImageStyle{
-			Src:    "fixture.png",
-			Fit:    "tile",
-			Anchor: "top-left",
-			Repeat: "repeat-x",
+			Src:     "fixture.png",
+			Fit:     "tile",
+			Anchor:  "top-left",
+			Repeat:  "repeat-x",
+			Opacity: 1,
 		},
 	}
 	writer := &backgroundFillTestWriter{
@@ -252,6 +255,92 @@ func TestStdWidgetPaintBackground_ImageRepeatTilesWithinClip(t *testing.T) {
 	}
 	if writer.imagePaints[0].width != 20 || writer.imagePaints[0].height != 10 {
 		t.Fatalf("tile size = %vx%v, want 20x10", writer.imagePaints[0].width, writer.imagePaints[0].height)
+	}
+	if writer.imagePaints[0].opacity != 1 {
+		t.Fatalf("tile opacity = %v, want 1", writer.imagePaints[0].opacity)
+	}
+}
+
+func TestStdWidgetPaintBackground_ImageOpacityForwardsToPaintCalls(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	widget := &StdWidget{}
+	if err := widget.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	widget.SetDoc(doc)
+	widget.SetLeft(5)
+	widget.SetTop(7)
+	widget.SetWidth(100)
+	widget.SetHeight(40)
+	widget.fill = &BrushStyle{
+		kind: BrushKindImage,
+		image: &BrushImageStyle{
+			Src:     "fixture.png",
+			Fit:     "tile",
+			Anchor:  "top-left",
+			Repeat:  "repeat-x",
+			Opacity: 0.35,
+		},
+	}
+	writer := &backgroundFillTestWriter{
+		fileDimensions: map[string][2]int{
+			"fixture.png": {20, 10},
+		},
+	}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(writer.imagePaints); got != 5 {
+		t.Fatalf("image paint count = %d, want 5", got)
+	}
+	for _, call := range writer.imagePaints {
+		if call.opacity != 0.35 {
+			t.Fatalf("tile opacity = %v, want 0.35", call.opacity)
+		}
+	}
+}
+
+func TestStdWidgetPaintBackground_ImageOpacityZeroSkipsPainting(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	widget := &StdWidget{}
+	if err := widget.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	widget.SetDoc(doc)
+	widget.SetLeft(5)
+	widget.SetTop(7)
+	widget.SetWidth(100)
+	widget.SetHeight(40)
+	widget.fill = &BrushStyle{
+		kind: BrushKindImage,
+		image: &BrushImageStyle{
+			Src:     "fixture.png",
+			Opacity: 0,
+		},
+	}
+	writer := &backgroundFillTestWriter{
+		fileDimensions: map[string][2]int{
+			"fixture.png": {20, 10},
+		},
+	}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(writer.imagePaints); got != 0 {
+		t.Fatalf("image paint count = %d, want 0", got)
+	}
+	if writer.pathCount != 0 || writer.clipCount != 0 {
+		t.Fatalf("path/clip counts = %d/%d, want 0/0", writer.pathCount, writer.clipCount)
 	}
 }
 

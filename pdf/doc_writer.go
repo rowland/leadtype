@@ -792,8 +792,16 @@ func (dw *DocWriter) PrintImage(data []byte, x, y float64, width, height *float6
 	return dw.CurPage().PrintImage(data, x, y, width, height)
 }
 
+func (dw *DocWriter) PaintImage(data []byte, x, y, width, height, opacity float64) error {
+	return dw.CurPage().PaintImage(data, x, y, width, height, opacity)
+}
+
 func (dw *DocWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return dw.CurPage().PrintImageFile(filename, x, y, width, height)
+}
+
+func (dw *DocWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
+	return dw.CurPage().PaintImageFile(filename, x, y, width, height, opacity)
 }
 
 func (dw *DocWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {

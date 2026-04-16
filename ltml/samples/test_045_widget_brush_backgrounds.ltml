@@ -1,6 +1,6 @@
 <ltml units="in" margin="0.55">
   <layout id="vbox" vpadding="15pt" />
-  <font id="contrast" size="18" color="White" weight="Bold" />
+  <font id="contrast" size="18" color="Black" weight="Bold" />
   <brush id="linear-gradient" kind="linear-gradient" units="in" x0="0" y0="0" x1="6.4" y1="1.1" stops="0:#1d4ed8,0.5:#0f766e,1:#f59e0b" />
   <brush id="radial-gradient" kind="radial-gradient" units="in" x0="1.45" y0="0.45" r0="0" x1="1.45" y1="0.45" r1="0.95" stops="0:#fff7ed,0.55:#fdba74,1:#c2410c" />
   <brush id="metal" kind="image" src="../../docs/assets/metal-movable-type-banner.jpg" opacity="0.5" />

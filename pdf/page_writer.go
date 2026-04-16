@@ -1947,6 +1947,87 @@ func (pw *PageWriter) FillStrokeClipText(text string, fn func()) error {
 	return pw.FillStrokeClipRichText(piece, fn)
 }
 
+func (pw *PageWriter) normalizedPaintOpacity(opacity float64) float64 {
+	switch {
+	case math.IsNaN(opacity):
+		return 1
+	case opacity <= 0:
+		return 0
+	case opacity >= 1:
+		return 1
+	default:
+		return opacity
+	}
+}
+
+func (pw *PageWriter) prepareXObjectDraw() {
+	if pw.inPath {
+		pw.endPath()
+	}
+	if pw.inText {
+		pw.endText()
+	}
+	if pw.inGraph {
+		pw.endGraph()
+	}
+}
+
+func (pw *PageWriter) withPlacedXObjectGraphicsState(opacity float64, draw func(extGStateName string)) error {
+	pw.prepareXObjectDraw()
+	extGStateName := ""
+	if opacity < 1 {
+		name, err := pw.dw.registerExtGState(opacity, 1, "", nil, "", nil)
+		if err != nil {
+			return err
+		}
+		extGStateName = name
+	}
+	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
+		if elem := pw.currentStructElem(); elem != nil && pw.beginTaggedContent(elem.s, elem) {
+			draw(extGStateName)
+			pw.mw.endMarkedContent()
+			return nil
+		}
+	}
+	draw(extGStateName)
+	return nil
+}
+
+func (pw *PageWriter) placeImageXObject(name string, xpts, ypts, wpts, hpts, opacity float64) error {
+	return pw.withPlacedXObjectGraphicsState(opacity, func(extGStateName string) {
+		writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight, extGStateName)
+	})
+}
+
+func (pw *PageWriter) placeFormXObject(name string, xpts, ypts, wpts, hpts, sourceWidth, sourceHeight, opacity float64) error {
+	return pw.withPlacedXObjectGraphicsState(opacity, func(extGStateName string) {
+		writeFormXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, sourceWidth, sourceHeight, pw.pageHeight, extGStateName)
+	})
+}
+
+func (pw *PageWriter) PaintImage(data []byte, x, y, width, height, opacity float64) error {
+	opacity = pw.normalizedPaintOpacity(opacity)
+	if opacity <= 0 || width <= 0 || height <= 0 {
+		return nil
+	}
+	if svg.LooksLikeSVG(data) {
+		return pw.paintSVG(data, x, y, width, height, opacity)
+	}
+	key := imageKey(data)
+	_, name, err := pw.dw.loadImage(data, key)
+	if err != nil {
+		return err
+	}
+	return pw.placeImageXObject(
+		name,
+		pw.units.toPts(x),
+		pw.units.toPts(y),
+		pw.units.toPts(width),
+		pw.units.toPts(height),
+		opacity,
+	)
+}
+
 func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	if svg.LooksLikeSVG(data) {
 		return pw.PrintSVG(data, x, y, width, height)
@@ -1964,26 +2045,18 @@ func (pw *PageWriter) PrintImage(data []byte, x, y float64, width, height *float
 		bitsPerComponent: image.bitsPerComponent,
 	}
 	wpts, hpts := imageSizeInPoints(info, pw.units, width, height)
-	if pw.inPath {
-		pw.endPath()
-	}
-	if pw.inText {
-		pw.endText()
-	}
-	if pw.inGraph {
-		pw.endGraph()
-	}
-	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
-		if elem := pw.currentStructElem(); elem != nil && pw.beginTaggedContent(elem.s, elem) {
-			writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
-			pw.mw.endMarkedContent()
-		} else {
-			writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
-		}
-	} else {
-		writeImageXObject(pw.mw, pw.gw, name, xpts, ypts, wpts, hpts, pw.pageHeight)
+	if err := pw.placeImageXObject(name, xpts, ypts, wpts, hpts, 1); err != nil {
+		return 0, 0, err
 	}
 	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
+}
+
+func (pw *PageWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
+	data, err := pw.dw.readImageFile(filename)
+	if err != nil {
+		return err
+	}
+	return pw.PaintImage(data, x, y, width, height, opacity)
 }
 
 func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
@@ -1992,6 +2065,25 @@ func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, heigh
 		return 0, 0, err
 	}
 	return pw.PrintImage(data, x, y, width, height)
+}
+
+func (pw *PageWriter) paintSVG(data []byte, x, y, width, height, opacity float64) error {
+	key := imageKey(data)
+	key += ";stop-opacity=" + svgGradientStopOpacityMode(pw.options)
+	form, err := pw.dw.loadSVGForm(data, key, pw.options)
+	if err != nil {
+		return err
+	}
+	return pw.placeFormXObject(
+		form.name,
+		pw.units.toPts(x),
+		pw.units.toPts(y),
+		pw.units.toPts(width),
+		pw.units.toPts(height),
+		form.width,
+		form.height,
+		opacity,
+	)
 }
 
 func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
@@ -2005,24 +2097,8 @@ func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64
 	wpts, hpts := imageSizeInPoints(info, pw.units, width, height)
 	xpts := pw.units.toPts(x)
 	ypts := pw.units.toPts(y)
-	if pw.inPath {
-		pw.endPath()
-	}
-	if pw.inText {
-		pw.endText()
-	}
-	if pw.inGraph {
-		pw.endGraph()
-	}
-	if pw.dw.taggedPDFEnabled() && pw.artifactDepth == 0 {
-		if elem := pw.currentStructElem(); elem != nil && pw.beginTaggedContent(elem.s, elem) {
-			writeFormXObject(pw.mw, pw.gw, form.name, xpts, ypts, wpts, hpts, form.width, form.height, pw.pageHeight)
-			pw.mw.endMarkedContent()
-		} else {
-			writeFormXObject(pw.mw, pw.gw, form.name, xpts, ypts, wpts, hpts, form.width, form.height, pw.pageHeight)
-		}
-	} else {
-		writeFormXObject(pw.mw, pw.gw, form.name, xpts, ypts, wpts, hpts, form.width, form.height, pw.pageHeight)
+	if err := pw.placeFormXObject(form.name, xpts, ypts, wpts, hpts, form.width, form.height, 1); err != nil {
+		return 0, 0, err
 	}
 	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
 }

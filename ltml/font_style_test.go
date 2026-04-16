@@ -143,11 +143,13 @@ func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height
 	return 0, 0, nil
 }
 
-func (m *mockWriter) PaintImageFile(filename string, x, y, width, height float64) error { return nil }
-func (m *mockWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                  { return nil }
-func (m *mockWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                  { return nil }
-func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options)   {}
-func (m *mockWriter) PrintRichText(text *rich_text.RichText)                            {}
+func (m *mockWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
+	return nil
+}
+func (m *mockWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                { return nil }
+func (m *mockWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                { return nil }
+func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
+func (m *mockWriter) PrintRichText(text *rich_text.RichText)                          {}
 
 func (m *mockWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil

@@ -105,7 +105,7 @@ func (w *layoutProbeWriter) PrintSVGFile(filename string, x, y float64, width, h
 func (w *layoutProbeWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
 	return 0, 0, nil
 }
-func (w *layoutProbeWriter) PaintImageFile(filename string, x, y, width, height float64) error {
+func (w *layoutProbeWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
 	return nil
 }
 func (w *layoutProbeWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                { return nil }

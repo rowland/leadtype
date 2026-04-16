@@ -275,15 +275,21 @@ func imageSizeInPoints(info imageInfo, units *units, width, height *float64) (fl
 	return units.toPts(*width), units.toPts(*height)
 }
 
-func writeImageXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width, height, pageHeight float64) {
+func writeImageXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width, height, pageHeight float64, extGStateName string) {
 	gw.saveGraphicsState()
+	if extGStateName != "" {
+		mw.setExtGState(extGStateName)
+	}
 	gw.concatMatrix(width, 0, 0, height, x, pageHeight-y-height)
 	mw.xObject(name)
 	gw.restoreGraphicsState()
 }
 
-func writeFormXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width, height, sourceWidth, sourceHeight, pageHeight float64) {
+func writeFormXObject(mw *miscWriter, gw *graphWriter, name string, x, y, width, height, sourceWidth, sourceHeight, pageHeight float64, extGStateName string) {
 	gw.saveGraphicsState()
+	if extGStateName != "" {
+		mw.setExtGState(extGStateName)
+	}
 	gw.concatMatrix(width/sourceWidth, 0, 0, height/sourceHeight, x, pageHeight-y-height)
 	mw.xObject(name)
 	gw.restoreGraphicsState()

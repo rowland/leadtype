@@ -399,6 +399,10 @@ func (widget *StdWidget) paintImageBrushInRect(w Writer, image *BrushImageStyle,
 	if image == nil || strings.TrimSpace(image.Src) == "" {
 		return fmt.Errorf("brush image src must be specified")
 	}
+	opacity := normalizeBrushOpacity(image)
+	if opacity <= 0 {
+		return nil
+	}
 	ref, err := widget.resolveBrushImageSource(image.Src)
 	if err != nil {
 		return err
@@ -423,7 +427,7 @@ func (widget *StdWidget) paintImageBrushInRect(w Writer, image *BrushImageStyle,
 	}
 
 	return widget.paintClippedRect(w, x, y, width, height, func() error {
-		return paintRepeatedBrushImage(w, ref.identifier, tileX, tileY, tileWidth, tileHeight, x, y, width, height, repeatMode)
+		return paintRepeatedBrushImage(w, ref.identifier, tileX, tileY, tileWidth, tileHeight, x, y, width, height, repeatMode, opacity)
 	})
 }
 
@@ -453,6 +457,20 @@ func normalizeBrushRepeat(image *BrushImageStyle) string {
 		return "no-repeat"
 	}
 	return strings.TrimSpace(strings.ToLower(image.Repeat))
+}
+
+func normalizeBrushOpacity(image *BrushImageStyle) float64 {
+	if image == nil {
+		return 1
+	}
+	switch {
+	case image.Opacity <= 0:
+		return 0
+	case image.Opacity >= 1:
+		return 1
+	default:
+		return image.Opacity
+	}
 }
 
 func resolveBrushImageSize(fit string, boxWidth, boxHeight, imageWidth, imageHeight float64) (width, height float64) {
@@ -496,7 +514,7 @@ func resolveBrushAnchor(anchor string, x, y, width, height, contentWidth, conten
 	}
 }
 
-func paintRepeatedBrushImage(w Writer, filename string, tileX, tileY, tileWidth, tileHeight, clipX, clipY, clipWidth, clipHeight float64, repeatMode string) error {
+func paintRepeatedBrushImage(w Writer, filename string, tileX, tileY, tileWidth, tileHeight, clipX, clipY, clipWidth, clipHeight float64, repeatMode string, opacity float64) error {
 	if tileWidth <= 0 || tileHeight <= 0 {
 		return nil
 	}
@@ -533,7 +551,7 @@ func paintRepeatedBrushImage(w Writer, filename string, tileX, tileY, tileWidth,
 			if !repeatX && drawX != startX {
 				break
 			}
-			if err := w.PaintImageFile(filename, drawX, drawY, tileWidth, tileHeight); err != nil {
+			if err := w.PaintImageFile(filename, drawX, drawY, tileWidth, tileHeight, opacity); err != nil {
 				return err
 			}
 		}

@@ -31,12 +31,10 @@ func (dw *DocWriter) SetLineWidth(width float64) {
 	dw.DocWriter.SetLineWidth(width, "pt")
 }
 
-// PaintImageFile is the LTML image-as-fill hook. It currently delegates to
-// PrintImageFile with explicit dimensions, but keeping a separate entry point
-// lets LTML background/text fill code express clip-oriented paint intent.
-func (dw *DocWriter) PaintImageFile(filename string, x, y, width, height float64) error {
-	_, _, err := dw.DocWriter.PrintImageFile(filename, x, y, &width, &height)
-	return err
+// PaintImageFile is the LTML image-as-fill hook. It supports brush-specific
+// options such as uniform opacity while preserving explicit LTML sizing.
+func (dw *DocWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
+	return dw.DocWriter.PaintImageFile(filename, x, y, width, height, opacity)
 }
 
 func (dw *DocWriter) SetLineCapStyle(style string) (prev string) {

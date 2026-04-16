@@ -44,7 +44,7 @@ type Writer interface {
 	// PaintImageFile is the clip-oriented image-as-fill operation used by LTML
 	// background/text fill code. Unlike generic image placement, callers are
 	// expected to establish any clipping region before invoking it.
-	PaintImageFile(filename string, x, y, width, height float64) error
+	PaintImageFile(filename string, x, y, width, height, opacity float64) error
 	PaintLinearGradient(lg *pdf.LinearGradient) error
 	PaintRadialGradient(rg *pdf.RadialGradient) error
 	PrintParagraph(para []*rich_text.RichText, options options.Options)
