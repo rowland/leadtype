@@ -678,7 +678,9 @@ auto-generated solid pen for that color:
 Image brushes default to the source asset's intrinsic size when `fit="tile"` and
 no explicit tile size is provided. That means very large source images may clip
 instead of visibly repeating. In print-oriented documents, prefer an explicit
-tile size for predictable output.
+tile size for predictable output, and use percentage tile dimensions like
+`tile-height="100%"` when you want high-resolution artwork to scale to the box
+before repeating.
 
 ```xml
 <brush id="metal" kind="image"
