@@ -57,6 +57,15 @@ func mustEncodePNG(t *testing.T, img image.Image) []byte {
 	return buf.Bytes()
 }
 
+func writeTempImageFile(t *testing.T, filename string, data []byte) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), filename)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
 func testSVGFixture() []byte {
 	return []byte(`
 <svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
@@ -355,6 +364,70 @@ func TestPageWriter_PrintImage_PNG_DefaultSize(t *testing.T) {
 	}
 	if !strings.Contains(pw.stream.String(), "/Im0 Do\n") {
 		t.Fatalf("expected image draw operator, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestDocWriter_PaintImageFile_PNGRGBA_AppliesOpacityAndPreservesSMask(t *testing.T) {
+	var buf bytes.Buffer
+
+	img := image.NewNRGBA(image.Rect(0, 0, 2, 1))
+	img.Set(0, 0, color.NRGBA{R: 0xFF, G: 0x00, B: 0x00, A: 0x80})
+	img.Set(1, 0, color.NRGBA{R: 0x00, G: 0x00, B: 0xFF, A: 0xFF})
+	filename := writeTempImageFile(t, "brush.png", mustEncodePNG(t, img))
+
+	dw := NewDocWriter()
+	dw.SetUnits("in")
+	dw.NewPage()
+	if err := dw.PaintImageFile(filename, 1, 1, 2, 1, 0.35); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdf := buf.String()
+	for _, fragment := range []string{
+		"/ExtGState",
+		"/ca 0.35",
+		"/GS0 gs",
+		"/Subtype /Image",
+		"/SMask ",
+		"/Im0 Do",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected painted PNG output to contain %q, got:\n%s", fragment, pdf)
+		}
+	}
+}
+
+func TestDocWriter_PaintImageFile_SVG_AppliesOpacity(t *testing.T) {
+	var buf bytes.Buffer
+
+	filename := writeTempImageFile(t, "brush.svg", testSVGFixture())
+
+	dw := NewDocWriter()
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afm)
+	dw.SetUnits("in")
+	dw.NewPage()
+	if err := dw.PaintImageFile(filename, 1, 1, 2, 1, 0.5); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdf := buf.String()
+	for _, fragment := range []string{
+		"/ExtGState",
+		"/ca 0.5",
+		"/GS0 gs",
+		"/Fm0 Do",
+	} {
+		if !strings.Contains(pdf, fragment) {
+			t.Fatalf("expected painted SVG output to contain %q, got:\n%s", fragment, pdf)
+		}
 	}
 }
 
