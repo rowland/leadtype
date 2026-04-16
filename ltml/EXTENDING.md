@@ -36,7 +36,6 @@ Doc                      — top-level parser; holds a stack and scope stack
 | `WantsContainer`  | An element that needs a reference to its parent `Container`. |
 | `HasParent`       | An element that needs a reference to its parent element. |
 | `HasAttrs`        | An element that accepts a `map[string]string` of attributes. |
-| `HasAttrsPrefix`  | Like `HasAttrs` but receives a string prefix (used by style objects). |
 | `HasText`         | An element that receives character data from the XML stream. |
 | `HasComment`      | An element that receives XML comment data. |
 | `Identifier`      | An element that stores `id`, `class`, and `tag` for selector matching. |
@@ -221,6 +220,11 @@ type HasAttrs interface {
     SetAttrs(attrs map[string]string)
 }
 ```
+
+Elements and style objects now receive already-normalized attribute maps. If an
+element supports inline overrides like `fill.*`, `font.*`, `layout.*`, or
+`style.*`, the caller is responsible for using `filterMapAttrs(...)` to keep
+only the matching keys and strip the prefix before calling `SetAttrs`.
 
 ### Example: a custom gradient style
 
@@ -445,7 +449,6 @@ When implementing a new element, implement only the interfaces it needs:
 | Interface        | Implement when… |
 |------------------|-----------------|
 | `HasAttrs`       | Element reads flat `map[string]string` attributes. |
-| `HasAttrsPrefix` | Element is a style object that supports prefixed attribute merging. |
 | `HasText`        | Element accepts character data (text nodes). |
 | `HasComment`     | Element accepts XML comment nodes. |
 | `WantsScope`     | Element needs to look up styles or layouts at parse time. |

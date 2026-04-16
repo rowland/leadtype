@@ -8,6 +8,16 @@
 - `StdWidget.PaintBackground(...)` draws a rectangle behind the widget when `fill` is set.
 - This means both `<label fill="...">` and `<p fill="...">` currently support **background fill rectangles**.
 
+### Phase 3 status (audited 2026-04-16)
+
+Phase 3 is now implemented for the standard widget background path:
+
+- `StdWidget.PaintBackground(...)` routes solid, gradient, and image brushes through one shared brush-aware painter.
+- Standard widgets that rely on `StdWidget.PaintBackground(...)`, including `Label` and `Paragraph`, inherit the new background behavior automatically.
+- Image brushes support uniform opacity, clipped painting, and tile sizing overrides including percentage-driven tile dimensions for high-resolution source art.
+- Inline style override call sites now own prefix filtering via `filterMapAttrs(...)`; style objects receive already-normalized attribute maps.
+- The sample `ltml/samples/test_045_widget_brush_backgrounds.ltml` and the widget-fill tests exercise the shared path.
+
 ### What does **not** work today
 
 - LTML `fill` resolves to `BrushStyle`, and `BrushStyle` currently stores only a single `color` and applies only `SetFillColor(...)`.
@@ -100,8 +110,10 @@ For paragraphs, define default geometry scope for gradient/image coordinates:
   - `repeat-x`
   - `repeat-y`
 
-  Design note:
-  - `fit="tile"` overlaps conceptually with `repeat`, so later rendering phases should define whether `tile` is a shorthand or whether `fit` and `repeat` have separate responsibilities.
+  Current behavior:
+  - `fit="tile"` selects tile-sized image placement.
+  - `repeat` controls which axes repeat.
+  - when `fit="tile"` is used without an explicit `repeat`, rendering promotes `no-repeat` to `repeat` so tile mode behaves like a tiled brush by default.
 
 - `opacity`
   Controls image brush transparency as a floating-point value in the range `0..1`.
@@ -163,12 +175,19 @@ Deliverables:
 - Regression tests for existing solid-fill outputs.
 - At least one sample-driven LTML check proving the shared path works without widget-specific background code in `Label` or `Paragraph`.
 
+Status:
+- Complete.
+
 ### Phase 4: Text fill without clipping
 
 1. Add text-fill style resolution for `Label` and `Paragraph`.
 2. Non-clipped rendering strategy:
-   - solid: existing font color path.
-   - gradient/image: fallback strategy (e.g., average color sampling or first stop color), with explicit warning in docs that this is approximate.
+   - solid: keep using the normal font color path.
+   - gradient/image: do not try to paint inside glyph shapes yet; instead resolve the requested brush to a deterministic fallback text color so the document still renders legibly.
+3. Treat this as an authoring and behavior bridge:
+   - LTML can start accepting `text-fill` attributes now;
+   - solid text fill remains exact;
+   - gradient/image text fill is acknowledged but approximated until the clipping implementation in Phase 5 lands.
 
 Deliverables:
 - Fast path behavior available even where text clipping is undesirable.
