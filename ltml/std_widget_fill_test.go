@@ -210,6 +210,53 @@ func TestStdWidgetSetAttrs_NormalizesBrushGradientMeasurements(t *testing.T) {
 	}
 }
 
+func TestStdWidgetSetAttrs_NormalizesBrushTileMeasurements(t *testing.T) {
+	var widget StdWidget
+	widget.SetAttrs(map[string]string{
+		"units":            "in",
+		"fill.kind":        "image",
+		"fill.src":         "fixture.png",
+		"fill.fit":         "tile",
+		"fill.tile-width":  "0.5",
+		"fill.tile-height": "18pt",
+	})
+
+	if widget.fill == nil || widget.fill.image == nil {
+		t.Fatal("expected normalized image brush")
+	}
+	if got := widget.fill.image.TileWidth; got != 36 {
+		t.Fatalf("tile width = %v, want 36", got)
+	}
+	if got := widget.fill.image.TileHeight; got != 18 {
+		t.Fatalf("tile height = %v, want 18", got)
+	}
+}
+
+func TestStdWidgetSetAttrs_StoresBrushTilePercentages(t *testing.T) {
+	var widget StdWidget
+	widget.SetAttrs(map[string]string{
+		"units":            "in",
+		"fill.kind":        "image",
+		"fill.src":         "fixture.png",
+		"fill.fit":         "tile",
+		"fill.tile-width":  "50%",
+		"fill.tile-height": "100%",
+	})
+
+	if widget.fill == nil || widget.fill.image == nil {
+		t.Fatal("expected image brush")
+	}
+	if got := widget.fill.image.TileWidthPct; got != 50 {
+		t.Fatalf("tile width pct = %v, want 50", got)
+	}
+	if got := widget.fill.image.TileHeightPct; got != 100 {
+		t.Fatalf("tile height pct = %v, want 100", got)
+	}
+	if widget.fill.image.TileWidth != 0 || widget.fill.image.TileHeight != 0 {
+		t.Fatalf("absolute tile size should remain unset, got %#v", widget.fill.image)
+	}
+}
+
 func TestStdWidgetPaintBackground_ImageRepeatTilesWithinClip(t *testing.T) {
 	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
 	if err != nil {
@@ -305,6 +352,178 @@ func TestStdWidgetPaintBackground_ImageOpacityForwardsToPaintCalls(t *testing.T)
 	}
 }
 
+func TestStdWidgetPaintBackground_ImageTileWidthPreservesAspectRatio(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	widget := &StdWidget{}
+	if err := widget.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	widget.SetDoc(doc)
+	widget.SetLeft(5)
+	widget.SetTop(7)
+	widget.SetWidth(100)
+	widget.SetHeight(40)
+	widget.fill = &BrushStyle{
+		kind: BrushKindImage,
+		image: &BrushImageStyle{
+			Src:       "fixture.png",
+			Fit:       "tile",
+			Anchor:    "top-left",
+			Repeat:    "repeat-x",
+			Opacity:   1,
+			TileWidth: 25,
+		},
+	}
+	writer := &backgroundFillTestWriter{
+		fileDimensions: map[string][2]int{
+			"fixture.png": {20, 10},
+		},
+	}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(writer.imagePaints); got != 4 {
+		t.Fatalf("image paint count = %d, want 4", got)
+	}
+	if writer.imagePaints[0].width != 25 || writer.imagePaints[0].height != 12.5 {
+		t.Fatalf("tile size = %vx%v, want 25x12.5", writer.imagePaints[0].width, writer.imagePaints[0].height)
+	}
+}
+
+func TestStdWidgetPaintBackground_ImageTileHeightPreservesAspectRatio(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	widget := &StdWidget{}
+	if err := widget.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	widget.SetDoc(doc)
+	widget.SetLeft(5)
+	widget.SetTop(7)
+	widget.SetWidth(100)
+	widget.SetHeight(40)
+	widget.fill = &BrushStyle{
+		kind: BrushKindImage,
+		image: &BrushImageStyle{
+			Src:        "fixture.png",
+			Fit:        "tile",
+			Anchor:     "top-left",
+			Repeat:     "repeat-y",
+			Opacity:    1,
+			TileHeight: 8,
+		},
+	}
+	writer := &backgroundFillTestWriter{
+		fileDimensions: map[string][2]int{
+			"fixture.png": {20, 10},
+		},
+	}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(writer.imagePaints); got != 5 {
+		t.Fatalf("image paint count = %d, want 5", got)
+	}
+	if writer.imagePaints[0].width != 16 || writer.imagePaints[0].height != 8 {
+		t.Fatalf("tile size = %vx%v, want 16x8", writer.imagePaints[0].width, writer.imagePaints[0].height)
+	}
+}
+
+func TestStdWidgetPaintBackground_ImageTileHeightPctPreservesAspectRatio(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	widget := &StdWidget{}
+	if err := widget.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	widget.SetDoc(doc)
+	widget.SetLeft(5)
+	widget.SetTop(7)
+	widget.SetWidth(100)
+	widget.SetHeight(40)
+	widget.fill = &BrushStyle{
+		kind: BrushKindImage,
+		image: &BrushImageStyle{
+			Src:           "fixture.png",
+			Fit:           "tile",
+			Anchor:        "top-left",
+			Repeat:        "repeat-x",
+			Opacity:       1,
+			TileHeightPct: 100,
+		},
+	}
+	writer := &backgroundFillTestWriter{
+		fileDimensions: map[string][2]int{
+			"fixture.png": {20, 10},
+		},
+	}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(writer.imagePaints); got != 2 {
+		t.Fatalf("image paint count = %d, want 2", got)
+	}
+	if writer.imagePaints[0].width != 80 || writer.imagePaints[0].height != 40 {
+		t.Fatalf("tile size = %vx%v, want 80x40", writer.imagePaints[0].width, writer.imagePaints[0].height)
+	}
+}
+
+func TestStdWidgetPaintBackground_ImageTileWidthPctPreservesAspectRatio(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	widget := &StdWidget{}
+	if err := widget.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	widget.SetDoc(doc)
+	widget.SetLeft(5)
+	widget.SetTop(7)
+	widget.SetWidth(100)
+	widget.SetHeight(40)
+	widget.fill = &BrushStyle{
+		kind: BrushKindImage,
+		image: &BrushImageStyle{
+			Src:          "fixture.png",
+			Fit:          "tile",
+			Anchor:       "top-left",
+			Repeat:       "repeat-y",
+			Opacity:      1,
+			TileWidthPct: 25,
+		},
+	}
+	writer := &backgroundFillTestWriter{
+		fileDimensions: map[string][2]int{
+			"fixture.png": {20, 10},
+		},
+	}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(writer.imagePaints); got != 4 {
+		t.Fatalf("image paint count = %d, want 4", got)
+	}
+	if writer.imagePaints[0].width != 25 || writer.imagePaints[0].height != 12.5 {
+		t.Fatalf("tile size = %vx%v, want 25x12.5", writer.imagePaints[0].width, writer.imagePaints[0].height)
+	}
+}
+
 func TestStdWidgetPaintBackground_ImageOpacityZeroSkipsPainting(t *testing.T) {
 	doc, err := Parse([]byte(`<ltml><page /></ltml>`), WithAssetFS(testingMapFS("fixture.png", "image-data")))
 	if err != nil {
@@ -374,6 +593,15 @@ func TestSample_WidgetBrushBackgrounds_PrintsWithoutWidgetSpecificLogic(t *testi
 	}
 	if !foundDocAsset {
 		t.Fatalf("sample image paints = %#v, want docs/assets/metal-movable-type-banner.jpg", writer.imagePaints)
+	}
+	repeatedTileCalls := 0
+	for _, call := range writer.imagePaints {
+		if strings.HasSuffix(call.filename, filepath.Join("docs", "assets", "metal-movable-type-banner.jpg")) && call.width < 250 {
+			repeatedTileCalls++
+		}
+	}
+	if repeatedTileCalls < 3 {
+		t.Fatalf("sample image paints = %#v, want at least three repeated tile paint calls", writer.imagePaints)
 	}
 }
 

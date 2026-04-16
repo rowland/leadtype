@@ -418,7 +418,15 @@ func (widget *StdWidget) paintImageBrushInRect(w Writer, image *BrushImageStyle,
 	if fitMode != "stretch" || repeatMode != "no-repeat" {
 		imageWidth, imageHeight, err := w.ImageDimensionsFromFile(ref.identifier)
 		if err == nil && imageWidth > 0 && imageHeight > 0 {
-			tileWidth, tileHeight = resolveBrushImageSize(fitMode, width, height, float64(imageWidth), float64(imageHeight))
+			if fitMode == "tile" {
+				if explicitWidth, explicitHeight, ok := resolveBrushTileSize(image, width, height, float64(imageWidth), float64(imageHeight)); ok {
+					tileWidth, tileHeight = explicitWidth, explicitHeight
+				} else {
+					tileWidth, tileHeight = resolveBrushImageSize(fitMode, width, height, float64(imageWidth), float64(imageHeight))
+				}
+			} else {
+				tileWidth, tileHeight = resolveBrushImageSize(fitMode, width, height, float64(imageWidth), float64(imageHeight))
+			}
 			tileX, tileY = resolveBrushAnchor(normalizeBrushAnchor(image), x, y, width, height, tileWidth, tileHeight)
 		}
 	}
@@ -488,6 +496,30 @@ func resolveBrushImageSize(fit string, boxWidth, boxHeight, imageWidth, imageHei
 		return imageWidth, imageHeight
 	default:
 		return boxWidth, boxHeight
+	}
+}
+
+func resolveBrushTileSize(image *BrushImageStyle, boxWidth, boxHeight, imageWidth, imageHeight float64) (width, height float64, ok bool) {
+	if image == nil {
+		return 0, 0, false
+	}
+	resolvedWidth := image.TileWidth
+	if image.TileWidthPct > 0 {
+		resolvedWidth = boxWidth * image.TileWidthPct / 100.0
+	}
+	resolvedHeight := image.TileHeight
+	if image.TileHeightPct > 0 {
+		resolvedHeight = boxHeight * image.TileHeightPct / 100.0
+	}
+	switch {
+	case resolvedWidth > 0 && resolvedHeight > 0:
+		return resolvedWidth, resolvedHeight, true
+	case resolvedWidth > 0 && imageHeight > 0:
+		return resolvedWidth, resolvedWidth * imageHeight / imageWidth, true
+	case resolvedHeight > 0 && imageWidth > 0:
+		return resolvedHeight * imageWidth / imageHeight, resolvedHeight, true
+	default:
+		return 0, 0, false
 	}
 }
 
@@ -583,34 +615,6 @@ func offsetRadialGradient(source *pdf.RadialGradient, x, y float64) *pdf.RadialG
 	clone.Y1 += y
 	clone.Stops = append([]pdf.GradientStop(nil), source.Stops...)
 	return &clone
-}
-
-// func normalizeFontDecorationMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
-// 	normalized := maps.Clone(attrs)
-// 	for _, key := range []string{"underline-pos", "strikeout-pos"} {
-// 		fullKey := prefix + key
-// 		value, ok := normalized[fullKey]
-// 		if !ok {
-// 			continue
-// 		}
-// 		if points := parseOptionalMeasurement(strings.TrimSpace(value), units); points != nil {
-// 			normalized[fullKey] = strconv.FormatFloat(*points, 'f', -1, 64) + "pt"
-// 		}
-// 	}
-// 	return normalized
-// }
-
-func normalizeBrushMeasurementAttrs(attrs map[string]string, prefix string, units Units) map[string]string {
-	normalized := maps.Clone(attrs)
-	for _, key := range []string{"x0", "y0", "x1", "y1", "r0", "r1"} {
-		fullKey := prefix + key
-		value, ok := normalized[fullKey]
-		if !ok {
-			continue
-		}
-		normalized[fullKey] = strconv.FormatFloat(ParseMeasurement(strings.TrimSpace(value), units), 'f', -1, 64)
-	}
-	return normalized
 }
 
 func (widget *StdWidget) SetContainer(container Container) error {

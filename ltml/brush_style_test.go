@@ -87,12 +87,14 @@ func TestBrushStyleSetAttrsRadialGradient(t *testing.T) {
 func TestBrushStyleSetAttrsImage(t *testing.T) {
 	var bs BrushStyle
 	bs.SetAttrs(map[string]string{
-		"kind":    "image",
-		"src":     "docs/assets/metal-movable-type-banner.jpg",
-		"fit":     "cover",
-		"anchor":  "center",
-		"repeat":  "tile",
-		"opacity": "0.35",
+		"kind":        "image",
+		"src":         "docs/assets/metal-movable-type-banner.jpg",
+		"fit":         "cover",
+		"anchor":      "center",
+		"repeat":      "tile",
+		"opacity":     "0.35",
+		"tile-width":  "12",
+		"tile-height": "25%",
 	})
 
 	if bs.Kind() != BrushKindImage {
@@ -109,6 +111,9 @@ func TestBrushStyleSetAttrsImage(t *testing.T) {
 	}
 	if bs.image.Opacity != 0.35 {
 		t.Fatalf("opacity = %v, want 0.35", bs.image.Opacity)
+	}
+	if bs.image.TileWidth != 12 || bs.image.TileHeightPct != 25 {
+		t.Fatalf("tile size = %#v, want tile width 12 and tile height pct 25", bs.image)
 	}
 }
 
@@ -128,21 +133,31 @@ func TestBrushStyleCloneDeepCopiesNestedBrushData(t *testing.T) {
 		"opacity": "0.8",
 	})
 	original.image = &BrushImageStyle{
-		Src:     "docs/assets/metal-movable-type-banner.jpg",
-		Fit:     "contain",
-		Anchor:  "top",
-		Repeat:  "none",
-		Opacity: 0.8,
+		Src:           "docs/assets/metal-movable-type-banner.jpg",
+		Fit:           "contain",
+		Anchor:        "top",
+		Repeat:        "none",
+		Opacity:       0.8,
+		TileWidth:     18,
+		TileHeightPct: 100,
 	}
 
 	clone := original.Clone()
 	clone.radialGradient.Stops[0].Position = 0.25
 	clone.image.Opacity = 0.1
+	clone.image.TileWidth = 4
+	clone.image.TileHeightPct = 50
 
 	if original.radialGradient.Stops[0].Position != 0 {
 		t.Fatalf("original stop position mutated to %v", original.radialGradient.Stops[0].Position)
 	}
 	if original.image.Opacity != 0.8 {
 		t.Fatalf("original image opacity mutated to %v", original.image.Opacity)
+	}
+	if original.image.TileWidth != 18 {
+		t.Fatalf("original image tile width mutated to %v", original.image.TileWidth)
+	}
+	if original.image.TileHeightPct != 100 {
+		t.Fatalf("original image tile height pct mutated to %v", original.image.TileHeightPct)
 	}
 }

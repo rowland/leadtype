@@ -27,10 +27,11 @@
 
     <vbox border="thin" padding="10pt" corners="0.25" font="contrast" fill="metal"
       fill.fit="tile"
+      fill.tile-height="100%"
       fill.repeat="repeat-x"
       fill.anchor="top-left">
       <label font.weight="Bold">Tiled image background</label>
-      <p>This panel uses tile sizing plus horizontal repeat to exercise the clip-oriented image background path.</p>
+      <p>This panel uses a full-height tile plus horizontal repeat so high-resolution artwork still fills the box vertically while demonstrating visible tiling.</p>
     </vbox>
   </page>
 </ltml>
