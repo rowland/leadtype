@@ -22,11 +22,15 @@ const (
 )
 
 type BrushImageStyle struct {
-	Src     string
-	Fit     string
-	Anchor  string
-	Repeat  string
-	Opacity float64
+	Src           string
+	Fit           string
+	Anchor        string
+	Repeat        string
+	Opacity       float64
+	TileWidth     float64
+	TileWidthPct  float64
+	TileHeight    float64
+	TileHeightPct float64
 }
 
 type BrushStyle struct {
@@ -152,6 +156,8 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 		"anchor",
 		"repeat",
 		"opacity",
+		"tile-width",
+		"tile-height",
 	) {
 		image := bs.ensureImage()
 		if value, ok := attrs["src"]; ok {
@@ -167,6 +173,12 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 			image.Repeat = strings.TrimSpace(value)
 		}
 		image.Opacity = parseFloatAttr(attrs, "opacity", image.Opacity)
+		if value, ok := attrs["tile-width"]; ok {
+			image.TileWidth, image.TileWidthPct = parseMeasurementOrPct(strings.TrimSpace(value), units)
+		}
+		if value, ok := attrs["tile-height"]; ok {
+			image.TileHeight, image.TileHeightPct = parseMeasurementOrPct(strings.TrimSpace(value), units)
+		}
 		if bs.kind == "" {
 			bs.kind = BrushKindImage
 		}
@@ -217,6 +229,14 @@ func (bs *BrushStyle) ensureImage() *BrushImageStyle {
 		bs.image = &BrushImageStyle{Opacity: 1}
 	}
 	return bs.image
+}
+
+func parseMeasurementOrPct(value string, units Units) (measurement, pct float64) {
+	if rePct.MatchString(value) {
+		pct, _ = strconv.ParseFloat(value[:len(value)-1], 64)
+		return 0, pct
+	}
+	return ParseMeasurement(value, units), 0
 }
 
 func parseGradientStops(value string) []pdf.GradientStop {

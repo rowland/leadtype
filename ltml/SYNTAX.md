@@ -663,13 +663,45 @@ auto-generated solid pen for that color:
 | Attribute | Description |
 |-----------|-------------|
 | `id`      | Name used to reference this style. |
-| `color`   | Fill color. |
+| `kind`    | Brush type: `solid` (default), `linear-gradient`, `radial-gradient`, or `image`. |
+| `color`   | Fill color for solid brushes. |
+| `stops`   | Comma-separated gradient stops like `0:#112233,0.5:Gold,1:#445566`. |
+| `x0`, `y0`, `x1`, `y1` | Gradient coordinates as LTML measurements. Used by linear gradients and the center points of radial gradients. |
+| `r0`, `r1` | Radial gradient start and end radii as LTML measurements. |
+| `src` | Image source for `kind="image"`. Supports the same asset resolution rules as `<image>`. |
+| `fit` | Image brush sizing mode: `stretch`, `contain`, `cover`, or `tile`. |
+| `anchor` | Image brush alignment inside the painted box: `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`. |
+| `repeat` | Image repetition mode: `no-repeat` (default), `repeat`, `repeat-x`, or `repeat-y`. |
+| `opacity` | Uniform image opacity from `0` to `1`. Default: `1`. |
+| `tile-width`, `tile-height` | Explicit rendered tile size for `fit="tile"`. Accept LTML measurements, and also accept percentages like `50%` or `100%` resolved against the painted box. If only one side is specified, LTML preserves the source aspect ratio. |
+
+Image brushes default to the source asset's intrinsic size when `fit="tile"` and
+no explicit tile size is provided. That means very large source images may clip
+instead of visibly repeating. In print-oriented documents, prefer an explicit
+tile size for predictable output.
+
+```xml
+<brush id="metal" kind="image"
+  src="../../docs/assets/metal-movable-type-banner.jpg"
+  opacity="0.5" />
+
+<vbox fill="metal"
+  fill.fit="tile"
+  fill.tile-height="100%"
+  fill.repeat="repeat-x"
+  fill.anchor="top-left">
+  <p>This keeps each tile as tall as the widget box.</p>
+</vbox>
+```
 
 You may also use a color name directly as a fill value:
 
 ```xml
 <rect fill="LightBlue" />
 ```
+
+Like other named styles, brushes can be referenced with `fill="brush-id"` and
+overridden inline with `fill.*` attributes on a widget.
 
 ---
 
