@@ -173,6 +173,133 @@ func TestStdWidgetPaintBackground_RadialGradientUsesBoxLocalCoordinates(t *testi
 	}
 }
 
+func TestStdWidgetPaintBackground_LinearGradientPercentageCoordinatesUseWidgetBox(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(10)
+	widget.SetTop(20)
+	widget.SetWidth(120)
+	widget.SetHeight(50)
+	widget.fill = &BrushStyle{
+		kind: BrushKindLinearGradient,
+		linearGradient: &pdf.LinearGradient{
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("Gold")},
+			},
+		},
+		linearPct: &linearGradientPct{
+			X0: float64Ptr(0),
+			Y0: float64Ptr(50),
+			X1: float64Ptr(100),
+			Y1: float64Ptr(50),
+		},
+	}
+	writer := &backgroundFillTestWriter{}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.linearPaints) != 1 {
+		t.Fatalf("linear paint count = %d, want 1", len(writer.linearPaints))
+	}
+	if got := writer.linearPaints[0].X0; got != 10 {
+		t.Fatalf("linear x0 = %v, want 10", got)
+	}
+	if got := writer.linearPaints[0].Y0; got != 45 {
+		t.Fatalf("linear y0 = %v, want 45", got)
+	}
+	if got := writer.linearPaints[0].X1; got != 130 {
+		t.Fatalf("linear x1 = %v, want 130", got)
+	}
+	if got := writer.linearPaints[0].Y1; got != 45 {
+		t.Fatalf("linear y1 = %v, want 45", got)
+	}
+}
+
+func TestStdWidgetPaintBackground_RadialGradientPercentageCoordinatesUseWidgetBox(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(100)
+	widget.SetTop(200)
+	widget.SetWidth(120)
+	widget.SetHeight(80)
+	widget.fill = &BrushStyle{
+		kind: BrushKindRadialGradient,
+		radialGradient: &pdf.RadialGradient{
+			R0: 0,
+			R1: 45,
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("White")},
+				{Position: 1, Color: NamedColor("Tomato")},
+			},
+		},
+		radialPct: &radialGradientPct{
+			X0: float64Ptr(50),
+			Y0: float64Ptr(50),
+			X1: float64Ptr(50),
+			Y1: float64Ptr(50),
+		},
+	}
+	writer := &backgroundFillTestWriter{}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.radialPaints) != 1 {
+		t.Fatalf("radial paint count = %d, want 1", len(writer.radialPaints))
+	}
+	if got := writer.radialPaints[0].X0; got != 160 {
+		t.Fatalf("radial x0 = %v, want 160", got)
+	}
+	if got := writer.radialPaints[0].Y0; got != 240 {
+		t.Fatalf("radial y0 = %v, want 240", got)
+	}
+	if got := writer.radialPaints[0].X1; got != 160 {
+		t.Fatalf("radial x1 = %v, want 160", got)
+	}
+	if got := writer.radialPaints[0].Y1; got != 240 {
+		t.Fatalf("radial y1 = %v, want 240", got)
+	}
+}
+
+func TestStdWidgetPaintBackground_RadialGradientPercentageRadiiUseMinBoxDimension(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(100)
+	widget.SetTop(200)
+	widget.SetWidth(120)
+	widget.SetHeight(80)
+	widget.fill = &BrushStyle{
+		kind: BrushKindRadialGradient,
+		radialGradient: &pdf.RadialGradient{
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("White")},
+				{Position: 1, Color: NamedColor("Tomato")},
+			},
+		},
+		radialPct: &radialGradientPct{
+			X0: float64Ptr(50),
+			Y0: float64Ptr(50),
+			R0: float64Ptr(10),
+			X1: float64Ptr(50),
+			Y1: float64Ptr(50),
+			R1: float64Ptr(60),
+		},
+	}
+	writer := &backgroundFillTestWriter{}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.radialPaints) != 1 {
+		t.Fatalf("radial paint count = %d, want 1", len(writer.radialPaints))
+	}
+	if got := writer.radialPaints[0].R0; got != 8 {
+		t.Fatalf("radial r0 = %v, want 8", got)
+	}
+	if got := writer.radialPaints[0].R1; got != 48 {
+		t.Fatalf("radial r1 = %v, want 48", got)
+	}
+}
+
 func TestStdWidgetSetAttrs_NormalizesBrushGradientMeasurements(t *testing.T) {
 	var widget StdWidget
 	widget.SetAttrs(map[string]string{
@@ -207,6 +334,36 @@ func TestStdWidgetSetAttrs_NormalizesBrushGradientMeasurements(t *testing.T) {
 	}
 	if got := widget.fill.radialGradient.R1; got != 108 {
 		t.Fatalf("r1 = %v, want 108", got)
+	}
+}
+
+func TestStdWidgetSetAttrs_StoresBrushGradientPercentages(t *testing.T) {
+	var widget StdWidget
+	widget.SetAttrs(map[string]string{
+		"fill.kind":  "radial-gradient",
+		"fill.x0":    "50%",
+		"fill.y0":    "50%",
+		"fill.r0":    "10%",
+		"fill.x1":    "50%",
+		"fill.y1":    "50%",
+		"fill.r1":    "60%",
+		"fill.stops": "0:#ffffff,1:#000000",
+	})
+
+	if widget.fill == nil || widget.fill.radialGradient == nil || widget.fill.radialPct == nil {
+		t.Fatal("expected radial gradient with percentage geometry")
+	}
+	if widget.fill.radialPct.X0 == nil || *widget.fill.radialPct.X0 != 50 {
+		t.Fatalf("x0 pct = %v, want 50", widget.fill.radialPct.X0)
+	}
+	if widget.fill.radialPct.R0 == nil || *widget.fill.radialPct.R0 != 10 {
+		t.Fatalf("r0 pct = %v, want 10", widget.fill.radialPct.R0)
+	}
+	if widget.fill.radialPct.R1 == nil || *widget.fill.radialPct.R1 != 60 {
+		t.Fatalf("r1 pct = %v, want 60", widget.fill.radialPct.R1)
+	}
+	if widget.fill.radialGradient.R0 != 0 || widget.fill.radialGradient.R1 != 0 {
+		t.Fatalf("absolute radii should remain unset, got %#v", widget.fill.radialGradient)
 	}
 }
 

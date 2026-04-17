@@ -2,20 +2,20 @@
   <layout id="vbox" vpadding="14pt" />
   <brush id="rose" kind="image" src="../../pdf/testdata/testimg.jpg"
     fit="tile" tile-height="100%" anchor="left" />
-  <brush id="paragraph-grad" kind="linear-gradient" units="in"
-    x0="0" y0="0" x1="6.4" y1="0"
+  <brush id="paragraph-grad" kind="linear-gradient"
+    x0="0%" y0="0%" x1="100%" y1="0%"
     stops="0:#2563eb,1:#ac3aed" />
   <brush id="wow-grad" kind="radial-gradient" units="in"
-    x0="3.75" y0="0.6" r0="0"
-    x1="3.75" y1="0.6" r1="1.1"
+    x0="50%" y0="50%" r0="0"
+    x1="50%" y1="50%" r1="100%"
     stops="0:#c7f0ff,1:#228b22" />
 
   <page layout="vbox" grid="0.25in">
     <label font.size="18" font.weight="Bold">Text fill clipping</label>
 
-    <label width="100%" padding="4pt"
+    <label padding="4pt"
       font.size="54" font.weight="Bold"
-      text-align="left"
+      align-self="start"
       text-fill="rose">
       ROSE
     </label>
@@ -27,9 +27,9 @@
       and the text simply reveals that paint like a stencil.
     </p>
 
-    <label width="100%" padding="18pt"
+    <label padding="18pt"
       font.size="72" font.weight="Bold"
-      text-align="center" border="black"
+      align-self="end"
       text-fill="wow-grad">
       WOW
     </label>

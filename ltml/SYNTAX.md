@@ -668,8 +668,8 @@ auto-generated solid pen for that color:
 | `kind`    | Brush type: `solid` (default), `linear-gradient`, `radial-gradient`, or `image`. |
 | `color`   | Fill color for solid brushes. |
 | `stops`   | Comma-separated gradient stops like `0:#112233,0.5:Gold,1:#445566`. |
-| `x0`, `y0`, `x1`, `y1` | Gradient coordinates as LTML measurements. Used by linear gradients and the center points of radial gradients. |
-| `r0`, `r1` | Radial gradient start and end radii as LTML measurements. |
+| `x0`, `y0`, `x1`, `y1` | Gradient coordinates. Accept LTML measurements, and also accept percentages like `50%` resolved against the painted box width or height. Used by linear gradients and the center points of radial gradients. |
+| `r0`, `r1` | Radial gradient start and end radii. Accept LTML measurements, and also accept percentages resolved against the painted box's smaller dimension. |
 | `src` | Image source for `kind="image"`. Supports the same asset resolution rules as `<image>`. |
 | `fit` | Image brush sizing mode: `stretch`, `contain`, `cover`, or `tile`. |
 | `anchor` | Image brush alignment inside the painted box: `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`. |
