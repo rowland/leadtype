@@ -14,7 +14,6 @@ type StdComponent struct {
 	body        string
 	src         string
 	srcExplicit bool
-	doc         *Doc
 }
 
 var networkAssetsDisabled atomic.Bool
@@ -43,10 +42,6 @@ func (c *StdComponent) SetBody(body string) {
 		return
 	}
 	c.body = body
-}
-
-func (c *StdComponent) SetDoc(doc *Doc) {
-	c.doc = doc
 }
 
 func (c *StdComponent) SetAttrs(attrs map[string]string) {
