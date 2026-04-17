@@ -866,6 +866,15 @@ Apply attributes to elements based on tag name, id, and class selectors.
 </style>
 ```
 
+```xml
+<style src="styles.ltml.css" />
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `src` | Optional path or URL to an external LTML stylesheet. When both `src` and inline rules are present, `src` wins. |
+| `tier` | Optional cascade tier override. Higher tiers override lower tiers before specificity and source order are considered. |
+
 Style blocks use CSS-style selector syntax:
 
 | Pattern         | Matches |
@@ -908,6 +917,19 @@ Notes:
 CSS-style `/* ... */` comments are ignored inside `<style>`. Rules inside
 `<!-- XML comments -->` are also parsed, allowing selectors to be commented out
 with nested comment delimiters.
+
+External `src` content is loaded when the `<style>` block is parsed, then kept
+in memory on that rule set so later selector matching does not reread the
+source asset. File paths and URLs use the same asset-resolution rules as other
+text-backed LTML sources:
+
+- when an asset filesystem is attached, `src` must be a clean relative asset
+  path and is read virtually from that asset filesystem
+- when no asset filesystem is attached, relative file paths are resolved
+  relative to the LTML document being parsed, while absolute paths remain
+  absolute
+- `http` and `https` URLs are supported only when document/network loading is
+  explicitly enabled
 
 `<style>` accepts an optional `tier` attribute. Higher tiers override lower
 tiers before specificity and source order are considered. Default tiers are:

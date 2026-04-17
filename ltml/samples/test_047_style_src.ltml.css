@@ -1,0 +1,36 @@
+page {
+  fill: LightGray;
+}
+
+div.hero {
+  fill: White;
+}
+
+p#title {
+  font.size: 24;
+  font.weight: Bold;
+  margin-bottom: 8;
+}
+
+p.lede {
+  font.size: 13;
+  style.text-align: justify;
+}
+
+div.cards > div.card {
+  width: 48%;
+  padding: 10;
+  border: solid;
+  fill: White;
+}
+
+div.cards > div.card.accent {
+  fill: Gainsboro;
+}
+
+p.kicker {
+  font.size: 11;
+  font.weight: Bold;
+  font.underline: true;
+  margin-bottom: 6;
+}

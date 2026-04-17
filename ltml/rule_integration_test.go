@@ -7,7 +7,13 @@ package ltml
 // document, then walks the element tree to verify that rules were (or were not)
 // applied to the expected elements.
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"testing/fstest"
+)
 
 // parseDoc is a helper that parses an LTML document from a string and fatals
 // the test on any error.
@@ -219,6 +225,120 @@ func TestRules_integration_style_tag_sets_font_size_without_tier(t *testing.T) {
 	}
 	if p.font.size != 16 {
 		t.Errorf("expected font size 16, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_style_src_loadsFromAssetFS(t *testing.T) {
+	doc, err := Parse([]byte(`
+		<ltml>
+			<style src="styles.ltml.css" />
+			<page><p>hello</p></page>
+		</ltml>`), WithAssetFS(fstest.MapFS{
+		"styles.ltml.css": &fstest.MapFile{Data: []byte("p { font.size: 17; }")},
+	}))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph by style src")
+	}
+	if p.font.size != 17 {
+		t.Fatalf("expected font size 17, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_style_src_loadsRelativeToParsedFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "styles.ltml.css"), []byte("p { font.size: 19; }"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputPath := filepath.Join(dir, "doc.ltml")
+	if err := os.WriteFile(inputPath, []byte(`
+<ltml>
+  <style src="styles.ltml.css" />
+  <page><p>hello</p></page>
+</ltml>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc, err := ParseFile(inputPath)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph by relative style src")
+	}
+	if p.font.size != 19 {
+		t.Fatalf("expected font size 19, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_style_src_overridesInlineBody(t *testing.T) {
+	doc, err := Parse([]byte(`
+		<ltml>
+			<style src="styles.ltml.css">p { font.size: 11; }</style>
+			<page><p>hello</p></page>
+		</ltml>`), WithAssetFS(fstest.MapFS{
+		"styles.ltml.css": &fstest.MapFile{Data: []byte("p { font.size: 21; }")},
+	}))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	p := firstParagraph(t, doc)
+	if p.font == nil {
+		t.Fatal("font was not set on paragraph by style src")
+	}
+	if p.font.size != 21 {
+		t.Fatalf("expected src to win with font size 21, got %v", p.font.size)
+	}
+}
+
+func TestRules_integration_style_src_missingFileReturnsHelpfulError(t *testing.T) {
+	_, err := Parse([]byte(`
+		<ltml>
+			<style src="missing.ltml.css" />
+			<page><p>hello</p></page>
+		</ltml>`), WithAssetFS(fstest.MapFS{}))
+	if err == nil {
+		t.Fatal("Parse succeeded, want error")
+	}
+	if !strings.Contains(err.Error(), `loading style src "missing.ltml.css"`) {
+		t.Fatalf("error = %q, want style src context", err)
+	}
+}
+
+func TestRules_styleSrcMemoizesLoadedText(t *testing.T) {
+	doc := newDocWithOptions(WithAssetFS(fstest.MapFS{
+		"styles.ltml.css": &fstest.MapFile{Data: []byte("p { font.size: 23; }")},
+	}))
+	doc.root = &StdDocument{}
+
+	rules := &Rules{}
+	rules.SetDoc(doc)
+	rules.SetAttrs(map[string]string{"src": "styles.ltml.css"})
+
+	var scope Scope
+	if err := scope.AddRules(rules); err != nil {
+		t.Fatalf("AddRules: %v", err)
+	}
+	if !rules.sourceLoaded {
+		t.Fatal("expected source text to be loaded")
+	}
+	if rules.sourceText == "" {
+		t.Fatal("expected style src text to be cached")
+	}
+
+	doc.SetAssetFS(fstest.MapFS{})
+	if err := rules.ensureSourceLoaded(); err != nil {
+		t.Fatalf("ensureSourceLoaded after asset removal: %v", err)
+	}
+	if rules.sourceText != "p { font.size: 23; }" {
+		t.Fatalf("cached sourceText = %q, want original content", rules.sourceText)
 	}
 }
 

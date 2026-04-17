@@ -30,13 +30,13 @@ func (s Specificity) Compare(other Specificity) int {
 // path matches the selector, the attributes are applied to that element before any
 // directly-specified attributes (so direct attributes take precedence).
 type Rule struct {
-	Selector     string
-	Compiled     *compiledSelectorList
-	Attrs        map[string]string
-	Tier         int
-	Specificity  Specificity
-	Order        int
-	HasPseudo    bool
+	Selector    string
+	Compiled    *compiledSelectorList
+	Attrs       map[string]string
+	Tier        int
+	Specificity Specificity
+	Order       int
+	HasPseudo   bool
 }
 
 // NewRule creates a Rule for the given selector string and attribute map. The
@@ -70,6 +70,10 @@ func NewRule(selector string, attrs map[string]string, tier, order int) (*Rule, 
 // enclosing Scope so that elements can be matched against them during parsing.
 type Rules struct {
 	rules         []*Rule
+	source        textSource
+	doc           *Doc
+	sourceText    string
+	sourceLoaded  bool
 	tier          int
 	tierExplicit  bool
 	nextRuleOrder int
@@ -94,6 +98,13 @@ var reRule = regexp.MustCompile(`\s*([^\{]+?)\s*\{([^\}]+)\}`)
 // Multiple declarations may appear in a single call. Whitespace around selectors
 // and values is trimmed automatically. CSS-style block comments are ignored.
 func (r *Rules) AddText(text string) {
+	if r.source.Explicit() {
+		return
+	}
+	r.addText(text, "")
+}
+
+func (r *Rules) addText(text, sourceName string) {
 	if r.parseErr != nil {
 		return
 	}
@@ -103,6 +114,10 @@ func (r *Rules) AddText(text string) {
 		for _, selector := range splitRuleSelectors(m[1]) {
 			rule, err := NewRule(selector, attrsMapFromString(m[2]), r.tier, r.nextRuleOrder)
 			if err != nil {
+				if sourceName != "" {
+					r.parseErr = fmt.Errorf("parsing style src %q: %w", sourceName, err)
+					return
+				}
 				r.parseErr = err
 				return
 			}
@@ -113,6 +128,7 @@ func (r *Rules) AddText(text string) {
 }
 
 func (r *Rules) SetAttrs(attrs map[string]string) {
+	r.source.SetAttrs(attrs)
 	tierText, ok := attrs["tier"]
 	if !ok || tierText == "" {
 		return
@@ -131,6 +147,9 @@ func (r *Rules) SetAttrs(attrs map[string]string) {
 }
 
 func (r *Rules) ensureTier(defaultTier int) error {
+	if err := r.ensureSourceLoaded(); err != nil {
+		return err
+	}
 	if r.parseErr != nil {
 		return r.parseErr
 	}
@@ -141,6 +160,33 @@ func (r *Rules) ensureTier(defaultTier int) error {
 		}
 	}
 	return nil
+}
+
+func (r *Rules) SetDoc(doc *Doc) {
+	r.doc = doc
+}
+
+func (r *Rules) ensureSourceLoaded() error {
+	if !r.source.Explicit() || r.sourceLoaded {
+		return r.parseErr
+	}
+	r.sourceLoaded = true
+	if r.doc == nil {
+		r.parseErr = fmt.Errorf("style document is not set")
+		return r.parseErr
+	}
+	container := Container(nil)
+	if r.doc.root != nil {
+		container = r.doc.root
+	}
+	text, err := r.source.Text(r.doc, container, "", "style")
+	if err != nil {
+		r.parseErr = fmt.Errorf("loading style src %q: %w", r.source.src, err)
+		return r.parseErr
+	}
+	r.sourceText = text
+	r.addText(text, r.source.src)
+	return r.parseErr
 }
 
 var reAttrs = regexp.MustCompile(`\s*([^:]+)\s*:\s*([^;]+)\s*;?`)
@@ -166,3 +212,4 @@ func init() {
 }
 
 var _ HasAttrs = (*Rules)(nil)
+var _ WantsDoc = (*Rules)(nil)

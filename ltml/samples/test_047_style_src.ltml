@@ -1,0 +1,20 @@
+<ltml>
+  <style src="test_047_style_src.ltml.css" />
+  <page margin="28">
+    <div class="hero" border="dotted" padding="14" margin-bottom="12">
+      <p id="title">External Style Sheets</p>
+      <p class="lede">This sample loads selector rules from a sibling stylesheet file using &lt;style src="..." /&gt;.</p>
+    </div>
+
+    <div class="cards" layout="hbox" gap="10">
+      <div class="card">
+        <p class="kicker">Shared Rule Set</p>
+        <p>Both cards pick up font sizing, spacing, and decoration from the external stylesheet.</p>
+      </div>
+      <div class="card accent">
+        <p class="kicker">Document-Relative Asset</p>
+        <p>The stylesheet path resolves relative to this LTML file when no asset filesystem is attached.</p>
+      </div>
+    </div>
+  </page>
+</ltml>
