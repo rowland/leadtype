@@ -17,7 +17,7 @@ func (svg *StdSVG) LayoutWidget(w Writer) {
 
 func (svg *StdSVG) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &svg.StdComponent.StdWidget, "Figure", func() error {
-		if svg.srcExplicit && strings.TrimSpace(svg.src) != "" {
+		if svg.source.Explicit() {
 			ref, err := svg.assetSource()
 			if err != nil {
 				return err
@@ -66,7 +66,7 @@ func (svg *StdSVG) PreferredWidth(w Writer) float64 {
 }
 
 func (svg *StdSVG) svgDimensions(w Writer) (width, height int, err error) {
-	if svg.srcExplicit && strings.TrimSpace(svg.src) != "" {
+	if svg.source.Explicit() {
 		ref, err := svg.assetSource()
 		if err != nil {
 			return 0, 0, err
@@ -88,7 +88,7 @@ func (svg *StdSVG) SetAttrs(attrs map[string]string) {
 }
 
 func (svg *StdSVG) String() string {
-	return fmt.Sprintf("StdSVG src=%s %s", svg.src, &svg.StdComponent.StdWidget)
+	return fmt.Sprintf("StdSVG src=%s %s", svg.source.src, &svg.StdComponent.StdWidget)
 }
 
 func (svg *StdSVG) widthForWriter() *float64 {

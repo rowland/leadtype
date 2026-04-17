@@ -3,17 +3,12 @@
 
 package ltml
 
-import (
-	"fmt"
-	"strings"
-	"sync/atomic"
-)
+import "sync/atomic"
 
 type StdComponent struct {
 	StdContainer
-	body        string
-	src         string
-	srcExplicit bool
+	body   string
+	source textSource
 }
 
 var networkAssetsDisabled atomic.Bool
@@ -23,22 +18,15 @@ func DisableNetworkAssets() {
 }
 
 func (c *StdComponent) Body() string {
-	if !c.srcExplicit || strings.TrimSpace(c.src) == "" {
-		return c.body
-	}
-	ref, err := c.assetSource()
+	body, err := c.source.Text(c.doc, c.container, c.body, "component")
 	if err != nil {
 		return ""
 	}
-	data, err := readAssetSource(c.doc, ref)
-	if err != nil {
-		return ""
-	}
-	return string(data)
+	return body
 }
 
 func (c *StdComponent) SetBody(body string) {
-	if c.srcExplicit {
+	if c.source.Explicit() {
 		return
 	}
 	c.body = body
@@ -46,17 +34,11 @@ func (c *StdComponent) SetBody(body string) {
 
 func (c *StdComponent) SetAttrs(attrs map[string]string) {
 	c.StdContainer.SetAttrs(attrs)
-	src, ok := attrs["src"]
-	if !ok || strings.TrimSpace(src) == "" {
-		return
-	}
-	src = strings.TrimSpace(src)
-	c.src = src
-	c.srcExplicit = true
+	c.source.SetAttrs(attrs)
 }
 
 func (c *StdComponent) ensureBody() error {
-	if !c.srcExplicit || strings.TrimSpace(c.src) == "" {
+	if !c.source.Explicit() {
 		return nil
 	}
 	_, err := c.assetSource()
@@ -64,13 +46,7 @@ func (c *StdComponent) ensureBody() error {
 }
 
 func (c *StdComponent) assetSource() (assetSourceRef, error) {
-	if !c.srcExplicit || strings.TrimSpace(c.src) == "" {
-		return assetSourceRef{}, nil
-	}
-	if c.doc == nil {
-		return assetSourceRef{}, fmt.Errorf("component document is not set")
-	}
-	return c.doc.resolveAssetSource(c.container, c.src)
+	return c.source.assetSource(c.doc, c.container, "component")
 }
 
 var _ Component = (*StdComponent)(nil)

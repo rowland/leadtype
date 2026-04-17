@@ -14,9 +14,8 @@ const preTabWidth = 4
 
 type StdPre struct {
 	StdWidget
+	source  textSource
 	rawText string
-	src     string
-	doc     *Doc
 	lines   []string
 }
 
@@ -28,8 +27,11 @@ func (p *StdPre) AddText(text string) {
 }
 
 func (p *StdPre) DrawContent(w Writer) error {
+	lines, err := p.resolvedLines()
+	if err != nil {
+		return err
+	}
 	return withWidgetRoleAccessibility(w, &p.StdWidget, "", p.AccessibilityText(), func() error {
-		lines := p.Lines()
 		if len(lines) == 0 {
 			lines = []string{""}
 		}
@@ -50,6 +52,11 @@ func (p *StdPre) DrawContent(w Writer) error {
 		}
 		return nil
 	})
+}
+
+func (p *StdPre) BeforePrint(Writer) error {
+	_, err := p.resolvedLines()
+	return err
 }
 
 func (p *StdPre) Font() *FontStyle {
@@ -97,37 +104,42 @@ func (p *StdPre) PreferredWidth(w Writer) float64 {
 }
 
 func (p *StdPre) AccessibilityText() string {
-	return strings.Join(p.Lines(), "\n")
+	lines, err := p.resolvedLines()
+	if err != nil {
+		return ""
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (p *StdPre) SetAttrs(attrs map[string]string) {
 	p.StdWidget.SetAttrs(attrs)
-	if src, ok := attrs["src"]; ok {
-		p.src = strings.TrimSpace(src)
-	}
-}
-
-func (p *StdPre) SetDoc(doc *Doc) {
-	p.doc = doc
+	p.source.SetAttrs(attrs)
 }
 
 func (p *StdPre) Lines() []string {
-	if strings.TrimSpace(p.src) != "" {
-		text, err := p.sourceText()
+	lines, err := p.resolvedLines()
+	if err != nil {
+		return []string{""}
+	}
+	return lines
+}
+
+func (p *StdPre) resolvedLines() ([]string, error) {
+	if p.source.Explicit() {
+		text, err := p.source.Text(p.doc, p.container, p.rawText, "pre")
 		if err != nil {
-			return []string{""}
+			return nil, err
 		}
-		return normalizedPreLines(text)
+		return normalizedPreLines(text), nil
 	}
-	if p.lines != nil {
-		return p.lines
+	if p.lines == nil {
+		p.lines = normalizedPreLines(p.rawText)
 	}
-	p.lines = normalizedPreLines(p.rawText)
-	return p.lines
+	return p.lines, nil
 }
 
 func (p *StdPre) String() string {
-	return fmt.Sprintf("StdPre src=%s %s", p.src, &p.StdWidget)
+	return fmt.Sprintf("StdPre src=%s %s", p.source.src, &p.StdWidget)
 }
 
 func (p *StdPre) lineHeight(w Writer) float64 {
@@ -153,29 +165,8 @@ func init() {
 	registerTag(DefaultSpace, "pre", func() any { return &StdPre{} })
 }
 
-func (p *StdPre) sourceText() (string, error) {
-	ref, err := p.assetSource()
-	if err != nil {
-		return "", err
-	}
-	if ref.identifier == "" {
-		return "", nil
-	}
-	data, err := readAssetSource(p.doc, ref)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
 func (p *StdPre) assetSource() (assetSourceRef, error) {
-	if strings.TrimSpace(p.src) == "" {
-		return assetSourceRef{}, nil
-	}
-	if p.doc == nil {
-		return assetSourceRef{}, fmt.Errorf("pre document is not set")
-	}
-	return p.doc.resolveAssetSource(p.container, p.src)
+	return p.source.assetSource(p.doc, p.container, "pre")
 }
 
 func normalizedPreLines(text string) []string {
