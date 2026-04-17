@@ -54,6 +54,40 @@ func TestBrushStyleSetAttrsLinearGradient(t *testing.T) {
 	}
 }
 
+func TestBrushStyleSetAttrsLinearGradientPercentageCoordinates(t *testing.T) {
+	var bs BrushStyle
+	bs.SetAttrs(map[string]string{
+		"kind":  "linear-gradient",
+		"x0":    "0%",
+		"y0":    "50%",
+		"x1":    "100%",
+		"y1":    "50%",
+		"stops": "0:#112233,1:#445566",
+	})
+
+	if bs.linearGradient == nil {
+		t.Fatal("expected linear gradient to be parsed")
+	}
+	if bs.linearPct == nil {
+		t.Fatal("expected percentage geometry to be stored")
+	}
+	if bs.linearGradient.X0 != 0 || bs.linearGradient.Y0 != 0 || bs.linearGradient.X1 != 0 || bs.linearGradient.Y1 != 0 {
+		t.Fatalf("absolute coords = %#v, want zeroed percentage placeholders", bs.linearGradient)
+	}
+	if bs.linearPct.X0 == nil || *bs.linearPct.X0 != 0 {
+		t.Fatalf("x0 pct = %v, want 0", bs.linearPct.X0)
+	}
+	if bs.linearPct.Y0 == nil || *bs.linearPct.Y0 != 50 {
+		t.Fatalf("y0 pct = %v, want 50", bs.linearPct.Y0)
+	}
+	if bs.linearPct.X1 == nil || *bs.linearPct.X1 != 100 {
+		t.Fatalf("x1 pct = %v, want 100", bs.linearPct.X1)
+	}
+	if bs.linearPct.Y1 == nil || *bs.linearPct.Y1 != 50 {
+		t.Fatalf("y1 pct = %v, want 50", bs.linearPct.Y1)
+	}
+}
+
 func TestBrushStyleSetAttrsRadialGradient(t *testing.T) {
 	var bs BrushStyle
 	bs.SetAttrs(map[string]string{
@@ -81,6 +115,36 @@ func TestBrushStyleSetAttrsRadialGradient(t *testing.T) {
 	}
 	if got := len(bs.radialGradient.Stops); got != 2 {
 		t.Fatalf("len(stops) = %d, want 2", got)
+	}
+}
+
+func TestBrushStyleSetAttrsRadialGradientPercentageRadii(t *testing.T) {
+	var bs BrushStyle
+	bs.SetAttrs(map[string]string{
+		"kind":  "radial-gradient",
+		"x0":    "50%",
+		"y0":    "50%",
+		"r0":    "10%",
+		"x1":    "50%",
+		"y1":    "50%",
+		"r1":    "60%",
+		"stops": "0:#000000,1:#ffffff",
+	})
+
+	if bs.radialGradient == nil {
+		t.Fatal("expected radial gradient to be parsed")
+	}
+	if bs.radialPct == nil {
+		t.Fatal("expected radial percentage geometry to be stored")
+	}
+	if bs.radialGradient.R0 != 0 || bs.radialGradient.R1 != 0 {
+		t.Fatalf("absolute radii = %#v, want zeroed percentage placeholders", bs.radialGradient)
+	}
+	if bs.radialPct.R0 == nil || *bs.radialPct.R0 != 10 {
+		t.Fatalf("r0 pct = %v, want 10", bs.radialPct.R0)
+	}
+	if bs.radialPct.R1 == nil || *bs.radialPct.R1 != 60 {
+		t.Fatalf("r1 pct = %v, want 60", bs.radialPct.R1)
 	}
 }
 

@@ -356,7 +356,7 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		if brush.linearGradient == nil {
 			return nil
 		}
-		gradient := offsetLinearGradient(brush.linearGradient, x, y)
+		gradient := resolveLinearGradient(brush.linearGradient, brush.linearPct, x, y, width, height)
 		return widget.paintClippedRect(w, x, y, width, height, func() error {
 			return w.PaintLinearGradient(gradient)
 		})
@@ -364,7 +364,7 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		if brush.radialGradient == nil {
 			return nil
 		}
-		gradient := offsetRadialGradient(brush.radialGradient, x, y)
+		gradient := resolveRadialGradient(brush.radialGradient, brush.radialPct, x, y, width, height)
 		return widget.paintClippedRect(w, x, y, width, height, func() error {
 			return w.PaintRadialGradient(gradient)
 		})
@@ -591,7 +591,7 @@ func paintRepeatedBrushImage(w Writer, filename string, tileX, tileY, tileWidth,
 	return nil
 }
 
-func offsetLinearGradient(source *pdf.LinearGradient, x, y float64) *pdf.LinearGradient {
+func resolveLinearGradient(source *pdf.LinearGradient, pct *linearGradientPct, x, y, width, height float64) *pdf.LinearGradient {
 	if source == nil {
 		return nil
 	}
@@ -600,11 +600,25 @@ func offsetLinearGradient(source *pdf.LinearGradient, x, y float64) *pdf.LinearG
 	clone.Y0 += y
 	clone.X1 += x
 	clone.Y1 += y
+	if pct != nil {
+		if pct.X0 != nil {
+			clone.X0 = x + width*(*pct.X0)/100.0
+		}
+		if pct.Y0 != nil {
+			clone.Y0 = y + height*(*pct.Y0)/100.0
+		}
+		if pct.X1 != nil {
+			clone.X1 = x + width*(*pct.X1)/100.0
+		}
+		if pct.Y1 != nil {
+			clone.Y1 = y + height*(*pct.Y1)/100.0
+		}
+	}
 	clone.Stops = append([]pdf.GradientStop(nil), source.Stops...)
 	return &clone
 }
 
-func offsetRadialGradient(source *pdf.RadialGradient, x, y float64) *pdf.RadialGradient {
+func resolveRadialGradient(source *pdf.RadialGradient, pct *radialGradientPct, x, y, width, height float64) *pdf.RadialGradient {
 	if source == nil {
 		return nil
 	}
@@ -613,6 +627,27 @@ func offsetRadialGradient(source *pdf.RadialGradient, x, y float64) *pdf.RadialG
 	clone.Y0 += y
 	clone.X1 += x
 	clone.Y1 += y
+	if pct != nil {
+		if pct.X0 != nil {
+			clone.X0 = x + width*(*pct.X0)/100.0
+		}
+		if pct.Y0 != nil {
+			clone.Y0 = y + height*(*pct.Y0)/100.0
+		}
+		if pct.X1 != nil {
+			clone.X1 = x + width*(*pct.X1)/100.0
+		}
+		if pct.Y1 != nil {
+			clone.Y1 = y + height*(*pct.Y1)/100.0
+		}
+		boxMin := math.Min(width, height)
+		if pct.R0 != nil {
+			clone.R0 = boxMin * (*pct.R0) / 100.0
+		}
+		if pct.R1 != nil {
+			clone.R1 = boxMin * (*pct.R1) / 100.0
+		}
+	}
 	clone.Stops = append([]pdf.GradientStop(nil), source.Stops...)
 	return &clone
 }

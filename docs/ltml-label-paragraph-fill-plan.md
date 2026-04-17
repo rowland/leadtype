@@ -41,6 +41,8 @@ Allow existing `fill` and `fill.*` attrs to describe any brush kind:
 - Gradient
   - `fill.kind="linear-gradient"`
   - `fill.x0`, `fill.y0`, `fill.x1`, `fill.y1`
+  - Gradient coordinates may also be expressed as percentages of the painted box, for example `fill.x0="50%"`.
+  - Radial radii may also be expressed as percentages of the painted box's smaller dimension, for example `fill.r1="60%"`.
   - `fill.stops="0:#3B82F6,1:#8B5CF6"`
 - Image
   - `fill.kind="image"`

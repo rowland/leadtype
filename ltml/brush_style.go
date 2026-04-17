@@ -33,12 +33,30 @@ type BrushImageStyle struct {
 	TileHeightPct float64
 }
 
+type linearGradientPct struct {
+	X0 *float64
+	Y0 *float64
+	X1 *float64
+	Y1 *float64
+}
+
+type radialGradientPct struct {
+	X0 *float64
+	Y0 *float64
+	R0 *float64
+	X1 *float64
+	Y1 *float64
+	R1 *float64
+}
+
 type BrushStyle struct {
 	id             string
 	kind           BrushKind
 	color          colors.Color
 	linearGradient *pdf.LinearGradient
+	linearPct      *linearGradientPct
 	radialGradient *pdf.RadialGradient
+	radialPct      *radialGradientPct
 	image          *BrushImageStyle
 }
 
@@ -56,10 +74,28 @@ func (bs *BrushStyle) Clone() *BrushStyle {
 		gradientClone.Stops = append([]pdf.GradientStop(nil), bs.linearGradient.Stops...)
 		clone.linearGradient = &gradientClone
 	}
+	if bs.linearPct != nil {
+		pctClone := *bs.linearPct
+		pctClone.X0 = cloneFloat64Ptr(bs.linearPct.X0)
+		pctClone.Y0 = cloneFloat64Ptr(bs.linearPct.Y0)
+		pctClone.X1 = cloneFloat64Ptr(bs.linearPct.X1)
+		pctClone.Y1 = cloneFloat64Ptr(bs.linearPct.Y1)
+		clone.linearPct = &pctClone
+	}
 	if bs.radialGradient != nil {
 		gradientClone := *bs.radialGradient
 		gradientClone.Stops = append([]pdf.GradientStop(nil), bs.radialGradient.Stops...)
 		clone.radialGradient = &gradientClone
+	}
+	if bs.radialPct != nil {
+		pctClone := *bs.radialPct
+		pctClone.X0 = cloneFloat64Ptr(bs.radialPct.X0)
+		pctClone.Y0 = cloneFloat64Ptr(bs.radialPct.Y0)
+		pctClone.R0 = cloneFloat64Ptr(bs.radialPct.R0)
+		pctClone.X1 = cloneFloat64Ptr(bs.radialPct.X1)
+		pctClone.Y1 = cloneFloat64Ptr(bs.radialPct.Y1)
+		pctClone.R1 = cloneFloat64Ptr(bs.radialPct.R1)
+		clone.radialPct = &pctClone
 	}
 	if bs.image != nil {
 		imageClone := *bs.image
@@ -125,18 +161,20 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 		switch bs.Kind() {
 		case BrushKindRadialGradient:
 			gradient := bs.ensureRadialGradient()
-			gradient.X0 = parseMeasurementAttr(attrs, "x0", units, gradient.X0)
-			gradient.Y0 = parseMeasurementAttr(attrs, "y0", units, gradient.Y0)
-			gradient.X1 = parseMeasurementAttr(attrs, "x1", units, gradient.X1)
-			gradient.Y1 = parseMeasurementAttr(attrs, "y1", units, gradient.Y1)
+			pct := bs.ensureRadialPct()
+			parseGradientMeasurementOrPctAttr(attrs, "x0", units, &gradient.X0, &pct.X0)
+			parseGradientMeasurementOrPctAttr(attrs, "y0", units, &gradient.Y0, &pct.Y0)
+			parseGradientMeasurementOrPctAttr(attrs, "x1", units, &gradient.X1, &pct.X1)
+			parseGradientMeasurementOrPctAttr(attrs, "y1", units, &gradient.Y1, &pct.Y1)
 		case BrushKindImage:
 			// Ignore gradient geometry when explicitly configured as an image brush.
 		default:
 			gradient := bs.ensureLinearGradient()
-			gradient.X0 = parseMeasurementAttr(attrs, "x0", units, gradient.X0)
-			gradient.Y0 = parseMeasurementAttr(attrs, "y0", units, gradient.Y0)
-			gradient.X1 = parseMeasurementAttr(attrs, "x1", units, gradient.X1)
-			gradient.Y1 = parseMeasurementAttr(attrs, "y1", units, gradient.Y1)
+			pct := bs.ensureLinearPct()
+			parseGradientMeasurementOrPctAttr(attrs, "x0", units, &gradient.X0, &pct.X0)
+			parseGradientMeasurementOrPctAttr(attrs, "y0", units, &gradient.Y0, &pct.Y0)
+			parseGradientMeasurementOrPctAttr(attrs, "x1", units, &gradient.X1, &pct.X1)
+			parseGradientMeasurementOrPctAttr(attrs, "y1", units, &gradient.Y1, &pct.Y1)
 			if bs.kind == "" {
 				bs.kind = BrushKindLinearGradient
 			}
@@ -144,8 +182,9 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 	}
 	if hasAnyAttr(attrs, "r0", "r1") {
 		gradient := bs.ensureRadialGradient()
-		gradient.R0 = parseMeasurementAttr(attrs, "r0", units, gradient.R0)
-		gradient.R1 = parseMeasurementAttr(attrs, "r1", units, gradient.R1)
+		pct := bs.ensureRadialPct()
+		parseGradientMeasurementOrPctAttr(attrs, "r0", units, &gradient.R0, &pct.R0)
+		parseGradientMeasurementOrPctAttr(attrs, "r1", units, &gradient.R1, &pct.R1)
 		if bs.kind == "" {
 			bs.kind = BrushKindRadialGradient
 		}
@@ -227,6 +266,20 @@ func (bs *BrushStyle) ensureRadialGradient() *pdf.RadialGradient {
 	return bs.radialGradient
 }
 
+func (bs *BrushStyle) ensureLinearPct() *linearGradientPct {
+	if bs.linearPct == nil {
+		bs.linearPct = &linearGradientPct{}
+	}
+	return bs.linearPct
+}
+
+func (bs *BrushStyle) ensureRadialPct() *radialGradientPct {
+	if bs.radialPct == nil {
+		bs.radialPct = &radialGradientPct{}
+	}
+	return bs.radialPct
+}
+
 func (bs *BrushStyle) ensureImage() *BrushImageStyle {
 	if bs.image == nil {
 		bs.image = &BrushImageStyle{Opacity: 1}
@@ -240,6 +293,33 @@ func parseMeasurementOrPct(value string, units Units) (measurement, pct float64)
 		return 0, pct
 	}
 	return ParseMeasurement(value, units), 0
+}
+
+func parseGradientMeasurementOrPctAttr(attrs map[string]string, key string, units Units, measurement *float64, pct **float64) {
+	value, ok := attrs[key]
+	if !ok {
+		return
+	}
+	parsedMeasurement, parsedPct := parseMeasurementOrPct(strings.TrimSpace(value), units)
+	if rePct.MatchString(strings.TrimSpace(value)) {
+		*measurement = 0
+		*pct = float64Ptr(parsedPct)
+		return
+	}
+	*measurement = parsedMeasurement
+	*pct = nil
+}
+
+func cloneFloat64Ptr(value *float64) *float64 {
+	if value == nil {
+		return nil
+	}
+	clone := *value
+	return &clone
+}
+
+func float64Ptr(value float64) *float64 {
+	return &value
 }
 
 func parseGradientStops(value string) []pdf.GradientStop {
