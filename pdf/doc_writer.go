@@ -606,12 +606,20 @@ func (dw *DocWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
 	return dw.CurPage().Circle(x, y, r, border, fill, reverse)
 }
 
+func (dw *DocWriter) CirclePath(x, y, r float64, reverse bool) error {
+	return dw.CurPage().CirclePath(x, y, r, reverse)
+}
+
 func (dw *DocWriter) PointsForEllipse(x, y, rx, ry float64) []Location {
 	return dw.CurPage().PointsForEllipse(x, y, rx, ry)
 }
 
 func (dw *DocWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return dw.CurPage().Ellipse(x, y, rx, ry, border, fill, reverse)
+}
+
+func (dw *DocWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error {
+	return dw.CurPage().EllipsePath(x, y, rx, ry, reverse)
 }
 
 func (dw *DocWriter) PointsForArc(x, y, r, startAngle, endAngle float64) []Location {
@@ -638,8 +646,16 @@ func (dw *DocWriter) Polygon(x, y, r float64, sides int, border, fill, reverse b
 	return dw.CurPage().Polygon(x, y, r, sides, border, fill, reverse, rotation)
 }
 
+func (dw *DocWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
+	return dw.CurPage().PolygonPath(x, y, r, sides, reverse, rotation)
+}
+
 func (dw *DocWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return dw.CurPage().Star(x, y, r1, r2, points, border, fill, reverse, rotation)
+}
+
+func (dw *DocWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
+	return dw.CurPage().StarPath(x, y, r1, r2, points, reverse, rotation)
 }
 
 func (dw *DocWriter) NewPage() *PageWriter {

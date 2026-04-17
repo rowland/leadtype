@@ -17,10 +17,12 @@ type Writer interface {
 	Clip(fn func()) error
 	ClipRichText(text *rich_text.RichText, fn func()) error
 	ClipText(text string, fn func()) error
+	CirclePath(x, y, r float64, reverse bool) error
 	DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	EnableTaggedPDF(bool)
 	Circle(x, y, r float64, border, fill, reverse bool) error
+	EllipsePath(x, y, rx, ry float64, reverse bool) error
 	Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error
 	FontColor() colors.Color
 	Fonts() []*font.Font
@@ -51,6 +53,7 @@ type Writer interface {
 	PrintRichText(text *rich_text.RichText)
 	Path(fn func()) error
 	Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error
+	PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error
 	Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error
 	Rectangle(x, y, width, height float64, border bool, fill bool)
 	Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool)
@@ -66,6 +69,7 @@ type Writer interface {
 	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
 	SetStrikeout(strikeout bool) (prev bool)
+	StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error
 	SetUnderline(underline bool) (prev bool)
 	Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error
 	Stroke() error

@@ -238,6 +238,7 @@ func TestSamples(t *testing.T) {
 		"test_045_widget_brush_backgrounds",
 		"test_046_text_fill_clipping",
 		"test_047_style_src",
+		"test_048_bullet_variants",
 	}
 
 	for _, sample := range samples {

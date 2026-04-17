@@ -1,0 +1,16 @@
+<ltml units="in" margin="1">
+  <font id="body" name="Helvetica" size="12" />
+  <font id="zapf" name="ZapfDingbats" size="12" />
+  <brush id="goldfill" kind="linear-gradient" x0="0%" y0="0%" x1="100%" y1="0%" stops="0:Tomato,1:Gold" />
+  <bullet id="dot" font="zapf" text="l" width="24pt" />
+  <bullet id="scene" src="../../pdf/testdata/test_scene.svg" width="24pt" height="18pt" />
+  <bullet id="brand-star" shape="star" width="24pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
+  <page font="body">
+    <vbox layout.padding="12pt">
+      <label font.weight="Bold">Bullet variants</label>
+      <p bullet="dot">Text bullets keep the existing font-based behavior.</p>
+      <p bullet="scene">Image bullets render shared assets through the normal image pipeline.</p>
+      <p bullet="brand-star">Shape bullets can use pen and brush styling, including gradients.</p>
+    </vbox>
+  </page>
+</ltml>

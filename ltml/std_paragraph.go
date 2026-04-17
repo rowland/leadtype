@@ -122,8 +122,7 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		if b := p.Bullet(); b != nil && !p.suppressBullet {
 			x, y := w.Loc()
 			if err := withAccessibilityArtifact(w, func() error {
-				b.Apply(w)
-				return w.Print(b.Text())
+				return p.drawBullet(w, b, para[0], x, y)
 			}); err != nil {
 				return err
 			}

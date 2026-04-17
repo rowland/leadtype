@@ -31,8 +31,18 @@ func (w *shapeTestWriter) Circle(x, y, r float64, border, fill, reverse bool) er
 	return nil
 }
 
+func (w *shapeTestWriter) CirclePath(x, y, r float64, reverse bool) error {
+	w.calls = append(w.calls, shapeCall{name: "circle-path", x: x, y: y, a: r, reverse: reverse})
+	return nil
+}
+
 func (w *shapeTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	w.calls = append(w.calls, shapeCall{name: "ellipse", x: x, y: y, a: rx, b: ry, border: border, fill: fill, reverse: reverse})
+	return nil
+}
+
+func (w *shapeTestWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error {
+	w.calls = append(w.calls, shapeCall{name: "ellipse-path", x: x, y: y, a: rx, b: ry, reverse: reverse})
 	return nil
 }
 
@@ -41,8 +51,18 @@ func (w *shapeTestWriter) Polygon(x, y, r float64, sides int, border, fill, reve
 	return nil
 }
 
+func (w *shapeTestWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
+	w.calls = append(w.calls, shapeCall{name: "polygon-path", x: x, y: y, a: r, i: sides, reverse: reverse, rotation: rotation})
+	return nil
+}
+
 func (w *shapeTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	w.calls = append(w.calls, shapeCall{name: "star", x: x, y: y, a: r1, b: r2, i: points, border: border, fill: fill, reverse: reverse, rotation: rotation})
+	return nil
+}
+
+func (w *shapeTestWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
+	w.calls = append(w.calls, shapeCall{name: "star-path", x: x, y: y, a: r1, b: r2, i: points, reverse: reverse, rotation: rotation})
 	return nil
 }
 

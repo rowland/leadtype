@@ -633,6 +633,13 @@ func (pw *PageWriter) requireActivePath() error {
 	return nil
 }
 
+func (pw *PageWriter) requirePathSession() error {
+	if len(pw.pathStates) == 0 {
+		return errNoActivePath
+	}
+	return nil
+}
+
 // Path opens a scoped manual path session. During the session, auto-path
 // stroking is disabled so callers can build compound paths and explicitly
 // finalize them with Fill, Stroke, FillAndStroke, or Clip. If fn returns
@@ -915,12 +922,19 @@ func (pw *PageWriter) PointsForCircle(x, y, r float64) []Location {
 
 func (pw *PageWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
 	return pw.drawClosedShape(border, fill, func() {
-		points := pw.PointsForCircle(x, y, r)
-		if reverse {
-			points = reverseCurvePoints(points)
-		}
-		_ = pw.CurvePoints(points)
+		_ = pw.CirclePath(x, y, r, reverse)
 	})
+}
+
+func (pw *PageWriter) CirclePath(x, y, r float64, reverse bool) error {
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
+	points := pw.PointsForCircle(x, y, r)
+	if reverse {
+		points = reverseCurvePoints(points)
+	}
+	return pw.CurvePoints(points)
 }
 
 func (pw *PageWriter) PointsForEllipse(x, y, rx, ry float64) []Location {
@@ -936,12 +950,19 @@ func (pw *PageWriter) PointsForEllipse(x, y, rx, ry float64) []Location {
 
 func (pw *PageWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return pw.drawClosedShape(border, fill, func() {
-		points := pw.PointsForEllipse(x, y, rx, ry)
-		if reverse {
-			points = reverseCurvePoints(points)
-		}
-		_ = pw.CurvePoints(points)
+		_ = pw.EllipsePath(x, y, rx, ry, reverse)
 	})
+}
+
+func (pw *PageWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error {
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
+	points := pw.PointsForEllipse(x, y, rx, ry)
+	if reverse {
+		points = reverseCurvePoints(points)
+	}
+	return pw.CurvePoints(points)
 }
 
 func (pw *PageWriter) PointsForArc(x, y, r, startAngle, endAngle float64) []Location {
@@ -1035,21 +1056,44 @@ func (pw *PageWriter) Polygon(x, y, r float64, sides int, border, fill, reverse 
 		return errInvalidPolygonSides
 	}
 	return pw.drawClosedShape(border, fill, func() {
-		points := pw.PointsForPolygon(x, y, r, sides, rotation)
-		if reverse {
-			LocationSlice(points).Reverse()
-		}
-		for i, point := range points {
-			if i == 0 {
-				pw.MoveTo(point.X, point.Y)
-			} else {
-				pw.LineTo(point.X, point.Y)
-			}
-		}
+		_ = pw.PolygonPath(x, y, r, sides, reverse, rotation)
 	})
 }
 
+func (pw *PageWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
+	if sides < 3 {
+		return errInvalidPolygonSides
+	}
+	points := pw.PointsForPolygon(x, y, r, sides, rotation)
+	if reverse {
+		LocationSlice(points).Reverse()
+	}
+	for i, point := range points {
+		if i == 0 {
+			pw.MoveTo(point.X, point.Y)
+		} else {
+			pw.LineTo(point.X, point.Y)
+		}
+	}
+	return nil
+}
+
 func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
+	if points < 5 {
+		return errInvalidStarPoints
+	}
+	return pw.drawClosedShape(border, fill, func() {
+		_ = pw.StarPath(x, y, r1, r2, points, reverse, rotation)
+	})
+}
+
+func (pw *PageWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
 	if points < 5 {
 		return errInvalidStarPoints
 	}
@@ -1058,17 +1102,16 @@ func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, rever
 	if len(outer) == 0 || len(inner) == 0 {
 		return errInvalidStarPoints
 	}
-	return pw.drawClosedShape(border, fill, func() {
-		if reverse {
-			LocationSlice(outer).Reverse()
-			LocationSlice(inner).Reverse()
-		}
-		pw.MoveTo(inner[0].X, inner[0].Y)
-		for i := 0; i < points; i++ {
-			pw.LineTo(outer[i].X, outer[i].Y)
-			pw.LineTo(inner[i+1].X, inner[i+1].Y)
-		}
-	})
+	if reverse {
+		LocationSlice(outer).Reverse()
+		LocationSlice(inner).Reverse()
+	}
+	pw.MoveTo(inner[0].X, inner[0].Y)
+	for i := 0; i < points; i++ {
+		pw.LineTo(outer[i].X, outer[i].Y)
+		pw.LineTo(inner[i+1].X, inner[i+1].Y)
+	}
+	return nil
 }
 
 func lineCapStyleFromString(style string) (LineCapStyle, bool) {

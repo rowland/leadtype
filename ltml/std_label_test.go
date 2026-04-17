@@ -29,33 +29,33 @@ func defaultTestFonts(t testing.TB) []*font.Font {
 }
 
 type labelTestWriter struct {
-	fonts         []*font.Font
-	fontColor     colors.Color
-	fillColor     colors.Color
-	fontSize      float64
-	lineSpacing   float64
-	strikeout     bool
-	underline     bool
-	moves         [][2]float64
-	printed       []*rich_text.RichText
-	clipped       []*rich_text.RichText
-	clippedText   []string
-	paragraphOpts []options.Options
-	printedPages  []int
-	plainPrinted  []string
-	plainPages    []int
-	rotations     []rotationCall
-	curvedCount   int
-	curvedStarts  []float64
-	curvedOpts    []pdf.CurvedTextOptions
-	pageCount     int
-	rectPages     []int
-	fillRectPages []int
-	linearPaints  []*pdf.LinearGradient
-	radialPaints  []*pdf.RadialGradient
-	imagePaints   []paintedImageCall
+	fonts          []*font.Font
+	fontColor      colors.Color
+	fillColor      colors.Color
+	fontSize       float64
+	lineSpacing    float64
+	strikeout      bool
+	underline      bool
+	moves          [][2]float64
+	printed        []*rich_text.RichText
+	clipped        []*rich_text.RichText
+	clippedText    []string
+	paragraphOpts  []options.Options
+	printedPages   []int
+	plainPrinted   []string
+	plainPages     []int
+	rotations      []rotationCall
+	curvedCount    int
+	curvedStarts   []float64
+	curvedOpts     []pdf.CurvedTextOptions
+	pageCount      int
+	rectPages      []int
+	fillRectPages  []int
+	linearPaints   []*pdf.LinearGradient
+	radialPaints   []*pdf.RadialGradient
+	imagePaints    []paintedImageCall
 	fileDimensions map[string][2]int
-	t             testing.TB
+	t              testing.TB
 }
 
 type rotationCall struct {
@@ -92,6 +92,7 @@ func (w *labelTestWriter) ClipText(text string, fn func()) error {
 	return nil
 }
 func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (w *labelTestWriter) CirclePath(x, y, r float64, reverse bool) error           { return nil }
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++
 	w.curvedStarts = append(w.curvedStarts, startAngle)
@@ -111,6 +112,7 @@ func (w *labelTestWriter) DrawTextOnCircle(text string, x, y, r, startAngle floa
 func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
+func (w *labelTestWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error { return nil }
 func (w *labelTestWriter) Fonts() []*font.Font {
 	if len(w.fonts) == 0 && w.t != nil {
 		w.fonts = defaultTestFonts(w.t)
@@ -142,9 +144,15 @@ func (w *labelTestWriter) LineSpacing() float64 {
 func (w *labelTestWriter) SetLineCapStyle(style string) (prev string) { return "" }
 func (w *labelTestWriter) Line(x, y, angle, length float64)           {}
 func (w *labelTestWriter) LineTo(x, y float64)                        {}
-func (w *labelTestWriter) Loc() (x, y float64)                        { return 0, 0 }
-func (w *labelTestWriter) MoveTo(x, y float64)                        { w.moves = append(w.moves, [2]float64{x, y}) }
-func (w *labelTestWriter) NewPage()                                   { w.pageCount++ }
+func (w *labelTestWriter) Loc() (x, y float64) {
+	if len(w.moves) == 0 {
+		return 0, 0
+	}
+	last := w.moves[len(w.moves)-1]
+	return last[0], last[1]
+}
+func (w *labelTestWriter) MoveTo(x, y float64) { w.moves = append(w.moves, [2]float64{x, y}) }
+func (w *labelTestWriter) NewPage()            { w.pageCount++ }
 func (w *labelTestWriter) Print(text string) error {
 	w.plainPrinted = append(w.plainPrinted, text)
 	w.plainPages = append(w.plainPages, w.pageCount)
@@ -202,6 +210,9 @@ func (w *labelTestWriter) Path(fn func()) error {
 func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
+func (w *labelTestWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
+	return nil
+}
 func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
 	w.rectPages = append(w.rectPages, w.pageCount)
@@ -256,6 +267,9 @@ func (w *labelTestWriter) SetUnderline(underline bool) (prev bool) {
 	return prev
 }
 func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
+	return nil
+}
+func (w *labelTestWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
 	return nil
 }
 func (w *labelTestWriter) Stroke() error              { return nil }

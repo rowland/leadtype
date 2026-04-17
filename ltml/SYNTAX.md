@@ -748,9 +748,26 @@ overridden inline with `fill.*` attributes on a widget.
 |-----------|-------------|
 | `id`      | Name used to reference this style. |
 | `font`    | Reference to a named `<font>` style. |
-| `text`    | The bullet character(s) to render. |
-| `width`   | Space reserved for the bullet. |
-| `units`   | Units for `width`. |
+| `text`    | The bullet character(s) to render for text bullets. |
+| `src`     | Asset path for image bullets. Rendered through LTML's normal `PrintImageFile` path. |
+| `shape`   | Closed shape for shape bullets: `circle`, `ellipse`, `polygon`, or `star`. |
+| `width`   | Space reserved for the bullet slot. This remains the paragraph indent reservation for every bullet kind. |
+| `height`  | Optional render height for image and shape bullets. If omitted, LTML infers a height from the first line box. |
+| `pen`     | Optional `<pen>` style for shape bullet outlines. |
+| `brush`   | Optional `<brush>` style for shape bullet fills, including gradients and image brushes. |
+| `sides`   | Polygon side count for `shape="polygon"`. |
+| `points`  | Star point count for `shape="star"`. |
+| `rotation` | Optional rotation in degrees for polygon and star bullets. |
+| `r0`      | Optional inner radius for `shape="star"`. |
+| `units`   | Units for `width`, `height`, and `r0`. |
+
+Examples:
+
+```xml
+<bullet id="dot" font="zapf" text="l" width="18pt" />
+<bullet id="logo" src="../../pdf/testdata/test_scene.svg" width="18pt" height="14pt" />
+<bullet id="brand-star" shape="star" width="18pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
+```
 
 ---
 
