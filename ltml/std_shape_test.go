@@ -1,6 +1,10 @@
 package ltml
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
 
 type shapeCall struct {
 	name     string
@@ -31,6 +35,10 @@ func (w *shapeTestWriter) Circle(x, y, r float64, border, fill, reverse bool) er
 	return nil
 }
 
+func (w *shapeTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
+
 func (w *shapeTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	w.calls = append(w.calls, shapeCall{name: "ellipse", x: x, y: y, a: rx, b: ry, border: border, fill: fill, reverse: reverse})
 	return nil
@@ -44,6 +52,32 @@ func (w *shapeTestWriter) Polygon(x, y, r float64, sides int, border, fill, reve
 func (w *shapeTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	w.calls = append(w.calls, shapeCall{name: "star", x: x, y: y, a: r1, b: r2, i: points, border: border, fill: fill, reverse: reverse, rotation: rotation})
 	return nil
+}
+
+func (w *shapeTestWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+func (w *shapeTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	switch shape.Kind {
+	case pdf.ClosedShapeCircle:
+		r := shape.Radius
+		if r == 0 {
+			r = shape.RadiusX
+		}
+		return w.Circle(shape.Center.X, shape.Center.Y, r, border, fill, shape.Reverse)
+	case pdf.ClosedShapeEllipse:
+		return w.Ellipse(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY, border, fill, shape.Reverse)
+	case pdf.ClosedShapePolygon:
+		return w.Polygon(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, border, fill, shape.Reverse, shape.Rotation)
+	case pdf.ClosedShapeStar:
+		return w.Star(shape.Center.X, shape.Center.Y, shape.Radius, shape.InnerRadius, shape.Points, border, fill, shape.Reverse, shape.Rotation)
+	default:
+		return nil
+	}
 }
 
 func (w *shapeTestWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {

@@ -2,7 +2,7 @@
 1 0 obj
 <<
 /Count 1 
-/Kids [5 0 R ] 
+/Kids [7 0 R ] 
 /Type /Pages 
 >>
 endobj
@@ -14,17 +14,22 @@ endobj
 endobj
 3 0 obj
 <<
+/MarkInfo <<
+/Marked true 
+>>
+
 /Outlines 2 0 R 
 /PageMode /UseNone 
 /Pages 1 0 R 
+/StructTreeRoot 6 0 R 
 /Type /Catalog 
 >>
 endobj
 4 0 obj
 <<
 /Font <<
-/F0 8 0 R 
-/F1 11 0 R 
+/F0 11 0 R 
+/F1 15 0 R 
 >>
 
 /ProcSet [/PDF /Text /ImageB /ImageC ] 
@@ -32,17 +37,45 @@ endobj
 endobj
 5 0 obj
 <<
-/Contents 12 0 R 
+/Nums [0 [8 0 R 12 0 R 16 0 R 17 0 R 17 0 R 18 0 R 19 0 R 19 0 R 19 0 R ] ] 
+>>
+endobj
+6 0 obj
+<<
+/K [8 0 R 12 0 R 16 0 R 17 0 R 18 0 R 19 0 R ] 
+/ParentTree 5 0 R 
+/ParentTreeNextKey 1 
+/Type /StructTreeRoot 
+>>
+endobj
+7 0 obj
+<<
+/Contents 20 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 5097 
+/Length 5727 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
 /Rotate 0 
+/StructParents 0 
 /Type /Page 
 >>
 endobj
-6 0 obj
+8 0 obj
+<<
+/ActualText (External Style Sheets) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 0 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+9 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -51,7 +84,7 @@ endobj
 /Flags 262144 
 /FontBBox [-2084 -985 2810 1971 ] 
 /FontFamily (Helvetica) 
-/FontFile2 18 0 R 
+/FontFile2 26 0 R 
 /FontName /UNSLRQ+Helvetica-Bold 
 /ItalicAngle 0 
 /Leading 2048 
@@ -63,29 +96,43 @@ endobj
 /XHeight 1090 
 >>
 endobj
-7 0 obj
+10 0 obj
 <<
 /BaseFont /UNSLRQ+Helvetica-Bold 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 17 0 R 
+/CIDToGIDMap 25 0 R 
 /DW 556 
-/FontDescriptor 6 0 R 
+/FontDescriptor 9 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [666 ] 3 [333 ] 5 [389 610 ] 8 [277 277 666 ] 12 [610 ] 14 [610 722 610 722 610 ] 20 [889 333 277 ] 24 [722 ] ] 
 >>
 endobj
-8 0 obj
+11 0 obj
 <<
 /BaseFont /UNSLRQ+Helvetica-Bold 
-/DescendantFonts [7 0 R ] 
+/DescendantFonts [10 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 16 0 R 
+/ToUnicode 24 0 R 
 /Type /Font 
 >>
 endobj
-9 0 obj
+12 0 obj
+<<
+/ActualText (This sample loads selector rules from a sibling stylesheet file using <style src="..." />.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 1 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+13 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -94,7 +141,7 @@ endobj
 /Flags 0 
 /FontBBox [-1947 -985 2961 2297 ] 
 /FontFamily (Helvetica) 
-/FontFile2 15 0 R 
+/FontFile2 23 0 R 
 /FontName /WQBJXY+Helvetica 
 /ItalicAngle 0 
 /Leading 2048 
@@ -106,48 +153,144 @@ endobj
 /XHeight 1071 
 >>
 endobj
-10 0 obj
+14 0 obj
 <<
 /BaseFont /WQBJXY+Helvetica 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 14 0 R 
+/CIDToGIDMap 22 0 R 
 /DW 556 
-/FontDescriptor 9 0 R 
+/FontDescriptor 13 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [610 ] 3 [222 500 277 ] 7 [833 ] 9 [222 ] 13 [500 277 333 ] 17 [277 ] 21 [500 583 583 354 277 277 583 666 500 500 277 500 500 ] 35 [833 722 ] ] 
 >>
 endobj
-11 0 obj
+15 0 obj
 <<
 /BaseFont /WQBJXY+Helvetica 
-/DescendantFonts [10 0 R ] 
+/DescendantFonts [14 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 13 0 R 
+/ToUnicode 21 0 R 
 /Type /Font 
 >>
 endobj
-12 0 obj
+16 0 obj
 <<
-/Length 5097 
+/ActualText (Shared Rule Set) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 2 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+17 0 obj
+<<
+/ActualText (Both cards pick up font sizing, spacing, and decoration from the external stylesheet.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 3 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 4 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+18 0 obj
+<<
+/ActualText (Document-Relative Asset) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 5 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+19 0 obj
+<<
+/ActualText (The stylesheet path resolves relative to this LTML file when no asset filesystem is attached.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 6 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 7 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 8 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+20 0 obj
+<<
+/Length 5727 
 >>
 stream
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 1 1 1 rg
 28 691 556 73 re
 f
+EMC
+/Artifact BMC
 0.001 w
 [1 2] 0 d
 0 J
 28 691 556 73 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 42 731.5195 Td
+/P <<
+/MCID 0 
+>>
+BDC
 0 0 0 rg
 /F0 24 Tf
 0 Ts
 <000100020003000400050006000700080009000a0003000b000800040009000a000c000400040003000d> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -23.5298 Td
+/P <<
+/MCID 1 
+>>
+BDC
 /F1 13 Tf
 0 Ts
 1 0 0 1 42 707.9897 Tm
@@ -331,64 +474,128 @@ BT
 1 0 0 1 566.3882 707.9897 Tm
 <0019> Tj
 1 0 0 1 570 707.9897 Tm
+EMC
 1 0 0 1 42 707.9897 Tm
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 1 1 1 rg
 28 618 266.88 61 re
 f
+EMC
+/Artifact BMC
 [] 0 d
 0 J
 28 618 266.88 61 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 38 660.5298 Td
+/P <<
+/MCID 2 
+>>
+BDC
 0 0 0 rg
 /F0 11 Tf
 0 Ts
 <000a000c000700050004000e0009000f0010000800040009000a00040003> Tj
+EMC
 ET
 0.5425 w
 38 659.6973 m
 122.3584 659.6973 l
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 S
 BT
 38 642.7598 Td
+/P <<
+/MCID 3 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <001c000b000e00020005000d0006000f000c0004000500080003000d001d00050010000800050011000b0013000e000500040003001e000300130014001f0005000400080006000d000300130014001f000500060013000c> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 4 
+>>
+BDC
 <000c000a000d000b000f0006000e0003000b001300050011000f000b00070005000e0002000a0005000a0020000e000a000f00130006000900050004000e00150009000a00040002000a000a000e0019> Tj
+EMC
+/Artifact BMC
 ET
 0.8627 0.8627 0.8627 rg
 294.88 606 266.88 73 re
 f
+EMC
+/Artifact BMC
 0.001 w
 294.88 606 266.88 73 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 304.88 660.5298 Td
+/P <<
+/MCID 5 
+>>
+BDC
 0 0 0 rg
 /F0 11 Tf
 0 Ts
 <001100120013001000140004000600030015000f000400080007000300160017000400090018000d000d00040003> Tj
+EMC
 ET
 0.5425 w
 304.88 659.6973 m
 437.5299 659.6973 l
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 S
 BT
 304.88 642.7598 Td
+/P <<
+/MCID 6 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <00010002000a00050004000e00150009000a00040002000a000a000e000500080006000e00020005000f000a0004000b00090021000a00040005000f000a00090006000e00030021000a0005000e000b0005000e000200030004> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 7 
+>>
+BDC
 <00220001002300220005001100030009000a000500240002000a001300050013000b0005000600040004000a000e0005001100030009000a000400150004000e000a0007000500030004> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 8 
+>>
+BDC
 <0006000e000e0006000d0002000a000c0019> Tj
+EMC
 ET
 endstream
 endobj
-13 0 obj
+21 0 obj
 <<
 /Length 788 
 >>
@@ -445,14 +652,14 @@ CMap end
 end
 endstream
 endobj
-14 0 obj
+22 0 obj
 <<
 /Length 74 
 >>
 stream
    7 K L V  D P S O H R G F W U X I E Q J \       ! % N ]  [ Y / 0 Zendstream
 endobj
-15 0 obj
+23 0 obj
 <<
 /Length 15524 
 /Length1 15524 
@@ -553,7 +760,7 @@ FIGw xW((++;;	 
 © p© €©  €© ©²2¾, % & ¶ç1-å1¸²Â'¸²Á¸@Àž¿g¾g«'¸²ª)¸¶©l“¸š²’¸²‘¸²u¸¶m)–d1¸š²L–¸«²9¸V@68!5ä/'¸@-L*1Í$¸«² ¸%@“:LE':E'»ª› *›²%Jº› %z³I)8–¸{³H(1%¸z@6H(–)H'%)L%)F'')H'VÈ„[A2+(&!
 ¸¬²?»« ? «³¸®²?»­ ? ­· ¸ÿà´   ¸«´   ¸«¶   ¸­³   ¸­@               J °¸ …v??>9FD>9FD>9FD>9FD>9FD>9F`D>9F`D>9F`D+++++++++++++++++++++++++++°–KSX°ªY°2KSX°ÿY+++++++++++++++++++++++++++++++++++++++++tu+++eB++KRy³vpjfEe#E`#Ee`#E`°‹vh°€b  ±jpEe#E °&`bch °&ae°p#eD°j#D ±vfEe#E °&`bch °&ae°f#eD°v#D± fETX±f@eD²v@vE#aDY³bBr]Ee#E`#Ee`#E`°‰vh°€b  ±rBEe#E °&`bch °&ae°B#eD°r#D ±b]Ee#E °&`bch °&ae°]#eD°b#D± ]ETX±]@eD²b@bE#aDY++++EiSBst¸š EiK °(S°IQZX° aYD¸¦ EiDu  endstream
 endobj
-16 0 obj
+24 0 obj
 <<
 /Length 620 
 >>
@@ -598,14 +805,14 @@ CMap end
 end
 endstream
 endobj
-17 0 obj
+25 0 obj
 <<
 /Length 50 
 >>
 stream
    ( [ W H U Q D O  6 \ K V G 5 X ' R F P  L Y $endstream
 endobj
-18 0 obj
+26 0 obj
 <<
 /Length 9988 
 /Length1 9988 
@@ -668,31 +875,39 @@ T†þùþùøñÍ»=1BL~xIˆlV‚t»8ù8¸     ?ÿÞeÀ  o¸ f+ ¸  EX¸ /¹  
                         ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \¸ f+ º   h+º   h+¿  (       n+¿  %       n+ ¿  - %      n+¿  K = 0 "    n+¿  &       n+ º   m+¸   E}iDendstream
 endobj
 xref
-0 19
+0 27
 0000000000 65535 f
 0000000009 00000 n
 0000000070 00000 n
 0000000118 00000 n
-0000000206 00000 n
-0000000303 00000 n
-0000000464 00000 n
-0000000793 00000 n
-0000001132 00000 n
-0000001286 00000 n
-0000001604 00000 n
-0000001971 00000 n
-0000002122 00000 n
-0000007272 00000 n
-0000008112 00000 n
-0000008237 00000 n
-0000023831 00000 n
-0000024503 00000 n
-0000024604 00000 n
+0000000260 00000 n
+0000000358 00000 n
+0000000456 00000 n
+0000000589 00000 n
+0000000768 00000 n
+0000000904 00000 n
+0000001233 00000 n
+0000001573 00000 n
+0000001729 00000 n
+0000001935 00000 n
+0000002254 00000 n
+0000002622 00000 n
+0000002773 00000 n
+0000002904 00000 n
+0000003146 00000 n
+0000003285 00000 n
+0000003573 00000 n
+0000009353 00000 n
+0000010193 00000 n
+0000010318 00000 n
+0000025912 00000 n
+0000026584 00000 n
+0000026685 00000 n
 trailer
 <<
 /Root 3 0 R 
-/Size 19 
+/Size 27 
 >>
 startxref
-34660
+36741
 %%EOF

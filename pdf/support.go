@@ -49,6 +49,19 @@ type Size struct {
 	Width, Height float64
 }
 
+type Bounds struct {
+	MinX, MinY float64
+	MaxX, MaxY float64
+}
+
+func (b Bounds) Width() float64 {
+	return b.MaxX - b.MinX
+}
+
+func (b Bounds) Height() float64 {
+	return b.MaxY - b.MinY
+}
+
 type SizeMap map[string]Size
 
 type intSlice []int

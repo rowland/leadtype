@@ -36,6 +36,12 @@ func (w *layoutProbeWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (w *layoutProbeWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *layoutProbeWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	if fn != nil {
 		fn()
@@ -54,8 +60,14 @@ func (w *layoutProbeWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y,
 func (w *layoutProbeWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
+func (w *layoutProbeWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	return nil
+}
 func (w *layoutProbeWriter) EnableTaggedPDF(value bool)                               { w.base.EnableTaggedPDF(value) }
 func (w *layoutProbeWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (w *layoutProbeWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
 func (w *layoutProbeWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }

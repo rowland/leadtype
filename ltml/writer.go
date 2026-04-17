@@ -15,10 +15,13 @@ type Writer interface {
 	Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error
 	Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error
 	Clip(fn func()) error
+	ClipClosedShape(shape pdf.ClosedShape, fn func()) error
 	ClipRichText(text *rich_text.RichText, fn func()) error
 	ClipText(text string, fn func()) error
+	ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error)
 	DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
+	DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error
 	EnableTaggedPDF(bool)
 	Circle(x, y, r float64, border, fill, reverse bool) error
 	Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error

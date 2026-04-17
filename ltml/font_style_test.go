@@ -51,6 +51,13 @@ func (m *mockWriter) Clip(fn func()) error {
 	return nil
 }
 
+func (m *mockWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
 func (m *mockWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	if fn != nil {
 		fn()
@@ -66,12 +73,19 @@ func (m *mockWriter) ClipText(text string, fn func()) error {
 }
 
 func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (m *mockWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
 
 func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
 
 func (m *mockWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
+	return nil
+}
+
+func (m *mockWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
 	return nil
 }
 

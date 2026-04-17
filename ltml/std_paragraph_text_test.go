@@ -1,6 +1,97 @@
 package ltml
 
-import "testing"
+import (
+	"math"
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
+
+type bulletTestWriter struct {
+	labelTestWriter
+	fileCalls  []imageFilePrintCall
+	shapeCalls []shapeCall
+	pathCount  int
+	clipCount  int
+}
+
+func (w *bulletTestWriter) Path(fn func()) error {
+	w.pathCount++
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+func (w *bulletTestWriter) Clip(fn func()) error {
+	w.clipCount++
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+func (w *bulletTestWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	w.clipCount++
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
+func (w *bulletTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
+	w.fileCalls = append(w.fileCalls, imageFilePrintCall{
+		filename: filename,
+		x:        x,
+		y:        y,
+		width:    width,
+		height:   height,
+	})
+	return 0, 0, nil
+}
+
+func (w *bulletTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
+	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "circle", x: x, y: y, a: r, border: border, fill: fill, reverse: reverse})
+	return nil
+}
+
+func (w *bulletTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
+
+func (w *bulletTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
+	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "ellipse", x: x, y: y, a: rx, b: ry, border: border, fill: fill, reverse: reverse})
+	return nil
+}
+
+func (w *bulletTestWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
+	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "polygon", x: x, y: y, a: r, i: sides, border: border, fill: fill, reverse: reverse, rotation: rotation})
+	return nil
+}
+
+func (w *bulletTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
+	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "star", x: x, y: y, a: r1, b: r2, i: points, border: border, fill: fill, reverse: reverse, rotation: rotation})
+	return nil
+}
+
+func (w *bulletTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	switch shape.Kind {
+	case pdf.ClosedShapeCircle:
+		r := shape.Radius
+		if r == 0 {
+			r = shape.RadiusX
+		}
+		return w.Circle(shape.Center.X, shape.Center.Y, r, border, fill, shape.Reverse)
+	case pdf.ClosedShapeEllipse:
+		return w.Ellipse(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY, border, fill, shape.Reverse)
+	case pdf.ClosedShapePolygon:
+		return w.Polygon(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, border, fill, shape.Reverse, shape.Rotation)
+	case pdf.ClosedShapeStar:
+		return w.Star(shape.Center.X, shape.Center.Y, shape.Radius, shape.InnerRadius, shape.Points, border, fill, shape.Reverse, shape.Rotation)
+	default:
+		return nil
+	}
+}
 
 func TestStdParagraph_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
 	p := &StdParagraph{}
@@ -144,6 +235,48 @@ func TestStdParagraph_DrawContent_TextFillUsesParagraphAlignmentWithPlainBullet(
 	}
 }
 
+func TestStdParagraph_DrawContent_PlacesTextBulletInRTLSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{text: "*", width: 24, font: p.font}
+	p.SetWidth(120)
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.moves) < 4 {
+		t.Fatalf("move count = %d, want at least 4", len(w.moves))
+	}
+	wantBulletX := ContentRight(p) - p.bulletTextWidth(w, p.bullet)
+	if got := w.moves[2][0]; math.Abs(got-wantBulletX) > 0.001 {
+		t.Fatalf("bullet move x = %v, want %v", got, wantBulletX)
+	}
+	if got := w.moves[0][0]; math.Abs(got-ContentLeft(p)) > 0.001 {
+		t.Fatalf("initial text move x = %v, want %v", got, ContentLeft(p))
+	}
+	if got := w.moves[3][0]; math.Abs(got-ContentLeft(p)) > 0.001 {
+		t.Fatalf("post-bullet text move x = %v, want %v", got, ContentLeft(p))
+	}
+	if len(w.paragraphOpts) != 1 {
+		t.Fatalf("paragraph opts count = %d, want 1", len(w.paragraphOpts))
+	}
+	if got := w.paragraphOpts[0]["text-align"]; got != "right" {
+		t.Fatalf("paragraph text-align = %v, want right", got)
+	}
+}
+
 func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
 	page.layout = defaultLayouts["vbox"].Clone()
@@ -189,5 +322,252 @@ func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *test
 	}
 	if tail.continuationIndent != p.bulletWidth() {
 		t.Fatalf("tail continuation indent = %v, want %v", tail.continuationIndent, p.bulletWidth())
+	}
+}
+
+func TestStdParagraph_DrawContent_PlacesImageBulletInRTLSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{src: "fixture.svg", width: 24, height: 12}
+	p.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", "<svg/>"))))
+	p.SetWidth(120)
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:           t,
+		fonts:       defaultTestFonts(t),
+		lineSpacing: 1.0,
+		fileDimensions: map[string][2]int{
+			"fixture.svg": {10, 10},
+		},
+	}}
+
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("image bullet calls = %d, want 1", len(w.fileCalls))
+	}
+	if w.fileCalls[0].width == nil {
+		t.Fatal("image bullet width pointer is nil")
+	}
+	wantX := ContentRight(p) - *w.fileCalls[0].width
+	if got := w.fileCalls[0].x; math.Abs(got-wantX) > 0.001 {
+		t.Fatalf("image bullet x = %v, want %v", got, wantX)
+	}
+}
+
+func TestStdParagraph_DrawContent_PlacesShapeBulletFlushRightInRTLSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 18}
+	p.SetWidth(120)
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:           t,
+		fonts:       defaultTestFonts(t),
+		lineSpacing: 1.0,
+	}}
+
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.shapeCalls) != 1 {
+		t.Fatalf("shape bullet calls = %d, want 1", len(w.shapeCalls))
+	}
+	call := w.shapeCalls[0]
+	if call.name != "circle" {
+		t.Fatalf("shape bullet name = %q, want circle", call.name)
+	}
+	wantX := ContentRight(p) - call.a
+	if got := call.x; math.Abs(got-wantX) > 0.001 {
+		t.Fatalf("shape bullet center x = %v, want %v", got, wantX)
+	}
+}
+
+func TestStdParagraph_DrawContent_ImageBulletUsesPrintImageFile(t *testing.T) {
+	p := &StdParagraph{}
+	p.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", "<svg/>"))))
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{src: "fixture.svg", width: 20, height: 10}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:              t,
+		fonts:          defaultTestFonts(t),
+		lineSpacing:    1.0,
+		fileDimensions: map[string][2]int{"fixture.svg": {100, 50}},
+	}}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("image call count = %d, want 1", len(w.fileCalls))
+	}
+	call := w.fileCalls[0]
+	if call.filename != "fixture.svg" {
+		t.Fatalf("filename = %q, want fixture.svg", call.filename)
+	}
+	if call.x != 10 {
+		t.Fatalf("x = %v, want 10", call.x)
+	}
+	if call.width == nil || *call.width != 20 {
+		t.Fatalf("width = %v, want 20", call.width)
+	}
+	if call.height == nil || *call.height != 10 {
+		t.Fatalf("height = %v, want 10", call.height)
+	}
+	if len(w.plainPrinted) != 0 {
+		t.Fatalf("plainPrinted = %#v, want no text bullet output", w.plainPrinted)
+	}
+}
+
+func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{
+		shape:    "star",
+		width:    18,
+		height:   18,
+		points:   6,
+		r0:       4,
+		rotation: 15,
+		brush: &BrushStyle{
+			kind: BrushKindLinearGradient,
+			linearGradient: &pdf.LinearGradient{
+				Stops: []pdf.GradientStop{
+					{Position: 0, Color: NamedColor("Blue")},
+					{Position: 1, Color: NamedColor("Gold")},
+				},
+			},
+		},
+		pen: &PenStyle{id: "solid", color: NamedColor("black"), width: 1, pattern: "solid"},
+	}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.linearPaints) != 1 {
+		t.Fatalf("linear paint count = %d, want 1", len(w.linearPaints))
+	}
+	if w.clipCount == 0 {
+		t.Fatal("expected shape bullet to use closed-shape clipping")
+	}
+	if got := w.shapeCalls[len(w.shapeCalls)-1].name; got != "star" {
+		t.Fatalf("last shape call = %q, want star border draw", got)
+	}
+	layout := p.bulletLayout(w, p.bullet, p.Lines(w, p.lineWidth())[0], 10, 20+p.Lines(w, p.lineWidth())[0].Ascent())
+	if layout.shape == nil {
+		t.Fatal("shape layout missing closed shape")
+	}
+	if math.Abs(layout.shapeBounds.MinX-layout.renderX) > 0.0001 {
+		t.Fatalf("shape left edge = %v, want %v", layout.shapeBounds.MinX, layout.renderX)
+	}
+	if math.Abs(layout.renderX-10) > 0.0001 {
+		t.Fatalf("renderX = %v, want 10", layout.renderX)
+	}
+	if len(w.clippedText) != 0 {
+		t.Fatalf("shape bullet should not use text clipping, got %#v", w.clippedText)
+	}
+}
+
+func TestStdParagraph_BulletLayout_HonorsExplicitHeightAboveLineHeight(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 18}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) != 1 {
+		t.Fatalf("line count = %d, want 1", len(lines))
+	}
+
+	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent())
+	if math.Abs(layout.renderHeight-18) > 0.0001 {
+		t.Fatalf("renderHeight = %v, want 18", layout.renderHeight)
+	}
+	if math.Abs(layout.renderWidth-18) > 0.0001 {
+		t.Fatalf("renderWidth = %v, want 18", layout.renderWidth)
+	}
+}
+
+func TestStdParagraph_SplitForHeight_ImageBulletSuppressesContinuationRendering(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	p := &StdParagraph{}
+	_ = p.SetContainer(page)
+	p.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{src: "fixture.jpg", width: 18, height: 12}
+	p.splitEnabled = true
+	p.orphans = 2
+	p.widows = 2
+	p.SetWidth(90)
+	p.AddText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:              t,
+		fonts:          defaultTestFonts(t),
+		lineSpacing:    1.0,
+		fileDimensions: map[string][2]int{"fixture.jpg": {120, 80}},
+	}}
+	lines := p.Lines(w, p.lineWidth())
+	result, err := p.SplitForHeight(p.heightForLines(lines[:2], w), w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("expected paragraph to split")
+	}
+
+	if err := result.Head.(*StdParagraph).DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if err := result.Tail.(*StdParagraph).DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("image bullet should render only on head, got %d calls", len(w.fileCalls))
 	}
 }

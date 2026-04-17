@@ -322,6 +322,106 @@ func TestPageWriter_Star_InvalidPoints(t *testing.T) {
 	}
 }
 
+func TestPageWriter_ClosedShapeBounds(t *testing.T) {
+	tests := []struct {
+		name  string
+		shape ClosedShape
+		check func(t *testing.T, bounds Bounds)
+	}{
+		{
+			name: "circle",
+			shape: ClosedShape{
+				Kind:   ClosedShapeCircle,
+				Center: Location{X: 10, Y: 20},
+				Radius: 3,
+			},
+			check: func(t *testing.T, bounds Bounds) {
+				expectFdelta(t, 7, bounds.MinX, 0.0001)
+				expectFdelta(t, 13, bounds.MaxX, 0.0001)
+				expectFdelta(t, 17, bounds.MinY, 0.0001)
+				expectFdelta(t, 23, bounds.MaxY, 0.0001)
+			},
+		},
+		{
+			name: "ellipse",
+			shape: ClosedShape{
+				Kind:    ClosedShapeEllipse,
+				Center:  Location{X: 10, Y: 20},
+				RadiusX: 4,
+				RadiusY: 2,
+			},
+			check: func(t *testing.T, bounds Bounds) {
+				expectFdelta(t, 6, bounds.MinX, 0.0001)
+				expectFdelta(t, 14, bounds.MaxX, 0.0001)
+				expectFdelta(t, 18, bounds.MinY, 0.0001)
+				expectFdelta(t, 22, bounds.MaxY, 0.0001)
+			},
+		},
+		{
+			name: "polygon",
+			shape: ClosedShape{
+				Kind:   ClosedShapePolygon,
+				Center: Location{X: 0, Y: 0},
+				Radius: 5,
+				Sides:  6,
+			},
+			check: func(t *testing.T, bounds Bounds) {
+				expectFdelta(t, -5, bounds.MinX, 0.0002)
+				expectFdelta(t, 5, bounds.MaxX, 0.0002)
+				expectFdelta(t, -4.3301, bounds.MinY, 0.0002)
+				expectFdelta(t, 4.3301, bounds.MaxY, 0.0002)
+			},
+		},
+		{
+			name: "star",
+			shape: ClosedShape{
+				Kind:        ClosedShapeStar,
+				Center:      Location{X: 0, Y: 0},
+				Radius:      5,
+				InnerRadius: 2,
+				Points:      5,
+				Rotation:    15,
+			},
+			check: func(t *testing.T, bounds Bounds) {
+				check(t, bounds.Width() > 0, "star bounds width should be positive")
+				check(t, bounds.Height() > 0, "star bounds height should be positive")
+				check(t, bounds.MinX < 0 && bounds.MaxX > 0, "star bounds should span center in x")
+				check(t, bounds.MinY < 0 && bounds.MaxY > 0, "star bounds should span center in y")
+			},
+		},
+	}
+
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			bounds, err := pw.ClosedShapeBounds(test.shape)
+			if err != nil {
+				t.Fatalf("ClosedShapeBounds returned error: %v", err)
+			}
+			test.check(t, bounds)
+		})
+	}
+}
+
+func TestPageWriter_ClipClosedShape(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.ClipClosedShape(ClosedShape{
+		Kind:    ClosedShapeCircle,
+		Center:  Location{X: 10, Y: 10},
+		Radius:  4,
+		Reverse: true,
+	}, func() {
+		check(t, pw.PaintLinearGradient(testLinearGradient()) == nil, "PaintLinearGradient should succeed")
+	})
+	check(t, err == nil, "ClipClosedShape should succeed")
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "q\nW\nn\n"), "closed-shape clip should clip and clear the path")
+	check(t, strings.Contains(s, "sh\nQ\n"), "closed-shape clip should paint and restore graphics state")
+}
+
 func TestPageWriter_CircleFillAndStroke(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

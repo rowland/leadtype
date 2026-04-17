@@ -114,23 +114,22 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 			return provider.drawSectorParagraph(p, w, provider.sectorParagraphLayoutFor(p, w))
 		}
 		indent := p.textIndent()
-		x := ContentLeft(p)
-		if p.suppressBullet {
-			x += indent
-		}
-		w.MoveTo(x, ContentTop(p)+para[0].Ascent())
+		textX := p.textStartX(indent)
+		baselineY := ContentTop(p) + para[0].Ascent()
+		w.MoveTo(textX, baselineY)
 		if b := p.Bullet(); b != nil && !p.suppressBullet {
-			x, y := w.Loc()
+			x := p.bulletSlotX()
+			y := baselineY
+			w.MoveTo(x, y)
 			if err := withAccessibilityArtifact(w, func() error {
-				b.Apply(w)
-				return w.Print(b.Text())
+				return p.drawBullet(w, b, para[0], x, y)
 			}); err != nil {
 				return err
 			}
-			w.MoveTo(x+b.Width(), y)
+			w.MoveTo(textX, y)
 		}
 		if p.textFill != nil {
-			return p.paintTextFill(w, para, x, ContentTop(p)+para[0].Ascent(), ContentWidth(p)-indent)
+			return p.paintTextFill(w, para, textX, baselineY, ContentWidth(p)-indent)
 		}
 		w.PrintParagraph(para, paragraphTextFillOptions(p))
 		return nil
@@ -337,6 +336,20 @@ func (p *StdParagraph) textIndent() float64 {
 		return p.continuationIndent
 	}
 	return p.bulletWidth()
+}
+
+func (p *StdParagraph) bulletSlotX() float64 {
+	if IsRTL(p) {
+		return ContentRight(p) - p.bulletWidth()
+	}
+	return ContentLeft(p)
+}
+
+func (p *StdParagraph) textStartX(indent float64) float64 {
+	if IsRTL(p) {
+		return ContentLeft(p)
+	}
+	return ContentLeft(p) + indent
 }
 
 func (p *StdParagraph) lineWidth() float64 {

@@ -29,33 +29,33 @@ func defaultTestFonts(t testing.TB) []*font.Font {
 }
 
 type labelTestWriter struct {
-	fonts         []*font.Font
-	fontColor     colors.Color
-	fillColor     colors.Color
-	fontSize      float64
-	lineSpacing   float64
-	strikeout     bool
-	underline     bool
-	moves         [][2]float64
-	printed       []*rich_text.RichText
-	clipped       []*rich_text.RichText
-	clippedText   []string
-	paragraphOpts []options.Options
-	printedPages  []int
-	plainPrinted  []string
-	plainPages    []int
-	rotations     []rotationCall
-	curvedCount   int
-	curvedStarts  []float64
-	curvedOpts    []pdf.CurvedTextOptions
-	pageCount     int
-	rectPages     []int
-	fillRectPages []int
-	linearPaints  []*pdf.LinearGradient
-	radialPaints  []*pdf.RadialGradient
-	imagePaints   []paintedImageCall
+	fonts          []*font.Font
+	fontColor      colors.Color
+	fillColor      colors.Color
+	fontSize       float64
+	lineSpacing    float64
+	strikeout      bool
+	underline      bool
+	moves          [][2]float64
+	printed        []*rich_text.RichText
+	clipped        []*rich_text.RichText
+	clippedText    []string
+	paragraphOpts  []options.Options
+	printedPages   []int
+	plainPrinted   []string
+	plainPages     []int
+	rotations      []rotationCall
+	curvedCount    int
+	curvedStarts   []float64
+	curvedOpts     []pdf.CurvedTextOptions
+	pageCount      int
+	rectPages      []int
+	fillRectPages  []int
+	linearPaints   []*pdf.LinearGradient
+	radialPaints   []*pdf.RadialGradient
+	imagePaints    []paintedImageCall
 	fileDimensions map[string][2]int
-	t             testing.TB
+	t              testing.TB
 }
 
 type rotationCall struct {
@@ -77,6 +77,12 @@ func (w *labelTestWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (w *labelTestWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *labelTestWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	w.clipped = append(w.clipped, text)
 	if fn != nil {
@@ -92,6 +98,9 @@ func (w *labelTestWriter) ClipText(text string, fn func()) error {
 	return nil
 }
 func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
+func (w *labelTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++
 	w.curvedStarts = append(w.curvedStarts, startAngle)
@@ -107,6 +116,24 @@ func (w *labelTestWriter) DrawTextOnCircle(text string, x, y, r, startAngle floa
 	w.plainPrinted = append(w.plainPrinted, text)
 	w.plainPages = append(w.plainPages, w.pageCount)
 	return nil
+}
+func (w *labelTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	switch shape.Kind {
+	case pdf.ClosedShapeCircle:
+		r := shape.Radius
+		if r == 0 {
+			r = shape.RadiusX
+		}
+		return w.Circle(shape.Center.X, shape.Center.Y, r, border, fill, shape.Reverse)
+	case pdf.ClosedShapeEllipse:
+		return w.Ellipse(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY, border, fill, shape.Reverse)
+	case pdf.ClosedShapePolygon:
+		return w.Polygon(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, border, fill, shape.Reverse, shape.Rotation)
+	case pdf.ClosedShapeStar:
+		return w.Star(shape.Center.X, shape.Center.Y, shape.Radius, shape.InnerRadius, shape.Points, border, fill, shape.Reverse, shape.Rotation)
+	default:
+		return nil
+	}
 }
 func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
@@ -142,9 +169,15 @@ func (w *labelTestWriter) LineSpacing() float64 {
 func (w *labelTestWriter) SetLineCapStyle(style string) (prev string) { return "" }
 func (w *labelTestWriter) Line(x, y, angle, length float64)           {}
 func (w *labelTestWriter) LineTo(x, y float64)                        {}
-func (w *labelTestWriter) Loc() (x, y float64)                        { return 0, 0 }
-func (w *labelTestWriter) MoveTo(x, y float64)                        { w.moves = append(w.moves, [2]float64{x, y}) }
-func (w *labelTestWriter) NewPage()                                   { w.pageCount++ }
+func (w *labelTestWriter) Loc() (x, y float64) {
+	if len(w.moves) == 0 {
+		return 0, 0
+	}
+	last := w.moves[len(w.moves)-1]
+	return last[0], last[1]
+}
+func (w *labelTestWriter) MoveTo(x, y float64) { w.moves = append(w.moves, [2]float64{x, y}) }
+func (w *labelTestWriter) NewPage()            { w.pageCount++ }
 func (w *labelTestWriter) Print(text string) error {
 	w.plainPrinted = append(w.plainPrinted, text)
 	w.plainPages = append(w.plainPages, w.pageCount)
