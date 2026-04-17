@@ -31,6 +31,14 @@ func (w *bulletTestWriter) Clip(fn func()) error {
 	return nil
 }
 
+func (w *bulletTestWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	w.clipCount++
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
 func (w *bulletTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
 	w.fileCalls = append(w.fileCalls, imageFilePrintCall{
 		filename: filename,
@@ -47,18 +55,12 @@ func (w *bulletTestWriter) Circle(x, y, r float64, border, fill, reverse bool) e
 	return nil
 }
 
-func (w *bulletTestWriter) CirclePath(x, y, r float64, reverse bool) error {
-	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "circle-path", x: x, y: y, a: r, reverse: reverse})
-	return nil
+func (w *bulletTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
 }
 
 func (w *bulletTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "ellipse", x: x, y: y, a: rx, b: ry, border: border, fill: fill, reverse: reverse})
-	return nil
-}
-
-func (w *bulletTestWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error {
-	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "ellipse-path", x: x, y: y, a: rx, b: ry, reverse: reverse})
 	return nil
 }
 
@@ -67,19 +69,28 @@ func (w *bulletTestWriter) Polygon(x, y, r float64, sides int, border, fill, rev
 	return nil
 }
 
-func (w *bulletTestWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
-	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "polygon-path", x: x, y: y, a: r, i: sides, reverse: reverse, rotation: rotation})
-	return nil
-}
-
 func (w *bulletTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "star", x: x, y: y, a: r1, b: r2, i: points, border: border, fill: fill, reverse: reverse, rotation: rotation})
 	return nil
 }
 
-func (w *bulletTestWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
-	w.shapeCalls = append(w.shapeCalls, shapeCall{name: "star-path", x: x, y: y, a: r1, b: r2, i: points, reverse: reverse, rotation: rotation})
-	return nil
+func (w *bulletTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	switch shape.Kind {
+	case pdf.ClosedShapeCircle:
+		r := shape.Radius
+		if r == 0 {
+			r = shape.RadiusX
+		}
+		return w.Circle(shape.Center.X, shape.Center.Y, r, border, fill, shape.Reverse)
+	case pdf.ClosedShapeEllipse:
+		return w.Ellipse(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY, border, fill, shape.Reverse)
+	case pdf.ClosedShapePolygon:
+		return w.Polygon(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, border, fill, shape.Reverse, shape.Rotation)
+	case pdf.ClosedShapeStar:
+		return w.Star(shape.Center.X, shape.Center.Y, shape.Radius, shape.InnerRadius, shape.Points, border, fill, shape.Reverse, shape.Rotation)
+	default:
+		return nil
+	}
 }
 
 func TestStdParagraph_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {
@@ -349,19 +360,18 @@ func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing
 	if len(w.linearPaints) != 1 {
 		t.Fatalf("linear paint count = %d, want 1", len(w.linearPaints))
 	}
-	if len(w.shapeCalls) < 2 {
-		t.Fatalf("shape call count = %d, want at least 2", len(w.shapeCalls))
-	}
-	if got := w.shapeCalls[0].name; got != "star-path" {
-		t.Fatalf("first shape call = %q, want star-path", got)
+	if w.clipCount == 0 {
+		t.Fatal("expected shape bullet to use closed-shape clipping")
 	}
 	if got := w.shapeCalls[len(w.shapeCalls)-1].name; got != "star" {
 		t.Fatalf("last shape call = %q, want star border draw", got)
 	}
 	layout := p.bulletLayout(w, p.bullet, p.Lines(w, p.lineWidth())[0], 10, 20+p.Lines(w, p.lineWidth())[0].Ascent())
-	bounds := bulletShapeGeometryBounds(p.bullet, layout.renderWidth, layout.renderHeight)
-	if got := layout.centerX + bounds.minX; math.Abs(got-layout.renderX) > 0.0001 {
-		t.Fatalf("shape left edge = %v, want %v", got, layout.renderX)
+	if layout.shape == nil {
+		t.Fatal("shape layout missing closed shape")
+	}
+	if math.Abs(layout.shapeBounds.MinX-layout.renderX) > 0.0001 {
+		t.Fatalf("shape left edge = %v, want %v", layout.shapeBounds.MinX, layout.renderX)
 	}
 	if math.Abs(layout.renderX-10) > 0.0001 {
 		t.Fatalf("renderX = %v, want 10", layout.renderX)

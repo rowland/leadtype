@@ -36,6 +36,12 @@ func (w *layoutProbeWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (w *layoutProbeWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *layoutProbeWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	if fn != nil {
 		fn()
@@ -54,16 +60,20 @@ func (w *layoutProbeWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y,
 func (w *layoutProbeWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
+func (w *layoutProbeWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	return nil
+}
 func (w *layoutProbeWriter) EnableTaggedPDF(value bool)                               { w.base.EnableTaggedPDF(value) }
 func (w *layoutProbeWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
-func (w *layoutProbeWriter) CirclePath(x, y, r float64, reverse bool) error           { return nil }
+func (w *layoutProbeWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
 func (w *layoutProbeWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
-func (w *layoutProbeWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error { return nil }
-func (w *layoutProbeWriter) FontColor() colors.Color                              { return w.base.FontColor() }
-func (w *layoutProbeWriter) Fonts() []*font.Font                                  { return w.base.Fonts() }
-func (w *layoutProbeWriter) FontSize() float64                                    { return w.base.FontSize() }
+func (w *layoutProbeWriter) FontColor() colors.Color { return w.base.FontColor() }
+func (w *layoutProbeWriter) Fonts() []*font.Font     { return w.base.Fonts() }
+func (w *layoutProbeWriter) FontSize() float64       { return w.base.FontSize() }
 func (w *layoutProbeWriter) ImageDimensions(data []byte) (width, height int, err error) {
 	return w.base.ImageDimensions(data)
 }
@@ -92,9 +102,6 @@ func (w *layoutProbeWriter) Pie(x, y, r, startAngle, endAngle float64, border, f
 	return nil
 }
 func (w *layoutProbeWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *layoutProbeWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
 	return nil
 }
 func (w *layoutProbeWriter) Print(text string) error { return nil }
@@ -151,9 +158,6 @@ func (w *layoutProbeWriter) SetUnderline(underline bool) (prev bool) {
 	return w.base.SetUnderline(underline)
 }
 func (w *layoutProbeWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *layoutProbeWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
 	return nil
 }
 func (w *layoutProbeWriter) Strikeout() bool { return w.base.Strikeout() }

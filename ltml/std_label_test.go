@@ -77,6 +77,12 @@ func (w *labelTestWriter) Clip(fn func()) error {
 	}
 	return nil
 }
+func (w *labelTestWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
 func (w *labelTestWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	w.clipped = append(w.clipped, text)
 	if fn != nil {
@@ -92,7 +98,9 @@ func (w *labelTestWriter) ClipText(text string, fn func()) error {
 	return nil
 }
 func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
-func (w *labelTestWriter) CirclePath(x, y, r float64, reverse bool) error           { return nil }
+func (w *labelTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++
 	w.curvedStarts = append(w.curvedStarts, startAngle)
@@ -109,10 +117,27 @@ func (w *labelTestWriter) DrawTextOnCircle(text string, x, y, r, startAngle floa
 	w.plainPages = append(w.plainPages, w.pageCount)
 	return nil
 }
+func (w *labelTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	switch shape.Kind {
+	case pdf.ClosedShapeCircle:
+		r := shape.Radius
+		if r == 0 {
+			r = shape.RadiusX
+		}
+		return w.Circle(shape.Center.X, shape.Center.Y, r, border, fill, shape.Reverse)
+	case pdf.ClosedShapeEllipse:
+		return w.Ellipse(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY, border, fill, shape.Reverse)
+	case pdf.ClosedShapePolygon:
+		return w.Polygon(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, border, fill, shape.Reverse, shape.Rotation)
+	case pdf.ClosedShapeStar:
+		return w.Star(shape.Center.X, shape.Center.Y, shape.Radius, shape.InnerRadius, shape.Points, border, fill, shape.Reverse, shape.Rotation)
+	default:
+		return nil
+	}
+}
 func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
-func (w *labelTestWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error { return nil }
 func (w *labelTestWriter) Fonts() []*font.Font {
 	if len(w.fonts) == 0 && w.t != nil {
 		w.fonts = defaultTestFonts(w.t)
@@ -210,9 +235,6 @@ func (w *labelTestWriter) Path(fn func()) error {
 func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
-func (w *labelTestWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
-	return nil
-}
 func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
 	w.rectPages = append(w.rectPages, w.pageCount)
@@ -267,9 +289,6 @@ func (w *labelTestWriter) SetUnderline(underline bool) (prev bool) {
 	return prev
 }
 func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *labelTestWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
 	return nil
 }
 func (w *labelTestWriter) Stroke() error              { return nil }

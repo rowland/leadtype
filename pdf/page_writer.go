@@ -899,6 +899,92 @@ func (pw *PageWriter) drawClosedShape(border, fill bool, build func()) (err erro
 	return
 }
 
+func (pw *PageWriter) ClosedShapeBounds(shape ClosedShape) (Bounds, error) {
+	return shape.Bounds()
+}
+
+func (pw *PageWriter) buildClosedShapePath(shape ClosedShape) error {
+	shape = shape.normalized()
+	if err := shape.validate(); err != nil {
+		return err
+	}
+	switch shape.Kind {
+	case ClosedShapeCircle:
+		points := circlePoints(shape.Center.X, shape.Center.Y, shape.RadiusX)
+		if shape.Reverse {
+			points = reverseCurvePoints(points)
+		}
+		return pw.CurvePoints(points)
+	case ClosedShapeEllipse:
+		points := ellipsePoints(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY)
+		if shape.Reverse {
+			points = reverseCurvePoints(points)
+		}
+		return pw.CurvePoints(points)
+	case ClosedShapePolygon:
+		points := polygonPoints(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, shape.Rotation)
+		if shape.Reverse {
+			LocationSlice(points).Reverse()
+		}
+		for i, point := range points {
+			if i == 0 {
+				pw.MoveTo(point.X, point.Y)
+			} else {
+				pw.LineTo(point.X, point.Y)
+			}
+		}
+		return nil
+	case ClosedShapeStar:
+		points := starPoints(shape.Center.X, shape.Center.Y, shape.Radius, shape.InnerRadius, shape.Points, shape.Rotation)
+		if len(points) == 0 {
+			return errInvalidStarPoints
+		}
+		if shape.Reverse {
+			LocationSlice(points).Reverse()
+		}
+		for i, point := range points {
+			if i == 0 {
+				pw.MoveTo(point.X, point.Y)
+			} else {
+				pw.LineTo(point.X, point.Y)
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported closed shape %q", shape.Kind)
+	}
+}
+
+func (pw *PageWriter) DrawClosedShape(shape ClosedShape, border, fill bool) error {
+	shape = shape.normalized()
+	if err := shape.validate(); err != nil {
+		return err
+	}
+	return pw.drawClosedShape(border, fill, func() {
+		_ = pw.buildClosedShapePath(shape)
+	})
+}
+
+func (pw *PageWriter) ClipClosedShape(shape ClosedShape, fn func()) error {
+	shape = shape.normalized()
+	if err := shape.validate(); err != nil {
+		return err
+	}
+	var clipErr error
+	if err := pw.Path(func() {
+		if e := pw.buildClosedShapePath(shape); e != nil {
+			clipErr = e
+			return
+		}
+		if e := pw.Clip(fn); e != nil && clipErr == nil {
+			clipErr = e
+		}
+	}); err != nil {
+		return err
+	}
+	return clipErr
+}
+
 // Line draws a line segment of the given length beginning at (x, y) and
 // extending at angle degrees, where 0 is to the right and positive angles turn
 // counter-clockwise in mathematical space.
@@ -921,20 +1007,24 @@ func (pw *PageWriter) PointsForCircle(x, y, r float64) []Location {
 }
 
 func (pw *PageWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
-	return pw.drawClosedShape(border, fill, func() {
-		_ = pw.CirclePath(x, y, r, reverse)
-	})
+	return pw.DrawClosedShape(ClosedShape{
+		Kind:    ClosedShapeCircle,
+		Center:  Location{X: x, Y: y},
+		Radius:  r,
+		Reverse: reverse,
+	}, border, fill)
 }
 
 func (pw *PageWriter) CirclePath(x, y, r float64, reverse bool) error {
 	if err := pw.requirePathSession(); err != nil {
 		return err
 	}
-	points := pw.PointsForCircle(x, y, r)
-	if reverse {
-		points = reverseCurvePoints(points)
-	}
-	return pw.CurvePoints(points)
+	return pw.buildClosedShapePath(ClosedShape{
+		Kind:    ClosedShapeCircle,
+		Center:  Location{X: x, Y: y},
+		Radius:  r,
+		Reverse: reverse,
+	})
 }
 
 func (pw *PageWriter) PointsForEllipse(x, y, rx, ry float64) []Location {
@@ -949,20 +1039,26 @@ func (pw *PageWriter) PointsForEllipse(x, y, rx, ry float64) []Location {
 }
 
 func (pw *PageWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
-	return pw.drawClosedShape(border, fill, func() {
-		_ = pw.EllipsePath(x, y, rx, ry, reverse)
-	})
+	return pw.DrawClosedShape(ClosedShape{
+		Kind:    ClosedShapeEllipse,
+		Center:  Location{X: x, Y: y},
+		RadiusX: rx,
+		RadiusY: ry,
+		Reverse: reverse,
+	}, border, fill)
 }
 
 func (pw *PageWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error {
 	if err := pw.requirePathSession(); err != nil {
 		return err
 	}
-	points := pw.PointsForEllipse(x, y, rx, ry)
-	if reverse {
-		points = reverseCurvePoints(points)
-	}
-	return pw.CurvePoints(points)
+	return pw.buildClosedShapePath(ClosedShape{
+		Kind:    ClosedShapeEllipse,
+		Center:  Location{X: x, Y: y},
+		RadiusX: rx,
+		RadiusY: ry,
+		Reverse: reverse,
+	})
 }
 
 func (pw *PageWriter) PointsForArc(x, y, r, startAngle, endAngle float64) []Location {
@@ -1052,66 +1148,55 @@ func (pw *PageWriter) PointsForPolygon(x, y, r float64, sides int, rotation floa
 }
 
 func (pw *PageWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
-	if sides < 3 {
-		return errInvalidPolygonSides
-	}
-	return pw.drawClosedShape(border, fill, func() {
-		_ = pw.PolygonPath(x, y, r, sides, reverse, rotation)
-	})
+	return pw.DrawClosedShape(ClosedShape{
+		Kind:     ClosedShapePolygon,
+		Center:   Location{X: x, Y: y},
+		Radius:   r,
+		Sides:    sides,
+		Rotation: rotation,
+		Reverse:  reverse,
+	}, border, fill)
 }
 
 func (pw *PageWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
 	if err := pw.requirePathSession(); err != nil {
 		return err
 	}
-	if sides < 3 {
-		return errInvalidPolygonSides
-	}
-	points := pw.PointsForPolygon(x, y, r, sides, rotation)
-	if reverse {
-		LocationSlice(points).Reverse()
-	}
-	for i, point := range points {
-		if i == 0 {
-			pw.MoveTo(point.X, point.Y)
-		} else {
-			pw.LineTo(point.X, point.Y)
-		}
-	}
-	return nil
+	return pw.buildClosedShapePath(ClosedShape{
+		Kind:     ClosedShapePolygon,
+		Center:   Location{X: x, Y: y},
+		Radius:   r,
+		Sides:    sides,
+		Rotation: rotation,
+		Reverse:  reverse,
+	})
 }
 
 func (pw *PageWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	if points < 5 {
-		return errInvalidStarPoints
-	}
-	return pw.drawClosedShape(border, fill, func() {
-		_ = pw.StarPath(x, y, r1, r2, points, reverse, rotation)
-	})
+	return pw.DrawClosedShape(ClosedShape{
+		Kind:        ClosedShapeStar,
+		Center:      Location{X: x, Y: y},
+		Radius:      r1,
+		InnerRadius: r2,
+		Points:      points,
+		Rotation:    rotation,
+		Reverse:     reverse,
+	}, border, fill)
 }
 
 func (pw *PageWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
 	if err := pw.requirePathSession(); err != nil {
 		return err
 	}
-	if points < 5 {
-		return errInvalidStarPoints
-	}
-	outer := pw.PointsForPolygon(x, y, r1, points, rotation)
-	inner := pw.PointsForPolygon(x, y, r2, points, rotation+(360.0/float64(points)/2.0))
-	if len(outer) == 0 || len(inner) == 0 {
-		return errInvalidStarPoints
-	}
-	if reverse {
-		LocationSlice(outer).Reverse()
-		LocationSlice(inner).Reverse()
-	}
-	pw.MoveTo(inner[0].X, inner[0].Y)
-	for i := 0; i < points; i++ {
-		pw.LineTo(outer[i].X, outer[i].Y)
-		pw.LineTo(inner[i+1].X, inner[i+1].Y)
-	}
-	return nil
+	return pw.buildClosedShapePath(ClosedShape{
+		Kind:        ClosedShapeStar,
+		Center:      Location{X: x, Y: y},
+		Radius:      r1,
+		InnerRadius: r2,
+		Points:      points,
+		Rotation:    rotation,
+		Reverse:     reverse,
+	})
 }
 
 func lineCapStyleFromString(style string) (LineCapStyle, bool) {

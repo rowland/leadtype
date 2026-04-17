@@ -2,10 +2,10 @@ package ltml
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -17,15 +17,8 @@ type paragraphBulletLayout struct {
 	renderY      float64
 	renderWidth  float64
 	renderHeight float64
-	centerX      float64
-	centerY      float64
-}
-
-type bulletShapeBounds struct {
-	minX float64
-	maxX float64
-	minY float64
-	maxY float64
+	shape        *pdf.ClosedShape
+	shapeBounds  pdf.Bounds
 }
 
 func (p *StdParagraph) drawBullet(w Writer, bullet *BulletStyle, line *rich_text.RichText, slotX, baselineY float64) error {
@@ -71,7 +64,7 @@ func (p *StdParagraph) drawShapeBullet(w Writer, bullet *BulletStyle, layout par
 	}
 
 	if brush != nil && brush.Kind() != BrushKindSolid {
-		if err := p.paintBulletShapeBrush(w, bullet, layout, brush); err != nil {
+		if err := p.paintBulletShapeBrush(w, layout, brush); err != nil {
 			return err
 		}
 	} else {
@@ -81,66 +74,38 @@ func (p *StdParagraph) drawShapeBullet(w Writer, bullet *BulletStyle, layout par
 		if brush != nil {
 			brush.Apply(w)
 		}
-		if err := p.drawBulletShape(w, bullet, layout, pen != nil, brush != nil); err != nil {
+		if err := p.drawBulletShape(w, layout, pen != nil, brush != nil); err != nil {
 			return err
 		}
 	}
 
 	if pen != nil && brush != nil && brush.Kind() != BrushKindSolid {
 		pen.Apply(w)
-		if err := p.drawBulletShape(w, bullet, layout, true, false); err != nil {
+		if err := p.drawBulletShape(w, layout, true, false); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (p *StdParagraph) paintBulletShapeBrush(w Writer, bullet *BulletStyle, layout paragraphBulletLayout, brush *BrushStyle) error {
+func (p *StdParagraph) paintBulletShapeBrush(w Writer, layout paragraphBulletLayout, brush *BrushStyle) error {
+	if layout.shape == nil {
+		return fmt.Errorf("shape bullet geometry is not available")
+	}
 	var paintErr error
-	if err := w.Path(func() {
-		if e := p.buildBulletShapePath(w, bullet, layout); e != nil {
-			paintErr = e
-			return
-		}
-		if e := w.Clip(func() {
-			paintErr = p.paintBrushInRect(w, brush, layout.renderX, layout.renderY, layout.renderWidth, layout.renderHeight)
-		}); e != nil && paintErr == nil {
-			paintErr = e
-		}
+	if err := w.ClipClosedShape(*layout.shape, func() {
+		paintErr = p.paintBrushInRect(w, brush, layout.shapeBounds.MinX, layout.shapeBounds.MinY, layout.shapeBounds.Width(), layout.shapeBounds.Height())
 	}); err != nil {
 		return err
 	}
 	return paintErr
 }
 
-func (p *StdParagraph) buildBulletShapePath(w Writer, bullet *BulletStyle, layout paragraphBulletLayout) error {
-	switch strings.TrimSpace(bullet.Shape()) {
-	case "circle":
-		return w.CirclePath(layout.centerX, layout.centerY, min(layout.renderWidth, layout.renderHeight)/2, false)
-	case "ellipse":
-		return w.EllipsePath(layout.centerX, layout.centerY, layout.renderWidth/2, layout.renderHeight/2, false)
-	case "polygon":
-		return w.PolygonPath(layout.centerX, layout.centerY, min(layout.renderWidth, layout.renderHeight)/2, bulletSides(bullet), false, bullet.rotation)
-	case "star":
-		return w.StarPath(layout.centerX, layout.centerY, min(layout.renderWidth, layout.renderHeight)/2, bulletStarInnerRadius(bullet, min(layout.renderWidth, layout.renderHeight)/2), bulletPoints(bullet), false, bullet.rotation)
-	default:
-		return fmt.Errorf("unsupported bullet shape %q", bullet.Shape())
+func (p *StdParagraph) drawBulletShape(w Writer, layout paragraphBulletLayout, border, fill bool) error {
+	if layout.shape == nil {
+		return fmt.Errorf("shape bullet geometry is not available")
 	}
-}
-
-func (p *StdParagraph) drawBulletShape(w Writer, bullet *BulletStyle, layout paragraphBulletLayout, border, fill bool) error {
-	switch strings.TrimSpace(bullet.Shape()) {
-	case "circle":
-		return w.Circle(layout.centerX, layout.centerY, min(layout.renderWidth, layout.renderHeight)/2, border, fill, false)
-	case "ellipse":
-		return w.Ellipse(layout.centerX, layout.centerY, layout.renderWidth/2, layout.renderHeight/2, border, fill, false)
-	case "polygon":
-		return w.Polygon(layout.centerX, layout.centerY, min(layout.renderWidth, layout.renderHeight)/2, bulletSides(bullet), border, fill, false, bullet.rotation)
-	case "star":
-		return w.Star(layout.centerX, layout.centerY, min(layout.renderWidth, layout.renderHeight)/2, bulletStarInnerRadius(bullet, min(layout.renderWidth, layout.renderHeight)/2), bulletPoints(bullet), border, fill, false, bullet.rotation)
-	default:
-		return fmt.Errorf("unsupported bullet shape %q", bullet.Shape())
-	}
+	return w.DrawClosedShape(*layout.shape, border, fill)
 }
 
 func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_text.RichText, slotX, baselineY float64) paragraphBulletLayout {
@@ -181,13 +146,18 @@ func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_te
 	slotY := baselineY - lineAscent
 	renderY := slotY + max((lineHeight-renderHeight)/2, 0)
 	renderX := slotX
-	centerX := renderX + renderWidth/2
-	centerY := renderY + renderHeight/2
+	var shape *pdf.ClosedShape
+	var shapeBounds pdf.Bounds
 	if bullet.IsShape() {
-		bounds := bulletShapeGeometryBounds(bullet, renderWidth, renderHeight)
-		shapeHeight := bounds.maxY - bounds.minY
-		centerX = renderX - bounds.minX
-		centerY = renderY + max((renderHeight-shapeHeight)/2, 0) - bounds.minY
+		shapeValue := closedShapeForBullet(bullet, renderX+renderWidth/2, renderY+renderHeight/2, renderWidth, renderHeight)
+		if bounds, err := w.ClosedShapeBounds(shapeValue); err == nil {
+			shapeValue.Center.X += renderX - bounds.MinX
+			shapeValue.Center.Y += renderY + max((renderHeight-bounds.Height())/2, 0) - bounds.MinY
+			if shiftedBounds, err := w.ClosedShapeBounds(shapeValue); err == nil {
+				shapeBounds = shiftedBounds
+				shape = &shapeValue
+			}
+		}
 	}
 	return paragraphBulletLayout{
 		slotX:        slotX,
@@ -197,8 +167,8 @@ func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_te
 		renderY:      renderY,
 		renderWidth:  renderWidth,
 		renderHeight: renderHeight,
-		centerX:      centerX,
-		centerY:      centerY,
+		shape:        shape,
+		shapeBounds:  shapeBounds,
 	}
 }
 
@@ -245,100 +215,44 @@ func bulletPoints(bullet *BulletStyle) int {
 	return 5
 }
 
-func bulletStarInnerRadius(bullet *BulletStyle, outerRadius float64) float64 {
-	if bullet.r0 > 0 {
-		return math.Min(bullet.r0, outerRadius)
-	}
-	return outerRadius * 0.5
-}
-
-func bulletShapeGeometryBounds(bullet *BulletStyle, renderWidth, renderHeight float64) bulletShapeBounds {
-	switch strings.TrimSpace(bullet.Shape()) {
+func closedShapeForBullet(bullet *BulletStyle, centerX, centerY, renderWidth, renderHeight float64) pdf.ClosedShape {
+	outerRadius := min(renderWidth, renderHeight) / 2
+	switch bullet.Shape() {
+	case "circle":
+		return pdf.ClosedShape{
+			Kind:   pdf.ClosedShapeCircle,
+			Center: pdf.Location{X: centerX, Y: centerY},
+			Radius: outerRadius,
+		}
 	case "ellipse":
-		return bulletShapeBounds{
-			minX: -renderWidth / 2,
-			maxX: renderWidth / 2,
-			minY: -renderHeight / 2,
-			maxY: renderHeight / 2,
+		return pdf.ClosedShape{
+			Kind:    pdf.ClosedShapeEllipse,
+			Center:  pdf.Location{X: centerX, Y: centerY},
+			RadiusX: renderWidth / 2,
+			RadiusY: renderHeight / 2,
 		}
 	case "polygon":
-		return pointBounds(bulletPolygonPoints(0, 0, min(renderWidth, renderHeight)/2, bulletSides(bullet), bullet.rotation))
+		return pdf.ClosedShape{
+			Kind:     pdf.ClosedShapePolygon,
+			Center:   pdf.Location{X: centerX, Y: centerY},
+			Radius:   outerRadius,
+			Sides:    bulletSides(bullet),
+			Rotation: bullet.rotation,
+		}
 	case "star":
-		outerRadius := min(renderWidth, renderHeight) / 2
-		return pointBounds(bulletStarPoints(0, 0, outerRadius, bulletStarInnerRadius(bullet, outerRadius), bulletPoints(bullet), bullet.rotation))
+		innerRadius := outerRadius * 0.5
+		if bullet.r0 > 0 {
+			innerRadius = min(bullet.r0, outerRadius)
+		}
+		return pdf.ClosedShape{
+			Kind:        pdf.ClosedShapeStar,
+			Center:      pdf.Location{X: centerX, Y: centerY},
+			Radius:      outerRadius,
+			InnerRadius: innerRadius,
+			Points:      bulletPoints(bullet),
+			Rotation:    bullet.rotation,
+		}
 	default:
-		radius := min(renderWidth, renderHeight) / 2
-		return bulletShapeBounds{
-			minX: -radius,
-			maxX: radius,
-			minY: -radius,
-			maxY: radius,
-		}
+		return pdf.ClosedShape{}
 	}
-}
-
-func bulletPolygonPoints(centerX, centerY, radius float64, sides int, rotation float64) [][2]float64 {
-	if sides < 3 {
-		return nil
-	}
-	step := 360.0 / float64(sides)
-	angle := step/2.0 + 90.0
-	points := make([][2]float64, 0, sides+1)
-	for i := 0; i <= sides; i++ {
-		dx, dy := bulletRotateXY(1, 0, angle)
-		x := centerX + dx*radius
-		y := centerY - dy*radius
-		if rotation != 0 {
-			x, y = bulletRotatePoint(centerX, centerY, x, y, -rotation)
-		}
-		points = append(points, [2]float64{x, y})
-		angle += step
-	}
-	return points
-}
-
-func bulletStarPoints(centerX, centerY, outerRadius, innerRadius float64, points int, rotation float64) [][2]float64 {
-	if points < 5 {
-		return nil
-	}
-	outer := bulletPolygonPoints(centerX, centerY, outerRadius, points, rotation)
-	inner := bulletPolygonPoints(centerX, centerY, innerRadius, points, rotation+(360.0/float64(points)/2.0))
-	if len(outer) == 0 || len(inner) == 0 {
-		return nil
-	}
-	path := make([][2]float64, 0, points*2+1)
-	path = append(path, inner[0])
-	for i := 0; i < points; i++ {
-		path = append(path, outer[i], inner[i+1])
-	}
-	return path
-}
-
-func pointBounds(points [][2]float64) bulletShapeBounds {
-	if len(points) == 0 {
-		return bulletShapeBounds{}
-	}
-	bounds := bulletShapeBounds{
-		minX: points[0][0],
-		maxX: points[0][0],
-		minY: points[0][1],
-		maxY: points[0][1],
-	}
-	for _, point := range points[1:] {
-		bounds.minX = min(bounds.minX, point[0])
-		bounds.maxX = max(bounds.maxX, point[0])
-		bounds.minY = min(bounds.minY, point[1])
-		bounds.maxY = max(bounds.maxY, point[1])
-	}
-	return bounds
-}
-
-func bulletRotateXY(x, y, angle float64) (float64, float64) {
-	theta := angle * math.Pi / 180.0
-	return (x * math.Cos(theta)) - (y * math.Sin(theta)), (x * math.Sin(theta)) + (y * math.Cos(theta))
-}
-
-func bulletRotatePoint(centerX, centerY, x, y, angle float64) (float64, float64) {
-	rotX, rotY := bulletRotateXY(x-centerX, centerY-y, angle)
-	return centerX + rotX, centerY - rotY
 }

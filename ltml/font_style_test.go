@@ -51,6 +51,13 @@ func (m *mockWriter) Clip(fn func()) error {
 	return nil
 }
 
+func (m *mockWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
+	if fn != nil {
+		fn()
+	}
+	return nil
+}
+
 func (m *mockWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
 	if fn != nil {
 		fn()
@@ -66,7 +73,9 @@ func (m *mockWriter) ClipText(text string, fn func()) error {
 }
 
 func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
-func (m *mockWriter) CirclePath(x, y, r float64, reverse bool) error           { return nil }
+func (m *mockWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
+	return shape.Bounds()
+}
 
 func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
@@ -76,10 +85,13 @@ func (m *mockWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, 
 	return nil
 }
 
+func (m *mockWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
+	return nil
+}
+
 func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
-func (m *mockWriter) EllipsePath(x, y, rx, ry float64, reverse bool) error { return nil }
 
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontCalls = append(m.setFontCalls, name)
@@ -172,9 +184,6 @@ func (m *mockWriter) Rotate(angle, x, y float64, fn func()) error {
 func (m *mockWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
-func (m *mockWriter) PolygonPath(x, y, r float64, sides int, reverse bool, rotation float64) error {
-	return nil
-}
 
 func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)                          {}
 func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
@@ -190,9 +199,6 @@ func (m *mockWriter) SetStrikeout(s bool) bool                                  
 func (m *mockWriter) SetUnderline(u bool) bool                                         { return false }
 
 func (m *mockWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (m *mockWriter) StarPath(x, y, r1, r2 float64, points int, reverse bool, rotation float64) error {
 	return nil
 }
 

@@ -606,6 +606,10 @@ func (dw *DocWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
 	return dw.CurPage().Circle(x, y, r, border, fill, reverse)
 }
 
+func (dw *DocWriter) DrawClosedShape(shape ClosedShape, border, fill bool) error {
+	return dw.CurPage().DrawClosedShape(shape, border, fill)
+}
+
 func (dw *DocWriter) CirclePath(x, y, r float64, reverse bool) error {
 	return dw.CurPage().CirclePath(x, y, r, reverse)
 }
@@ -786,6 +790,14 @@ func (dw *DocWriter) FillAndStroke() error {
 
 func (dw *DocWriter) Clip(fn func()) error {
 	return dw.CurPage().Clip(fn)
+}
+
+func (dw *DocWriter) ClosedShapeBounds(shape ClosedShape) (Bounds, error) {
+	return dw.CurPage().ClosedShapeBounds(shape)
+}
+
+func (dw *DocWriter) ClipClosedShape(shape ClosedShape, fn func()) error {
+	return dw.CurPage().ClipClosedShape(shape, fn)
 }
 
 func (dw *DocWriter) Rotate(angle, x, y float64, fn func()) error {
