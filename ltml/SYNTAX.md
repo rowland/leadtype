@@ -750,7 +750,7 @@ overridden inline with `fill.*` attributes on a widget.
 | `font`    | Reference to a named `<font>` style. |
 | `text`    | The bullet character(s) to render for text bullets. |
 | `src`     | Asset path for image bullets. Rendered through LTML's normal `PrintImageFile` path. |
-| `shape`   | Closed shape for shape bullets: `circle`, `ellipse`, `polygon`, or `star`. |
+| `shape`   | Closed shape for shape bullets: `circle`, `ellipse`, `polygon`, `triangle`, `square`, or `star`. `triangle` and `square` are polygon aliases. |
 | `width`   | Space reserved for the bullet slot. This remains the paragraph indent reservation for every bullet kind. |
 | `height`  | Optional render height for image and shape bullets. If omitted, LTML infers a height from the first line box. |
 | `pen`     | Optional `<pen>` style for shape bullet outlines. |
@@ -766,7 +766,13 @@ Examples:
 ```xml
 <bullet id="dot" font="zapf" text="l" width="18pt" />
 <bullet id="logo" src="../../pdf/testdata/test_scene.svg" width="18pt" height="14pt" />
+<bullet id="tri" shape="triangle" width="18pt" height="18pt" brush="goldfill" />
 <bullet id="brand-star" shape="star" width="18pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
+
+Notes:
+`triangle` maps to a 3-sided polygon with an upright default orientation.
+`square` maps to a 4-sided polygon with an unrotated default orientation.
+If `shape="triangle"` or `shape="square"`, LTML ignores any explicit `sides` value.
 ```
 
 ---

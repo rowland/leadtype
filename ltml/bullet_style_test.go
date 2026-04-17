@@ -1,6 +1,10 @@
 package ltml
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
 
 func TestBulletStyle_SetAttrs_ExtendedModes(t *testing.T) {
 	scope := &Scope{parent: &defaultScope}
@@ -98,5 +102,73 @@ func TestParse_BulletTag_ExtendedAttrs(t *testing.T) {
 	}
 	if shape.brush == nil || shape.brush.id != "goldfill" {
 		t.Fatalf("shape brush = %#v, want goldfill", shape.brush)
+	}
+}
+
+func TestClosedShapeForBullet_TriangleAndSquareAliases(t *testing.T) {
+	triangle := &BulletStyle{shape: "triangle", sides: 9}
+	gotTriangle := closedShapeForBullet(triangle, 10, 20, 18, 18)
+	if gotTriangle.Kind != pdf.ClosedShapePolygon {
+		t.Fatalf("triangle kind = %q, want polygon", gotTriangle.Kind)
+	}
+	if gotTriangle.Sides != 3 {
+		t.Fatalf("triangle sides = %d, want 3", gotTriangle.Sides)
+	}
+	if gotTriangle.Rotation != 180 {
+		t.Fatalf("triangle rotation = %v, want 180", gotTriangle.Rotation)
+	}
+
+	square := &BulletStyle{shape: "square", sides: 9}
+	gotSquare := closedShapeForBullet(square, 10, 20, 18, 18)
+	if gotSquare.Kind != pdf.ClosedShapePolygon {
+		t.Fatalf("square kind = %q, want polygon", gotSquare.Kind)
+	}
+	if gotSquare.Sides != 4 {
+		t.Fatalf("square sides = %d, want 4", gotSquare.Sides)
+	}
+	if gotSquare.Rotation != 0 {
+		t.Fatalf("square rotation = %v, want 0", gotSquare.Rotation)
+	}
+}
+
+func TestClosedShapeForBullet_TriangleExplicitRotationWins(t *testing.T) {
+	triangle := &BulletStyle{shape: "triangle", rotation: 30, rotationSet: true}
+	got := closedShapeForBullet(triangle, 10, 20, 18, 18)
+	if got.Rotation != 210 {
+		t.Fatalf("triangle rotation = %v, want 210", got.Rotation)
+	}
+}
+
+func TestClosedShapeForBullet_LowPointPolygonAndStarDefaultPointUpRotation(t *testing.T) {
+	polygon5 := &BulletStyle{shape: "polygon", sides: 5}
+	if got := closedShapeForBullet(polygon5, 10, 20, 18, 18).Rotation; got != 36 {
+		t.Fatalf("5-point polygon rotation = %v, want 36", got)
+	}
+
+	polygon6 := &BulletStyle{shape: "polygon", sides: 6}
+	if got := closedShapeForBullet(polygon6, 10, 20, 18, 18).Rotation; got != 30 {
+		t.Fatalf("6-point polygon rotation = %v, want 30", got)
+	}
+
+	star5 := &BulletStyle{shape: "star", points: 5}
+	if got := closedShapeForBullet(star5, 10, 20, 18, 18).Rotation; got != 36 {
+		t.Fatalf("5-point star rotation = %v, want 36", got)
+	}
+
+	star6 := &BulletStyle{shape: "star", points: 6}
+	if got := closedShapeForBullet(star6, 10, 20, 18, 18).Rotation; got != 30 {
+		t.Fatalf("6-point star rotation = %v, want 30", got)
+	}
+}
+
+func TestClosedShapeForBullet_UserRotationAddsToDefault(t *testing.T) {
+	polygon5 := &BulletStyle{shape: "polygon", sides: 5, rotation: 10, rotationSet: true}
+	if got := closedShapeForBullet(polygon5, 10, 20, 18, 18).Rotation; got != 46 {
+		t.Fatalf("5-point polygon rotation = %v, want 46", got)
+	}
+
+	star5 := &BulletStyle{shape: "star", points: 5, rotation: 10, rotationSet: true}
+	if got := closedShapeForBullet(star5, 10, 20, 18, 18).Rotation; got != 46 {
+		t.Fatalf("5-point star rotation = %v, want 46", got)
 	}
 }

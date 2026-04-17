@@ -10,21 +10,22 @@ import (
 )
 
 type BulletStyle struct {
-	scope    HasScope
-	id       string
-	font     *FontStyle
-	text     string
-	src      string
-	shape    string
-	width    float64
-	height   float64
-	units    Units
-	pen      *PenStyle
-	brush    *BrushStyle
-	sides    int
-	points   int
-	rotation float64
-	r0       float64
+	scope       HasScope
+	id          string
+	font        *FontStyle
+	text        string
+	src         string
+	shape       string
+	width       float64
+	height      float64
+	units       Units
+	pen         *PenStyle
+	brush       *BrushStyle
+	sides       int
+	points      int
+	rotation    float64
+	rotationSet bool
+	r0          float64
 }
 
 func (bs *BulletStyle) AddText(text string) {
@@ -81,6 +82,7 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	}
 	if rotation, ok := attrs["rotation"]; ok {
 		bs.rotation, _ = strconv.ParseFloat(rotation, 64)
+		bs.rotationSet = true
 	}
 	if r0, ok := attrs["r0"]; ok {
 		bs.r0 = ParseMeasurement(r0, bs.units)

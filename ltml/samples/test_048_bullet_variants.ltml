@@ -1,16 +1,36 @@
 <ltml units="in" margin="1">
   <font id="body" name="Helvetica" size="12" />
+  <font id="arabic" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="12" />
   <font id="zapf" name="ZapfDingbats" size="12" />
   <brush id="goldfill" kind="linear-gradient" x0="0%" y0="0%" x1="100%" y1="0%" stops="0:Tomato,1:Gold" />
+  <brush id="skyfill" color="SkyBlue" />
   <bullet id="dot" font="zapf" text="l" width="24pt" />
-  <bullet id="scene" src="../../pdf/testdata/test_scene.svg" width="24pt" height="18pt" />
-  <bullet id="brand-star" shape="star" width="24pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
-  <page font="body">
+  <bullet id="scene" src="test_048_bullet_mark.svg" width="24pt" height="18pt" />
+  <bullet id="circle" shape="circle" width="24pt" height="18pt" brush="skyfill" pen="solid" />
+  <bullet id="ellipse" shape="ellipse" width="24pt" height="18pt" brush="skyfill" pen="solid" />
+  <bullet id="polygon" shape="polygon" width="24pt" height="18pt" brush="skyfill" pen="solid" sides="5" />
+  <bullet id="triangle" shape="triangle" width="24pt" height="18pt" brush="skyfill" pen="solid" />
+  <bullet id="square" shape="square" width="24pt" height="18pt" brush="skyfill" pen="solid" />
+  <bullet id="star-five" shape="star" width="24pt" height="18pt" brush="skyfill" pen="solid" points="5" r0="4pt" />
+  <bullet id="brand-star" shape="star" width="24pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" />
+  <page font="body" layout.padding="24pt">
     <vbox layout.padding="12pt">
       <label font.weight="Bold">Bullet variants</label>
       <p bullet="dot">Text bullets keep the existing font-based behavior.</p>
-      <p bullet="scene">Image bullets render shared assets through the normal image pipeline.</p>
-      <p bullet="brand-star">Shape bullets can use pen and brush styling, including gradients.</p>
+      <p bullet="scene">Image bullets can use compact SVG marks through the normal image pipeline.</p>
+      <p bullet="circle">Circle bullets use the shared closed-shape rendering path.</p>
+      <p bullet="ellipse">Ellipse bullets can use the same pen and brush styling.</p>
+      <p bullet="polygon">Polygon bullets support configurable side counts and rotation.</p>
+      <p bullet="triangle">Triangle bullets are a convenience alias over polygons.</p>
+      <p bullet="square">Square bullets are another polygon alias with square defaults.</p>
+      <p bullet="star-five">Five-point stars use a point-up default orientation.</p>
+      <p bullet="brand-star">Star bullets can use pen and brush styling, including gradients.</p>
+    </vbox>
+    <vbox layout.padding="10pt" dir="rtl" font="arabic">
+      <label font.weight="Bold">قوائم نقطية من اليمين إلى اليسار</label>
+      <p bullet="circle">هذا مثال بسيط يوضح فقرة عربية قصيرة بنقطة تعداد دائرية ومحاذاة من اليمين إلى اليسار.</p>
+      <p bullet="triangle">يمكن استخدام الأشكال الهندسية نفسها مع النص العربي من دون تغيير طريقة التعداد الأساسية.</p>
+      <p bullet="star-five">تصلح هذه الفقرة لعرض محتوى عام ومهذب مثل ملاحظات موجزة أو نقاط تعريفية قصيرة.</p>
     </vbox>
   </page>
 </ltml>

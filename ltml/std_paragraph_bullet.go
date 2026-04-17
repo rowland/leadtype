@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
@@ -13,6 +14,7 @@ type paragraphBulletLayout struct {
 	slotX        float64
 	slotY        float64
 	slotWidth    float64
+	baselineY    float64
 	renderX      float64
 	renderY      float64
 	renderWidth  float64
@@ -29,16 +31,17 @@ func (p *StdParagraph) drawBullet(w Writer, bullet *BulletStyle, line *rich_text
 	case bullet.IsShape():
 		return p.drawShapeBullet(w, bullet, layout)
 	default:
-		return p.drawTextBullet(w, bullet)
+		return p.drawTextBullet(w, bullet, layout)
 	}
 }
 
-func (p *StdParagraph) drawTextBullet(w Writer, bullet *BulletStyle) error {
+func (p *StdParagraph) drawTextBullet(w Writer, bullet *BulletStyle, layout paragraphBulletLayout) error {
 	if bullet.font != nil {
 		bullet.font.Apply(w)
 	} else if p.Font() != nil {
 		p.Font().Apply(w)
 	}
+	w.MoveTo(p.textBulletX(w, bullet, layout), layout.baselineY)
 	return w.Print(bullet.Text())
 }
 
@@ -123,10 +126,11 @@ func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_te
 		}
 	}
 	renderHeight := bullet.Height()
-	if renderHeight <= 0 {
+	explicitHeight := renderHeight > 0
+	if !explicitHeight {
 		renderHeight = lineHeight
 	}
-	if renderHeight > lineHeight {
+	if !explicitHeight && renderHeight > lineHeight {
 		renderHeight = lineHeight
 	}
 	renderWidth := slotWidth
@@ -146,6 +150,9 @@ func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_te
 	slotY := baselineY - lineAscent
 	renderY := slotY + max((lineHeight-renderHeight)/2, 0)
 	renderX := slotX
+	if IsRTL(p) {
+		renderX += max(slotWidth-renderWidth, 0)
+	}
 	var shape *pdf.ClosedShape
 	var shapeBounds pdf.Bounds
 	if bullet.IsShape() {
@@ -163,6 +170,7 @@ func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_te
 		slotX:        slotX,
 		slotY:        slotY,
 		slotWidth:    slotWidth,
+		baselineY:    baselineY,
 		renderX:      renderX,
 		renderY:      renderY,
 		renderWidth:  renderWidth,
@@ -170,6 +178,21 @@ func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_te
 		shape:        shape,
 		shapeBounds:  shapeBounds,
 	}
+}
+
+func (p *StdParagraph) textBulletX(w Writer, bullet *BulletStyle, layout paragraphBulletLayout) float64 {
+	if !IsRTL(p) {
+		return layout.slotX
+	}
+	return layout.slotX + max(layout.slotWidth-p.bulletTextWidth(w, bullet), 0)
+}
+
+func (p *StdParagraph) bulletTextWidth(w Writer, bullet *BulletStyle) float64 {
+	rt, err := rich_text.New(bullet.Text(), w.Fonts(), w.FontSize(), options.Options{})
+	if err != nil || rt == nil {
+		return 0
+	}
+	return rt.Width()
 }
 
 func (p *StdParagraph) resolveImageBulletSize(w Writer, bullet *BulletStyle, slotWidth, targetHeight float64) (float64, float64) {
@@ -202,6 +225,12 @@ func (p *StdParagraph) resolveBulletAsset(src string) (assetSourceRef, error) {
 }
 
 func bulletSides(bullet *BulletStyle) int {
+	switch bullet.Shape() {
+	case "triangle":
+		return 3
+	case "square":
+		return 4
+	}
 	if bullet.sides >= 3 {
 		return bullet.sides
 	}
@@ -217,6 +246,7 @@ func bulletPoints(bullet *BulletStyle) int {
 
 func closedShapeForBullet(bullet *BulletStyle, centerX, centerY, renderWidth, renderHeight float64) pdf.ClosedShape {
 	outerRadius := min(renderWidth, renderHeight) / 2
+	rotation := defaultBulletRotation(bullet) + bullet.rotation
 	switch bullet.Shape() {
 	case "circle":
 		return pdf.ClosedShape{
@@ -231,13 +261,13 @@ func closedShapeForBullet(bullet *BulletStyle, centerX, centerY, renderWidth, re
 			RadiusX: renderWidth / 2,
 			RadiusY: renderHeight / 2,
 		}
-	case "polygon":
+	case "polygon", "triangle", "square":
 		return pdf.ClosedShape{
 			Kind:     pdf.ClosedShapePolygon,
 			Center:   pdf.Location{X: centerX, Y: centerY},
 			Radius:   outerRadius,
 			Sides:    bulletSides(bullet),
-			Rotation: bullet.rotation,
+			Rotation: rotation,
 		}
 	case "star":
 		innerRadius := outerRadius * 0.5
@@ -250,9 +280,31 @@ func closedShapeForBullet(bullet *BulletStyle, centerX, centerY, renderWidth, re
 			Radius:      outerRadius,
 			InnerRadius: innerRadius,
 			Points:      bulletPoints(bullet),
-			Rotation:    bullet.rotation,
+			Rotation:    rotation,
 		}
 	default:
 		return pdf.ClosedShape{}
 	}
+}
+
+func defaultBulletRotation(bullet *BulletStyle) float64 {
+	switch bullet.Shape() {
+	case "triangle":
+		return 180
+	case "polygon":
+		switch bulletSides(bullet) {
+		case 5:
+			return 36
+		case 6:
+			return 30
+		}
+	case "star":
+		switch bulletPoints(bullet) {
+		case 5:
+			return 36
+		case 6:
+			return 30
+		}
+	}
+	return 0
 }

@@ -235,6 +235,48 @@ func TestStdParagraph_DrawContent_TextFillUsesParagraphAlignmentWithPlainBullet(
 	}
 }
 
+func TestStdParagraph_DrawContent_PlacesTextBulletInRTLSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{text: "*", width: 24, font: p.font}
+	p.SetWidth(120)
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.moves) < 4 {
+		t.Fatalf("move count = %d, want at least 4", len(w.moves))
+	}
+	wantBulletX := ContentRight(p) - p.bulletTextWidth(w, p.bullet)
+	if got := w.moves[2][0]; math.Abs(got-wantBulletX) > 0.001 {
+		t.Fatalf("bullet move x = %v, want %v", got, wantBulletX)
+	}
+	if got := w.moves[0][0]; math.Abs(got-ContentLeft(p)) > 0.001 {
+		t.Fatalf("initial text move x = %v, want %v", got, ContentLeft(p))
+	}
+	if got := w.moves[3][0]; math.Abs(got-ContentLeft(p)) > 0.001 {
+		t.Fatalf("post-bullet text move x = %v, want %v", got, ContentLeft(p))
+	}
+	if len(w.paragraphOpts) != 1 {
+		t.Fatalf("paragraph opts count = %d, want 1", len(w.paragraphOpts))
+	}
+	if got := w.paragraphOpts[0]["text-align"]; got != "right" {
+		t.Fatalf("paragraph text-align = %v, want right", got)
+	}
+}
+
 func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
 	page.layout = defaultLayouts["vbox"].Clone()
@@ -280,6 +322,87 @@ func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *test
 	}
 	if tail.continuationIndent != p.bulletWidth() {
 		t.Fatalf("tail continuation indent = %v, want %v", tail.continuationIndent, p.bulletWidth())
+	}
+}
+
+func TestStdParagraph_DrawContent_PlacesImageBulletInRTLSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{src: "fixture.svg", width: 24, height: 12}
+	p.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", "<svg/>"))))
+	p.SetWidth(120)
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:           t,
+		fonts:       defaultTestFonts(t),
+		lineSpacing: 1.0,
+		fileDimensions: map[string][2]int{
+			"fixture.svg": {10, 10},
+		},
+	}}
+
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("image bullet calls = %d, want 1", len(w.fileCalls))
+	}
+	if w.fileCalls[0].width == nil {
+		t.Fatal("image bullet width pointer is nil")
+	}
+	wantX := ContentRight(p) - *w.fileCalls[0].width
+	if got := w.fileCalls[0].x; math.Abs(got-wantX) > 0.001 {
+		t.Fatalf("image bullet x = %v, want %v", got, wantX)
+	}
+}
+
+func TestStdParagraph_DrawContent_PlacesShapeBulletFlushRightInRTLSlot(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 100)
+	container.dirExplicit = true
+	container.dir = DirRTL
+
+	p := &StdParagraph{}
+	if err := p.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 18}
+	p.SetWidth(120)
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.AddText("Hello world")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:           t,
+		fonts:       defaultTestFonts(t),
+		lineSpacing: 1.0,
+	}}
+
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.shapeCalls) != 1 {
+		t.Fatalf("shape bullet calls = %d, want 1", len(w.shapeCalls))
+	}
+	call := w.shapeCalls[0]
+	if call.name != "circle" {
+		t.Fatalf("shape bullet name = %q, want circle", call.name)
+	}
+	wantX := ContentRight(p) - call.a
+	if got := call.x; math.Abs(got-wantX) > 0.001 {
+		t.Fatalf("shape bullet center x = %v, want %v", got, wantX)
 	}
 }
 
@@ -378,6 +501,32 @@ func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing
 	}
 	if len(w.clippedText) != 0 {
 		t.Fatalf("shape bullet should not use text clipping, got %#v", w.clippedText)
+	}
+}
+
+func TestStdParagraph_BulletLayout_HonorsExplicitHeightAboveLineHeight(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 18}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) != 1 {
+		t.Fatalf("line count = %d, want 1", len(lines))
+	}
+
+	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent())
+	if math.Abs(layout.renderHeight-18) > 0.0001 {
+		t.Fatalf("renderHeight = %v, want 18", layout.renderHeight)
+	}
+	if math.Abs(layout.renderWidth-18) > 0.0001 {
+		t.Fatalf("renderWidth = %v, want 18", layout.renderWidth)
 	}
 }
 
