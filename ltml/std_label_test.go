@@ -2,6 +2,8 @@ package ltml
 
 import (
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/rowland/leadtype/afm_fonts"
@@ -36,6 +38,8 @@ type labelTestWriter struct {
 	underline     bool
 	moves         [][2]float64
 	printed       []*rich_text.RichText
+	clipped       []*rich_text.RichText
+	clippedText   []string
 	paragraphOpts []options.Options
 	printedPages  []int
 	plainPrinted  []string
@@ -47,6 +51,10 @@ type labelTestWriter struct {
 	pageCount     int
 	rectPages     []int
 	fillRectPages []int
+	linearPaints  []*pdf.LinearGradient
+	radialPaints  []*pdf.RadialGradient
+	imagePaints   []paintedImageCall
+	fileDimensions map[string][2]int
 	t             testing.TB
 }
 
@@ -70,12 +78,14 @@ func (w *labelTestWriter) Clip(fn func()) error {
 	return nil
 }
 func (w *labelTestWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
+	w.clipped = append(w.clipped, text)
 	if fn != nil {
 		fn()
 	}
 	return nil
 }
 func (w *labelTestWriter) ClipText(text string, fn func()) error {
+	w.clippedText = append(w.clippedText, text)
 	if fn != nil {
 		fn()
 	}
@@ -118,6 +128,9 @@ func (w *labelTestWriter) SVGDimensionsFromFile(filename string) (width, height 
 	return 0, 0, nil
 }
 func (w *labelTestWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
+	if dims, ok := w.fileDimensions[filename]; ok {
+		return dims[0], dims[1], nil
+	}
 	return 0, 0, nil
 }
 func (w *labelTestWriter) LineSpacing() float64 {
@@ -150,11 +163,24 @@ func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, h
 	return 0, 0, nil
 }
 func (w *labelTestWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
-	_, _, err := w.PrintImageFile(filename, x, y, &width, &height)
-	return err
+	w.imagePaints = append(w.imagePaints, paintedImageCall{
+		filename: filename,
+		x:        x,
+		y:        y,
+		width:    width,
+		height:   height,
+		opacity:  opacity,
+	})
+	return nil
 }
-func (w *labelTestWriter) PaintLinearGradient(lg *pdf.LinearGradient) error { return nil }
-func (w *labelTestWriter) PaintRadialGradient(rg *pdf.RadialGradient) error { return nil }
+func (w *labelTestWriter) PaintLinearGradient(lg *pdf.LinearGradient) error {
+	w.linearPaints = append(w.linearPaints, lg)
+	return nil
+}
+func (w *labelTestWriter) PaintRadialGradient(rg *pdf.RadialGradient) error {
+	w.radialPaints = append(w.radialPaints, rg)
+	return nil
+}
 func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {
 	w.paragraphOpts = append(w.paragraphOpts, opts)
 	for _, line := range para {
@@ -301,6 +327,98 @@ func TestStdLabel_DrawContent_PrintsRichText(t *testing.T) {
 	}
 	if len(w.rotations) != 0 {
 		t.Fatalf("rotation count = %d, want 0", len(w.rotations))
+	}
+}
+
+func TestStdLabel_DrawContent_TextFillClipsAndPaintsSolidBrush(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.SetWidth(120)
+	l.SetHeight(40)
+	l.SetAttrs(map[string]string{"text-fill": "Gold"})
+	l.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.printed) != 0 {
+		t.Fatalf("PrintRichText count = %d, want 0", len(w.printed))
+	}
+	if len(w.clipped) != 1 {
+		t.Fatalf("ClipRichText count = %d, want 1", len(w.clipped))
+	}
+	if len(w.fillRectPages) != 1 {
+		t.Fatalf("fill rect count = %d, want 1", len(w.fillRectPages))
+	}
+}
+
+func TestStdLabel_DrawContent_TextFillClipsAndPaintsGradientBrush(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.SetWidth(120)
+	l.SetHeight(40)
+	l.SetAttrs(map[string]string{
+		"text-fill.kind":  "linear-gradient",
+		"text-fill.x0":    "0",
+		"text-fill.y0":    "0",
+		"text-fill.x1":    "120",
+		"text-fill.y1":    "0",
+		"text-fill.stops": "0:Blue,1:Gold",
+	})
+	l.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.clipped) != 1 {
+		t.Fatalf("ClipRichText count = %d, want 1", len(w.clipped))
+	}
+	if len(w.linearPaints) != 1 {
+		t.Fatalf("linear paint count = %d, want 1", len(w.linearPaints))
+	}
+	if got := w.linearPaints[0].X0; got != 10 {
+		t.Fatalf("gradient x0 = %v, want 10", got)
+	}
+}
+
+func TestSample_TextFillClipping_ExercisesLabelAndParagraphTextFill(t *testing.T) {
+	doc, err := ParseFile(sampleFile("test_046_text_fill_clipping.ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writer := &labelTestWriter{
+		t: t,
+		fileDimensions: map[string][2]int{
+			filepath.Join(filepath.Dir(sampleFile("test_046_text_fill_clipping.ltml")), "../../pdf/testdata/testimg.jpg"): {640, 480},
+		},
+	}
+
+	if err := doc.Print(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.clipped) == 0 {
+		t.Fatal("expected sample to clip rich text")
+	}
+	if len(writer.linearPaints) == 0 {
+		t.Fatal("expected sample to paint a gradient through clipped text")
+	}
+	if len(writer.radialPaints) == 0 {
+		t.Fatal("expected sample to paint a radial gradient through clipped text")
+	}
+	if len(writer.imagePaints) == 0 {
+		t.Fatal("expected sample to paint an image through clipped text")
+	}
+}
+
+func TestSample_TextFillClipping_FileExists(t *testing.T) {
+	if _, err := os.Stat(sampleFile("test_046_text_fill_clipping.ltml")); err != nil {
+		t.Fatal(err)
 	}
 }
 

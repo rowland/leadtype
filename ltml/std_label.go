@@ -16,6 +16,7 @@ type StdLabel struct {
 	StdContainer
 	textPieces   []textPiece
 	richText     *rich_text.RichText
+	textFill     *BrushStyle
 	shrinkToFit  bool
 	angle        float64
 	textAlign    HAlign
@@ -91,6 +92,32 @@ func (l *StdLabel) DrawContent(w Writer) error {
 		l.Font().Apply(w)
 		anchorX, anchorY := l.textAnchor(rt)
 		startX := anchorX - l.textAnchorOffset(rt)
+		if l.textFill != nil {
+			x, y, width, height := l.backgroundRect()
+			paintFill := func() error {
+				w.MoveTo(startX, anchorY)
+				var paintErr error
+				if err := w.ClipRichText(rt, func() {
+					paintErr = l.paintBrushInRect(w, l.textFill, x, y, width, height)
+				}); err != nil {
+					return err
+				}
+				if paintErr != nil {
+					return paintErr
+				}
+				return nil
+			}
+			if l.angle == 0 {
+				return paintFill()
+			}
+			var paintErr error
+			if err := w.Rotate(l.angle, anchorX, anchorY, func() {
+				paintErr = paintFill()
+			}); err != nil {
+				return err
+			}
+			return paintErr
+		}
 		if l.angle == 0 {
 			w.MoveTo(startX, anchorY)
 			w.PrintRichText(rt)
@@ -176,6 +203,17 @@ func (l *StdLabel) applyFonts(w Writer) {
 
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
 	l.StdContainer.SetAttrs(attrs)
+	if fill, ok := attrs["text-fill"]; ok {
+		l.textFill = BrushStyleFor(fill, l.scope)
+	}
+	if MapHasKeyPrefix(attrs, "text-fill.") {
+		if l.textFill == nil {
+			l.textFill = &BrushStyle{}
+		} else {
+			l.textFill = l.textFill.Clone()
+		}
+		l.textFill.SetAttrs(addUnits(filterMapAttrs("text-fill.", attrs), l.Units()))
+	}
 	l.shrinkToFit = attrs["fit"] == "shrink"
 	if angle, ok := attrs["angle"]; ok {
 		l.angle, _ = strconv.ParseFloat(angle, 64)

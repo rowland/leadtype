@@ -60,6 +60,90 @@ func TestStdParagraph_RichText_ReappliesFontsWhenUsingCachedRichText(t *testing.
 	}
 }
 
+func TestStdParagraph_DrawContent_TextFillClipsParagraphLinesAcrossWidgetRect(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(90)
+	p.SetHeight(80)
+	p.SetAttrs(map[string]string{"text-fill": "Gold"})
+	p.AddText("Lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) < 2 {
+		t.Fatalf("wrapped line count = %d, want at least 2", len(lines))
+	}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.printed) != 0 {
+		t.Fatalf("PrintRichText count = %d, want 0", len(w.printed))
+	}
+	if len(w.clipped) != len(lines) {
+		t.Fatalf("ClipRichText count = %d, want %d", len(w.clipped), len(lines))
+	}
+	if len(w.fillRectPages) != len(lines) {
+		t.Fatalf("fill rect count = %d, want %d", len(w.fillRectPages), len(lines))
+	}
+	if len(w.moves) < len(lines) {
+		t.Fatalf("move count = %d, want at least %d", len(w.moves), len(lines))
+	}
+	lineMoves := w.moves[len(w.moves)-len(lines):]
+	for i := 1; i < len(lines); i++ {
+		if lineMoves[i][1] <= lineMoves[i-1][1] {
+			t.Fatalf("line %d baseline y = %v, want greater than previous line y %v", i, lineMoves[i][1], lineMoves[i-1][1])
+		}
+	}
+}
+
+func TestStdParagraph_DrawContent_TextFillUsesParagraphAlignmentWithPlainBullet(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{TextStyle: TextStyle{textAlign: HAlignCenter, textAlignSet: true}}
+	p.bullet = &BulletStyle{text: "*", width: 18, font: p.font}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.SetAttrs(map[string]string{
+		"text-fill.kind":  "linear-gradient",
+		"text-fill.x0":    "0",
+		"text-fill.y0":    "0",
+		"text-fill.x1":    "120",
+		"text-fill.y1":    "0",
+		"text-fill.stops": "0:Blue,1:Gold",
+	})
+	p.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	lines := p.Lines(w, p.lineWidth())
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.plainPrinted) != 1 || w.plainPrinted[0] != "*" {
+		t.Fatalf("plain bullet output = %#v, want [*]", w.plainPrinted)
+	}
+	if len(w.clippedText) != 0 {
+		t.Fatalf("bullet should not be clipped, got %#v", w.clippedText)
+	}
+	if len(w.clipped) != len(lines) {
+		t.Fatalf("ClipRichText count = %d, want %d", len(w.clipped), len(lines))
+	}
+	if len(w.linearPaints) == 0 {
+		t.Fatal("expected gradient paints")
+	}
+	opts := paragraphTextFillOptions(p)
+	if got := opts.StringDefault("text-align", ""); got != "center" {
+		t.Fatalf("text-align = %q, want center", got)
+	}
+	if got := opts.FloatDefault("width", 0); got != ContentWidth(p)-p.textIndent() {
+		t.Fatalf("width = %v, want %v", got, ContentWidth(p)-p.textIndent())
+	}
+}
+
 func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
 	page.layout = defaultLayouts["vbox"].Clone()
