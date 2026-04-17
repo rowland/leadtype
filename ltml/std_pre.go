@@ -14,6 +14,7 @@ const preTabWidth = 4
 
 type StdPre struct {
 	StdWidget
+	source  textSource
 	rawText string
 	lines   []string
 }
@@ -26,8 +27,11 @@ func (p *StdPre) AddText(text string) {
 }
 
 func (p *StdPre) DrawContent(w Writer) error {
+	lines, err := p.resolvedLines()
+	if err != nil {
+		return err
+	}
 	return withWidgetRoleAccessibility(w, &p.StdWidget, "", p.AccessibilityText(), func() error {
-		lines := p.Lines()
 		if len(lines) == 0 {
 			lines = []string{""}
 		}
@@ -48,6 +52,11 @@ func (p *StdPre) DrawContent(w Writer) error {
 		}
 		return nil
 	})
+}
+
+func (p *StdPre) BeforePrint(Writer) error {
+	_, err := p.resolvedLines()
+	return err
 }
 
 func (p *StdPre) Font() *FontStyle {
@@ -95,63 +104,42 @@ func (p *StdPre) PreferredWidth(w Writer) float64 {
 }
 
 func (p *StdPre) AccessibilityText() string {
-	return strings.Join(p.Lines(), "\n")
+	lines, err := p.resolvedLines()
+	if err != nil {
+		return ""
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (p *StdPre) SetAttrs(attrs map[string]string) {
 	p.StdWidget.SetAttrs(attrs)
+	p.source.SetAttrs(attrs)
 }
 
 func (p *StdPre) Lines() []string {
-	if p.lines != nil {
-		return p.lines
+	lines, err := p.resolvedLines()
+	if err != nil {
+		return []string{""}
 	}
-	text := strings.ReplaceAll(p.rawText, "\t", strings.Repeat(" ", preTabWidth))
-	if text == "" {
-		p.lines = []string{""}
-		return p.lines
-	}
+	return lines
+}
 
-	lines := strings.Split(text, "\n")
-	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
-		lines = lines[1:]
-	}
-	if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
-		lines = lines[:len(lines)-1]
-	}
-	if len(lines) == 0 {
-		p.lines = []string{""}
-		return p.lines
-	}
-
-	indent := -1
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
+func (p *StdPre) resolvedLines() ([]string, error) {
+	if p.source.Explicit() {
+		text, err := p.source.Text(p.doc, p.container, p.rawText, "pre")
+		if err != nil {
+			return nil, err
 		}
-		count := 0
-		for count < len(line) && line[count] == ' ' {
-			count++
-		}
-		if indent == -1 || count < indent {
-			indent = count
-		}
+		return normalizedPreLines(text), nil
 	}
-	if indent > 0 {
-		for i, line := range lines {
-			if strings.TrimSpace(line) == "" {
-				lines[i] = ""
-				continue
-			}
-			lines[i] = line[indent:]
-		}
+	if p.lines == nil {
+		p.lines = normalizedPreLines(p.rawText)
 	}
-	p.lines = lines
-	return p.lines
+	return p.lines, nil
 }
 
 func (p *StdPre) String() string {
-	return fmt.Sprintf("StdPre %s", &p.StdWidget)
+	return fmt.Sprintf("StdPre src=%s %s", p.source.src, &p.StdWidget)
 }
 
 func (p *StdPre) lineHeight(w Writer) float64 {
@@ -177,8 +165,57 @@ func init() {
 	registerTag(DefaultSpace, "pre", func() any { return &StdPre{} })
 }
 
+func (p *StdPre) assetSource() (assetSourceRef, error) {
+	return p.source.assetSource(p.doc, p.container, "pre")
+}
+
+func normalizedPreLines(text string) []string {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	text = strings.ReplaceAll(text, "\t", strings.Repeat(" ", preTabWidth))
+	if text == "" {
+		return []string{""}
+	}
+
+	lines := strings.Split(text, "\n")
+	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) == 0 {
+		return []string{""}
+	}
+
+	indent := -1
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		count := 0
+		for count < len(line) && line[count] == ' ' {
+			count++
+		}
+		if indent == -1 || count < indent {
+			indent = count
+		}
+	}
+	if indent > 0 {
+		for i, line := range lines {
+			if strings.TrimSpace(line) == "" {
+				lines[i] = ""
+				continue
+			}
+			lines[i] = line[indent:]
+		}
+	}
+	return lines
+}
+
 var _ HasAttrs = (*StdPre)(nil)
 var _ HasText = (*StdPre)(nil)
 var _ Identifier = (*StdPre)(nil)
 var _ Printer = (*StdPre)(nil)
 var _ WantsContainer = (*StdPre)(nil)
+var _ WantsDoc = (*StdPre)(nil)

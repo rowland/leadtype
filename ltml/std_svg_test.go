@@ -139,8 +139,8 @@ func TestStdSVG_DrawContent_UsesContentBoxDimensionsForInlineSVG(t *testing.T) {
 func TestStdSVG_DrawContent_UsesFilePathWhenSrcIsSet(t *testing.T) {
 	svg := &StdSVG{}
 	svg.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", `<svg xmlns="http://www.w3.org/2000/svg"></svg>`))))
-	svg.src = "fixture.svg"
-	svg.srcExplicit = true
+	svg.source.src = "fixture.svg"
+	svg.source.srcExplicit = true
 	svg.SetLeft(10)
 	svg.SetTop(20)
 	w := &svgTestWriter{}
@@ -217,8 +217,8 @@ func TestParse_SVGTag_SrcOverridesInlineBody(t *testing.T) {
 	if !ok {
 		t.Fatalf("child type = %T, want *StdSVG", page.children[0])
 	}
-	if svg.src != "logo.svg" {
-		t.Fatalf("src = %q, want logo.svg", svg.src)
+	if svg.source.src != "logo.svg" {
+		t.Fatalf("src = %q, want logo.svg", svg.source.src)
 	}
 	if got := svg.Body(); got == "" {
 		t.Fatal("expected src-loaded body to be retained")

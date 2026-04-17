@@ -1,7 +1,11 @@
 package ltml
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/font"
@@ -126,5 +130,163 @@ func TestParse_PreTag(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("line %d = %q, want %q", i, got[i], want[i])
 		}
+	}
+}
+
+func TestParse_PreTagSrcLoadsFromAssetFS(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <pre src="snippet.txt">
+      ignored
+    </pre>
+  </page>
+</ltml>`), WithAssetFS(fstest.MapFS{
+		"snippet.txt": &fstest.MapFile{Data: []byte("first\n  second\n")},
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pre, ok := doc.Root().Page(0).children[0].(*StdPre)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdPre", doc.Root().Page(0).children[0])
+	}
+	want := []string{"first", "  second"}
+	got := pre.Lines()
+	if len(got) != len(want) {
+		t.Fatalf("line count = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("line %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestParse_PreTagSrcLoadsRelativeToParsedFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "snippet.txt"), []byte("alpha\nbeta\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputPath := filepath.Join(dir, "doc.ltml")
+	if err := os.WriteFile(inputPath, []byte(`
+<ltml>
+  <page>
+    <pre src="snippet.txt" />
+  </page>
+</ltml>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc, err := ParseFile(inputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pre, ok := doc.Root().Page(0).children[0].(*StdPre)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdPre", doc.Root().Page(0).children[0])
+	}
+	want := []string{"alpha", "beta"}
+	got := pre.Lines()
+	if len(got) != len(want) {
+		t.Fatalf("line count = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("line %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestParse_PreTagSrcOverridesInlineBody(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <pre src="snippet.txt">
+      ignored inline body
+    </pre>
+  </page>
+</ltml>`), WithAssetFS(fstest.MapFS{
+		"snippet.txt": &fstest.MapFile{Data: []byte("from src")},
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pre, ok := doc.Root().Page(0).children[0].(*StdPre)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdPre", doc.Root().Page(0).children[0])
+	}
+	if got := pre.AccessibilityText(); got != "from src" {
+		t.Fatalf("AccessibilityText() = %q, want %q", got, "from src")
+	}
+}
+
+func TestParse_PreTag_InvalidSrcReturnsErrorOnPrint(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <pre src="../snippet.txt" />
+  </page>
+</ltml>`), WithAssetFS(fstest.MapFS{
+		"snippet.txt": &fstest.MapFile{Data: []byte("unused")},
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pre, ok := doc.Root().Page(0).children[0].(*StdPre)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdPre", doc.Root().Page(0).children[0])
+	}
+
+	err = pre.BeforePrint(newPreTestWriter(t))
+	if err == nil {
+		t.Fatal("BeforePrint() error = nil, want invalid asset path error")
+	}
+	if !strings.Contains(err.Error(), "invalid asset path") {
+		t.Fatalf("BeforePrint() error = %q, want invalid asset path", err)
+	}
+	if got := pre.AccessibilityText(); got != "" {
+		t.Fatalf("AccessibilityText() = %q, want empty on source error", got)
+	}
+}
+
+func TestParse_PreTagSrcRereadsLocalFileOnEachCall(t *testing.T) {
+	dir := t.TempDir()
+	fixture := filepath.Join(dir, "snippet.txt")
+	if err := os.WriteFile(fixture, []byte("one\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputPath := filepath.Join(dir, "doc.ltml")
+	if err := os.WriteFile(inputPath, []byte(`
+<ltml>
+  <page>
+    <pre src="snippet.txt" />
+  </page>
+</ltml>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc, err := ParseFile(inputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pre, ok := doc.Root().Page(0).children[0].(*StdPre)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdPre", doc.Root().Page(0).children[0])
+	}
+	if got := pre.AccessibilityText(); got != "one" {
+		t.Fatalf("AccessibilityText() = %q, want %q", got, "one")
+	}
+
+	if err := os.WriteFile(fixture, []byte("two\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := pre.AccessibilityText(); got != "two" {
+		t.Fatalf("AccessibilityText() after rewrite = %q, want %q", got, "two")
 	}
 }

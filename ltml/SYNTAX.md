@@ -423,6 +423,7 @@ code blocks and other preformatted content.
 
 | Attribute | Description |
 |-----------|-------------|
+| `src` | Optional path or URL to external preformatted text content. When both `src` and inline content are present, `src` wins. |
 | `font` / `font.*` | Same font attributes supported by `<p>`. Defaults to the built-in `fixed` font style. |
 | `width`, `height` | Optional explicit dimensions. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the block. |
@@ -434,6 +435,18 @@ code blocks and other preformatted content.
 `<pre>` preserves internal spaces and line breaks, does not wrap lines, trims a
 single surrounding newline from block content, removes common leading
 indentation from non-blank lines, and expands tab characters to four spaces.
+External `src` content is loaded lazily on first use using the same
+source-resolution rules as component-backed tags such as `<svg>`:
+
+- when an asset filesystem is attached, `src` must be a clean relative asset
+  path and is read virtually from that asset filesystem
+- when no asset filesystem is attached, relative file paths are resolved
+  relative to the LTML document being parsed, while absolute paths remain
+  absolute
+- `http` and `https` URLs are supported only when document/network loading is
+  explicitly enabled; network assets are fetched lazily into a temp file and
+  cleaned up after rendering
+
 When `<pre>` participates in tagged output through `role`, LTML uses that same
 resolved preformatted text for `/ActualText`.
 
