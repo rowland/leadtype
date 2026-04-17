@@ -2,7 +2,7 @@
 1 0 obj
 <<
 /Count 1 
-/Kids [5 0 R ] 
+/Kids [7 0 R ] 
 /Type /Pages 
 >>
 endobj
@@ -14,44 +14,77 @@ endobj
 endobj
 3 0 obj
 <<
+/MarkInfo <<
+/Marked true 
+>>
+
 /Outlines 2 0 R 
 /PageMode /UseNone 
 /Pages 1 0 R 
+/StructTreeRoot 6 0 R 
 /Type /Catalog 
 >>
 endobj
 4 0 obj
 <<
 /Font <<
-/F0 8 0 R 
-/F1 11 0 R 
-/F2 15 0 R 
+/F0 11 0 R 
+/F1 15 0 R 
+/F2 19 0 R 
 >>
 
 /ProcSet [/PDF /Text /ImageB /ImageC ] 
 /Shading <<
-/Sh0 19 0 R 
+/Sh0 25 0 R 
 >>
 
 /XObject <<
-/Fm0 17 0 R 
+/Fm0 22 0 R 
 >>
 
 >>
 endobj
 5 0 obj
 <<
-/Contents 20 0 R 
+/Nums [0 [8 0 R 12 0 R 20 0 R 23 0 R ] ] 
+>>
+endobj
+6 0 obj
+<<
+/K [8 0 R 12 0 R 20 0 R 23 0 R ] 
+/ParentTree 5 0 R 
+/ParentTreeNextKey 1 
+/Type /StructTreeRoot 
+>>
+endobj
+7 0 obj
+<<
+/Contents 26 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 1594 
+/Length 1968 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
 /Rotate 0 
+/StructParents 0 
 /Type /Page 
 >>
 endobj
-6 0 obj
+8 0 obj
+<<
+/ActualText (Bullet variants) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 0 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+9 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -60,7 +93,7 @@ endobj
 /Flags 262144 
 /FontBBox [-2084 -985 2810 1971 ] 
 /FontFamily (Helvetica) 
-/FontFile2 26 0 R 
+/FontFile2 32 0 R 
 /FontName /UOERRB+Helvetica-Bold 
 /ItalicAngle 0 
 /Leading 2048 
@@ -72,29 +105,43 @@ endobj
 /XHeight 1090 
 >>
 endobj
-7 0 obj
+10 0 obj
 <<
 /BaseFont /UOERRB+Helvetica-Bold 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 25 0 R 
+/CIDToGIDMap 31 0 R 
 /DW 556 
-/FontDescriptor 6 0 R 
+/FontDescriptor 9 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [722 610 277 ] 5 [333 277 ] 9 [389 277 610 ] ] 
 >>
 endobj
-8 0 obj
+11 0 obj
 <<
 /BaseFont /UOERRB+Helvetica-Bold 
-/DescendantFonts [7 0 R ] 
+/DescendantFonts [10 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 24 0 R 
+/ToUnicode 30 0 R 
 /Type /Font 
 >>
 endobj
-9 0 obj
+12 0 obj
+<<
+/ActualText (Text bullets keep the existing font-based behavior.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 1 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+13 0 obj
 <<
 /Ascent 750 
 /AvgWidth 0 
@@ -114,10 +161,10 @@ endobj
 /XHeight 0 
 >>
 endobj
-10 0 obj
+14 0 obj
 [278 974 961 974 980 719 789 790 791 690 960 939 549 855 911 933 911 945 974 755 846 762 761 571 677 763 760 759 754 494 552 537 577 692 786 788 788 790 793 794 816 823 789 841 823 833 816 831 923 744 723 749 790 792 695 776 768 792 759 707 708 682 701 826 815 789 789 707 687 696 689 786 787 713 791 785 791 873 761 762 762 759 759 892 892 788 784 438 138 277 415 392 392 668 668 0 390 390 317 317 276 276 509 509 410 410 234 234 334 334 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 732 544 544 910 667 760 760 776 595 694 626 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 788 894 838 1016 458 748 924 748 918 927 928 928 834 873 828 924 924 917 930 931 463 883 836 836 867 867 696 696 874 0 874 760 946 771 865 771 888 967 888 831 873 927 970 918 0 ] 
 endobj
-12 0 obj
+16 0 obj
 <<
 /Length 3392 
 >>
@@ -397,19 +444,19 @@ CMap end
 end
 endstream
 endobj
-11 0 obj
+15 0 obj
 <<
 /BaseFont /ZapfDingbats 
 /FirstChar 32 
-/FontDescriptor 9 0 R 
+/FontDescriptor 13 0 R 
 /LastChar 255 
 /Subtype /Type1 
-/ToUnicode 12 0 R 
+/ToUnicode 16 0 R 
 /Type /Font 
-/Widths 10 0 R 
+/Widths 14 0 R 
 >>
 endobj
-13 0 obj
+17 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -418,7 +465,7 @@ endobj
 /Flags 0 
 /FontBBox [-1947 -985 2961 2297 ] 
 /FontFamily (Helvetica) 
-/FontFile2 23 0 R 
+/FontFile2 29 0 R 
 /FontName /PIMPEI+Helvetica 
 /ItalicAngle 0 
 /Leading 2048 
@@ -430,45 +477,59 @@ endobj
 /XHeight 1071 
 >>
 endobj
-14 0 obj
+18 0 obj
 <<
 /BaseFont /PIMPEI+Helvetica 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 22 0 R 
+/CIDToGIDMap 28 0 R 
 /DW 556 
-/FontDescriptor 13 0 R 
+/FontDescriptor 17 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [610 ] 3 [500 277 277 ] 8 [222 500 500 ] 13 [222 ] 16 [277 ] 18 [333 ] 21 [500 333 277 ] 25 [500 666 666 777 277 833 500 277 ] ] 
 >>
 endobj
-15 0 obj
+19 0 obj
 <<
 /BaseFont /PIMPEI+Helvetica 
-/DescendantFonts [14 0 R ] 
+/DescendantFonts [18 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 21 0 R 
+/ToUnicode 27 0 R 
 /Type /Font 
 >>
 endobj
-16 0 obj
+20 0 obj
+<<
+/ActualText (Image bullets render shared assets through the normal image pipeline.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 2 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+21 0 obj
 <<
 /Font <<
-/F0 8 0 R 
-/F1 11 0 R 
-/F2 15 0 R 
+/F0 11 0 R 
+/F1 15 0 R 
+/F2 19 0 R 
 >>
 
 /ProcSet [/PDF /Text /ImageB /ImageC ] 
 >>
 endobj
-17 0 obj
+22 0 obj
 <<
 /BBox [0 0 160 100 ] 
 /FormType 1 
 /Length 1192 
-/Resources 16 0 R 
+/Resources 21 0 R 
 /Subtype /Form 
 /Type /XObject 
 >>
@@ -583,7 +644,21 @@ BT
 ET
 endstream
 endobj
-18 0 obj
+23 0 obj
+<<
+/ActualText (Shape bullets can use pen and brush styling, including gradients.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 3 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+24 0 obj
 <<
 /C0 [1 0.3882 0.2784 ] 
 /C1 [1 0.8431 0 ] 
@@ -592,43 +667,87 @@ endobj
 /N 1 
 >>
 endobj
-19 0 obj
+25 0 obj
 <<
 /ColorSpace /DeviceRGB 
 /Coords [72 648 84 648 ] 
 /Extend [true true ] 
-/Function 18 0 R 
+/Function 24 0 R 
 /ShadingType 2 
 >>
 endobj
-20 0 obj
+26 0 obj
 <<
-/Length 1594 
+/Length 1968 
 >>
 stream
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 72 710.7598 Td
+/P <<
+/MCID 0 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <0001000200030003000400050006000700080009000a0008000b0005000c> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 0 -24 Td
 /F1 12 Tf
 0 Ts
 (l) Tj
+EMC
 24 0 Td
+/P <<
+/MCID 1 
+>>
+BDC
 /F2 12 Tf
 0 Ts
 <0001000200030004000500060007000800080002000400090005000a00020002000b00050004000c0002000500020003000d00090004000d000e000f000500100011000e0004001200060013000900020014000500060002000c00130015000d001100160017> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 q
 0.12 0 0 0.12 72 660 cm
 /Fm0 Do
 Q
+EMC
 BT
 96 662.7598 Td
+/P <<
+/MCID 2 
+>>
+BDC
 /F2 12 Tf
 0 Ts
 <001d001e0013000f000200050006000700080008000200040009000500160002000e00140002001600050009000c0013001600020014000500130009000900020004000900050004000c001600110007000f000c00050004000c00020005000e00110016001e001300080005000d001e0013000f00020005000b000d000b00020008000d000e00020017> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 78.8308 645.8637 m
 76.2426 647.7956 l
@@ -674,15 +793,21 @@ Q
 82.0382 646.2426 l
 78.8308 645.8637 l
 S
+EMC
 BT
 96 638.7598 Td
+/P <<
+/MCID 3 
+>>
+BDC
 /F2 12 Tf
 0 Ts
 <001a000c0013000b0002000500060007000800080002000400090005001f0013000e00050007000900020005000b0002000e00050013000e001400050006001600070009000c00050009000400190008000d000e000f00200005000d000e001f000800070014000d000e000f0005000f001600130014000d0002000e000400090017> Tj
+EMC
 ET
 endstream
 endobj
-21 0 obj
+27 0 obj
 <<
 /Length 732 
 >>
@@ -735,14 +860,14 @@ CMap end
 end
 endstream
 endobj
-22 0 obj
+28 0 obj
 <<
 /Length 66 
 >>
 stream
    7 H [ W  E X O V N S K L Q J I R  D G Y U  / \ 6 9 * , P F endstream
 endobj
-23 0 obj
+29 0 obj
 <<
 /Length 14960 
 /Length1 14960 
@@ -824,7 +949,7 @@ d ce+NôM<ýíNEeDæ ?MíÔí1067654&'#53ªEmÖ`vÑU-*ÚÊw´     UÞK—
 © p© €©  €© ©²2¾, % & ¶ç1-å1¸²Â'¸²Á¸@Àž¿g¾g«'¸²ª)¸¶©l“¸š²’¸²‘¸²u¸¶m)–d1¸š²L–¸«²9¸V@68!5ä/'¸@-L*1Í$¸«² ¸%@“:LE':E'»ª› *›²%Jº› %z³I)8–¸{³H(1%¸z@6H(–)H'%)L%)F'')H'VÈ„[A2+(&!
 ¸¬²?»« ? «³¸®²?»­ ? ­· ¸ÿà´   ¸«´   ¸«¶   ¸­³   ¸­@               J °¸ …v??>9FD>9FD>9FD>9FD>9FD>9F`D>9F`D>9F`D+++++++++++++++++++++++++++°–KSX°ªY°2KSX°ÿY+++++++++++++++++++++++++++++++++++++++++tu+++eB++KRy³vpjfEe#E`#Ee`#E`°‹vh°€b  ±jpEe#E °&`bch °&ae°p#eD°j#D ±vfEe#E °&`bch °&ae°f#eD°v#D± fETX±f@eD²v@vE#aDY³bBr]Ee#E`#Ee`#E`°‰vh°€b  ±rBEe#E °&`bch °&ae°B#eD°r#D ±b]Ee#E °&`bch °&ae°]#eD°b#D± ]ETX±]@eD²b@bE#aDY++++EiSBst¸š EiK °(S°IQZX° aYD¸¦ EiDu  endstream
 endobj
-24 0 obj
+30 0 obj
 <<
 /Length 452 
 >>
@@ -857,14 +982,14 @@ CMap end
 end
 endstream
 endobj
-25 0 obj
+31 0 obj
 <<
 /Length 26 
 >>
 stream
    % X O H W  Y D U L Q Vendstream
 endobj
-26 0 obj
+32 0 obj
 <<
 /Length 6660 
 /Length1 6660 
@@ -910,39 +1035,45 @@ stream
                         ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y  ¸ f+ º   h+º   h+¿  (       n+¿  %       n+ ¿  - %      n+¿  K = 0 "    n+¿  &       n+ º   m+¸   E}iDendstream
 endobj
 xref
-0 27
+0 33
 0000000000 65535 f
 0000000009 00000 n
 0000000070 00000 n
 0000000118 00000 n
-0000000206 00000 n
-0000000373 00000 n
-0000000534 00000 n
-0000000863 00000 n
-0000001137 00000 n
-0000001291 00000 n
-0000001577 00000 n
-0000005895 00000 n
-0000002450 00000 n
-0000006060 00000 n
-0000006379 00000 n
-0000006732 00000 n
-0000006883 00000 n
-0000006993 00000 n
-0000008324 00000 n
-0000008428 00000 n
-0000008556 00000 n
-0000010203 00000 n
-0000010987 00000 n
-0000011104 00000 n
-0000026134 00000 n
-0000026638 00000 n
-0000026715 00000 n
+0000000260 00000 n
+0000000428 00000 n
+0000000491 00000 n
+0000000610 00000 n
+0000000789 00000 n
+0000000919 00000 n
+0000001248 00000 n
+0000001523 00000 n
+0000001679 00000 n
+0000001846 00000 n
+0000002133 00000 n
+0000006451 00000 n
+0000003006 00000 n
+0000006617 00000 n
+0000006936 00000 n
+0000007289 00000 n
+0000007440 00000 n
+0000007625 00000 n
+0000007736 00000 n
+0000009067 00000 n
+0000009248 00000 n
+0000009352 00000 n
+0000009480 00000 n
+0000011501 00000 n
+0000012285 00000 n
+0000012402 00000 n
+0000027432 00000 n
+0000027936 00000 n
+0000028013 00000 n
 trailer
 <<
 /Root 3 0 R 
-/Size 27 
+/Size 33 
 >>
 startxref
-33443
+34741
 %%EOF
