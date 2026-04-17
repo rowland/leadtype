@@ -190,6 +190,9 @@ func (bs *BrushStyle) String() string {
 }
 
 func BrushStyleFor(id string, scope HasScope) *BrushStyle {
+	if scope == nil {
+		return &BrushStyle{id: "brush_" + id, color: NamedColor(id)}
+	}
 	style, ok := scope.StyleFor(id)
 	if !ok {
 		style, ok = scope.StyleFor("brush_" + id)

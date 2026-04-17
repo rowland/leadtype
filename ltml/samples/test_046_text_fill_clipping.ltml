@@ -1,0 +1,37 @@
+<ltml units="in" margin="0.50">
+  <layout id="vbox" vpadding="14pt" />
+  <brush id="rose" kind="image" src="../../pdf/testdata/testimg.jpg"
+    fit="tile" tile-height="100%" anchor="left" />
+  <brush id="paragraph-grad" kind="linear-gradient" units="in"
+    x0="0" y0="0" x1="6.4" y1="0"
+    stops="0:#2563eb,1:#ac3aed" />
+  <brush id="wow-grad" kind="radial-gradient" units="in"
+    x0="3.75" y0="0.6" r0="0"
+    x1="3.75" y1="0.6" r1="1.1"
+    stops="0:#c7f0ff,1:#228b22" />
+
+  <page layout="vbox" grid="0.25in">
+    <label font.size="18" font.weight="Bold">Text fill clipping</label>
+
+    <label width="100%" padding="4pt"
+      font.size="54" font.weight="Bold"
+      text-align="left"
+      text-fill="rose">
+      ROSE
+    </label>
+
+    <p width="100%" padding="4pt"
+      text-fill="paragraph-grad"
+      font.size="16">
+      Paragraph text fill uses one clean linear gradient across the paragraph rectangle, 
+      and the text simply reveals that paint like a stencil.
+    </p>
+
+    <label width="100%" padding="18pt"
+      font.size="72" font.weight="Bold"
+      text-align="center" border="black"
+      text-fill="wow-grad">
+      WOW
+    </label>
+  </page>
+</ltml>

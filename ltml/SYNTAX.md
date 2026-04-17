@@ -171,6 +171,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `font.underline-pos` | Underline position as an LTML measurement. |
 | `font.strikeout-pos` | Strikeout position as an LTML measurement. |
 | `font.line-height` | Line spacing multiplier (e.g., `1.5`). |
+| `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the paragraph text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
 | `style`            | Reference to a named `<para>` style. |
 | `style.text-align` | Text alignment: `left`, `center`, `right`, `justify`. |
 | `style.valign`     | Vertical alignment: `top`, `middle`, `bottom`, `baseline`. |
@@ -362,6 +363,7 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | Attribute | Description |
 |-----------|-------------|
 | `font` / `font.*` | Same font attributes supported by `<p>`. |
+| `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the label text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
 | `text-align` | Label text alignment: `left`, `center`, `right`. Affects the text anchor inside the label box. |
 | `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |

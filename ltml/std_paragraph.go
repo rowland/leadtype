@@ -9,7 +9,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/wordbreaking"
 )
@@ -18,6 +17,7 @@ type StdParagraph struct {
 	StdContainer
 	textPieces         []textPiece
 	richText           *rich_text.RichText
+	textFill           *BrushStyle
 	bullet             *BulletStyle
 	splitEnabled       bool
 	splitExplicit      bool
@@ -129,10 +129,10 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 			}
 			w.MoveTo(x+b.Width(), y)
 		}
-		w.PrintParagraph(para, options.Options{
-			"text-align": p.ParagraphStyle().ResolvedTextAlign(p).String(),
-			"width":      ContentWidth(p) - indent,
-		})
+		if p.textFill != nil {
+			return p.paintTextFill(w, para, x, ContentTop(p)+para[0].Ascent(), ContentWidth(p)-indent)
+		}
+		w.PrintParagraph(para, paragraphTextFillOptions(p))
 		return nil
 	})
 }
@@ -227,6 +227,17 @@ func (p *StdParagraph) hasDynamicText() bool {
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
+	if fill, ok := attrs["text-fill"]; ok {
+		p.textFill = BrushStyleFor(fill, p.scope)
+	}
+	if MapHasKeyPrefix(attrs, "text-fill.") {
+		if p.textFill == nil {
+			p.textFill = &BrushStyle{}
+		} else {
+			p.textFill = p.textFill.Clone()
+		}
+		p.textFill.SetAttrs(addUnits(filterMapAttrs("text-fill.", attrs), p.Units()))
+	}
 	p.splitEnabled = true
 	p.orphans = 2
 	p.widows = 2
@@ -254,6 +265,29 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 			p.widows = value
 		}
 	}
+}
+
+func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, startX, startY, width float64) error {
+	x, y, fillWidth, fillHeight := p.backgroundRect()
+	align := p.ParagraphStyle().ResolvedTextAlign(p)
+	currentY := startY
+	for i, line := range para {
+		xOffset, clipped := paragraphAlignedLine(line, width, align)
+		w.MoveTo(startX+xOffset, currentY)
+		var paintErr error
+		if err := w.ClipRichText(clipped, func() {
+			paintErr = p.paintBrushInRect(w, p.textFill, x, y, fillWidth, fillHeight)
+		}); err != nil {
+			return err
+		}
+		if paintErr != nil {
+			return paintErr
+		}
+		if i+1 < len(para) {
+			currentY += para[i+1].Leading() * w.LineSpacing()
+		}
+	}
+	return nil
 }
 
 func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
