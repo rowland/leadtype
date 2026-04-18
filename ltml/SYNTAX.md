@@ -808,20 +808,27 @@ Pre-defines a named layout configuration that can be referenced by containers.
 
 **Built-in page sizes** (set via `style` on `<page>`):
 
-| Name     | Width × Height (pt) |
-|----------|---------------------|
-| `letter` | 612 × 792 (default) |
-| `legal`  | 612 × 1008 |
-| `A4`     | 595 × 842 |
-| `B5`     | 499 × 708 |
-| `C5`     | 459 × 649 |
+- ISO A: `A0` through `A10`
+- ISO B: `B0` through `B10`
+- ISO C: `C0` through `C10`
+- ISO raw: `RA0` through `RA4`, `SRA0` through `SRA4`
+- North American: `halfletter`, `statement`, `letter`, `legal`,
+  `juniorlegal`, `tabloid`, `ledger`, `governmentletter`,
+  `governmentlegal`, `executive`, `folio`, `quarto`
+- ANSI: `ansia` through `ansie`
+- ARCH: `archa`, `archb`, `archc`, `archd`, `arche`, `arche1`, `arche2`,
+  `arche3`
 
-The `orientation` attribute (`portrait` or `landscape`) swaps width and height
-when combined with `style`. Explicit `width` and `height` values can also be
-set directly on `<page>` to use a one-off custom page size.
+Built-in page-size lookup is case-insensitive, so `A4` and `a4` resolve to the
+same built-in size. `letter` remains the default page size.
+
+The page-style override attribute `style.orientation` (`portrait` or
+`landscape`) swaps width and height when combined with `style`. Explicit
+`width` and `height` values can also be set directly on `<page>` to use a
+one-off custom page size.
 
 ```xml
-<page style="A4" orientation="landscape" units="cm" margin="2">
+<page style="A4" style.orientation="landscape" units="cm" margin="2">
   <!-- content -->
 </page>
 ```
@@ -848,6 +855,70 @@ not yet been opened (typically at the top of the document):
 
 Once defined, the name is available to all subsequent `<page>` elements in the
 same scope, just like the built-in size names.
+
+#### Avery extension package
+
+Avery label-stock support is provided by the optional
+`github.com/rowland/leadtype/avery` package rather than the core `std`
+namespace. Import it for registration, then use the `avery` XML namespace:
+
+```go
+import _ "github.com/rowland/leadtype/avery"
+```
+
+```xml
+<ltml xmlns:avery="avery">
+  <page style="letter" margin="0">
+    <avery:labelsheet stock="5160" show-metrics="true" show-outline="true">
+      <avery:label border="thin" padding="6pt">
+        <p font.weight="Bold">Jamie Smith</p>
+        <p>123 Main St</p>
+        <p>Seattle, WA 98101</p>
+      </avery:label>
+      <avery:label border="thin" padding="6pt">
+        <p font.weight="Bold">Morgan Lee</p>
+        <p>987 Market Ave</p>
+        <p>Portland, OR 97205</p>
+      </avery:label>
+    </avery:labelsheet>
+  </page>
+</ltml>
+```
+
+The extension currently includes this built-in catalog of Avery-compatible US
+Letter label stocks:
+
+| Canonical ID | Accepted Aliases | Layout |
+|--------------|------------------|--------|
+| `avery5160` | `5160`, `8160` | 3 × 10 labels, 1" × 2-5/8" |
+| `avery5161` | `5161`, `8161` | 2 × 10 labels, 1" × 4" |
+| `avery5162` | `5162`, `8162` | 2 × 7 labels, 1-1/3" × 4" |
+| `avery5163` | `5163`, `8163` | 2 × 5 labels, 2" × 4" |
+| `avery5164` | `5164`, `8164` | 2 × 3 labels, 3-1/3" × 4" |
+| `avery5167` | `5167`, `8167` | 4 × 20 labels, 1/2" × 1-3/4" |
+| `avery5366` | `5366` | 2 × 15 labels, 2/3" × 3-7/16" |
+| `avery5395` | `5395` | 2 × 4 badges, 2-1/3" × 3-3/8" |
+
+`<avery:labelsheet>` attributes:
+
+| Attribute | Description |
+|-----------|-------------|
+| `stock` | Built-in stock id or alias. Required. |
+| `order` | Fill order for child labels: `rows` (default) or `cols`. |
+| `show-metrics` | When `true`, prints a compact appendix caption with the canonical stock id, label size, and grid count. |
+| `show-outline` | When `true`, draws the full stock grid as an overlay, which is useful for samples and calibration. |
+| `border`, `font.*`, `font`, positioning attrs | Standard widget styling/positioning attrs still apply. |
+
+`<avery:labelsheet>` behaves like a stock-backed label table:
+
+- Each direct `<avery:label>` child occupies one label slot.
+- Slot width, height, row count, column count, and gutter spacing come from the selected stock.
+- Children are filled across rows by default, or down columns when `order="cols"`.
+- Printing fails with a clear error if the number of child labels exceeds the stock capacity.
+
+`<avery:label>` is the author-facing label cell tag. It behaves like a small
+container, so standard widget styling such as `padding`, `border`, `fill`, and
+nested content like `<p>` and `<label>` can be used inside each label.
 
 ---
 

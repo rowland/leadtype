@@ -241,6 +241,9 @@ func TestSamples(t *testing.T) {
 		"test_048_bullet_variants",
 		"test_049_rem_headings",
 		"test_050_lists",
+		"test_051_paper_sizes",
+		"test_052_large_paper_sizes",
+		"test_053_avery_labels",
 	}
 
 	for _, sample := range samples {
