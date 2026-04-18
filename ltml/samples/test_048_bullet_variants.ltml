@@ -6,13 +6,13 @@
   <brush id="skyfill" color="SkyBlue" />
   <bullet id="dot" font="zapf" text="l" width="24pt" />
   <bullet id="scene" src="test_048_bullet_mark.svg" width="24pt" height="18pt" />
-  <bullet id="circle" shape="circle" width="24pt" height="18pt" brush="skyfill" pen="solid" />
-  <bullet id="ellipse" shape="ellipse" width="24pt" height="18pt" brush="skyfill" pen="solid" />
-  <bullet id="polygon" shape="polygon" width="24pt" height="18pt" brush="skyfill" pen="solid" sides="5" />
-  <bullet id="triangle" shape="triangle" width="24pt" height="18pt" brush="skyfill" pen="solid" />
-  <bullet id="square" shape="square" width="24pt" height="18pt" brush="skyfill" pen="solid" />
-  <bullet id="star-five" shape="star" width="24pt" height="18pt" brush="skyfill" pen="solid" points="5" r0="4pt" />
-  <bullet id="brand-star" shape="star" width="24pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" />
+  <bullet id="circle" shape="circle" width="24pt" r="9pt" brush="skyfill" pen="solid" />
+  <bullet id="ellipse" shape="ellipse" width="24pt" height="24pt" rx="9pt" ry="12pt" brush="skyfill" pen="solid" />
+  <bullet id="polygon" shape="polygon" width="24pt" r="9pt" brush="skyfill" pen="solid" sides="5" />
+  <bullet id="triangle" shape="triangle" width="24pt" r="9pt" brush="skyfill" pen="solid" />
+  <bullet id="square" shape="square" width="24pt" r="9pt" brush="skyfill" pen="solid" />
+  <bullet id="star-five" shape="star" width="24pt" r="9pt" brush="skyfill" pen="solid" points="5" r0="4pt" />
+  <bullet id="brand-star" shape="star" width="24pt" r="9pt" brush="goldfill" pen="solid" points="6" r0="4pt" />
   <page font="body" layout.padding="24pt">
     <vbox layout.padding="12pt">
       <label font.weight="Bold">Bullet variants</label>

@@ -406,6 +406,83 @@ func TestStdParagraph_DrawContent_PlacesShapeBulletFlushRightInRTLSlot(t *testin
 	}
 }
 
+func TestStdParagraph_DrawContent_PreservesEllipseBulletWidth(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "ellipse", width: 24, rx: 9, ry: 12}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{
+		t:           t,
+		fonts:       defaultTestFonts(t),
+		lineSpacing: 1.0,
+	}}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.shapeCalls) != 1 {
+		t.Fatalf("shape bullet calls = %d, want 1", len(w.shapeCalls))
+	}
+	call := w.shapeCalls[0]
+	if call.name != "ellipse" {
+		t.Fatalf("shape bullet name = %q, want ellipse", call.name)
+	}
+	if got := call.a; math.Abs(got-9) > 0.001 {
+		t.Fatalf("ellipse bullet rx = %v, want 9", got)
+	}
+	if got := call.b; math.Abs(got-12) > 0.001 {
+		t.Fatalf("ellipse bullet ry = %v, want 12", got)
+	}
+}
+
+func TestStdParagraph_BulletLayout_ShapeRadiusDoesNotConsumeFullSlotWidth(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, r: 9}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	lines := p.Lines(w, p.lineWidth())
+	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent(), p.textContentHeightForLines(lines, w))
+	if got := layout.renderWidth; math.Abs(got-18) > 0.0001 {
+		t.Fatalf("renderWidth = %v, want 18", got)
+	}
+	if got := layout.slotWidth; math.Abs(got-24) > 0.0001 {
+		t.Fatalf("slotWidth = %v, want 24", got)
+	}
+}
+
+func TestStdParagraph_PreferredHeight_AccountsForTallBullet(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "ellipse", width: 24, height: 24, rx: 9, ry: 12}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) != 1 {
+		t.Fatalf("line count = %d, want 1", len(lines))
+	}
+	got := p.contentHeightForLines(lines, w)
+	if got < 24 {
+		t.Fatalf("contentHeightForLines = %v, want >= 24", got)
+	}
+}
+
 func TestStdParagraph_DrawContent_ImageBulletUsesPrintImageFile(t *testing.T) {
 	p := &StdParagraph{}
 	p.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", "<svg/>"))))
@@ -455,7 +532,7 @@ func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing
 	p.bullet = &BulletStyle{
 		shape:    "star",
 		width:    18,
-		height:   18,
+		r:        9,
 		points:   6,
 		r0:       4,
 		rotation: 15,
@@ -489,7 +566,8 @@ func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing
 	if got := w.shapeCalls[len(w.shapeCalls)-1].name; got != "star" {
 		t.Fatalf("last shape call = %q, want star border draw", got)
 	}
-	layout := p.bulletLayout(w, p.bullet, p.Lines(w, p.lineWidth())[0], 10, 20+p.Lines(w, p.lineWidth())[0].Ascent())
+	lines := p.Lines(w, p.lineWidth())
+	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent(), p.textContentHeightForLines(lines, w))
 	if layout.shape == nil {
 		t.Fatal("shape layout missing closed shape")
 	}
@@ -508,7 +586,7 @@ func TestStdParagraph_BulletLayout_HonorsExplicitHeightAboveLineHeight(t *testin
 	p := &StdParagraph{}
 	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 	p.paragraphStyle = &ParagraphStyle{}
-	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 18}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 30, r: 6}
 	p.SetLeft(10)
 	p.SetTop(20)
 	p.SetWidth(120)
@@ -521,12 +599,42 @@ func TestStdParagraph_BulletLayout_HonorsExplicitHeightAboveLineHeight(t *testin
 		t.Fatalf("line count = %d, want 1", len(lines))
 	}
 
-	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent())
-	if math.Abs(layout.renderHeight-18) > 0.0001 {
-		t.Fatalf("renderHeight = %v, want 18", layout.renderHeight)
+	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent(), p.textContentHeightForLines(lines, w))
+	if math.Abs(layout.renderHeight-12) > 0.0001 {
+		t.Fatalf("renderHeight = %v, want 12", layout.renderHeight)
 	}
-	if math.Abs(layout.renderWidth-18) > 0.0001 {
-		t.Fatalf("renderWidth = %v, want 18", layout.renderWidth)
+	if math.Abs(layout.renderWidth-12) > 0.0001 {
+		t.Fatalf("renderWidth = %v, want 12", layout.renderWidth)
+	}
+	if math.Abs(layout.renderY-20) > 0.0001 {
+		t.Fatalf("renderY = %v, want 20", layout.renderY)
+	}
+	if got := p.contentHeightForLines(lines, w); got < 30 {
+		t.Fatalf("contentHeightForLines = %v, want >= 30", got)
+	}
+}
+
+func TestStdParagraph_BulletLayout_AlignYMiddleCentersOnTextBlock(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{shape: "circle", width: 24, height: 30, r: 6, alignY: "middle"}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(70)
+	p.AddText("Hello world this wraps onto multiple lines for vertical centering.")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) < 2 {
+		t.Fatalf("line count = %d, want at least 2", len(lines))
+	}
+
+	textHeight := p.textContentHeightForLines(lines, w)
+	layout := p.bulletLayout(w, p.bullet, lines[0], 10, 20+lines[0].Ascent(), textHeight)
+	wantY := 20 + (textHeight-layout.renderHeight)/2
+	if math.Abs(layout.renderY-wantY) > 0.0001 {
+		t.Fatalf("renderY = %v, want %v", layout.renderY, wantY)
 	}
 }
 

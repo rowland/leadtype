@@ -99,7 +99,14 @@ func (s ClosedShape) pathPoints() ([]Location, error) {
 	case ClosedShapeCircle:
 		return circlePoints(s.Center.X, s.Center.Y, s.RadiusX), nil
 	case ClosedShapeEllipse:
-		return ellipsePoints(s.Center.X, s.Center.Y, s.RadiusX, s.RadiusY), nil
+		points := ellipsePoints(s.Center.X, s.Center.Y, s.RadiusX, s.RadiusY)
+		if s.Rotation != 0 {
+			center := s.Center
+			for i := range points {
+				points[i] = rotatePoint(center, points[i], -s.Rotation)
+			}
+		}
+		return points, nil
 	case ClosedShapePolygon:
 		return polygonPoints(s.Center.X, s.Center.Y, s.Radius, s.Sides, s.Rotation), nil
 	case ClosedShapeStar:

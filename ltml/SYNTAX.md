@@ -752,22 +752,28 @@ overridden inline with `fill.*` attributes on a widget.
 | `src`     | Asset path for image bullets. Rendered through LTML's normal `PrintImageFile` path. |
 | `shape`   | Closed shape for shape bullets: `circle`, `ellipse`, `polygon`, `triangle`, `square`, or `star`. `triangle` and `square` are polygon aliases. |
 | `width`   | Space reserved for the bullet slot. This remains the paragraph indent reservation for every bullet kind. |
-| `height`  | Optional render height for image and shape bullets. If omitted, LTML infers a height from the first line box. |
+| `r`       | Optional outer radius for `circle`, `polygon`, `triangle`, `square`, and `star` bullets. LTML uses it as the center-to-corner distance. |
+| `rx`      | Optional horizontal radius for `shape="ellipse"`. |
+| `ry`      | Optional vertical radius for `shape="ellipse"`. |
+| `height`  | Optional minimum paragraph height reserved for the bullet. When present, LTML ensures the paragraph is at least this tall, so a tall bullet may span multiple wrapped text lines. |
 | `pen`     | Optional `<pen>` style for shape bullet outlines. |
 | `brush`   | Optional `<brush>` style for shape bullet fills, including gradients and image brushes. |
+| `align-x` | Horizontal alignment of the painted bullet within the reserved slot: `start`, `center`, `end`. `start` flushes the shape to the slot's leading edge, `center` aligns shape center to slot center, and `end` flushes the shape to the slot's trailing edge. Defaults to `start` (`end` for RTL). |
+| `align-y` | Vertical alignment of the painted bullet: `top`, `middle`, `baseline`. `top` flushes the shape to the top of the paragraph bullet slot. `middle` aligns the shape center with the middle of the paragraph's text block. `baseline` aligns the bottom of the painted shape to the first-line text baseline. Defaults to `top`. |
 | `sides`   | Polygon side count for `shape="polygon"`. |
 | `points`  | Star point count for `shape="star"`. |
-| `rotation` | Optional rotation in degrees for polygon and star bullets. |
+| `rotation` | Optional rotation in degrees for ellipse, polygon, and star bullets. |
 | `r0`      | Optional inner radius for `shape="star"`. |
-| `units`   | Units for `width`, `height`, and `r0`. |
+| `units`   | Units for `width`, `height`, `r`, `rx`, `ry`, and `r0`. |
 
 Examples:
 
 ```xml
 <bullet id="dot" font="zapf" text="l" width="18pt" />
 <bullet id="logo" src="../../pdf/testdata/test_scene.svg" width="18pt" height="14pt" />
-<bullet id="tri" shape="triangle" width="18pt" height="18pt" brush="goldfill" />
-<bullet id="brand-star" shape="star" width="18pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
+<bullet id="tri" shape="triangle" width="18pt" r="6pt" brush="goldfill" />
+<bullet id="oval" shape="ellipse" width="18pt" rx="6pt" ry="4pt" brush="skyfill" />
+<bullet id="brand-star" shape="star" width="18pt" r="6pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
 
 Notes:
 `triangle` maps to a 3-sided polygon with an upright default orientation.

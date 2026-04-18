@@ -914,13 +914,21 @@ func (pw *PageWriter) buildClosedShapePath(shape ClosedShape) error {
 		if shape.Reverse {
 			points = reverseCurvePoints(points)
 		}
-		return pw.CurvePoints(points)
+		if err := pw.CurvePoints(points); err != nil {
+			return err
+		}
+		pw.gw.closePath()
+		return nil
 	case ClosedShapeEllipse:
 		points := ellipsePoints(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY)
 		if shape.Reverse {
 			points = reverseCurvePoints(points)
 		}
-		return pw.CurvePoints(points)
+		if err := pw.CurvePoints(points); err != nil {
+			return err
+		}
+		pw.gw.closePath()
+		return nil
 	case ClosedShapePolygon:
 		points := polygonPoints(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, shape.Rotation)
 		if shape.Reverse {

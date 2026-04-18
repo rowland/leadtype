@@ -418,7 +418,7 @@ func TestPageWriter_ClipClosedShape(t *testing.T) {
 	})
 	check(t, err == nil, "ClipClosedShape should succeed")
 	s := pw.stream.String()
-	check(t, strings.Contains(s, "q\nW\nn\n"), "closed-shape clip should clip and clear the path")
+	check(t, strings.Contains(s, "h\nq\nW\nn\n"), "closed-shape clip should close, clip, and clear the path")
 	check(t, strings.Contains(s, "sh\nQ\n"), "closed-shape clip should paint and restore graphics state")
 }
 
@@ -438,8 +438,36 @@ func TestPageWriter_CircleFillAndStroke(t *testing.T) {
 	if !strings.Contains(got, "0 1 0 RG\n") {
 		t.Fatalf("expected line color command, got:\n%s", got)
 	}
-	if !strings.Contains(got, "B\n") {
-		t.Fatalf("expected fill-and-stroke operator, got:\n%s", got)
+	if !strings.Contains(got, "h\n") || !strings.Contains(got, "B\n") {
+		t.Fatalf("expected closed fill-and-stroke path, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_EllipseFillAndStrokeClosesPath(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Ellipse(2, 2, 2, 1, true, true, false); err != nil {
+		t.Fatalf("Ellipse returned error: %v", err)
+	}
+	if got := pw.stream.String(); !strings.Contains(got, "h\n") || !strings.Contains(got, "B\n") {
+		t.Fatalf("expected ellipse path to close before fill-and-stroke, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_ClipEllipseClosesPath(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.ClipClosedShape(ClosedShape{
+		Kind:    ClosedShapeEllipse,
+		Center:  Location{X: 10, Y: 10},
+		RadiusX: 6,
+		RadiusY: 4,
+	}, func() {})
+	check(t, err == nil, "ClipClosedShape ellipse should succeed")
+	if !strings.Contains(pw.stream.String(), "h\nq\nW\nn\n") {
+		t.Fatalf("expected ellipse clip path to close before clipping, got:\n%s", pw.stream.String())
 	}
 }
 
