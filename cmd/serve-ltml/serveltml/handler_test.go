@@ -199,7 +199,7 @@ func TestRenderLTML_SetsParserAssetFSForUploadedComponentSrc(t *testing.T) {
   <page>
     <xt:card src="snippet.xml" />
   </page>
-</ltml>`), overlay, tmpDir)
+</ltml>`), overlay, tmpDir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

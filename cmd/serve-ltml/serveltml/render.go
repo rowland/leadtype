@@ -21,7 +21,7 @@ var errInvalidLTML = errors.New("invalid LTML")
 // open *os.File positioned at the beginning of the PDF. The caller is
 // responsible for closing the file; the file itself lives inside tmpDir
 // and will be removed when tmpDir is cleaned up.
-func renderLTML(ltmlBytes []byte, overlay *overlayFS, tmpDir string) (*os.File, error) {
+func renderLTML(ltmlBytes []byte, overlay *overlayFS, tmpDir string, fontDirs []string) (*os.File, error) {
 	if overlay == nil {
 		return nil, fmt.Errorf("missing asset filesystem")
 	}
@@ -31,7 +31,10 @@ func renderLTML(ltmlBytes []byte, overlay *overlayFS, tmpDir string) (*os.File, 
 		return nil, fmt.Errorf("%w: %v", errInvalidLTML, err)
 	}
 
-	w := ltpdf.NewDocWriter()
+	w, err := ltpdf.NewDocWriterWithFontDirs(fontDirs)
+	if err != nil {
+		return nil, fmt.Errorf("initializing font sources: %w", err)
+	}
 	w.SetAssetFS(overlay)
 
 	if err := doc.Print(w); err != nil {

@@ -15,6 +15,7 @@ import (
 type Config struct {
 	Listen         string
 	BasePath       string
+	FontDir        string
 	OutputPath     string
 	MaxUploadBytes int64
 	ReadTimeout    time.Duration
@@ -29,6 +30,7 @@ func parseConfig() (*Config, error) {
 	var (
 		listen         string
 		basePath       string
+		fontDir        string
 		outputPath     string
 		maxUploadBytes int64
 		readTimeout    time.Duration
@@ -38,6 +40,7 @@ func parseConfig() (*Config, error) {
 	flag.StringVar(&listen, "listen", ":8080", "address to listen on (LISTEN)")
 	flag.StringVar(&basePath, "assets", "", "path to static asset directory (ASSETS, required)")
 	flag.StringVar(&basePath, "a", "", "path to static asset directory (shorthand)")
+	flag.StringVar(&fontDir, "font-dir", "", "additional font directory (FONT_DIR)")
 	flag.StringVar(&outputPath, "output-path", "", "root directory for file output (OUTPUT_PATH, optional; enables X-Output-File)")
 	flag.Int64Var(&maxUploadBytes, "max-upload-bytes", 32<<20, "maximum multipart request size in bytes (MAX_UPLOAD_BYTES)")
 	flag.DurationVar(&readTimeout, "read-timeout", 0, "HTTP server read timeout, e.g. 30s (READ_TIMEOUT)")
@@ -56,6 +59,16 @@ func parseConfig() (*Config, error) {
 		return nil, fmt.Errorf("assets %q is not a directory", basePath)
 	}
 
+	if fontDir != "" {
+		info, err := os.Stat(fontDir)
+		if err != nil {
+			return nil, fmt.Errorf("font-dir %q: %w", fontDir, err)
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("font-dir %q is not a directory", fontDir)
+		}
+	}
+
 	if outputPath != "" {
 		info, err := os.Stat(outputPath)
 		if err != nil {
@@ -69,6 +82,7 @@ func parseConfig() (*Config, error) {
 	return &Config{
 		Listen:         listen,
 		BasePath:       basePath,
+		FontDir:        fontDir,
 		OutputPath:     outputPath,
 		MaxUploadBytes: maxUploadBytes,
 		ReadTimeout:    readTimeout,

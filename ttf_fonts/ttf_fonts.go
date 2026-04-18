@@ -5,6 +5,7 @@ package ttf_fonts
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -106,6 +107,23 @@ func NewFromSystemFonts() (*TtfFonts, error) {
 		return nil, err
 	}
 	return &fc, nil
+}
+
+// AddDir adds all TTF and TTC fonts found in dir. It returns an error if dir
+// does not exist or is not a directory; errors loading individual font files
+// are silently ignored, matching the behaviour of AddSystemFonts.
+func (fc *TtfFonts) AddDir(dir string) error {
+	info, err := os.Stat(dir)
+	if err != nil {
+		return fmt.Errorf("font directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("font directory %q is not a directory", dir)
+	}
+	for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC"} {
+		fc.Add(filepath.Join(dir, ext)) // errors loading individual fonts are non-fatal
+	}
+	return nil
 }
 
 // AddSystemFonts adds all TTF and TTC fonts found in the platform's standard
