@@ -17,6 +17,7 @@ type BulletStyle struct {
 	src         string
 	shape       string
 	width       float64
+	widthSet    bool
 	height      float64
 	units       Units
 	pen         *PenStyle
@@ -44,6 +45,11 @@ func (bs *BulletStyle) Apply(w Writer) {
 	}
 }
 
+func (bs *BulletStyle) Clone() *BulletStyle {
+	clone := *bs
+	return &clone
+}
+
 func (bs *BulletStyle) ID() string {
 	return bs.id
 }
@@ -57,6 +63,7 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	}
 	if width, ok := attrs["width"]; ok {
 		bs.width = ParseMeasurement(width, bs.units)
+		bs.widthSet = true
 	}
 	if height, ok := attrs["height"]; ok {
 		bs.height = ParseMeasurement(height, bs.units)
@@ -124,6 +131,10 @@ func (bs *BulletStyle) Text() string {
 
 func (bs *BulletStyle) Width() float64 {
 	return bs.width
+}
+
+func (bs *BulletStyle) WidthIsSet() bool {
+	return bs.widthSet
 }
 
 func (bs *BulletStyle) Height() float64 {

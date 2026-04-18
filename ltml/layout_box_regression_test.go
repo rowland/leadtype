@@ -195,3 +195,44 @@ func TestLayoutVBox_ExactFitKeepsLastChildVisible(t *testing.T) {
 		t.Fatal("last child is hidden, want visible on exact fit")
 	}
 }
+
+func TestLayoutVBox_AutoHeightBottomAlignedChildrenDoNotStretchContainer(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	box := &StdContainer{}
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.layout.vpadding = 5
+	box.SetLeft(0)
+	box.SetTop(0)
+	box.SetWidth(120)
+	if err := box.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+
+	header := &flowTestWidget{name: "header", preferredHeight: 10}
+	_ = header.SetContainer(box)
+	header.SetAttrs(map[string]string{"align": "top"})
+	box.AddChild(header)
+
+	body := &flowTestWidget{name: "body", preferredHeight: 20}
+	_ = body.SetContainer(box)
+	box.AddChild(body)
+
+	footer := &flowTestWidget{name: "footer", preferredHeight: 15}
+	_ = footer.SetContainer(box)
+	footer.SetAttrs(map[string]string{"align": "bottom"})
+	box.AddChild(footer)
+
+	LayoutVBox(box, box.layout, &labelTestWriter{t: t})
+
+	if got, want := box.Height(), 55.0; got != want {
+		t.Fatalf("box height = %v, want %v", got, want)
+	}
+	if got, want := footer.Bottom(), box.Bottom(); got != want {
+		t.Fatalf("footer bottom = %v, want %v", got, want)
+	}
+	if got, want := footer.Top(), body.Bottom()+box.layout.VPadding(); got != want {
+		t.Fatalf("footer top = %v, want %v", got, want)
+	}
+}

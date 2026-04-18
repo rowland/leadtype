@@ -19,6 +19,9 @@ type StdContainer struct {
 	dir             Dir
 	dirExplicit     bool
 	layout          *LayoutStyle
+	listKind        string
+	listBulletID    string
+	listPrepared    bool
 	order           TableOrder
 	paragraphStyle  *ParagraphStyle
 	preferredHeight float64
@@ -61,6 +64,11 @@ func (c *StdContainer) DrawContent(w Writer) error {
 	})
 }
 
+func (c *StdContainer) BeforePrint(w Writer) error {
+	c.prepareForLayout(w)
+	return nil
+}
+
 func (c *StdContainer) drawChildren(w Writer) error {
 	// fmt.Printf("DrawContent %s\n", c)
 	children := slices.Clone(c.Widgets())
@@ -86,6 +94,7 @@ func (c *StdContainer) LayoutStyle() *LayoutStyle {
 }
 
 func (c *StdContainer) LayoutWidget(w Writer) {
+	c.prepareForLayout(w)
 	LayoutContainer(c, w)
 }
 
@@ -100,6 +109,7 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	if c.height != 0 {
 		return c.height
 	}
+	c.prepareForLayout(w)
 	if isRadialLayoutStyle(c.layout) {
 		if height, ok := c.radialInferredHeight(); ok {
 			return height
@@ -149,6 +159,14 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	}
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
+	}
+	if list, ok := attrs["list"]; ok {
+		c.listKind = strings.TrimSpace(list)
+		c.listPrepared = false
+	}
+	if bullets, ok := attrs["bullets"]; ok {
+		c.listBulletID = strings.TrimSpace(bullets)
+		c.listPrepared = false
 	}
 	if MapHasKeyPrefix(attrs, "layout.") {
 		c.layout = c.LayoutStyle().Clone()
@@ -301,43 +319,57 @@ func (c *StdContainer) String() string {
 var errTableSplitUnsupportedRowSpan = errors.New("table splitting does not support rowspan > 1")
 
 func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
-	if c.LayoutStyle() == nil || c.LayoutStyle().manager != "table" || !c.tableSplitEnabled() {
+	c.prepareForLayout(w)
+	if c.LayoutStyle() == nil {
 		return nil, nil
 	}
-	metrics, err := c.tableSplitMetrics(w)
-	if err != nil {
-		return nil, err
-	}
-	bodyCount := metrics.bodyEnd - metrics.bodyStart
-	if bodyCount < 2 {
-		return nil, nil
-	}
-	fitBodies := 0
-	for n := 1; n < bodyCount; n++ {
-		if c.tableFragmentHeight(metrics, metrics.bodyStart, metrics.bodyStart+n) <= avail {
-			fitBodies = n
-			continue
+	switch c.LayoutStyle().manager {
+	case "table":
+		if !c.tableSplitEnabled() {
+			return nil, nil
 		}
-		break
-	}
-	if fitBodies == 0 {
+		metrics, err := c.tableSplitMetrics(w)
+		if err != nil {
+			return nil, err
+		}
+		bodyCount := metrics.bodyEnd - metrics.bodyStart
+		if bodyCount < 2 {
+			return nil, nil
+		}
+		fitBodies := 0
+		for n := 1; n < bodyCount; n++ {
+			if c.tableFragmentHeight(metrics, metrics.bodyStart, metrics.bodyStart+n) <= avail {
+				fitBodies = n
+				continue
+			}
+			break
+		}
+		if fitBodies == 0 {
+			return nil, nil
+		}
+		headRows := append([]int{}, metrics.headerRows...)
+		for r := metrics.bodyStart; r < metrics.bodyStart+fitBodies; r++ {
+			headRows = append(headRows, r)
+		}
+		headRows = append(headRows, metrics.footerRows...)
+
+		tailRows := append([]int{}, metrics.headerRows...)
+		for r := metrics.bodyStart + fitBodies; r < metrics.bodyEnd; r++ {
+			tailRows = append(tailRows, r)
+		}
+		tailRows = append(tailRows, metrics.footerRows...)
+
+		head := c.cloneTableFragment(metrics, headRows)
+		tail := c.cloneTableFragment(metrics, tailRows)
+		return &SplitResult{Head: head, Tail: tail}, nil
+	case "vbox":
+		if !c.vboxSplitEnabled() {
+			return nil, nil
+		}
+		return c.splitVBoxForHeight(avail, w)
+	default:
 		return nil, nil
 	}
-	headRows := append([]int{}, metrics.headerRows...)
-	for r := metrics.bodyStart; r < metrics.bodyStart+fitBodies; r++ {
-		headRows = append(headRows, r)
-	}
-	headRows = append(headRows, metrics.footerRows...)
-
-	tailRows := append([]int{}, metrics.headerRows...)
-	for r := metrics.bodyStart + fitBodies; r < metrics.bodyEnd; r++ {
-		tailRows = append(tailRows, r)
-	}
-	tailRows = append(tailRows, metrics.footerRows...)
-
-	head := c.cloneTableFragment(metrics, headRows)
-	tail := c.cloneTableFragment(metrics, tailRows)
-	return &SplitResult{Head: head, Tail: tail}, nil
 }
 
 func (c *StdContainer) tableSplitEnabled() bool {
@@ -345,6 +377,13 @@ func (c *StdContainer) tableSplitEnabled() bool {
 		return c.splitEnabled
 	}
 	return c.LayoutStyle() != nil && c.LayoutStyle().manager == "table"
+}
+
+func (c *StdContainer) vboxSplitEnabled() bool {
+	if c.splitExplicit {
+		return c.splitEnabled
+	}
+	return c.LayoutStyle() != nil && c.LayoutStyle().manager == "vbox"
 }
 
 type tableSplitMetrics struct {
@@ -482,6 +521,353 @@ func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, pa
 		}
 	}
 	return widgets
+}
+
+const (
+	listKindUnordered     = "unordered"
+	listKindOrdered       = "ordered"
+	defaultListBulletGap  = 6.0
+	defaultListBulletSize = 18.0
+)
+
+type vboxSplitMetrics struct {
+	headers    []Widget
+	body       []Widget
+	footers    []Widget
+	positioned map[Widget]bool
+	heights    map[Widget]float64
+}
+
+func (c *StdContainer) prepareForLayout(w Writer) {
+	c.prepareListBullets(w)
+}
+
+func (c *StdContainer) prepareListBullets(w Writer) {
+	if c.listPrepared || c.LayoutStyle() == nil || c.LayoutStyle().manager != "vbox" {
+		return
+	}
+	if c.listKind != listKindUnordered && c.listKind != listKindOrdered {
+		return
+	}
+	switch c.listKind {
+	case listKindUnordered:
+		bullet := c.unorderedListBulletTemplate()
+		for _, child := range c.children {
+			para, ok := child.(*StdParagraph)
+			if !ok || para.bullet != nil {
+				continue
+			}
+			para.bullet = bullet
+		}
+	case listKindOrdered:
+		template := c.orderedListBulletTemplate()
+		width := template.Width()
+		autoWidth := !template.WidthIsSet()
+		itemNo := 0
+		for _, child := range c.children {
+			para, ok := child.(*StdParagraph)
+			if !ok {
+				continue
+			}
+			itemNo++
+			if autoWidth {
+				width = max(width, c.orderedListMarkerWidth(w, para, template, itemNo))
+			}
+		}
+		itemNo = 0
+		for _, child := range c.children {
+			para, ok := child.(*StdParagraph)
+			if !ok {
+				continue
+			}
+			itemNo++
+			if para.bullet != nil {
+				continue
+			}
+			bullet := template.Clone()
+			bullet.text = fmt.Sprintf("%d.", itemNo)
+			bullet.src = ""
+			bullet.shape = ""
+			if autoWidth {
+				bullet.width = width
+				bullet.widthSet = true
+			}
+			para.bullet = bullet
+		}
+	}
+	c.listPrepared = true
+}
+
+func (c *StdContainer) unorderedListBulletTemplate() *BulletStyle {
+	if c.listBulletID != "" {
+		if bullet := BulletStyleFor(c.listBulletID, c.scope); bullet != nil {
+			return bullet
+		}
+	}
+	return &BulletStyle{
+		shape:  "circle",
+		width:  defaultListBulletSize,
+		alignY: "middle",
+		r:      3,
+	}
+}
+
+func (c *StdContainer) orderedListBulletTemplate() *BulletStyle {
+	if c.listBulletID != "" {
+		if bullet := BulletStyleFor(c.listBulletID, c.scope); bullet != nil {
+			return bullet.Clone()
+		}
+	}
+	return &BulletStyle{}
+}
+
+func (c *StdContainer) orderedListMarkerWidth(w Writer, para *StdParagraph, template *BulletStyle, itemNo int) float64 {
+	marker := template.Clone()
+	marker.text = fmt.Sprintf("%d.", itemNo)
+	marker.src = ""
+	marker.shape = ""
+	width := para.bulletTextWidth(w, marker)
+	if width <= 0 {
+		width = marker.Width()
+	}
+	return width + defaultListBulletGap
+}
+
+func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult, error) {
+	metrics := c.vboxSplitMetrics(w)
+	if len(metrics.body) == 0 {
+		return nil, nil
+	}
+	if c.vboxFragmentHeight(metrics, nil) > avail {
+		return nil, nil
+	}
+
+	headWhole := make(map[Widget]bool)
+	tailWhole := make(map[Widget]bool)
+	for _, child := range metrics.headers {
+		headWhole[child] = true
+		tailWhole[child] = true
+	}
+	for _, child := range metrics.footers {
+		headWhole[child] = true
+		tailWhole[child] = true
+	}
+	for child := range metrics.positioned {
+		headWhole[child] = true
+		tailWhole[child] = true
+	}
+
+	var splitSource Widget
+	var splitHead Widget
+	var splitTail Widget
+	bodyIncluded := 0
+	for i, child := range metrics.body {
+		candidate := append([]Widget(nil), metrics.body[:i+1]...)
+		if c.vboxFragmentHeight(metrics, candidate) <= avail {
+			headWhole[child] = true
+			bodyIncluded++
+			continue
+		}
+		availForChild := c.vboxSplitAvailableForChild(metrics, metrics.body[:i], child, avail)
+		if splittable, ok := child.(Splittable); ok && availForChild > 0 {
+			result, err := splittable.SplitForHeight(availForChild, w)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil && result.Head != nil {
+				splitSource = child
+				splitHead = result.Head
+				splitTail = result.Tail
+				bodyIncluded++
+			}
+		}
+		break
+	}
+	if bodyIncluded == 0 {
+		return nil, nil
+	}
+
+	for i, child := range metrics.body {
+		if splitSource != nil && child == splitSource {
+			if splitTail != nil {
+				tailWhole[child] = false
+			}
+			for _, remaining := range metrics.body[i+1:] {
+				tailWhole[remaining] = true
+			}
+			break
+		}
+		if headWhole[child] {
+			continue
+		}
+		tailWhole[child] = true
+	}
+	if splitSource == nil {
+		for _, child := range metrics.body {
+			if !headWhole[child] {
+				tailWhole[child] = true
+			}
+		}
+	} else if splitTail == nil {
+		delete(tailWhole, splitSource)
+	}
+
+	headReplacements := map[Widget]Widget{}
+	if splitSource != nil && splitHead != nil {
+		headReplacements[splitSource] = splitHead
+	}
+	head := c.cloneVBoxFragment(headWhole, headReplacements)
+	tailReplacements := map[Widget]Widget{}
+	if splitSource != nil && splitTail != nil {
+		tailReplacements[splitSource] = splitTail
+	}
+	tail := c.cloneVBoxFragment(tailWhole, tailReplacements)
+	if len(tail.Widgets()) == 0 {
+		return &SplitResult{Head: head, Tail: nil}, nil
+	}
+	return &SplitResult{Head: head, Tail: tail}, nil
+}
+
+func (c *StdContainer) vboxSplitMetrics(w Writer) *vboxSplitMetrics {
+	static, _ := printableWidgets(c, Static)
+	absolute, _ := printableWidgets(c, Absolute)
+	relative, _ := printableWidgets(c, Relative)
+	metrics := &vboxSplitMetrics{
+		positioned: make(map[Widget]bool, len(absolute)+len(relative)),
+		heights:    make(map[Widget]float64, len(static)),
+	}
+	for _, child := range absolute {
+		metrics.positioned[child] = true
+	}
+	for _, child := range relative {
+		metrics.positioned[child] = true
+	}
+	rtl := IsRTL(c)
+	for _, child := range static {
+		if !child.WidthIsSet() {
+			cw := ContentWidth(c)
+			pw := 0.0
+			if _, ok := child.(*StdParagraph); ok {
+				pw = cw
+			} else {
+				pw = child.PreferredWidth(w)
+			}
+			if pw == 0 {
+				pw = cw
+			}
+			child.SetWidth(min(pw, cw))
+		}
+		child.SetLeft(vboxCrossAxisLeft(c, child, rtl))
+		height := child.Height()
+		if !child.HeightIsSet() {
+			height = child.PreferredHeight(w)
+		}
+		metrics.heights[child] = height
+		switch child.Align() {
+		case AlignTop:
+			metrics.headers = append(metrics.headers, child)
+		case AlignBottom:
+			metrics.footers = append(metrics.footers, child)
+		default:
+			metrics.body = append(metrics.body, child)
+		}
+	}
+	return metrics
+}
+
+func (c *StdContainer) vboxFragmentHeight(metrics *vboxSplitMetrics, body []Widget) float64 {
+	return NonContentHeight(c) + c.vboxStackHeight(metrics, metrics.headers, body, metrics.footers)
+}
+
+func (c *StdContainer) vboxStackHeight(metrics *vboxSplitMetrics, groups ...[]Widget) float64 {
+	height := 0.0
+	seen := 0
+	for _, group := range groups {
+		for _, child := range group {
+			if widgetZeroFootprint(child) {
+				continue
+			}
+			if seen > 0 {
+				height += c.LayoutStyle().VPadding()
+			}
+			height += metrics.heights[child]
+			seen++
+		}
+	}
+	return height
+}
+
+func (c *StdContainer) vboxSplitAvailableForChild(metrics *vboxSplitMetrics, bodyBefore []Widget, child Widget, avail float64) float64 {
+	contentAvail := avail - NonContentHeight(c)
+	base := c.vboxStackHeight(metrics, metrics.headers, bodyBefore, metrics.footers)
+	if contentAvail <= base {
+		return 0
+	}
+	childVisible := !widgetZeroFootprint(child)
+	prevVisible := c.vboxHasVisibleWidget(metrics.headers, bodyBefore)
+	footerVisible := c.vboxHasVisibleWidget(metrics.footers)
+	extraGap := 0.0
+	if childVisible {
+		if prevVisible {
+			extraGap += c.LayoutStyle().VPadding()
+		}
+		if footerVisible {
+			extraGap += c.LayoutStyle().VPadding()
+		}
+		if prevVisible && footerVisible {
+			extraGap -= c.LayoutStyle().VPadding()
+		}
+	}
+	availForChild := contentAvail - base - extraGap
+	if availForChild < 0 {
+		return 0
+	}
+	return availForChild
+}
+
+func (c *StdContainer) vboxHasVisibleWidget(groups ...[]Widget) bool {
+	for _, group := range groups {
+		for _, child := range group {
+			if !widgetZeroFootprint(child) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (c *StdContainer) cloneVBoxFragment(included map[Widget]bool, replacements map[Widget]Widget) *StdContainer {
+	clone := *c
+	clone.activeChildren = make([]Widget, 0, len(included)+len(replacements))
+	clone.height = 0
+	clone.heightPct = 0
+	clone.heightRel = 0
+	clone.heightSet = false
+	clone.printed = false
+	clone.invisible = false
+	clone.disabled = false
+	clone.path = ""
+	for _, child := range c.Widgets() {
+		replacement, replaced := replacements[child]
+		if replaced && replacement == nil {
+			continue
+		}
+		if !replaced && !included[child] {
+			continue
+		}
+		next := replacement
+		if !replaced {
+			next = cloneWidgetShallow(child)
+		}
+		if wc, ok := next.(WantsContainer); ok {
+			_ = wc.SetContainer(&clone)
+		}
+		next.SetPrinted(false)
+		next.SetVisible(true)
+		next.SetDisabled(false)
+		clone.activeChildren = append(clone.activeChildren, next)
+	}
+	return &clone
 }
 
 func cloneWidgetShallow(widget Widget) Widget {

@@ -78,3 +78,7 @@ type Writer interface {
 	WithAccessibilityArtifact(fn func()) error
 	WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error
 }
+
+type PageOptionWriter interface {
+	NewPageWithOptions(options.Options)
+}

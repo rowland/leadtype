@@ -84,6 +84,8 @@ Only regenerate committed fixtures when the fixture spec itself changes.
 - For rendering bugs, inspect tests first; this repo already has strong coverage in `pdf/`, `ttf/`, and `ltml/`.
 - When changing serialized PDF output, check whether golden tests or explicit string-serialization tests need updates.
 - When changing font metrics or glyph mapping, verify both isolated unit tests and any PDF-level integration tests affected by the change.
+- LTML box layouts do not have a generic `gap` attribute. For container spacing use `layout.vpadding` and/or `layout.hpadding` (or `layout.padding`), not `gap`.
+- In the Codex sandbox, prefer the normal approved Go commands first (for example `go test ./...` or `go test ./ltml`). Only fall back to an explicit temp cache such as `GOCACHE=/tmp/leadtype-gocache ...` if the sandbox actually fails on the default cache path, since shell-wrapped env-var commands can trigger extra approval prompts.
 
 ## Definition Of Done
 

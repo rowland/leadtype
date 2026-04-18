@@ -6,6 +6,7 @@ package ltpdf
 import (
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
@@ -16,6 +17,10 @@ type DocWriter struct {
 
 func (dw *DocWriter) NewPage() {
 	dw.DocWriter.NewPage()
+}
+
+func (dw *DocWriter) NewPageWithOptions(opts options.Options) {
+	dw.DocWriter.NewPageWithOptions(opts)
 }
 
 func (dw *DocWriter) EnableTaggedPDF(value bool) {
