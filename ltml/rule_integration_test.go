@@ -859,6 +859,28 @@ func TestRules_integration_user_defined_alias_targeted_by_alias_name(t *testing.
 	}
 }
 
+func TestRules_integration_builtin_heading_alias_targeted_by_alias_name(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>h3 { font.size: 2rem; }</style>
+			<page font.name="Helvetica" font.size="12"><h3>heading text</h3></page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	if len(page.children) == 0 {
+		t.Fatal("no children on page")
+	}
+	label, ok := page.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("expected *StdLabel (h3 alias), got %T", page.children[0])
+	}
+	if label.font == nil {
+		t.Fatal("font was not set on <h3> element by alias-name rule")
+	}
+	w := &labelTestWriter{t: t, lineSpacing: 1.0}
+	assertAllLeafFontSizesEqual(t, label.RichText(w), 24)
+}
+
 // ----------------------------------------------------------------------------
 // Multiple properties in a single rule are all applied
 // ----------------------------------------------------------------------------

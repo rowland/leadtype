@@ -49,7 +49,7 @@ type StdSector struct {
 }
 
 func (s *StdSector) AddText(text string) {
-	s.AddTextWithFont(text, s.Font())
+	s.AddTextWithFont(text, s.explicitFont())
 }
 
 func (s *StdSector) AddTextWithFont(text string, font *FontStyle) {
@@ -229,8 +229,7 @@ func (s *StdSector) RichText(w Writer) *rich_text.RichText {
 	rt := &rich_text.RichText{}
 	lastText := ""
 	for _, piece := range s.textPieces {
-		font := piece.Font(s.Font())
-		font.Apply(w)
+		font := applyTextPieceFontForContainer(w, s, piece, s.Font())
 		text := piece.ResolvedText(doc)
 		if text == "" {
 			continue
@@ -330,7 +329,7 @@ func (s *StdSector) drawInlineText(w Writer, rt *rich_text.RichText) error {
 }
 
 func (s *StdSector) drawStraightText(w Writer, rt *rich_text.RichText) error {
-	s.Font().Apply(w)
+	applyContainerFont(w, s)
 	anchorX, anchorY := s.geometry.AnchorX, s.geometry.AnchorY
 	startX := anchorX
 	switch s.resolvedTextAlign() {

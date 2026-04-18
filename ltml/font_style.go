@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -23,10 +24,11 @@ type fontEntry struct {
 }
 
 type FontStyle struct {
-	scope   HasScope
-	id      string
-	entries []fontEntry
-	size    float64
+	scope    HasScope
+	id       string
+	entries  []fontEntry
+	size     float64
+	sizeSpec fontSizeSpec
 
 	color      colors.Color
 	strikeout  bool
@@ -48,6 +50,10 @@ type FontStyle struct {
 }
 
 func (fs *FontStyle) Apply(w Writer) {
+	fs.applyWithSize(w, fs.ResolveAgainstBase(defaultFontSize))
+}
+
+func (fs *FontStyle) applyWithSize(w Writer, size float64) {
 	if len(fs.entries) == 0 {
 		return
 	}
@@ -59,7 +65,7 @@ func (fs *FontStyle) Apply(w Writer) {
 	primaryIndex := -1
 	for i, entry := range fs.entries {
 		opts := applyEntryOptions(entry, baseOpts)
-		if fonts, err := w.SetFont(entry.name, fs.size, opts); err == nil && len(fonts) > 0 {
+		if fonts, err := w.SetFont(entry.name, size, opts); err == nil && len(fonts) > 0 {
 			primaryIndex = i
 			break
 		}
@@ -84,7 +90,7 @@ func (fs *FontStyle) Apply(w Writer) {
 	}
 	if primaryIndex < 0 {
 		// Keep LTML renderable on machines that lack requested system fonts.
-		w.SetFont(defaultFontName, fs.size, baseOpts)
+		w.SetFont(defaultFontName, size, baseOpts)
 	}
 	if fs.lineHeight == 0 {
 		fs.lineHeight = 1.0
@@ -167,6 +173,60 @@ var defaultFont = &FontStyle{
 	id:      "default",
 	entries: []fontEntry{{name: defaultFontName}},
 	size:    defaultFontSize,
+	sizeSpec: fontSizeSpec{
+		kind:  fontSizeAbsolute,
+		value: defaultFontSize,
+	},
+}
+
+type fontSizeKind int
+
+const (
+	fontSizeUnset fontSizeKind = iota
+	fontSizeAbsolute
+	fontSizeRem
+)
+
+type fontSizeSpec struct {
+	kind  fontSizeKind
+	value float64
+}
+
+var reFontSizeRem = regexp.MustCompile(`^\s*([+-]?\d+(\.\d+)?)rem\s*$`)
+
+func parseFontSizeSpec(value string) (fontSizeSpec, bool) {
+	if matches := reFontSizeRem.FindStringSubmatch(value); len(matches) >= 2 {
+		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
+			return fontSizeSpec{kind: fontSizeRem, value: v}, true
+		}
+		return fontSizeSpec{}, false
+	}
+	if v, err := strconv.ParseFloat(strings.TrimSpace(value), 64); err == nil {
+		return fontSizeSpec{kind: fontSizeAbsolute, value: v}, true
+	}
+	return fontSizeSpec{}, false
+}
+
+func (spec fontSizeSpec) String() string {
+	switch spec.kind {
+	case fontSizeRem:
+		return strconv.FormatFloat(spec.value, 'f', -1, 64) + "rem"
+	case fontSizeAbsolute:
+		return strconv.FormatFloat(spec.value, 'f', -1, 64)
+	default:
+		return ""
+	}
+}
+
+func (spec fontSizeSpec) ResolveAgainstBase(base float64) float64 {
+	switch spec.kind {
+	case fontSizeRem:
+		return base * spec.value
+	case fontSizeAbsolute:
+		return spec.value
+	default:
+		return base
+	}
 }
 
 // SetAttrs applies XML attributes to the FontStyle.
@@ -227,9 +287,14 @@ func (fs *FontStyle) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if size, ok := attrs["size"]; ok {
-		var err error
-		if fs.size, err = strconv.ParseFloat(size, 64); err != nil {
+		if spec, ok := parseFontSizeSpec(size); ok {
+			fs.sizeSpec = spec
+			if spec.kind == fontSizeAbsolute {
+				fs.size = spec.value
+			}
+		} else {
 			fs.size = defaultFontSize
+			fs.sizeSpec = fontSizeSpec{kind: fontSizeAbsolute, value: defaultFontSize}
 		}
 	}
 	if color, ok := attrs["color"]; ok {
@@ -303,8 +368,8 @@ func (fs *FontStyle) String() string {
 	for i, e := range fs.entries {
 		names[i] = e.name
 	}
-	return fmt.Sprintf("FontStyle id=%s name=%s size=%f color=%v strikeout=%t strikeout-pen=%s strikeout-pos=%s style=%s underline=%t underline-pen=%s underline-pos=%s weight=%s line-height=%f",
-		fs.id, strings.Join(names, ","), fs.size, fs.color, fs.strikeout, fs.strikeoutPenID, formatOptionalFloat(fs.strikeoutPos),
+	return fmt.Sprintf("FontStyle id=%s name=%s size=%s color=%v strikeout=%t strikeout-pen=%s strikeout-pos=%s style=%s underline=%t underline-pen=%s underline-pos=%s weight=%s line-height=%f",
+		fs.id, strings.Join(names, ","), fs.sizeString(), fs.color, fs.strikeout, fs.strikeoutPenID, formatOptionalFloat(fs.strikeoutPos),
 		fs.style, fs.underline, fs.underlinePenID, formatOptionalFloat(fs.underlinePos), fs.weight, fs.lineHeight)
 }
 
@@ -324,6 +389,18 @@ func (fs *FontStyle) SetScope(scope HasScope) {
 	fs.scope = scope
 	fs.decorationCached = false
 	fs.decorationPayload = nil
+}
+
+func (fs *FontStyle) ResolveAgainstBase(base float64) float64 {
+	if fs == nil {
+		return base
+	}
+	switch fs.sizeSpec.kind {
+	case fontSizeAbsolute, fontSizeRem:
+		return fs.sizeSpec.ResolveAgainstBase(base)
+	default:
+		return fs.size
+	}
 }
 
 func (fs *FontStyle) decorationOverrides() *rich_text.DecorationOverrides {
@@ -408,6 +485,16 @@ func formatOptionalFloat(value *float64) string {
 		return ""
 	}
 	return strconv.FormatFloat(*value, 'f', -1, 64)
+}
+
+func (fs *FontStyle) sizeString() string {
+	if fs == nil {
+		return ""
+	}
+	if text := fs.sizeSpec.String(); text != "" {
+		return text
+	}
+	return strconv.FormatFloat(fs.size, 'f', -1, 64)
 }
 
 func FontStyleFor(id string, scope HasScope) *FontStyle {

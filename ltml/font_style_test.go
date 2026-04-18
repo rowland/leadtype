@@ -305,6 +305,31 @@ func TestFontStyle_SetAttrs_Prefix(t *testing.T) {
 	}
 }
 
+func TestFontStyle_SetAttrs_RemSize(t *testing.T) {
+	var fs FontStyle
+	fs.SetAttrs(map[string]string{"size": "1.25rem"})
+	if fs.sizeSpec.kind != fontSizeRem {
+		t.Fatalf("expected rem size spec, got %#v", fs.sizeSpec)
+	}
+	if fs.sizeSpec.value != 1.25 {
+		t.Fatalf("expected rem multiplier 1.25, got %v", fs.sizeSpec.value)
+	}
+	if got := fs.ResolveAgainstBase(20); got != 25 {
+		t.Fatalf("ResolveAgainstBase(20) = %v, want 25", got)
+	}
+}
+
+func TestFontStyle_SetAttrs_InvalidRemFallsBackToDefault(t *testing.T) {
+	var fs FontStyle
+	fs.SetAttrs(map[string]string{"size": "bogusrem"})
+	if fs.size != defaultFontSize {
+		t.Fatalf("size = %v, want default %v", fs.size, defaultFontSize)
+	}
+	if fs.sizeSpec.kind != fontSizeAbsolute || fs.sizeSpec.value != defaultFontSize {
+		t.Fatalf("sizeSpec = %#v, want absolute default %v", fs.sizeSpec, defaultFontSize)
+	}
+}
+
 func TestFontStyle_Clone_DeepCopiesEntries(t *testing.T) {
 	var fs FontStyle
 	fs.SetAttrs(map[string]string{

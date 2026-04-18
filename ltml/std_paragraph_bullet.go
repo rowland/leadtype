@@ -37,9 +37,9 @@ func (p *StdParagraph) drawBullet(w Writer, bullet *BulletStyle, line *rich_text
 
 func (p *StdParagraph) drawTextBullet(w Writer, bullet *BulletStyle, layout paragraphBulletLayout) error {
 	if bullet.font != nil {
-		bullet.font.Apply(w)
+		applyExplicitFontForContainer(w, p, bullet.font)
 	} else if p.Font() != nil {
-		p.Font().Apply(w)
+		applyContainerFont(w, p)
 	}
 	w.MoveTo(p.textBulletX(w, bullet, layout), layout.baselineY)
 	return w.Print(bullet.Text())
@@ -188,6 +188,11 @@ func (p *StdParagraph) textBulletX(w Writer, bullet *BulletStyle, layout paragra
 }
 
 func (p *StdParagraph) bulletTextWidth(w Writer, bullet *BulletStyle) float64 {
+	if bullet.font != nil {
+		applyExplicitFontForContainer(w, p, bullet.font)
+	} else {
+		applyContainerFont(w, p)
+	}
 	rt, err := rich_text.New(bullet.Text(), w.Fonts(), w.FontSize(), options.Options{})
 	if err != nil || rt == nil {
 		return 0

@@ -29,7 +29,7 @@ type StdParagraph struct {
 }
 
 func (p *StdParagraph) AddText(text string) {
-	p.AddTextWithFont(text, p.Font())
+	p.AddTextWithFont(text, p.explicitFont())
 }
 
 func (p *StdParagraph) AddTextWithFont(text string, font *FontStyle) {
@@ -179,8 +179,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 	rt := &rich_text.RichText{}
 	lastText := ""
 	for _, piece := range p.textPieces {
-		font := piece.Font(p.Font())
-		font.Apply(w)
+		font := applyTextPieceFontForContainer(w, p, piece, p.Font())
 		text := piece.ResolvedText(doc)
 		if text == "" {
 			continue
@@ -211,7 +210,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 
 func (p *StdParagraph) applyFonts(w Writer) {
 	for _, piece := range p.textPieces {
-		piece.Font(p.Font()).Apply(w)
+		applyTextPieceFontForContainer(w, p, piece, p.Font())
 	}
 }
 

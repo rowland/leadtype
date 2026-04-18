@@ -40,12 +40,16 @@ func MaxHeightAvail(c Container) float64 {
 		return h
 	}
 	var top float64
+	containerTop := 0.0
 	if c.TopIsSet() {
 		top = c.Top()
 	} else {
 		top = ContentTop(c.Container())
 	}
-	return MaxContentHeight(c.Container()) - top - ContentTop(c.Container())
+	if c.Container() != nil {
+		containerTop = ContentTop(c.Container())
+	}
+	return MaxContentHeight(c.Container()) + containerTop - top
 }
 
 func rootPageForContainer(c Container) *StdPage {

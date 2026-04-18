@@ -12,7 +12,7 @@ type StdSpan struct {
 }
 
 func (s *StdSpan) AddText(text string) {
-	s.AddTextWithFont(text, s.Font())
+	s.AddTextWithFont(text, s.explicitFont())
 }
 
 func (s *StdSpan) AddTextWithFont(text string, font *FontStyle) {

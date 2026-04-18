@@ -160,7 +160,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 |--------------------|-------------|
 | `font`             | Reference to a named `<font>` style. |
 | `font.name`        | Font family name (e.g., `Helvetica`, `Arial`). |
-| `font.size`        | Font size in points. |
+| `font.size`        | Font size as points (`12`) or page-root-relative rems (`1rem`, `0.875rem`). |
 | `font.color`       | Font color (named color or hex). |
 | `font.weight`      | Font weight (`Bold`, or empty for normal). |
 | `font.style`       | Font style (`Italic`, `Oblique`, or empty for normal). |
@@ -625,7 +625,7 @@ styles) before the content that uses them.
 |---------------|-------------|
 | `id`          | Name used to reference this style. |
 | `name`        | Font family name. |
-| `size`        | Font size in points. |
+| `size`        | Font size as points (`12`) or page-root-relative rems (`1rem`, `0.875rem`). |
 | `color`       | Text color. |
 | `weight`      | `Bold`, or omit for normal. |
 | `style`       | `Italic`, `Oblique`, or omit for normal. |
@@ -864,6 +864,12 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | Alias   | Expands to | Default Attributes |
 |---------|------------|--------------------|
 | `<h>`   | `<p>`      | `font.weight="Bold"`, `style.text-align="center"`, `width="100%"` |
+| `<h1>`  | `<label>`  | `font.weight="Bold"`, `font.size="2rem"`, `role="H1"` |
+| `<h2>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.75rem"`, `role="H2"` |
+| `<h3>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.5rem"`, `role="H3"` |
+| `<h4>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.25rem"`, `role="H4"` |
+| `<h5>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.125rem"`, `role="H5"` |
+| `<h6>`  | `<label>`  | `font.weight="Bold"`, `font.size="1rem"`, `role="H6"` |
 | `<b>`   | `<span>`   | `font.weight="Bold"` |
 | `<i>`   | `<span>`   | `font.style="Italic"` |
 | `<u>`   | `<span>`   | `font.underline="true"` |
@@ -872,6 +878,8 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<vbox>` | `<div>`   | `layout="vbox"` |
 | `<table>` | `<div>` | `layout="table"` |
 | `<disc>` | `<div>` | `layout="radial"` |
+| `<th>`  | `<p>`      | `role="TH"`, `font.weight="Bold"` |
+| `<td>`  | `<p>`      | `role="TD"` |
 | `<layer>` | `<div>` | `position="relative"`, `width="100%"`, `height="100%"` |
 | `<br>`  | `<label>`  | *(empty line break)* |
 
@@ -1167,6 +1175,9 @@ converts each specified value to points using:
 Measurements are valid wherever `width`, `height`, `margin`, `padding`,
 `corners`, positional attributes (`top`, `right`, `bottom`, `left`), and
 similar dimension values are accepted.
+
+`rem` is reserved for font sizing only. Use it with `font.size` and `<font
+size="...">`; LTML does not accept `rem` for general geometric measurements.
 
 ---
 

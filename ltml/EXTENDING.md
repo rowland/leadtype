@@ -378,7 +378,7 @@ defaultScope (global)
 | `fixed`   | `*FontStyle`| Courier New 12pt |
 | `letter`, `legal`, `A4`, `B5`, `C5` | `*PageStyle` | Standard page sizes; custom sizes can be added via `<pagestyle>` |
 | `vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out` | `*LayoutStyle` | Default layouts |
-| `h`, `b`, `i`, `u`, `s`, `hbox`, `vbox`, `table`, `disc`, `layer`, `br` | `*Alias` | Built-in tag aliases |
+| `h`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `b`, `i`, `u`, `s`, `hbox`, `vbox`, `table`, `disc`, `th`, `td`, `layer`, `br` | `*Alias` | Built-in tag aliases |
 
 `HasScope` interface (implemented by `Scope`):
 
@@ -455,6 +455,7 @@ When implementing a new element, implement only the interfaces it needs:
 | `WantsContainer` | Element must be registered with its parent container. |
 | `HasParent`      | Element needs a reference to the parent element (not just the container). |
 | `HasScope`       | Element defines a new scope for styles/layouts (creates a scope boundary). |
+| `HasDefaultAttrs`| Element wants built-in default attrs applied before rules and direct XML attrs. |
 | `Identifier`     | Element has `id`, `class`, `tag` for CSS selector matching. |
 | `HasPath`        | Element can report its selector path for rule matching (use if `Identifier` is implemented). |
 | `Styler`         | Element is a reusable style object to be stored in the scope. |
@@ -464,19 +465,30 @@ When implementing a new element, implement only the interfaces it needs:
 Embed `StdWidget` to satisfy `Widget` automatically; embed `StdContainer` to
 satisfy both `Widget` and `Container`.
 
+If a custom widget needs implicit defaults that should behave like alias
+defaults, implement `HasDefaultAttrs`. The parser merges those attrs before
+selector rules and direct XML attrs, so a widget can express defaults like
+`font="fixed"` without special-case render logic.
+
+If a helper interface or inline-text type needs font access, prefer embedding
+`HasFont` instead of restating `Font() *FontStyle`. That keeps font-aware code
+sharing one contract.
+
 ---
 
 ## Attribute Priority
 
 Attributes are applied to an element in this order (each overrides the previous):
 
-1. **Alias defaults** — `Attrs` map from the matching `*Alias`, if the tag name
+1. **Element defaults** — attrs from `HasDefaultAttrs`, if the element
+   provides them.
+2. **Alias defaults** — `Attrs` map from the matching `*Alias`, if the tag name
    resolved through an alias.
-2. **Rule attributes** — for each `Rule` whose selector matches the element's
+3. **Rule attributes** — for each `Rule` whose selector matches the element's
    path, attributes from `<style>` blocks are
    applied in cascade order: lower `tier`, then lower selector specificity,
    then earlier declarations.
-3. **Direct XML attributes** — the actual attributes written on the tag in the
+4. **Direct XML attributes** — the actual attributes written on the tag in the
    document.
 
 This mirrors a CSS-like cascade: inline styles win over rules, which win over

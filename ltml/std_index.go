@@ -223,7 +223,11 @@ func (i *StdIndex) richTextForString(w Writer, text string) *rich_text.RichText 
 	if text == "" {
 		return &rich_text.RichText{}
 	}
-	i.Font().Apply(w)
+	if i.font != nil {
+		i.font.applyWithSize(w, i.font.ResolveAgainstBase(rootFontSizeForContainer(i.container)))
+	} else {
+		i.Font().applyWithSize(w, effectiveFontSizeForContainer(i.container))
+	}
 	rt, err := rich_text.New(text, w.Fonts(), w.FontSize(), i.Font().RichTextOptions())
 	if err != nil {
 		debugf("StdIndex.richTextForString: %v", err)

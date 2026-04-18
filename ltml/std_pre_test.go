@@ -89,6 +89,7 @@ func TestStdPre_DrawContent_PrintsEachLineWithoutWrapping(t *testing.T) {
 func TestStdPre_DefaultsToFixedFont(t *testing.T) {
 	p := &StdPre{}
 	p.SetScope(&defaultScope)
+	p.SetAttrs(p.DefaultAttrs(&defaultScope))
 
 	if got := p.Font().ID(); got != "fixed" {
 		t.Fatalf("Font().ID() = %q, want %q", got, "fixed")
