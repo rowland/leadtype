@@ -1,0 +1,333 @@
+<ltml units="in" margin="0.5" font.name="Helvetica" font.size="12">
+  <pen id="thin" width="0.5pt" color="SlateGray" />
+  <layout id="vbox" padding="6pt" />
+  <style>
+    label.size-title { font.size: 22; font.weight: Bold; }
+    p.meta-line { font.name: Helvetica; font.size: 7; color: DimGray; width: 100%; font.line-height: 1.5; }
+    rect.calibration-box { width: 1in; height: 1in; border: thin; fill: AliceBlue; }
+  </style>
+  <page style="A0">
+    <label class="size-title">A0</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 33.11in × 46.811in | 841 × 1189 mm | 2383.937 × 3370.394 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A0".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A1">
+    <label class="size-title">A1</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 23.386in × 33.11in | 594 × 841 mm | 1683.78 × 2383.937 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A1".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A2">
+    <label class="size-title">A2</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 16.535in × 23.386in | 420 × 594 mm | 1190.551 × 1683.78 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A2".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A3">
+    <label class="size-title">A3</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 11.693in × 16.535in | 297 × 420 mm | 841.89 × 1190.551 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A3".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B0">
+    <label class="size-title">B0</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 39.37in × 55.669in | 1000 × 1414 mm | 2834.646 × 4008.189 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B0".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B1">
+    <label class="size-title">B1</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 27.835in × 39.37in | 707 × 1000 mm | 2004.094 × 2834.646 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B1".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B2">
+    <label class="size-title">B2</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 19.685in × 27.835in | 500 × 707 mm | 1417.323 × 2004.094 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B2".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B3">
+    <label class="size-title">B3</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 13.898in × 19.685in | 353 × 500 mm | 1000.63 × 1417.323 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B3".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B4">
+    <label class="size-title">B4</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 9.843in × 13.898in | 250 × 353 mm | 708.661 × 1000.63 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B4".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C0">
+    <label class="size-title">C0</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 36.102in × 51.063in | 917 × 1297 mm | 2599.37 × 3676.535 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C0".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C1">
+    <label class="size-title">C1</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 25.512in × 36.102in | 648 × 917 mm | 1836.85 × 2599.37 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C1".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C2">
+    <label class="size-title">C2</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 18.031in × 25.512in | 458 × 648 mm | 1298.268 × 1836.85 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C2".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C3">
+    <label class="size-title">C3</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 12.756in × 18.031in | 324 × 458 mm | 918.425 × 1298.268 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C3".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C4">
+    <label class="size-title">C4</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 9.016in × 12.756in | 229 × 324 mm | 649.134 × 918.425 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C4".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="RA0">
+    <label class="size-title">RA0</label>
+    <p class="meta-line">Family: ISO RA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 33.858in × 48.031in | 860 × 1220 mm | 2437.795 × 3458.268 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="RA0".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="RA1">
+    <label class="size-title">RA1</label>
+    <p class="meta-line">Family: ISO RA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 24.016in × 33.858in | 610 × 860 mm | 1729.134 × 2437.795 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="RA1".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="RA2">
+    <label class="size-title">RA2</label>
+    <p class="meta-line">Family: ISO RA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 16.929in × 24.016in | 430 × 610 mm | 1218.898 × 1729.134 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="RA2".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="RA3">
+    <label class="size-title">RA3</label>
+    <p class="meta-line">Family: ISO RA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 12.008in × 16.929in | 305 × 430 mm | 864.567 × 1218.898 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="RA3".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="SRA0">
+    <label class="size-title">SRA0</label>
+    <p class="meta-line">Family: ISO SRA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 35.433in × 50.394in | 900 × 1280 mm | 2551.181 × 3628.346 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="SRA0".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="SRA1">
+    <label class="size-title">SRA1</label>
+    <p class="meta-line">Family: ISO SRA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 25.197in × 35.433in | 640 × 900 mm | 1814.173 × 2551.181 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="SRA1".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="SRA2">
+    <label class="size-title">SRA2</label>
+    <p class="meta-line">Family: ISO SRA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 17.717in × 25.197in | 450 × 640 mm | 1275.591 × 1814.173 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="SRA2".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="SRA3">
+    <label class="size-title">SRA3</label>
+    <p class="meta-line">Family: ISO SRA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 12.598in × 17.717in | 320 × 450 mm | 907.087 × 1275.591 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="SRA3".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="tabloid" style.orientation="landscape">
+    <label class="size-title">tabloid</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 11in × 17in | 279.4 × 431.8 mm | 792 × 1224 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="tabloid".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="ledger" style.orientation="landscape">
+    <label class="size-title">ledger</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 11in × 17in | 279.4 × 431.8 mm | 792 × 1224 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="ledger".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="ansib" style.orientation="landscape">
+    <label class="size-title">ansib</label>
+    <p class="meta-line">Family: ANSI</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 11in × 17in | 279.4 × 431.8 mm | 792 × 1224 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="ansib".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="ansic" style.orientation="landscape">
+    <label class="size-title">ansic</label>
+    <p class="meta-line">Family: ANSI</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 17in × 22in | 431.8 × 558.8 mm | 1224 × 1584 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="ansic".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="ansid" style.orientation="landscape">
+    <label class="size-title">ansid</label>
+    <p class="meta-line">Family: ANSI</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 22in × 34in | 558.8 × 863.6 mm | 1584 × 2448 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="ansid".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="ansie" style.orientation="landscape">
+    <label class="size-title">ansie</label>
+    <p class="meta-line">Family: ANSI</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 34in × 44in | 863.6 × 1117.6 mm | 2448 × 3168 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="ansie".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="archa">
+    <label class="size-title">archa</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 9in × 12in | 228.6 × 304.8 mm | 648 × 864 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="archa".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="archb" style.orientation="landscape">
+    <label class="size-title">archb</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 12in × 18in | 304.8 × 457.2 mm | 864 × 1296 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="archb".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="archc" style.orientation="landscape">
+    <label class="size-title">archc</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 18in × 24in | 457.2 × 609.6 mm | 1296 × 1728 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="archc".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="archd" style.orientation="landscape">
+    <label class="size-title">archd</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 24in × 36in | 609.6 × 914.4 mm | 1728 × 2592 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="archd".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="arche" style.orientation="landscape">
+    <label class="size-title">arche</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 36in × 48in | 914.4 × 1219.2 mm | 2592 × 3456 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="arche".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="arche1" style.orientation="landscape">
+    <label class="size-title">arche1</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 30in × 42in | 762 × 1066.8 mm | 2160 × 3024 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="arche1".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="arche2" style.orientation="landscape">
+    <label class="size-title">arche2</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 26in × 38in | 660.4 × 965.2 mm | 1872 × 2736 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="arche2".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="arche3" style.orientation="landscape">
+    <label class="size-title">arche3</label>
+    <p class="meta-line">Family: ARCH</p>
+    <p class="meta-line">Orientation in sample: landscape</p>
+    <p class="meta-line">Size: 27in × 39in | 685.8 × 990.6 mm | 1944 × 2808 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="arche3".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+</ltml>

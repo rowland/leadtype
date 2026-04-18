@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"math"
 	"testing"
 )
 
@@ -91,5 +92,76 @@ func TestParsePageStyleTag_BuiltinStylesUnaffected(t *testing.T) {
 	}
 	if page.Height() != 792 {
 		t.Errorf("expected letter height 792, got %v", page.Height())
+	}
+}
+
+func TestParsePageStyleTag_PageStyleOverridesBuiltinOrientation(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page style="tabloid" style.orientation="landscape"></page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	if page == nil {
+		t.Fatal("expected a page, got nil")
+	}
+	if page.Width() != inchesToPoints(17) {
+		t.Errorf("expected landscape tabloid width %v, got %v", inchesToPoints(17), page.Width())
+	}
+	if page.Height() != inchesToPoints(11) {
+		t.Errorf("expected landscape tabloid height %v, got %v", inchesToPoints(11), page.Height())
+	}
+}
+
+func TestPageStyleFor_BuiltinsAreCaseInsensitive(t *testing.T) {
+	ps := PageStyleFor("a4", &defaultScope)
+	if ps == nil {
+		t.Fatal("a4 page style not found")
+	}
+	wantWidth := mmToPoints(210)
+	wantHeight := mmToPoints(297)
+	if math.Abs(ps.Width()-wantWidth) > 0.001 {
+		t.Fatalf("a4 width = %v, want %v", ps.Width(), wantWidth)
+	}
+	if math.Abs(ps.Height()-wantHeight) > 0.001 {
+		t.Fatalf("a4 height = %v, want %v", ps.Height(), wantHeight)
+	}
+}
+
+func TestPageStyleFor_BuiltinsCoverRepresentativeFamilies(t *testing.T) {
+	tests := []struct {
+		id         string
+		wantWidth  float64
+		wantHeight float64
+	}{
+		{id: "A0", wantWidth: mmToPoints(841), wantHeight: mmToPoints(1189)},
+		{id: "governmentlegal", wantWidth: inchesToPoints(8.5), wantHeight: inchesToPoints(13)},
+		{id: "ansic", wantWidth: inchesToPoints(17), wantHeight: inchesToPoints(22)},
+		{id: "archd", wantWidth: inchesToPoints(24), wantHeight: inchesToPoints(36)},
+	}
+	for _, tt := range tests {
+		ps := PageStyleFor(tt.id, &defaultScope)
+		if ps == nil {
+			t.Fatalf("%s page style not found", tt.id)
+		}
+		if math.Abs(ps.Width()-tt.wantWidth) > 0.001 {
+			t.Fatalf("%s width = %v, want %v", tt.id, ps.Width(), tt.wantWidth)
+		}
+		if math.Abs(ps.Height()-tt.wantHeight) > 0.001 {
+			t.Fatalf("%s height = %v, want %v", tt.id, ps.Height(), tt.wantHeight)
+		}
+	}
+}
+
+func TestPageStyle_SetAttrs_OrientationSwapsBuiltInDimensions(t *testing.T) {
+	ps := &PageStyle{}
+	ps.SetAttrs(map[string]string{"size": "a4", "orientation": "landscape"})
+	if math.Abs(ps.Width()-mmToPoints(297)) > 0.001 {
+		t.Fatalf("landscape a4 width = %v, want %v", ps.Width(), mmToPoints(297))
+	}
+	if math.Abs(ps.Height()-mmToPoints(210)) > 0.001 {
+		t.Fatalf("landscape a4 height = %v, want %v", ps.Height(), mmToPoints(210))
 	}
 }

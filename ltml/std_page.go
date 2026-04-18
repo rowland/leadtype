@@ -175,6 +175,16 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 	if style, ok := attrs["style"]; ok {
 		p.pageStyle = PageStyleFor(style, p.scope)
 	}
+	if MapHasKeyPrefix(attrs, "style.") {
+		base := p.pageStyle
+		if base == nil {
+			base = PageStyleFor("letter", p.scope)
+		}
+		if base != nil {
+			p.pageStyle = base.Clone()
+			p.pageStyle.SetAttrs(addUnits(filterMapAttrs("style.", attrs), p.Units()))
+		}
+	}
 	if grid, ok := attrs["grid"]; ok {
 		switch grid {
 		case "", "false":

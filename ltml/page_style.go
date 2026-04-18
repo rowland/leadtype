@@ -7,20 +7,20 @@ const (
 
 type PageSize [2]float64
 
-var PageSizes = map[string]PageSize{
-	"letter": {612, 792},
-	"legal":  {612, 1008},
-	"A4":     {595, 842},
-	"B5":     {499, 708},
-	"C5":     {459, 649},
-}
-
 type PageStyle struct {
 	id          string
 	size        string
 	height      float64
 	width       float64
 	orientation int
+}
+
+func (ps *PageStyle) Clone() *PageStyle {
+	if ps == nil {
+		return nil
+	}
+	clone := *ps
+	return &clone
 }
 
 func (ps *PageStyle) ID() string {
@@ -41,20 +41,26 @@ func (ps *PageStyle) SetAttrs(attrs map[string]string) {
 	}
 	var units Units = "pt"
 	units.SetAttrs(attrs)
+	prevOrientation := ps.orientation
+	orientationChanged := false
 	if orientation, ok := attrs["orientation"]; ok {
 		switch orientation {
 		case "portrait":
 			ps.orientation = Portrait
+			orientationChanged = ps.orientation != prevOrientation
 		case "landscape":
 			ps.orientation = Landscape
+			orientationChanged = ps.orientation != prevOrientation
 		}
 	}
+	hasSize := false
 	if size, ok := attrs["size"]; ok {
-		if sz, ok := PageSizes[size]; ok {
+		hasSize = true
+		if sz, ok := lookupBuiltInPageSize(size); ok {
 			if ps.orientation == Portrait {
-				ps.width, ps.height = sz[0], sz[1]
+				ps.width, ps.height = sz.Width, sz.Height
 			} else {
-				ps.width, ps.height = sz[1], sz[0]
+				ps.width, ps.height = sz.Height, sz.Width
 			}
 		}
 	}
@@ -64,6 +70,13 @@ func (ps *PageStyle) SetAttrs(attrs map[string]string) {
 	if width, ok := attrs["width"]; ok {
 		ps.width = ParseMeasurement(width, units)
 	}
+	if orientationChanged && !hasSize {
+		_, hasWidth := attrs["width"]
+		_, hasHeight := attrs["height"]
+		if !hasWidth && !hasHeight && ps.width != 0 && ps.height != 0 {
+			ps.width, ps.height = ps.height, ps.width
+		}
+	}
 }
 
 func (ps *PageStyle) Width() float64 {
@@ -71,17 +84,19 @@ func (ps *PageStyle) Width() float64 {
 }
 
 func PageStyleFor(id string, scope HasScope) *PageStyle {
-	ps, _ := scope.PageStyleFor(id)
-	return ps
+	if scope != nil {
+		if ps, ok := scope.PageStyleFor(id); ok {
+			return ps
+		}
+	}
+	if spec, ok := lookupBuiltInPageSize(id); ok {
+		return &PageStyle{id: spec.ID, width: spec.Width, height: spec.Height}
+	}
+	return nil
 }
 
 var _ HasAttrs = (*PageStyle)(nil)
 
-var defaultPageStyles = map[string]*PageStyle{}
-
 func init() {
-	for id, sz := range PageSizes {
-		defaultPageStyles[id] = &PageStyle{id: id, width: sz[0], height: sz[1]}
-	}
 	registerTag(DefaultSpace, "pagestyle", func() any { return &PageStyle{} })
 }

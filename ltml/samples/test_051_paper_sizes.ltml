@@ -1,0 +1,298 @@
+<ltml units="in" margin="0.5" font.name="Helvetica" font.size="12">
+  <pen id="thin" width="0.5pt" color="SlateGray" />
+  <layout id="vbox" padding="6pt" />
+  <style>
+    label.size-title { font.size: 22; font.weight: Bold; }
+    p.meta-line { font.name: Helvetica; font.size: 7; color: DimGray; width: 100%; font.line-height: 1.5; }
+    rect.calibration-box { width: 1in; height: 1in; border: thin; fill: AliceBlue; }
+    rect.calibration-box-2 { width: 0.5in; height: 0.5in; border: thin; fill: AliceBlue; }
+  </style>
+  <page style="A4">
+    <label class="size-title">A4</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.268in × 11.693in | 210 × 297 mm | 595.276 × 841.89 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A4".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A5">
+    <label class="size-title">A5</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 5.827in × 8.268in | 148 × 210 mm | 419.528 × 595.276 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A5".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A6" margin="0.25">
+    <label class="size-title">A6</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 4.134in × 5.827in | 105 × 148 mm | 297.638 × 419.528 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A6".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A7" margin="0.25">
+    <label class="size-title">A7</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 2.913in × 4.134in | 74 × 105 mm | 209.764 × 297.638 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A7".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A8" margin="0.125">
+    <label class="size-title">A8</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 2.047in × 2.913in | 52 × 74 mm | 147.402 × 209.764 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A8".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A9" margin="0.125">
+    <label class="size-title">A9</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 1.457in × 2.047in | 37 × 52 mm | 104.882 × 147.402 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A9".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="A10" margin="0.125">
+    <label class="size-title">A10</label>
+    <p class="meta-line">Family: ISO A</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 1.024in × 1.457in | 26 × 37 mm | 73.701 × 104.882 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="A10".</p>
+    <rect class="calibration-box-2" />
+    <p class="meta-line">Calibration square: 0.5in × 0.5in</p>
+  </page>
+  <page style="B5">
+    <label class="size-title">B5</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 6.929in × 9.843in | 176 × 250 mm | 498.898 × 708.661 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B5".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B6">
+    <label class="size-title">B6</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 4.921in × 6.929in | 125 × 176 mm | 354.331 × 498.898 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B6".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B7">
+    <label class="size-title">B7</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 3.465in × 4.921in | 88 × 125 mm | 249.449 × 354.331 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B7".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B8" margin="0.25">
+    <label class="size-title">B8</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 2.441in × 3.465in | 62 × 88 mm | 175.748 × 249.449 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B8".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B9" margin="0.25">
+    <label class="size-title">B9</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 1.732in × 2.441in | 44 × 62 mm | 124.724 × 175.748 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B9".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="B10" margin="0.125">
+    <label class="size-title">B10</label>
+    <p class="meta-line">Family: ISO B</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 1.22in × 1.732in | 31 × 44 mm | 87.874 × 124.724 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="B10".</p>
+    <rect class="calibration-box-2" />
+    <p class="meta-line">Calibration square: 0.5in × 0.5in</p>
+  </page>
+  <page style="C5">
+    <label class="size-title">C5</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 6.378in × 9.016in | 162 × 229 mm | 459.213 × 649.134 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C5".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C6">
+    <label class="size-title">C6</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 4.488in × 6.378in | 114 × 162 mm | 323.15 × 459.213 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C6".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C7">
+    <label class="size-title">C7</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 3.189in × 4.488in | 81 × 114 mm | 229.606 × 323.15 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C7".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C8" margin="0.25">
+    <label class="size-title">C8</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 2.244in × 3.189in | 57 × 81 mm | 161.575 × 229.606 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C8".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C9" margin="0.25">
+    <label class="size-title">C9</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 1.575in × 2.244in | 40 × 57 mm | 113.386 × 161.575 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C9".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="C10" margin="0.125">
+    <label class="size-title">C10</label>
+    <p class="meta-line">Family: ISO C</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 1.102in × 1.575in | 28 × 40 mm | 79.37 × 113.386 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="C10".</p>
+    <rect class="calibration-box-2" />
+    <p class="meta-line">Calibration square: 0.5in × 0.5in</p>
+  </page>
+  <page style="RA4">
+    <label class="size-title">RA4</label>
+    <p class="meta-line">Family: ISO RA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.465in × 12.008in | 215 × 305 mm | 609.449 × 864.567 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="RA4".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="SRA4">
+    <label class="size-title">SRA4</label>
+    <p class="meta-line">Family: ISO SRA</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.858in × 12.598in | 225 × 320 mm | 637.795 × 907.087 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="SRA4".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="halfletter">
+    <label class="size-title">halfletter</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 5.5in × 8.5in | 139.7 × 215.9 mm | 396 × 612 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="halfletter".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="statement">
+    <label class="size-title">statement</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 5.5in × 8.5in | 139.7 × 215.9 mm | 396 × 612 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="statement".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="letter">
+    <label class="size-title">letter</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.5in × 11in | 215.9 × 279.4 mm | 612 × 792 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="letter".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="legal">
+    <label class="size-title">legal</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.5in × 14in | 215.9 × 355.6 mm | 612 × 1008 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="legal".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="juniorlegal">
+    <label class="size-title">juniorlegal</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 5in × 8in | 127 × 203.2 mm | 360 × 576 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="juniorlegal".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="governmentletter">
+    <label class="size-title">governmentletter</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8in × 10.5in | 203.2 × 266.7 mm | 576 × 756 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="governmentletter".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="governmentlegal">
+    <label class="size-title">governmentlegal</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.5in × 13in | 215.9 × 330.2 mm | 612 × 936 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="governmentlegal".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="executive">
+    <label class="size-title">executive</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 7.25in × 10.5in | 184.15 × 266.7 mm | 522 × 756 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="executive".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="folio">
+    <label class="size-title">folio</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.5in × 13in | 215.9 × 330.2 mm | 612 × 936 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="folio".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="quarto">
+    <label class="size-title">quarto</label>
+    <p class="meta-line">Family: North American</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8in × 10in | 203.2 × 254 mm | 576 × 720 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="quarto".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+  <page style="ansia">
+    <label class="size-title">ansia</label>
+    <p class="meta-line">Family: ANSI</p>
+    <p class="meta-line">Orientation in sample: portrait</p>
+    <p class="meta-line">Size: 8.5in × 11in | 215.9 × 279.4 mm | 612 × 792 pt</p>
+    <p class="meta-line">Built-in style lookup is case-insensitive; this page uses style="ansia".</p>
+    <rect class="calibration-box" />
+    <p class="meta-line">Calibration square: 1in × 1in</p>
+  </page>
+</ltml>
