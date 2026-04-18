@@ -237,7 +237,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` and `radial-out` when `angles` determines the angular slots. |
 | `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. In `radial-out`, row `0` is innermost and higher rows move outward. |
 | `order`          | Grid fill order: `rows` (default) or `cols`. Used by `table`, `radial`, and `radial-out`. |
-| `split`          | Whether a direct page-child `table` may split by whole rows across pages. Defaults to `true` for table layouts. |
+| `split`          | Whether a direct page-child `table` or `vbox` may split across pages. Defaults to `true` for `layout="table"` and `layout="vbox"`. |
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
 | `base-angle`     | Base angle in degrees for radial sector boundaries. Default: `0`. |
@@ -247,6 +247,8 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `r`              | Optional outer radius for radial layout. Otherwise LTML infers it from the smaller content dimension. |
 | `r0`             | Optional inner radius for radial layout. Preferred alias when paired with `r`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
+| `list`           | Optional list behavior for direct child paragraphs in `layout="vbox"` containers: `unordered` or `ordered`. |
+| `bullets`        | Optional bullet style/template used by `list`. `unordered` uses it as the shared bullet style; `ordered` clones it as a marker template and overwrites the text with `1.`, `2.`, `3.`, etc. |
 | `role` | Override the computed PDF structure type when `ua="true"`, for example `L` or `Table`. |
 
 ---
@@ -882,6 +884,8 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<s>`   | `<span>`   | `font.strikeout="true"` |
 | `<hbox>` | `<div>`   | `layout="hbox"` |
 | `<vbox>` | `<div>`   | `layout="vbox"` |
+| `<ul>` | `<div>` | `layout="vbox"`, `list="unordered"` |
+| `<ol>` | `<div>` | `layout="vbox"`, `list="ordered"` |
 | `<table>` | `<div>` | `layout="table"` |
 | `<disc>` | `<div>` | `layout="radial"` |
 | `<th>`  | `<p>`      | `role="TH"`, `font.weight="Bold"` |
@@ -1144,17 +1148,43 @@ For a fuller example, see `ltml/samples/test_037_relative_layout.ltml`.
 
 ### Page Flow Details
 
+Page flow has three related parts: widget visibility (`display`), page retry
+(`overflow`), and widget splitting (`split`).
+
+#### Visibility and Retry
+
 - `display` defaults to `once`.
 - `overflow` is currently honored only on `<page>`.
-- Overflow retries only reconsider direct children of the page.
+- When `overflow="true"`, LTML retries only direct children of the page on
+  later physical pages.
+- `display="even"` and `display="odd"` follow the physical PDF page sequence,
+  not `<pageno>` display values.
+
+#### Splittable Direct Page Children
+
+Only direct page children participate in the built-in overflow retry/splitting
+path.
+
 - Direct page-child paragraphs can split by wrapped lines.
 - Direct page-child tables can split by whole rows.
-- Paragraph splitting defaults to `split="true"`, `orphans="2"`, and `widows="2"`.
+- Direct page-child `vbox` containers can split by stacked child widgets.
+- Paragraph splitting defaults to `split="true"`, `orphans="2"`, and
+  `widows="2"`.
 - Table splitting defaults to `split="true"` for `layout="table"` containers.
+- VBox splitting defaults to `split="true"` for `layout="vbox"` containers.
+
+#### Repeated Chrome on Fragment Pages
+
 - Table `header-rows` and `footer-rows` repeat on every fragment page.
-- `align="top"` and `align="bottom"` in `vbox` behave like repeating header/footer slots when paired with a repeating `display` value.
-- `align="left"` and `align="right"` in `hbox` preserve source order, but `hbox` does not participate in overflow retries.
-- `display="even"` and `display="odd"` follow physical PDF page sequence, not `<pageno>` display values.
+- In `vbox`, direct children with `align="top"` and `align="bottom"` define
+  the fragment header/footer bands.
+- Those aligned children repeat on fragment pages only when their `display`
+  mode is itself repeating, such as `always`, `odd`, or `even`.
+
+#### Layout-Specific Notes
+
+- `hbox` preserves source order for `align="left"` and `align="right"` groups,
+  but `hbox` itself does not participate in overflow retries.
 
 ---
 
@@ -1263,13 +1293,24 @@ Hexadecimal color notation (e.g., `#ff0000`) is also accepted.
 
 ```xml
 <ltml units="in" margin="1">
-  <font id="zapf" name="ZapfDingbats" size="12" />
-  <bullet id="dot" font="zapf" text="l" width="18pt" />
-  <layout id="vbox" padding="4" />
+  <bullet id="brand-star" shape="star" width="24pt" r="8pt" brush="Gold" pen="solid" points="5" r0="4pt" />
+  <bullet id="ordered-mark" width="24pt" />
   <page>
-    <p bullet="dot">First item</p>
-    <p bullet="dot">Second item</p>
-    <p bullet="dot">Third item</p>
+    <ul>
+      <p>First unordered item</p>
+      <p>Second unordered item</p>
+    </ul>
+
+    <ul bullets="brand-star">
+      <p>Custom unordered marker</p>
+      <p>Reuses a named bullet style</p>
+    </ul>
+
+    <ol bullets="ordered-mark">
+      <p>First ordered item</p>
+      <p>Second ordered item</p>
+      <p>Third ordered item</p>
+    </ol>
   </page>
 </ltml>
 ```
