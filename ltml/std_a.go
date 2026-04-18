@@ -33,7 +33,7 @@ func (t linkedInlineText) Font() *FontStyle {
 }
 
 func (a *StdA) AddText(text string) {
-	a.AddTextWithFont(text, a.Font())
+	a.AddTextWithFont(text, a.explicitFont())
 }
 
 func (a *StdA) AddTextWithFont(text string, font *FontStyle) {

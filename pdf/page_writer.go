@@ -547,7 +547,7 @@ var errTooFewPoints = errors.New("Need at least 4 points for curve")
 var errNoActivePath = errors.New("No active manual path.")
 var errPathAlreadyActive = errors.New("Manual path already active.")
 var errInvalidPolygonSides = errors.New("Polygon requires at least 3 sides.")
-var errInvalidStarPoints = errors.New("Star requires at least 5 points.")
+var errInvalidStarPoints = errors.New("Star requires at least 2 points.")
 var errTransformInsideManualPath = errors.New("Transform not allowed during active manual path.")
 var errTextClipInsideManualPath = errors.New("Text clipping not allowed during active manual path.")
 
@@ -800,6 +800,7 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	if len(points) < 4 {
 		return errTooFewPoints
 	}
+	pw.startGraph()
 	pw.MoveTo(points[0].X, points[0].Y)
 	if !pw.last.loc.equal(pw.loc) {
 		if pw.inPath && pw.autoPath {
@@ -914,13 +915,27 @@ func (pw *PageWriter) buildClosedShapePath(shape ClosedShape) error {
 		if shape.Reverse {
 			points = reverseCurvePoints(points)
 		}
-		return pw.CurvePoints(points)
+		if err := pw.CurvePoints(points); err != nil {
+			return err
+		}
+		pw.gw.closePath()
+		return nil
 	case ClosedShapeEllipse:
 		points := ellipsePoints(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY)
+		if shape.Rotation != 0 {
+			center := shape.Center
+			for i := range points {
+				points[i] = rotatePoint(center, points[i], -shape.Rotation)
+			}
+		}
 		if shape.Reverse {
 			points = reverseCurvePoints(points)
 		}
-		return pw.CurvePoints(points)
+		if err := pw.CurvePoints(points); err != nil {
+			return err
+		}
+		pw.gw.closePath()
+		return nil
 	case ClosedShapePolygon:
 		points := polygonPoints(shape.Center.X, shape.Center.Y, shape.Radius, shape.Sides, shape.Rotation)
 		if shape.Reverse {

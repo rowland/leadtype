@@ -136,6 +136,10 @@ func (widget *StdWidget) Font() *FontStyle {
 	return widget.font
 }
 
+func (widget *StdWidget) explicitFont() *FontStyle {
+	return widget.font
+}
+
 func (widget *StdWidget) LayoutWidget(w Writer) {
 	// to be overridden
 }
@@ -294,7 +298,14 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		widget.font = FontStyleFor(font, widget.scope)
 	}
 	if MapHasKeyPrefix(attrs, "font.") {
-		baseFont := widget.Font()
+		baseFont := widget.font
+		if baseFont == nil {
+			if widget.container != nil {
+				baseFont = widget.container.Font()
+			} else {
+				baseFont = defaultFont
+			}
+		}
 		widget.font = baseFont.Clone()
 		widget.font.SetScope(widget.scope)
 		// widget.font.SetAttrs("font.", normalizeFontDecorationMeasurementAttrs(attrs, "font.", widget.Units()))

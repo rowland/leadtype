@@ -29,7 +29,7 @@ type StdParagraph struct {
 }
 
 func (p *StdParagraph) AddText(text string) {
-	p.AddTextWithFont(text, p.Font())
+	p.AddTextWithFont(text, p.explicitFont())
 }
 
 func (p *StdParagraph) AddTextWithFont(text string, font *FontStyle) {
@@ -115,6 +115,7 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		}
 		indent := p.textIndent()
 		textX := p.textStartX(indent)
+		textHeight := p.textContentHeightForLines(para, w)
 		baselineY := ContentTop(p) + para[0].Ascent()
 		w.MoveTo(textX, baselineY)
 		if b := p.Bullet(); b != nil && !p.suppressBullet {
@@ -122,7 +123,7 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 			y := baselineY
 			w.MoveTo(x, y)
 			if err := withAccessibilityArtifact(w, func() error {
-				return p.drawBullet(w, b, para[0], x, y)
+				return p.drawBullet(w, b, para[0], x, y, textHeight)
 			}); err != nil {
 				return err
 			}
@@ -179,8 +180,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 	rt := &rich_text.RichText{}
 	lastText := ""
 	for _, piece := range p.textPieces {
-		font := piece.Font(p.Font())
-		font.Apply(w)
+		font := applyTextPieceFontForContainer(w, p, piece, p.Font())
 		text := piece.ResolvedText(doc)
 		if text == "" {
 			continue
@@ -211,7 +211,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 
 func (p *StdParagraph) applyFonts(w Writer) {
 	for _, piece := range p.textPieces {
-		piece.Font(p.Font()).Apply(w)
+		applyTextPieceFontForContainer(w, p, piece, p.Font())
 	}
 }
 
@@ -364,6 +364,17 @@ func (p *StdParagraph) heightForLines(lines []*rich_text.RichText, w Writer) flo
 }
 
 func (p *StdParagraph) contentHeightForLines(lines []*rich_text.RichText, w Writer) float64 {
+	textHeight := p.textContentHeightForLines(lines, w)
+	if len(lines) == 0 {
+		return textHeight
+	}
+	if bulletHeight := p.bulletBoxHeightForLines(w, lines, textHeight); bulletHeight > textHeight {
+		return bulletHeight
+	}
+	return textHeight
+}
+
+func (p *StdParagraph) textContentHeightForLines(lines []*rich_text.RichText, w Writer) float64 {
 	height := 0.0
 	for _, line := range lines {
 		height += line.Leading() * w.LineSpacing()

@@ -21,10 +21,15 @@ type BulletStyle struct {
 	units       Units
 	pen         *PenStyle
 	brush       *BrushStyle
+	alignX      string
+	alignY      string
 	sides       int
 	points      int
 	rotation    float64
 	rotationSet bool
+	r           float64
+	rx          float64
+	ry          float64
 	r0          float64
 }
 
@@ -56,6 +61,15 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	if height, ok := attrs["height"]; ok {
 		bs.height = ParseMeasurement(height, bs.units)
 	}
+	if r, ok := attrs["r"]; ok {
+		bs.r = ParseMeasurement(r, bs.units)
+	}
+	if rx, ok := attrs["rx"]; ok {
+		bs.rx = ParseMeasurement(rx, bs.units)
+	}
+	if ry, ok := attrs["ry"]; ok {
+		bs.ry = ParseMeasurement(ry, bs.units)
+	}
 	if font, ok := attrs["font"]; ok {
 		bs.font = FontStyleFor(font, bs.scope)
 	}
@@ -73,6 +87,12 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	}
 	if brush, ok := attrs["brush"]; ok {
 		bs.brush = BrushStyleFor(brush, bs.scope)
+	}
+	if alignX, ok := attrs["align-x"]; ok {
+		bs.alignX = strings.TrimSpace(alignX)
+	}
+	if alignY, ok := attrs["align-y"]; ok {
+		bs.alignY = strings.TrimSpace(alignY)
 	}
 	if sides, ok := attrs["sides"]; ok {
 		bs.sides, _ = strconv.Atoi(sides)
@@ -108,6 +128,32 @@ func (bs *BulletStyle) Width() float64 {
 
 func (bs *BulletStyle) Height() float64 {
 	return bs.height
+}
+
+func (bs *BulletStyle) Radius() float64 {
+	return bs.r
+}
+
+func (bs *BulletStyle) RadiusX() float64 {
+	return bs.rx
+}
+
+func (bs *BulletStyle) RadiusY() float64 {
+	return bs.ry
+}
+
+func (bs *BulletStyle) AlignX() string {
+	if bs.alignX == "" {
+		return "start"
+	}
+	return bs.alignX
+}
+
+func (bs *BulletStyle) AlignY() string {
+	if bs.alignY == "" {
+		return "top"
+	}
+	return bs.alignY
 }
 
 func (bs *BulletStyle) Source() string {

@@ -24,7 +24,7 @@ type StdLabel struct {
 }
 
 func (l *StdLabel) AddText(text string) {
-	l.AddTextWithFont(text, l.Font())
+	l.AddTextWithFont(text, l.explicitFont())
 }
 
 func (l *StdLabel) AddTextWithFont(text string, font *FontStyle) {
@@ -89,7 +89,7 @@ func (l *StdLabel) DrawContent(w Writer) error {
 		if rt.Len() == 0 {
 			return nil
 		}
-		l.Font().Apply(w)
+		applyContainerFont(w, l)
 		anchorX, anchorY := l.textAnchor(rt)
 		startX := anchorX - l.textAnchorOffset(rt)
 		if l.textFill != nil {
@@ -139,7 +139,7 @@ func (l *StdLabel) PreferredHeight(w Writer) float64 {
 	}
 	rt := l.fittedRichText(w)
 	if rt.Len() == 0 {
-		return l.Font().size*w.LineSpacing() + NonContentHeight(l)
+		return effectiveFontSizeForContainer(l)*w.LineSpacing() + NonContentHeight(l)
 	}
 	return rt.Leading()*w.LineSpacing() + NonContentHeight(l)
 }
@@ -165,8 +165,7 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 	rt := &rich_text.RichText{}
 	lastText := ""
 	for _, piece := range l.textPieces {
-		font := piece.Font(l.Font())
-		font.Apply(w)
+		font := applyTextPieceFontForContainer(w, l, piece, l.Font())
 		text := piece.ResolvedText(doc)
 		if text == "" {
 			continue
@@ -197,7 +196,7 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 
 func (l *StdLabel) applyFonts(w Writer) {
 	for _, piece := range l.textPieces {
-		piece.Font(l.Font()).Apply(w)
+		applyTextPieceFontForContainer(w, l, piece, l.Font())
 	}
 }
 

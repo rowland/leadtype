@@ -73,7 +73,7 @@ func (s ClosedShape) validate() error {
 		if s.Radius <= 0 || s.InnerRadius <= 0 {
 			return fmt.Errorf("star radii must be positive")
 		}
-		if s.Points < 5 {
+		if s.Points < 2 {
 			return errInvalidStarPoints
 		}
 	default:
@@ -99,7 +99,14 @@ func (s ClosedShape) pathPoints() ([]Location, error) {
 	case ClosedShapeCircle:
 		return circlePoints(s.Center.X, s.Center.Y, s.RadiusX), nil
 	case ClosedShapeEllipse:
-		return ellipsePoints(s.Center.X, s.Center.Y, s.RadiusX, s.RadiusY), nil
+		points := ellipsePoints(s.Center.X, s.Center.Y, s.RadiusX, s.RadiusY)
+		if s.Rotation != 0 {
+			center := s.Center
+			for i := range points {
+				points[i] = rotatePoint(center, points[i], -s.Rotation)
+			}
+		}
+		return points, nil
 	case ClosedShapePolygon:
 		return polygonPoints(s.Center.X, s.Center.Y, s.Radius, s.Sides, s.Rotation), nil
 	case ClosedShapeStar:
@@ -132,7 +139,7 @@ func ellipsePoints(x, y, rx, ry float64) []Location {
 }
 
 func polygonPoints(x, y, r float64, sides int, rotation float64) []Location {
-	if sides < 3 {
+	if sides < 2 {
 		return nil
 	}
 	step := 360.0 / float64(sides)

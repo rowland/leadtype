@@ -1,5 +1,7 @@
 package ltml
 
+const layoutFitEpsilon = 0.001
+
 func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	containerFull := false
 
@@ -242,7 +244,7 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		if i > 0 {
 			dy += style.VPadding()
 		}
-		if top > bottom {
+		if top > bottom+layoutFitEpsilon {
 			containerFull = true
 			widget.SetVisible(false)
 		}

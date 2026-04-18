@@ -317,8 +317,44 @@ func TestPageWriter_Star_InvalidPoints(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	if err := pw.Star(1, 1, 1, 0.5, 4, true, false, false, 0); err != errInvalidStarPoints {
+	if err := pw.Star(1, 1, 1, 0.5, 1, true, false, false, 0); err != errInvalidStarPoints {
 		t.Fatalf("expected errInvalidStarPoints, got %v", err)
+	}
+}
+
+func TestPageWriter_Star_AllowsTwoPoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 2, true, false, false, 0); err != nil {
+		t.Fatalf("expected 2-point star to succeed, got %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "m\n") || !strings.Contains(pw.stream.String(), "l\n") {
+		t.Fatalf("expected star path commands in stream, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_Star_AllowsThreePoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 3, true, false, false, 0); err != nil {
+		t.Fatalf("expected 3-point star to succeed, got %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "m\n") || !strings.Contains(pw.stream.String(), "l\n") {
+		t.Fatalf("expected star path commands in stream, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_Star_AllowsFourPoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 4, true, false, false, 0); err != nil {
+		t.Fatalf("expected 4-point star to succeed, got %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "m\n") || !strings.Contains(pw.stream.String(), "l\n") {
+		t.Fatalf("expected star path commands in stream, got:\n%s", pw.stream.String())
 	}
 }
 
@@ -418,7 +454,7 @@ func TestPageWriter_ClipClosedShape(t *testing.T) {
 	})
 	check(t, err == nil, "ClipClosedShape should succeed")
 	s := pw.stream.String()
-	check(t, strings.Contains(s, "q\nW\nn\n"), "closed-shape clip should clip and clear the path")
+	check(t, strings.Contains(s, "h\nq\nW\nn\n"), "closed-shape clip should close, clip, and clear the path")
 	check(t, strings.Contains(s, "sh\nQ\n"), "closed-shape clip should paint and restore graphics state")
 }
 
@@ -438,8 +474,36 @@ func TestPageWriter_CircleFillAndStroke(t *testing.T) {
 	if !strings.Contains(got, "0 1 0 RG\n") {
 		t.Fatalf("expected line color command, got:\n%s", got)
 	}
-	if !strings.Contains(got, "B\n") {
-		t.Fatalf("expected fill-and-stroke operator, got:\n%s", got)
+	if !strings.Contains(got, "h\n") || !strings.Contains(got, "B\n") {
+		t.Fatalf("expected closed fill-and-stroke path, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_EllipseFillAndStrokeClosesPath(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Ellipse(2, 2, 2, 1, true, true, false); err != nil {
+		t.Fatalf("Ellipse returned error: %v", err)
+	}
+	if got := pw.stream.String(); !strings.Contains(got, "h\n") || !strings.Contains(got, "B\n") {
+		t.Fatalf("expected ellipse path to close before fill-and-stroke, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_ClipEllipseClosesPath(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.ClipClosedShape(ClosedShape{
+		Kind:    ClosedShapeEllipse,
+		Center:  Location{X: 10, Y: 10},
+		RadiusX: 6,
+		RadiusY: 4,
+	}, func() {})
+	check(t, err == nil, "ClipClosedShape ellipse should succeed")
+	if !strings.Contains(pw.stream.String(), "h\nq\nW\nn\n") {
+		t.Fatalf("expected ellipse clip path to close before clipping, got:\n%s", pw.stream.String())
 	}
 }
 
@@ -452,6 +516,48 @@ func TestPageWriter_CircleUsesTranslatedMoveTo(t *testing.T) {
 	}
 	if !strings.Contains(pw.stream.String(), "216 648 m\n") {
 		t.Fatalf("expected translated moveTo at circle start, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_CurvedShapeClosesTextObjectBeforePathOperators(t *testing.T) {
+	dw := NewDocWriter()
+	afmfc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatalf("Default AFM fonts returned error: %v", err)
+	}
+	dw.AddFontSource(afmfc)
+	pw := newPageWriter(dw, options.Options{})
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
+	}
+
+	pw.MoveTo(10, 10)
+	if err := pw.Print("Hello"); err != nil {
+		t.Fatalf("Print returned error: %v", err)
+	}
+	if err := pw.Ellipse(20, 20, 5, 3, true, true, false); err != nil {
+		t.Fatalf("Ellipse returned error: %v", err)
+	}
+	if err := pw.Print("World"); err != nil {
+		t.Fatalf("Print returned error: %v", err)
+	}
+	pw.flushText()
+
+	got := pw.stream.String()
+	moveIdx := strings.Index(got, "25 772 m\n")
+	if moveIdx < 0 {
+		t.Fatalf("expected ellipse moveTo in stream, got:\n%s", got)
+	}
+	textEndIdx := strings.Index(got, "ET\n")
+	if textEndIdx < 0 {
+		t.Fatalf("expected text object close in stream, got:\n%s", got)
+	}
+	if textEndIdx > moveIdx {
+		t.Fatalf("expected ellipse path to start after ET, got:\n%s", got)
+	}
+	if strings.Contains(got[textEndIdx+3:moveIdx], "BT\n") {
+		t.Fatalf("unexpected reopened text object before ellipse path, got:\n%s", got)
 	}
 }
 

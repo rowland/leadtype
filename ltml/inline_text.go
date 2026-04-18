@@ -14,7 +14,7 @@ type inlineText interface {
 
 type inlineTextWithFont interface {
 	inlineText
-	Font() *FontStyle
+	HasFont
 }
 
 type inlineTextWithLink interface {
@@ -49,16 +49,16 @@ func (p textPiece) Dynamic() bool {
 	return p.content != nil && p.content.Dynamic()
 }
 
-func (p textPiece) Font(fallback *FontStyle) *FontStyle {
+func (p textPiece) Font(fallback *FontStyle) (*FontStyle, bool) {
 	if p.font != nil {
-		return p.font
+		return p.font, true
 	}
 	if content, ok := p.content.(inlineTextWithFont); ok {
 		if font := content.Font(); font != nil {
-			return font
+			return font, true
 		}
 	}
-	return fallback
+	return fallback, false
 }
 
 func (p textPiece) RichTextOptions(base options.Options) options.Options {

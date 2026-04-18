@@ -36,7 +36,7 @@ func (p *StdPre) DrawContent(w Writer) error {
 			lines = []string{""}
 		}
 
-		p.Font().Apply(w)
+		applyWidgetFont(w, p)
 		lineHeight := p.lineHeight(w)
 		y := ContentTop(p)
 		for _, line := range lines {
@@ -59,6 +59,10 @@ func (p *StdPre) BeforePrint(Writer) error {
 	return err
 }
 
+func (p *StdPre) DefaultAttrs(HasScope) map[string]string {
+	return map[string]string{"font": "fixed"}
+}
+
 func (p *StdPre) Font() *FontStyle {
 	if p.font != nil {
 		return p.font
@@ -68,7 +72,7 @@ func (p *StdPre) Font() *FontStyle {
 			return fixed
 		}
 	}
-	if fixed, ok := defaultStyles["fixed"].(*FontStyle); ok {
+	if fixed, ok := defaultStyles["fixed"].(*FontStyle); ok && fixed != nil {
 		return fixed
 	}
 	return defaultFont
@@ -89,7 +93,7 @@ func (p *StdPre) PreferredWidth(w Writer) float64 {
 	if p.width != 0 {
 		return p.width
 	}
-	p.Font().Apply(w)
+	applyWidgetFont(w, p)
 	maxWidth := 0.0
 	for _, line := range p.Lines() {
 		rt, err := p.richTextForLine(line, w)
@@ -145,14 +149,14 @@ func (p *StdPre) String() string {
 func (p *StdPre) lineHeight(w Writer) float64 {
 	rt, err := p.richTextForLine("M", w)
 	if err != nil {
-		return p.Font().size * w.LineSpacing()
+		return effectiveFontSizeForWidget(p) * w.LineSpacing()
 	}
 	return rt.Leading() * w.LineSpacing()
 }
 
 func (p *StdPre) richTextForLine(line string, w Writer) (*rich_text.RichText, error) {
 	font := p.Font()
-	font.Apply(w)
+	applyWidgetFont(w, p)
 	rt, err := rich_text.New(line, w.Fonts(), w.FontSize(), font.RichTextOptions())
 	if err != nil {
 		debugf("StdPre.richTextForLine: %v", err)
@@ -163,10 +167,6 @@ func (p *StdPre) richTextForLine(line string, w Writer) (*rich_text.RichText, er
 
 func init() {
 	registerTag(DefaultSpace, "pre", func() any { return &StdPre{} })
-}
-
-func (p *StdPre) assetSource() (assetSourceRef, error) {
-	return p.source.assetSource(p.doc, p.container, "pre")
 }
 
 func normalizedPreLines(text string) []string {
@@ -219,3 +219,4 @@ var _ Identifier = (*StdPre)(nil)
 var _ Printer = (*StdPre)(nil)
 var _ WantsContainer = (*StdPre)(nil)
 var _ WantsDoc = (*StdPre)(nil)
+var _ HasDefaultAttrs = (*StdPre)(nil)

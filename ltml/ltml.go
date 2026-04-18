@@ -164,11 +164,11 @@ func (doc *Doc) cleanupAssetSources() {
 
 func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	trueTag := elem.Name.Local
-	var defaultAttrs map[string]string
+	var aliasDefaultAttrs map[string]string
 	if elem.Name.Space == DefaultSpace {
 		if alias, ok := doc.scope().AliasFor(trueTag); ok {
-			trueTag, defaultAttrs = alias.Tag, alias.Attrs
-			debugf("Alias %s=%s %v\n", elem.Name.Local, trueTag, defaultAttrs)
+			trueTag, aliasDefaultAttrs = alias.Tag, alias.Attrs
+			debugf("Alias %s=%s %v\n", elem.Name.Local, trueTag, aliasDefaultAttrs)
 		}
 	}
 	e := makeElement(elem.Name.Space, trueTag)
@@ -249,6 +249,7 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	if ident, ok := e.(Identifier); ok {
 		ident.SetIentifiers(attrs)
 	}
+	defaultAttrs := defaultElementAttrs(doc.scope(), e, aliasDefaultAttrs)
 	sourcePath := ""
 	if wrapper != nil {
 		if setter, ok := e.(interface{ SetPath(string) }); ok {
@@ -321,6 +322,34 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		capturesBody = true
 	}
 	return e, capturesBody
+}
+
+func defaultElementAttrs(scope HasScope, target any, aliasDefaults map[string]string) map[string]string {
+	var merged map[string]string
+	if provider, ok := target.(HasDefaultAttrs); ok {
+		merged = cloneAttrs(provider.DefaultAttrs(scope))
+	}
+	if len(aliasDefaults) == 0 {
+		return merged
+	}
+	if merged == nil {
+		return cloneAttrs(aliasDefaults)
+	}
+	for k, v := range aliasDefaults {
+		merged[k] = v
+	}
+	return merged
+}
+
+func cloneAttrs(attrs map[string]string) map[string]string {
+	if len(attrs) == 0 {
+		return nil
+	}
+	clone := make(map[string]string, len(attrs))
+	for k, v := range attrs {
+		clone[k] = v
+	}
+	return clone
 }
 
 // applyPseudoRules performs a second pass over the parsed widget tree so rules

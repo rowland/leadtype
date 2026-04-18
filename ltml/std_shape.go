@@ -318,7 +318,7 @@ func (s *StdStar) innerRadius() float64 {
 }
 
 func (s *StdStar) Points() int {
-	if s.points >= 5 {
+	if s.points >= 2 {
 		return s.points
 	}
 	return 5

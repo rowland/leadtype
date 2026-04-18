@@ -160,7 +160,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 |--------------------|-------------|
 | `font`             | Reference to a named `<font>` style. |
 | `font.name`        | Font family name (e.g., `Helvetica`, `Arial`). |
-| `font.size`        | Font size in points. |
+| `font.size`        | Font size as points (`12`) or page-root-relative rems (`1rem`, `0.875rem`). |
 | `font.color`       | Font color (named color or hex). |
 | `font.weight`      | Font weight (`Bold`, or empty for normal). |
 | `font.style`       | Font style (`Italic`, `Oblique`, or empty for normal). |
@@ -625,7 +625,7 @@ styles) before the content that uses them.
 |---------------|-------------|
 | `id`          | Name used to reference this style. |
 | `name`        | Font family name. |
-| `size`        | Font size in points. |
+| `size`        | Font size as points (`12`) or page-root-relative rems (`1rem`, `0.875rem`). |
 | `color`       | Text color. |
 | `weight`      | `Bold`, or omit for normal. |
 | `style`       | `Italic`, `Oblique`, or omit for normal. |
@@ -752,22 +752,28 @@ overridden inline with `fill.*` attributes on a widget.
 | `src`     | Asset path for image bullets. Rendered through LTML's normal `PrintImageFile` path. |
 | `shape`   | Closed shape for shape bullets: `circle`, `ellipse`, `polygon`, `triangle`, `square`, or `star`. `triangle` and `square` are polygon aliases. |
 | `width`   | Space reserved for the bullet slot. This remains the paragraph indent reservation for every bullet kind. |
-| `height`  | Optional render height for image and shape bullets. If omitted, LTML infers a height from the first line box. |
+| `r`       | Optional outer radius for `circle`, `polygon`, `triangle`, `square`, and `star` bullets. LTML uses it as the center-to-corner distance. |
+| `rx`      | Optional horizontal radius for `shape="ellipse"`. |
+| `ry`      | Optional vertical radius for `shape="ellipse"`. |
+| `height`  | Optional minimum paragraph height reserved for the bullet. When present, LTML ensures the paragraph is at least this tall, so a tall bullet may span multiple wrapped text lines. |
 | `pen`     | Optional `<pen>` style for shape bullet outlines. |
 | `brush`   | Optional `<brush>` style for shape bullet fills, including gradients and image brushes. |
+| `align-x` | Horizontal alignment of the painted bullet within the reserved slot: `start`, `center`, `end`. `start` flushes the shape to the slot's leading edge, `center` aligns shape center to slot center, and `end` flushes the shape to the slot's trailing edge. Defaults to `start` (`end` for RTL). |
+| `align-y` | Vertical alignment of the painted bullet: `top`, `middle`, `baseline`. `top` flushes the shape to the top of the paragraph bullet slot. `middle` aligns the shape center with the middle of the paragraph's text block. `baseline` aligns the bottom of the painted shape to the first-line text baseline. Defaults to `top`. |
 | `sides`   | Polygon side count for `shape="polygon"`. |
 | `points`  | Star point count for `shape="star"`. |
-| `rotation` | Optional rotation in degrees for polygon and star bullets. |
+| `rotation` | Optional rotation in degrees for ellipse, polygon, and star bullets. |
 | `r0`      | Optional inner radius for `shape="star"`. |
-| `units`   | Units for `width`, `height`, and `r0`. |
+| `units`   | Units for `width`, `height`, `r`, `rx`, `ry`, and `r0`. |
 
 Examples:
 
 ```xml
 <bullet id="dot" font="zapf" text="l" width="18pt" />
 <bullet id="logo" src="../../pdf/testdata/test_scene.svg" width="18pt" height="14pt" />
-<bullet id="tri" shape="triangle" width="18pt" height="18pt" brush="goldfill" />
-<bullet id="brand-star" shape="star" width="18pt" height="18pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
+<bullet id="tri" shape="triangle" width="18pt" r="6pt" brush="goldfill" />
+<bullet id="oval" shape="ellipse" width="18pt" rx="6pt" ry="4pt" brush="skyfill" />
+<bullet id="brand-star" shape="star" width="18pt" r="6pt" brush="goldfill" pen="solid" points="6" r0="4pt" rotation="15" />
 
 Notes:
 `triangle` maps to a 3-sided polygon with an upright default orientation.
@@ -864,6 +870,12 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | Alias   | Expands to | Default Attributes |
 |---------|------------|--------------------|
 | `<h>`   | `<p>`      | `font.weight="Bold"`, `style.text-align="center"`, `width="100%"` |
+| `<h1>`  | `<label>`  | `font.weight="Bold"`, `font.size="2rem"`, `role="H1"` |
+| `<h2>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.75rem"`, `role="H2"` |
+| `<h3>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.5rem"`, `role="H3"` |
+| `<h4>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.25rem"`, `role="H4"` |
+| `<h5>`  | `<label>`  | `font.weight="Bold"`, `font.size="1.125rem"`, `role="H5"` |
+| `<h6>`  | `<label>`  | `font.weight="Bold"`, `font.size="1rem"`, `role="H6"` |
 | `<b>`   | `<span>`   | `font.weight="Bold"` |
 | `<i>`   | `<span>`   | `font.style="Italic"` |
 | `<u>`   | `<span>`   | `font.underline="true"` |
@@ -872,6 +884,8 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<vbox>` | `<div>`   | `layout="vbox"` |
 | `<table>` | `<div>` | `layout="table"` |
 | `<disc>` | `<div>` | `layout="radial"` |
+| `<th>`  | `<p>`      | `role="TH"`, `font.weight="Bold"` |
+| `<td>`  | `<p>`      | `role="TD"` |
 | `<layer>` | `<div>` | `position="relative"`, `width="100%"`, `height="100%"` |
 | `<br>`  | `<label>`  | *(empty line break)* |
 
@@ -1167,6 +1181,9 @@ converts each specified value to points using:
 Measurements are valid wherever `width`, `height`, `margin`, `padding`,
 `corners`, positional attributes (`top`, `right`, `bottom`, `left`), and
 similar dimension values are accepted.
+
+`rem` is reserved for font sizing only. Use it with `font.size` and `<font
+size="...">`; LTML does not accept `rem` for general geometric measurements.
 
 ---
 
