@@ -1,7 +1,9 @@
 package ltpdf_test
 
 import (
+	"bytes"
 	"io/fs"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -46,5 +48,34 @@ func TestDocWriter_LayoutProbeWriterPreservesFontSourcesAndAssetFS(t *testing.T)
 	}
 	if string(data) != "asset" {
 		t.Fatalf("probe asset fs content = %q, want %q", data, "asset")
+	}
+}
+
+func TestDocWriter_Print_UsesLTMLPageStyleForPhysicalPageSize(t *testing.T) {
+	doc, err := ltml.Parse([]byte(`
+<ltml>
+  <pagestyle id="tiny" width="200" height="300" />
+  <page style="tiny" />
+</ltml>`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	w := &ltpdf.DocWriter{DocWriter: pdf.NewDocWriter()}
+	if err := doc.Print(w); err != nil {
+		t.Fatalf("Print: %v", err)
+	}
+
+	var buf bytes.Buffer
+	if _, err := w.WriteTo(&buf); err != nil {
+		t.Fatalf("WriteTo: %v", err)
+	}
+
+	pdfText := buf.String()
+	if !strings.Contains(pdfText, "/MediaBox [0 0 200 300 ]") {
+		t.Fatalf("PDF missing custom MediaBox, got:\n%s", pdfText)
+	}
+	if !strings.Contains(pdfText, "/CropBox [0 0 200 300 ]") {
+		t.Fatalf("PDF missing custom CropBox, got:\n%s", pdfText)
 	}
 }

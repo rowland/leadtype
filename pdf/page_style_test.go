@@ -71,4 +71,22 @@ func TestNewPageStyle(t *testing.T) {
 	opt6 := options.Options{"rotate": "landscape"}
 	ps6 := newPageStyle(opt6)
 	expectNI(t, "rotate", 270, ps6.rotate)
+
+	opt7 := options.Options{"page_width": 200, "page_height": 300}
+	ps7 := newPageStyle(opt7)
+	expectF(t, 0, ps7.pageSize.x1)
+	expectF(t, 0, ps7.pageSize.y1)
+	expectF(t, 200, ps7.pageSize.x2)
+	expectF(t, 300, ps7.pageSize.y2)
+	expectF(t, 0, ps7.cropSize.x1)
+	expectF(t, 0, ps7.cropSize.y1)
+	expectF(t, 200, ps7.cropSize.x2)
+	expectF(t, 300, ps7.cropSize.y2)
+
+	opt8 := options.Options{"page_width": 200, "page_height": 300, "crop_width": 180, "crop_height": 280}
+	ps8 := newPageStyle(opt8)
+	expectF(t, 0, ps8.cropSize.x1)
+	expectF(t, 0, ps8.cropSize.y1)
+	expectF(t, 180, ps8.cropSize.x2)
+	expectF(t, 280, ps8.cropSize.y2)
 }

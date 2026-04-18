@@ -25,9 +25,13 @@ func newPageStyle(options options.Options) *pageStyle {
 	ps := new(pageStyle)
 	ps.orientation = options.StringDefault("orientation", "portrait")
 	pageSizeName := options.StringDefault("page_size", "letter")
-	ps.pageSize = makeSizeRectangle(pageSizeName, ps.orientation)
-	cropSizeName := options.StringDefault("crop_size", pageSizeName)
-	ps.cropSize = makeSizeRectangle(cropSizeName, ps.orientation)
+	ps.pageSize = rectangleFromOptions(options, pageSizeName, "page_width", "page_height", ps.orientation)
+	if options.HasKey("crop_size") || options.HasKey("crop_width") || options.HasKey("crop_height") {
+		cropSizeName := options.StringDefault("crop_size", pageSizeName)
+		ps.cropSize = rectangleFromOptions(options, cropSizeName, "crop_width", "crop_height", ps.orientation)
+	} else {
+		ps.cropSize = ps.pageSize
+	}
 	ps.rotate = lookupRotation(options.StringDefault("rotate", "portrait"))
 	return ps
 }
@@ -40,6 +44,17 @@ func makeSizeRectangle(size, orientation string) (r rectangle) {
 		r.x2, r.y2 = sz.Width, sz.Height
 	}
 	return
+}
+
+func rectangleFromOptions(options options.Options, sizeName, widthKey, heightKey, orientation string) rectangle {
+	r := makeSizeRectangle(sizeName, orientation)
+	if options.HasKey(widthKey) {
+		r.x2 = options.FloatDefault(widthKey, r.x2)
+	}
+	if options.HasKey(heightKey) {
+		r.y2 = options.FloatDefault(heightKey, r.y2)
+	}
+	return r
 }
 
 const (
