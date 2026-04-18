@@ -800,6 +800,7 @@ func (pw *PageWriter) CurvePoints(points []Location) error {
 	if len(points) < 4 {
 		return errTooFewPoints
 	}
+	pw.startGraph()
 	pw.MoveTo(points[0].X, points[0].Y)
 	if !pw.last.loc.equal(pw.loc) {
 		if pw.inPath && pw.autoPath {
@@ -921,6 +922,12 @@ func (pw *PageWriter) buildClosedShapePath(shape ClosedShape) error {
 		return nil
 	case ClosedShapeEllipse:
 		points := ellipsePoints(shape.Center.X, shape.Center.Y, shape.RadiusX, shape.RadiusY)
+		if shape.Rotation != 0 {
+			center := shape.Center
+			for i := range points {
+				points[i] = rotatePoint(center, points[i], -shape.Rotation)
+			}
+		}
 		if shape.Reverse {
 			points = reverseCurvePoints(points)
 		}

@@ -483,6 +483,48 @@ func TestPageWriter_CircleUsesTranslatedMoveTo(t *testing.T) {
 	}
 }
 
+func TestPageWriter_CurvedShapeClosesTextObjectBeforePathOperators(t *testing.T) {
+	dw := NewDocWriter()
+	afmfc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatalf("Default AFM fonts returned error: %v", err)
+	}
+	dw.AddFontSource(afmfc)
+	pw := newPageWriter(dw, options.Options{})
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatalf("SetFont returned error: %v", err)
+	}
+
+	pw.MoveTo(10, 10)
+	if err := pw.Print("Hello"); err != nil {
+		t.Fatalf("Print returned error: %v", err)
+	}
+	if err := pw.Ellipse(20, 20, 5, 3, true, true, false); err != nil {
+		t.Fatalf("Ellipse returned error: %v", err)
+	}
+	if err := pw.Print("World"); err != nil {
+		t.Fatalf("Print returned error: %v", err)
+	}
+	pw.flushText()
+
+	got := pw.stream.String()
+	moveIdx := strings.Index(got, "25 772 m\n")
+	if moveIdx < 0 {
+		t.Fatalf("expected ellipse moveTo in stream, got:\n%s", got)
+	}
+	textEndIdx := strings.Index(got, "ET\n")
+	if textEndIdx < 0 {
+		t.Fatalf("expected text object close in stream, got:\n%s", got)
+	}
+	if textEndIdx > moveIdx {
+		t.Fatalf("expected ellipse path to start after ET, got:\n%s", got)
+	}
+	if strings.Contains(got[textEndIdx+3:moveIdx], "BT\n") {
+		t.Fatalf("unexpected reopened text object before ellipse path, got:\n%s", got)
+	}
+}
+
 func TestPageWriter_Rotate(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{"units": "in"})
