@@ -547,7 +547,7 @@ var errTooFewPoints = errors.New("Need at least 4 points for curve")
 var errNoActivePath = errors.New("No active manual path.")
 var errPathAlreadyActive = errors.New("Manual path already active.")
 var errInvalidPolygonSides = errors.New("Polygon requires at least 3 sides.")
-var errInvalidStarPoints = errors.New("Star requires at least 5 points.")
+var errInvalidStarPoints = errors.New("Star requires at least 2 points.")
 var errTransformInsideManualPath = errors.New("Transform not allowed during active manual path.")
 var errTextClipInsideManualPath = errors.New("Text clipping not allowed during active manual path.")
 

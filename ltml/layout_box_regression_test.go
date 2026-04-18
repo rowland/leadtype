@@ -110,3 +110,88 @@ func TestLayoutHBox_AutoHeightPanelsKeepAllNestedContentVisible(t *testing.T) {
 		t.Fatalf("right panel last child should remain visible after real layout")
 	}
 }
+
+func TestLayoutVBox_PreferredHeightProbeDoesNotHideNestedRTLChildren(t *testing.T) {
+	doc, err := Parse([]byte(`
+		<ltml>
+			<page layout="vbox" width="612pt" height="792pt" margin="72pt">
+				<div layout="vbox" layout.padding="12pt">
+					<label>Bullet variants</label>
+					<p>One</p>
+					<p>Two</p>
+					<p>Three</p>
+					<p>Four</p>
+					<p>Five</p>
+					<p>Six</p>
+					<p>Seven</p>
+					<p>Eight</p>
+					<p>Nine</p>
+					<p>Ten</p>
+				</div>
+				<div layout="vbox" layout.padding="10pt" dir="rtl">
+					<label>RTL Bullets</label>
+					<p>First</p>
+					<p>Second</p>
+					<p>Third</p>
+				</div>
+			</page>
+		</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := ltpdf.NewDocWriter()
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.Root().Page(0)
+	if len(page.children) != 2 {
+		t.Fatalf("page child count = %d, want 2", len(page.children))
+	}
+	rtlBox, ok := page.children[1].(*StdContainer)
+	if !ok {
+		t.Fatalf("page child 1 is %T, want *StdContainer", page.children[1])
+	}
+	if len(rtlBox.children) != 4 {
+		t.Fatalf("rtl child count = %d, want 4", len(rtlBox.children))
+	}
+	for i, child := range rtlBox.children {
+		if !child.Visible() {
+			t.Fatalf("rtl child %d (%T) is hidden, want visible", i, child)
+		}
+	}
+}
+
+func TestLayoutVBox_ExactFitKeepsLastChildVisible(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 300, height: 300}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	box := &StdContainer{}
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.layout.vpadding = 10
+	box.SetLeft(0)
+	box.SetTop(0)
+	box.SetWidth(200)
+	box.SetHeight(109.64)
+	if err := box.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, height := range []float64{16.34, 21.10, 21.10, 21.10} {
+		child := &StdContainer{}
+		child.SetHeight(height)
+		box.AddChild(child)
+		if err := child.SetContainer(box); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	LayoutVBox(box, box.layout, &labelTestWriter{t: t})
+	if len(box.children) != 4 {
+		t.Fatalf("child count = %d, want 4", len(box.children))
+	}
+	if !box.children[3].Visible() {
+		t.Fatal("last child is hidden, want visible on exact fit")
+	}
+}

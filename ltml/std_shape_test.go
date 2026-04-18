@@ -201,6 +201,63 @@ func TestStdStar_DefaultsInnerRadiusAndPoints(t *testing.T) {
 	}
 }
 
+func TestStdStar_AllowsFourPoints(t *testing.T) {
+	star := &StdStar{}
+	star.SetLeft(0)
+	star.SetTop(0)
+	star.SetWidth(100)
+	star.SetHeight(100)
+	star.points = 4
+	star.border = &PenStyle{id: "solid", width: 1}
+	w := &shapeTestWriter{}
+
+	if err := star.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	call := w.calls[0]
+	if call.i != 4 {
+		t.Fatalf("points = %d, want 4", call.i)
+	}
+}
+
+func TestStdStar_AllowsTwoPoints(t *testing.T) {
+	star := &StdStar{}
+	star.SetLeft(0)
+	star.SetTop(0)
+	star.SetWidth(100)
+	star.SetHeight(100)
+	star.points = 2
+	star.border = &PenStyle{id: "solid", width: 1}
+	w := &shapeTestWriter{}
+
+	if err := star.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	call := w.calls[0]
+	if call.i != 2 {
+		t.Fatalf("points = %d, want 2", call.i)
+	}
+}
+
+func TestStdStar_AllowsThreePoints(t *testing.T) {
+	star := &StdStar{}
+	star.SetLeft(0)
+	star.SetTop(0)
+	star.SetWidth(100)
+	star.SetHeight(100)
+	star.points = 3
+	star.border = &PenStyle{id: "solid", width: 1}
+	w := &shapeTestWriter{}
+
+	if err := star.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	call := w.calls[0]
+	if call.i != 3 {
+		t.Fatalf("points = %d, want 3", call.i)
+	}
+}
+
 func TestStdArcAndArch_DrawContent(t *testing.T) {
 	arc := &StdArc{}
 	arc.SetLeft(0)

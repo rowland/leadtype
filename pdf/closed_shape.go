@@ -73,7 +73,7 @@ func (s ClosedShape) validate() error {
 		if s.Radius <= 0 || s.InnerRadius <= 0 {
 			return fmt.Errorf("star radii must be positive")
 		}
-		if s.Points < 5 {
+		if s.Points < 2 {
 			return errInvalidStarPoints
 		}
 	default:
@@ -139,7 +139,7 @@ func ellipsePoints(x, y, rx, ry float64) []Location {
 }
 
 func polygonPoints(x, y, r float64, sides int, rotation float64) []Location {
-	if sides < 3 {
+	if sides < 2 {
 		return nil
 	}
 	step := 360.0 / float64(sides)

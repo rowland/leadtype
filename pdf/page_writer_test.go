@@ -317,8 +317,44 @@ func TestPageWriter_Star_InvalidPoints(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
 
-	if err := pw.Star(1, 1, 1, 0.5, 4, true, false, false, 0); err != errInvalidStarPoints {
+	if err := pw.Star(1, 1, 1, 0.5, 1, true, false, false, 0); err != errInvalidStarPoints {
 		t.Fatalf("expected errInvalidStarPoints, got %v", err)
+	}
+}
+
+func TestPageWriter_Star_AllowsTwoPoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 2, true, false, false, 0); err != nil {
+		t.Fatalf("expected 2-point star to succeed, got %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "m\n") || !strings.Contains(pw.stream.String(), "l\n") {
+		t.Fatalf("expected star path commands in stream, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_Star_AllowsThreePoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 3, true, false, false, 0); err != nil {
+		t.Fatalf("expected 3-point star to succeed, got %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "m\n") || !strings.Contains(pw.stream.String(), "l\n") {
+		t.Fatalf("expected star path commands in stream, got:\n%s", pw.stream.String())
+	}
+}
+
+func TestPageWriter_Star_AllowsFourPoints(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	if err := pw.Star(1, 1, 1, 0.5, 4, true, false, false, 0); err != nil {
+		t.Fatalf("expected 4-point star to succeed, got %v", err)
+	}
+	if !strings.Contains(pw.stream.String(), "m\n") || !strings.Contains(pw.stream.String(), "l\n") {
+		t.Fatalf("expected star path commands in stream, got:\n%s", pw.stream.String())
 	}
 }
 

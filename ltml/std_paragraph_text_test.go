@@ -582,6 +582,108 @@ func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing
 	}
 }
 
+func TestStdParagraph_DrawContent_FourPointStarBulletRenders(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{
+		shape:  "star",
+		width:  24,
+		r:      9,
+		points: 4,
+		r0:     4,
+		brush:  &BrushStyle{id: "sky", color: NamedColor("LightSkyBlue")},
+	}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatalf("DrawContent returned error: %v", err)
+	}
+	if len(w.shapeCalls) != 1 {
+		t.Fatalf("shape call count = %d, want 1", len(w.shapeCalls))
+	}
+	call := w.shapeCalls[0]
+	if call.name != "star" {
+		t.Fatalf("shape name = %q, want star", call.name)
+	}
+	if call.i != 4 {
+		t.Fatalf("star points = %d, want 4", call.i)
+	}
+}
+
+func TestStdParagraph_DrawContent_TwoPointStarBulletRenders(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{
+		shape:  "star",
+		width:  24,
+		r:      9,
+		points: 2,
+		r0:     4,
+		brush:  &BrushStyle{id: "sky", color: NamedColor("LightSkyBlue")},
+	}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatalf("DrawContent returned error: %v", err)
+	}
+	if len(w.shapeCalls) != 1 {
+		t.Fatalf("shape call count = %d, want 1", len(w.shapeCalls))
+	}
+	call := w.shapeCalls[0]
+	if call.name != "star" {
+		t.Fatalf("shape name = %q, want star", call.name)
+	}
+	if call.i != 2 {
+		t.Fatalf("star points = %d, want 2", call.i)
+	}
+}
+
+func TestStdParagraph_DrawContent_ThreePointStarBulletRenders(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{
+		shape:  "star",
+		width:  24,
+		r:      9,
+		points: 3,
+		r0:     4,
+		brush:  &BrushStyle{id: "sky", color: NamedColor("LightSkyBlue")},
+	}
+	p.SetLeft(10)
+	p.SetTop(20)
+	p.SetWidth(120)
+	p.SetHeight(40)
+	p.AddText("Hello")
+
+	w := &bulletTestWriter{labelTestWriter: labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatalf("DrawContent returned error: %v", err)
+	}
+	if len(w.shapeCalls) != 1 {
+		t.Fatalf("shape call count = %d, want 1", len(w.shapeCalls))
+	}
+	call := w.shapeCalls[0]
+	if call.name != "star" {
+		t.Fatalf("shape name = %q, want star", call.name)
+	}
+	if call.i != 3 {
+		t.Fatalf("star points = %d, want 3", call.i)
+	}
+}
+
 func TestStdParagraph_BulletLayout_HonorsExplicitHeightAboveLineHeight(t *testing.T) {
 	p := &StdParagraph{}
 	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}

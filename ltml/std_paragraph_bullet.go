@@ -304,7 +304,7 @@ func bulletSides(bullet *BulletStyle) int {
 }
 
 func bulletPoints(bullet *BulletStyle) int {
-	if bullet.points >= 5 {
+	if bullet.points >= 2 {
 		return bullet.points
 	}
 	return 5
@@ -394,6 +394,10 @@ func defaultBulletRotation(bullet *BulletStyle) float64 {
 		}
 	case "star":
 		switch bulletPoints(bullet) {
+		case 2:
+			return 90
+		case 4:
+			return 45
 		case 5:
 			return 36
 		case 6:
