@@ -5,6 +5,7 @@ package ltpdf
 
 import (
 	"github.com/rowland/leadtype/afm_fonts"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
@@ -22,8 +23,11 @@ func (dw *DocWriter) EnableTaggedPDF(value bool) {
 }
 
 func (dw *DocWriter) LayoutProbeWriter() any {
-	probe := NewDocWriter()
+	probe := newDocWriterWithFontSources(dw.FontSources())
 	probe.SetAssetFS(dw.AssetFS())
+	if dw.TaggedPDFEnabled() {
+		probe.EnableTaggedPDF(true)
+	}
 	return probe
 }
 
@@ -68,7 +72,6 @@ func NewDocWriter() *DocWriter {
 // NewDocWriterWithFontDirs creates a DocWriter that searches system fonts plus
 // each directory in dirs. It returns an error if any entry in dirs is invalid.
 func NewDocWriterWithFontDirs(dirs []string) (*DocWriter, error) {
-	dw := pdf.NewDocWriter()
 	ttFonts, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
 		return nil, err
@@ -78,13 +81,18 @@ func NewDocWriterWithFontDirs(dirs []string) (*DocWriter, error) {
 			return nil, err
 		}
 	}
-	dw.AddFontSource(ttFonts)
-
 	afmFonts, err := afm_fonts.Default()
 	if err != nil {
 		return nil, err
 	}
-	dw.AddFontSource(afmFonts)
 
-	return &DocWriter{dw}, nil
+	return newDocWriterWithFontSources(font.FontSources{ttFonts, afmFonts}), nil
+}
+
+func newDocWriterWithFontSources(sources font.FontSources) *DocWriter {
+	dw := pdf.NewDocWriter()
+	for _, source := range sources {
+		dw.AddFontSource(source)
+	}
+	return &DocWriter{dw}
 }
