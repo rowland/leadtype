@@ -133,7 +133,7 @@ func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, assetsDir, nil, &out); err != nil {
+	if err := renderLocal(inputFile, assetsDir, "", nil, &out); err != nil {
 		t.Fatal(err)
 	}
 	if out.Len() == 0 {

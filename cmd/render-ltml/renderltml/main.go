@@ -49,6 +49,7 @@ func (m *multiFlag) Set(v string) error {
 
 type runConfig struct {
 	assetsDir    string
+	fontDir      string
 	outputPath   string
 	submitURL    string
 	extraFiles   []string
@@ -121,6 +122,7 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	fs.SetOutput(stderr)
 	fs.StringVar(&cfg.assetsDir, "assets", "", "path to asset `directory`")
 	fs.StringVar(&cfg.assetsDir, "a", "", "path to asset `directory` (shorthand)")
+	fs.StringVar(&cfg.fontDir, "font-dir", "", "additional font `directory`")
 	fs.StringVar(&cfg.outputPath, "output", "", "output `file` or batch output `directory`")
 	fs.StringVar(&cfg.outputPath, "o", "", "output `file` or batch output `directory` (shorthand)")
 	fs.StringVar(&cfg.submitURL, "submit", "", "submit to remote render `url` instead of rendering locally")
@@ -400,7 +402,7 @@ func renderJobToFile(cfg runConfig, job renderJob) (err error) {
 	if cfg.submitURL != "" {
 		err = submitRemote(job.inputPath, cfg.assetsDir, cfg.submitURL, cfg.extraFiles, out)
 	} else {
-		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.extraFiles, out)
+		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.extraFiles, out)
 	}
 	if err != nil {
 		return err
@@ -635,7 +637,7 @@ func dirToken(root string) (string, error) {
 	return b.String(), nil
 }
 
-func renderLocal(absInput, assetsDir string, extraFiles []string, out io.Writer) error {
+func renderLocal(absInput, assetsDir, fontDir string, extraFiles []string, out io.Writer) error {
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
@@ -653,7 +655,14 @@ func renderLocal(absInput, assetsDir string, extraFiles []string, out io.Writer)
 		return fmt.Errorf("parsing %s: %w", displayPath(absInput), err)
 	}
 
-	w := ltpdf.NewDocWriter()
+	var fontDirs []string
+	if fontDir != "" {
+		fontDirs = []string{fontDir}
+	}
+	w, err := ltpdf.NewDocWriterWithFontDirs(fontDirs)
+	if err != nil {
+		return fmt.Errorf("initializing font sources: %w", err)
+	}
 	if assetFS != nil {
 		w.SetAssetFS(assetFS)
 	}

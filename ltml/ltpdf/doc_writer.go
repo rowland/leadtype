@@ -58,18 +58,33 @@ func (dw *DocWriter) SetLineCapStyle(style string) (prev string) {
 }
 
 func NewDocWriter() *DocWriter {
+	dw, err := NewDocWriterWithFontDirs(nil)
+	if err != nil {
+		panic(err)
+	}
+	return dw
+}
+
+// NewDocWriterWithFontDirs creates a DocWriter that searches system fonts plus
+// each directory in dirs. It returns an error if any entry in dirs is invalid.
+func NewDocWriterWithFontDirs(dirs []string) (*DocWriter, error) {
 	dw := pdf.NewDocWriter()
 	ttFonts, err := ttf_fonts.NewFromSystemFonts()
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+	for _, dir := range dirs {
+		if err := ttFonts.AddDir(dir); err != nil {
+			return nil, err
+		}
 	}
 	dw.AddFontSource(ttFonts)
 
 	afmFonts, err := afm_fonts.Default()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	dw.AddFontSource(afmFonts)
 
-	return &DocWriter{dw}
+	return &DocWriter{dw}, nil
 }
