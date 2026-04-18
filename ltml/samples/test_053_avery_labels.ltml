@@ -1,0 +1,72 @@
+<ltml xmlns:avery="avery" units="in" margin="0.5" font.name="Helvetica" font.size="12">
+  <style>
+    p.avery-note { font.name: Helvetica; font.size: 8; color: DimGray; left: 0.3in; top: 0.2in; width: 7.9in; }
+    .demo { border: thin; padding: 6pt; }
+    .demo p { font.size: 9; }
+    .demo label { font.weight: Bold; font.size: 10; }
+  </style>
+
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5160" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><label>Avery 5160</label><p>Rows fill first.</p></avery:label>
+      <avery:label class="demo"><label>Jamie Smith</label><p>123 Main St<br/>Seattle, WA 98101</p></avery:label>
+      <avery:label class="demo"><label>Morgan Lee</label><p>987 Market Ave<br/>Portland, OR 97205</p></avery:label>
+      <avery:label class="demo"><label>Casey Nguyen</label><p>450 Pine Rd<br/>Boise, ID 83702</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5161" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><label>Shipping</label><p>Wide two-column stock.</p></avery:label>
+      <avery:label class="demo"><label>Order 20481</label><p>Hold at front desk.</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5162" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><label>Storage</label><p>Box A-17</p></avery:label>
+      <avery:label class="demo"><label>Storage</label><p>Box A-18</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5163" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><label>Badge Insert</label><p>Speaker registration packet.</p></avery:label>
+      <avery:label class="demo"><label>Badge Insert</label><p>Workshop materials inside.</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5164" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><label>Project Archive</label><p>Long-format labels for bins and shelves.</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5167" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><p>Tab 1</p></avery:label>
+      <avery:label class="demo"><p>Tab 2</p></avery:label>
+      <avery:label class="demo"><p>Tab 3</p></avery:label>
+      <avery:label class="demo"><p>Tab 4</p></avery:label>
+      <avery:label class="demo"><p>Tab 5</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5366" show-metrics="true" show-outline="true">
+      <avery:label class="demo"><p>2026 Taxes</p></avery:label>
+      <avery:label class="demo"><p>Receipts</p></avery:label>
+      <avery:label class="demo"><p>HR Forms</p></avery:label>
+    </avery:labelsheet>
+  </page>
+  <page style="letter" margin="0">
+    <p class="avery-note">Avery-compatible label sheets on letter paper.</p>
+    <avery:labelsheet stock="avery5395" show-metrics="true" show-outline="true" order="cols">
+      <avery:label class="demo"><label>Alex Rivera</label><p>Guest Speaker</p></avery:label>
+      <avery:label class="demo"><label>Priya Patel</label><p>Organizer</p></avery:label>
+      <avery:label class="demo"><label>Jordan Kim</label><p>Volunteer</p></avery:label>
+      <avery:label class="demo"><label>Sam Taylor</label><p>Sponsor</p></avery:label>
+    </avery:labelsheet>
+  </page>
+</ltml>
