@@ -47,3 +47,161 @@ func TestStdContainer_SetAttrs_ClonesLayoutForLayoutPrefixOverrides(t *testing.T
 		t.Fatalf("shared vbox vpadding = %v, want 0", got)
 	}
 }
+
+func TestStdContainer_PrepareListBullets_ULAssignsDirectChildParagraphsOnly(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<bullet id="custom" text="*" width="12pt" />
+			<page>
+				<ul>
+					<p>First</p>
+					<label>Not a list item</label>
+					<p bullet="custom">Second</p>
+					<p>Third</p>
+				</ul>
+			</page>
+		</ltml>`)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	list := firstContainer(t, doc)
+	first := childParagraph(t, list, 0)
+	second := childParagraph(t, list, 2)
+	third := childParagraph(t, list, 3)
+
+	if first.bullet == nil || first.bullet.Shape() != "circle" {
+		t.Fatalf("first bullet = %#v, want default unordered circle bullet", first.bullet)
+	}
+	if first.bullet.AlignY() != "middle" {
+		t.Fatalf("first bullet align-y = %q, want middle", first.bullet.AlignY())
+	}
+	if second.bullet == nil || second.bullet.Text() != "*" {
+		t.Fatalf("second bullet = %#v, want preserved explicit bullet", second.bullet)
+	}
+	if third.bullet == nil || third.bullet.Shape() != "circle" {
+		t.Fatalf("third bullet = %#v, want default unordered circle bullet", third.bullet)
+	}
+	if third.bullet.AlignY() != "middle" {
+		t.Fatalf("third bullet align-y = %q, want middle", third.bullet.AlignY())
+	}
+}
+
+func TestStdContainer_PrepareListBullets_OLNumbersParagraphsAndAutoSizesMarkers(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<page>
+				<ol>
+					<p>One</p>
+					<p>Two</p>
+					<p>Three</p>
+					<p>Four</p>
+					<p>Five</p>
+					<p>Six</p>
+					<p>Seven</p>
+					<p>Eight</p>
+					<p>Nine</p>
+					<p>Ten</p>
+					<p>Eleven</p>
+					<p>Twelve</p>
+				</ol>
+			</page>
+		</ltml>`)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	list := firstContainer(t, doc)
+	first := childParagraph(t, list, 0)
+	tenth := childParagraph(t, list, 9)
+	twelfth := childParagraph(t, list, 11)
+
+	if first.bullet == nil || first.bullet.Text() != "1." {
+		t.Fatalf("first bullet = %#v, want 1.", first.bullet)
+	}
+	if tenth.bullet == nil || tenth.bullet.Text() != "10." {
+		t.Fatalf("tenth bullet = %#v, want 10.", tenth.bullet)
+	}
+	if twelfth.bullet == nil || twelfth.bullet.Text() != "12." {
+		t.Fatalf("twelfth bullet = %#v, want 12.", twelfth.bullet)
+	}
+	if first.bullet.Width() != twelfth.bullet.Width() || tenth.bullet.Width() != twelfth.bullet.Width() {
+		t.Fatalf("ordered bullet widths = %v/%v/%v, want equal auto-sized widths", first.bullet.Width(), tenth.bullet.Width(), twelfth.bullet.Width())
+	}
+	if first.bullet.Width() <= first.bulletTextWidth(w, first.bullet) {
+		t.Fatalf("ordered marker slot width = %v, want greater than rendered marker width %v", first.bullet.Width(), first.bulletTextWidth(w, first.bullet))
+	}
+}
+
+func TestStdContainer_PrepareListBullets_OLPreservesExplicitBulletAndCountsItsOrdinal(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<bullet id="custom" text="*" width="12pt" />
+			<page>
+				<ol>
+					<p>First</p>
+					<p bullet="custom">Second</p>
+					<p>Third</p>
+				</ol>
+			</page>
+		</ltml>`)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	list := firstContainer(t, doc)
+	first := childParagraph(t, list, 0)
+	second := childParagraph(t, list, 1)
+	third := childParagraph(t, list, 2)
+
+	if first.bullet == nil || first.bullet.Text() != "1." {
+		t.Fatalf("first bullet = %#v, want 1.", first.bullet)
+	}
+	if second.bullet == nil || second.bullet.Text() != "*" {
+		t.Fatalf("second bullet = %#v, want preserved explicit bullet", second.bullet)
+	}
+	if third.bullet == nil || third.bullet.Text() != "3." {
+		t.Fatalf("third bullet = %#v, want 3.", third.bullet)
+	}
+}
+
+func TestStdContainer_PrepareListBullets_OLKeepsExplicitTemplateWidth(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<bullet id="num" width="40pt" />
+			<page>
+				<ol bullets="num">
+					<p>One</p>
+					<p>Two</p>
+					<p>Three</p>
+					<p>Four</p>
+					<p>Five</p>
+					<p>Six</p>
+					<p>Seven</p>
+					<p>Eight</p>
+					<p>Nine</p>
+					<p>Ten</p>
+					<p>Eleven</p>
+					<p>Twelve</p>
+				</ol>
+			</page>
+		</ltml>`)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	list := firstContainer(t, doc)
+	first := childParagraph(t, list, 0)
+	twelfth := childParagraph(t, list, 11)
+	if first.bullet == nil || first.bullet.Width() != 40 || twelfth.bullet == nil || twelfth.bullet.Width() != 40 {
+		t.Fatalf("ordered template widths = %#v / %#v, want 40pt for both", first.bullet, twelfth.bullet)
+	}
+}

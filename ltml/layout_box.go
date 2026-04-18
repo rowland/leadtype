@@ -186,6 +186,9 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 		widget.SetLeft(vboxCrossAxisLeft(container, widget, rtl))
 	}
+	if !container.HeightIsSet() {
+		container.SetHeight(vboxNaturalContentHeight(style, writer, headers, unaligned, footers) + NonContentHeight(container))
+	}
 	top, dy := ContentTop(container), 0.0
 	bottom := ContentTop(container) + MaxContentHeight(container)
 
@@ -250,25 +253,29 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 		top += style.VPadding()
 	}
-	if !container.HeightIsSet() {
-		contentHeight := dy
-		if len(headers) > 0 {
-			contentHeight = max(contentHeight, top-ContentTop(container)-style.VPadding())
-		}
-		if len(footers) > 0 {
-			footerTop := bottom
-			for _, widget := range footers {
-				if widget.Visible() {
-					footerTop = min(footerTop, widget.Top())
-				}
-			}
-			if footerTop < bottom {
-				contentHeight = max(contentHeight, footerTop-ContentTop(container))
-			}
-		}
-		container.SetHeight(max(contentHeight, 0) + NonContentHeight(container))
-	}
 	layoutPositionedChildren(container, writer)
+}
+
+func vboxNaturalContentHeight(style *LayoutStyle, writer Writer, groups ...[]Widget) float64 {
+	height := 0.0
+	seen := 0
+	for _, group := range groups {
+		for _, widget := range group {
+			if widgetZeroFootprint(widget) {
+				continue
+			}
+			if seen > 0 {
+				height += style.VPadding()
+			}
+			widgetHeight := widget.Height()
+			if !widget.HeightIsSet() {
+				widgetHeight = widget.PreferredHeight(writer)
+			}
+			height += widgetHeight
+			seen++
+		}
+	}
+	return height
 }
 
 func hboxCrossAxisTop(container Container, widget Widget) float64 {

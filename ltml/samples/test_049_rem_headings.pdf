@@ -2,7 +2,7 @@
 1 0 obj
 <<
 /Count 1 
-/Kids [5 0 R ] 
+/Kids [7 0 R ] 
 /Type /Pages 
 >>
 endobj
@@ -14,17 +14,22 @@ endobj
 endobj
 3 0 obj
 <<
+/MarkInfo <<
+/Marked true 
+>>
+
 /Outlines 2 0 R 
 /PageMode /UseNone 
 /Pages 1 0 R 
+/StructTreeRoot 6 0 R 
 /Type /Catalog 
 >>
 endobj
 4 0 obj
 <<
 /Font <<
-/F0 8 0 R 
-/F1 11 0 R 
+/F0 11 0 R 
+/F1 15 0 R 
 >>
 
 /ProcSet [/PDF /Text /ImageB /ImageC ] 
@@ -32,17 +37,45 @@ endobj
 endobj
 5 0 obj
 <<
-/Contents 12 0 R 
+/Nums [0 [8 0 R 12 0 R 12 0 R 12 0 R 12 0 R 12 0 R 12 0 R 12 0 R 16 0 R 17 0 R 17 0 R 18 0 R 19 0 R 20 0 R 21 0 R 22 0 R 23 0 R 24 0 R 25 0 R 26 0 R 27 0 R 28 0 R 29 0 R 30 0 R 31 0 R 31 0 R 31 0 R 31 0 R 32 0 R 33 0 R 33 0 R 33 0 R 34 0 R 35 0 R 35 0 R 36 0 R 37 0 R 37 0 R 37 0 R ] ] 
+>>
+endobj
+6 0 obj
+<<
+/K [8 0 R 12 0 R 16 0 R 17 0 R 18 0 R 19 0 R 20 0 R 21 0 R 22 0 R 23 0 R 24 0 R 25 0 R 26 0 R 27 0 R 28 0 R 29 0 R 30 0 R 31 0 R 32 0 R 33 0 R 34 0 R 35 0 R 36 0 R 37 0 R ] 
+/ParentTree 5 0 R 
+/ParentTreeNextKey 1 
+/Type /StructTreeRoot 
+>>
+endobj
+7 0 obj
+<<
+/Contents 38 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 5439 
+/Length 7499 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
 /Rotate 0 
+/StructParents 0 
 /Type /Page 
 >>
 endobj
-6 0 obj
+8 0 obj
+<<
+/ActualText (Built-in Heading Tags With rem Sizing) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 0 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+9 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -51,7 +84,7 @@ endobj
 /Flags 262144 
 /FontBBox [-2084 -985 2810 1971 ] 
 /FontFamily (Helvetica) 
-/FontFile2 18 0 R 
+/FontFile2 44 0 R 
 /FontName /SKGCPN+Helvetica-Bold 
 /ItalicAngle 0 
 /Leading 2048 
@@ -63,29 +96,73 @@ endobj
 /XHeight 1090 
 >>
 endobj
-7 0 obj
+10 0 obj
 <<
 /BaseFont /SKGCPN+Helvetica-Bold 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 17 0 R 
+/CIDToGIDMap 43 0 R 
 /DW 556 
-/FontDescriptor 6 0 R 
+/FontDescriptor 9 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [722 610 277 277 333 333 610 277 722 ] 12 [610 610 610 ] 16 [943 610 389 889 666 500 ] 23 [583 ] 25 [610 583 610 583 666 610 ] 32 [1000 ] 34 [277 ] 40 [722 ] ] 
 >>
 endobj
-8 0 obj
+11 0 obj
 <<
 /BaseFont /SKGCPN+Helvetica-Bold 
-/DescendantFonts [7 0 R ] 
+/DescendantFonts [10 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 16 0 R 
+/ToUnicode 42 0 R 
 /Type /Font 
 >>
 endobj
-9 0 obj
+12 0 obj
+<<
+/ActualText (This page uses a 12pt page font, so 1rem = 12pt. The built-in heading aliases below expand to <label>, and each heading spells out its rem multiplier so the rendered scale is easy to verify. ) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 1 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 2 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 3 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 4 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 5 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 6 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 7 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+13 0 obj
 <<
 /Ascent 1577 
 /AvgWidth 0 
@@ -94,7 +171,7 @@ endobj
 /Flags 0 
 /FontBBox [-1947 -985 2961 2297 ] 
 /FontFamily (Helvetica) 
-/FontFile2 15 0 R 
+/FontFile2 41 0 R 
 /FontName /PDIBJV+Helvetica 
 /ItalicAngle 0 
 /Leading 2048 
@@ -106,189 +183,849 @@ endobj
 /XHeight 1071 
 >>
 endobj
-10 0 obj
+14 0 obj
 <<
 /BaseFont /PDIBJV+Helvetica 
 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> 
-/CIDToGIDMap 14 0 R 
+/CIDToGIDMap 40 0 R 
 /DW 556 
-/FontDescriptor 9 0 R 
+/FontDescriptor 13 0 R 
 /Subtype /CIDFontType2 
 /Type /Font 
 /W [1 [610 ] 3 [222 500 277 ] 13 [277 277 ] 17 [277 277 ] 20 [222 333 ] 23 [722 500 500 333 833 500 500 666 ] 32 [666 722 500 500 833 ] 39 [500 ] ] 
 >>
 endobj
-11 0 obj
+15 0 obj
 <<
 /BaseFont /PDIBJV+Helvetica 
-/DescendantFonts [10 0 R ] 
+/DescendantFonts [14 0 R ] 
 /Encoding /Identity-H 
 /Subtype /Type0 
-/ToUnicode 13 0 R 
+/ToUnicode 39 0 R 
 /Type /Font 
 >>
 endobj
-12 0 obj
+16 0 obj
 <<
-/Length 5439 
+/ActualText (Page-root scale) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 8 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+17 0 obj
+<<
+/ActualText (Each alias below uses the same 12pt page root.) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 9 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 10 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+18 0 obj
+<<
+/ActualText <feff00680031002020140020003200720065006d0020003d00200032003400700074> 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 11 
+>>
+
+/P 6 0 R 
+/S /H1 
+/Type /StructElem 
+>>
+endobj
+19 0 obj
+<<
+/ActualText (Largest level.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 12 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+20 0 obj
+<<
+/ActualText <feff006800320020201400200031002e0037003500720065006d0020003d00200032003100700074> 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 13 
+>>
+
+/P 6 0 R 
+/S /H2 
+/Type /StructElem 
+>>
+endobj
+21 0 obj
+<<
+/ActualText (Strong section heading.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 14 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+22 0 obj
+<<
+/ActualText <feff006800330020201400200031002e003500720065006d0020003d00200031003800700074> 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 15 
+>>
+
+/P 6 0 R 
+/S /H3 
+/Type /StructElem 
+>>
+endobj
+23 0 obj
+<<
+/ActualText (Common subheading size.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 16 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+24 0 obj
+<<
+/ActualText <feff006800340020201400200031002e0032003500720065006d0020003d00200031003500700074> 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 17 
+>>
+
+/P 6 0 R 
+/S /H4 
+/Type /StructElem 
+>>
+endobj
+25 0 obj
+<<
+/ActualText (Just above body copy.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 18 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+26 0 obj
+<<
+/ActualText <feff006800350020201400200031002e00310032003500720065006d0020003d002000310033002e003500700074> 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 19 
+>>
+
+/P 6 0 R 
+/S /H5 
+/Type /StructElem 
+>>
+endobj
+27 0 obj
+<<
+/ActualText (Matches the root size in bold.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 20 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+28 0 obj
+<<
+/ActualText <feff00680036002020140020003100720065006d0020003d00200031003200700074> 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 21 
+>>
+
+/P 6 0 R 
+/S /H6 
+/Type /StructElem 
+>>
+endobj
+29 0 obj
+<<
+/ActualText (Smallest custom heading.) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 22 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+30 0 obj
+<<
+/ActualText (Nested body at 0.75rem) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 23 
+>>
+
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+31 0 obj
+<<
+/ActualText (This panel reduces its inherited body text to 0.75rem = 9pt. The headings below should still resolve against the 12pt page root. ) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 24 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 25 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 26 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 27 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+32 0 obj
+<<
+/ActualText (Nested h2 stays 21pt) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 28 
+>>
+
+/P 6 0 R 
+/S /H2 
+/Type /StructElem 
+>>
+endobj
+33 0 obj
+<<
+/ActualText (The body copy in this card is smaller, but the rem heading still resolves against the page root rather than the local panel font. ) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 29 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 30 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 31 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+34 0 obj
+<<
+/ActualText (Nested h4 stays 15pt) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 32 
+>>
+
+/P 6 0 R 
+/S /H4 
+/Type /StructElem 
+>>
+endobj
+35 0 obj
+<<
+/ActualText (This matches the left-column h4 even though the paragraph text is 9pt. ) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 33 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 34 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+36 0 obj
+<<
+/ActualText (Nested h6 stays 12pt) 
+/K <<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 35 
+>>
+
+/P 6 0 R 
+/S /H6 
+/Type /StructElem 
+>>
+endobj
+37 0 obj
+<<
+/ActualText (The smallest heading still sits above the local body size, which makes the page-root behavior obvious at a glance. ) 
+/K [<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 36 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 37 
+>>
+<<
+/Type /MCR 
+/Pg 7 0 R 
+/MCID 38 
+>>
+] 
+/P 6 0 R 
+/S /P 
+/Type /StructElem 
+>>
+endobj
+38 0 obj
+<<
+/Length 7499 
 >>
 stream
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 72 706.1396 Td
+/P <<
+/MCID 0 
+>>
+BDC
 /F0 18 Tf
 0 Ts
 <0001000200030004000500060003000700080009000a000b000c00030007000d0008000e000b000d000f0008001000030005001100080012000a0013000800140003001500030007000d> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -25.3799 Td
+/P <<
+/MCID 1 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0001000200030004000500060007000800090005000a000400090004000500070005000b000c0006000d000500060007000800090005000e000f0010000d001100050004000f0005> Tj
+EMC
+/P <<
+/MCID 2 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <00160012000a00130008001700080016001800190005> Tj
+EMC
+/P <<
+/MCID 3 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0012000500010002000900050013000a00030014000d00150003001000050002000900070016000300100008000500070014000300070004000900040005001300090014000f0017> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 4 
+>>
+BDC
 <0009001800060007001000160005000d000f0005> Tj
+EMC
+/P <<
+/MCID 5 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <001a0004000b001b000a0004001c> Tj
+EMC
+/P <<
+/MCID 6 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <00110005000700100016000500090007001900020005000200090007001600030010000800050004000600090014001400040005000f000a000d00050003000d00040005001a0009001b0005001b000a0014000d00030006001400030009001a00050004000f0005000d000200090005001a0009001000160009001a00090016000500040019000700140009> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 7 
+>>
+BDC
 <000300040005000900070004001c0005000d000f0005001d0009001a0003000e001c0012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
 0.9412 0.9725 1 rg
 72 254.5 228 387.5 re
 f
+EMC
+/Artifact BMC
 [] 0 d
 0 J
 72 254.5 228 387.5 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 82 622.7598 Td
+/P <<
+/MCID 8 
+>>
+BDC
 0 0 0 rg
 /F0 12 Tf
 0 Ts
 <001d000b000d000a00060012001e001e00050008000f001f000b0004000a> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -24 Td
+/P <<
+/MCID 9 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <001e0007001900020005000700140003000700040005001300090014000f00170005000a0004000900040005000d00020009000500040007001b00090005000b000c0006000d> Tj
+EMC
 0 -12 Td
+/P <<
+/MCID 10 
+>>
+BDC
 <00060007000800090005001a000f000f000d0012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -33.2402 Td
+/H1 <<
+/MCID 11 
+>>
+BDC
 /F0 24 Tf
 0 Ts
 <0011001600080020000800180012000a00130008001700080018002100190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -26.7598 Td
+/P <<
+/MCID 12 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <001f0007001a000800090004000d000500140009001d000900140012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -30.9302 Td
+/H2 <<
+/MCID 13 
+>>
+BDC
 /F0 21 Tf
 0 Ts
 <0011001800080020000800160022002300240012000a00130008001700080018001600190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -26.0698 Td
+/P <<
+/MCID 14 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0020000d001a000f001000080005000400090019000d0003000f0010000500020009000700160003001000080012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -28.6201 Td
+/H3 <<
+/MCID 15 
+>>
+BDC
 /F0 18 Tf
 0 Ts
 <001100250008002000080016002200240012000a00130008001700080016002600190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -25.3799 Td
+/P <<
+/MCID 16 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0021000f001b001b000f001000050004000a00130002000900070016000300100008000500040003002200090012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -26.3101 Td
+/H4 <<
+/MCID 17 
+>>
+BDC
 /F0 15 Tf
 0 Ts
 <0011002100080020000800160022001800240012000a00130008001700080016002400190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -24.6899 Td
+/P <<
+/MCID 18 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0023000a0004000d000500070013000f001d000900050013000f0016001c00050019000f0006001c0012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -25.155 Td
+/H5 <<
+/MCID 19 
+>>
+BDC
 /F0 13.5 Tf
 0 Ts
 <00110024000800200008001600220016001800240012000a0013000800170008001600250022002400190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -24.345 Td
+/P <<
+/MCID 20 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <00240007000d00190002000900040005000d000200090005001a000f000f000d0005000400030022000900050003001000050013000f001400160012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -24 Td
+/H6 <<
+/MCID 21 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <0011002700080020000800160012000a00130008001700080016001800190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -24 Td
+/P <<
+/MCID 22 
+>>
+BDC
 /F1 12 Tf
 0 Ts
 <0020001b00070014001400090004000d00050019000a0004000d000f001b000500020009000700160003001000080012> Tj
+EMC
+/Artifact BMC
 ET
 1 0.9804 0.8039 rg
 312 382 228 260 re
 f
+EMC
+/Artifact BMC
 312 382 228 260 re
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 BT
 322 625.0698 Td
+/P <<
+/MCID 23 
+>>
+BDC
 0 0 0 rg
 /F0 9 Tf
 0 Ts
 <0028000a000f0005000a000c0008001b001e000c00290008000b00050008002a0022002300240012000a0013> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -21 Td
+/P <<
+/MCID 24 
+>>
+BDC
 /F1 9 Tf
 0 Ts
 <00010002000300040005000600070010000900140005001a00090016000a00190009000400050003000d000400050003001000020009001a0003000d0009001600050013000f0016001c0005000d00090018000d0005000d000f> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 25 
+>>
+BDC
 /F0 9 Tf
 0 Ts
 <002a0022002300240012000a0013000800170008002b00190005> Tj
+EMC
+/P <<
+/MCID 26 
+>>
+BDC
 /F1 9 Tf
 0 Ts
 <001200050001000200090005000200090007001600030010000800040005001300090014000f0017000500040002000f000a0014001600050004000d000300140014> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 27 
+>>
+BDC
 <001a00090004000f0014001d00090005000700080007000300100004000d0005000d000200090005000b000c0006000d000500060007000800090005001a000f000f000d0012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -30.2402 Td
+/H2 <<
+/MCID 28 
+>>
+BDC
 /F0 21 Tf
 0 Ts
 <0028000a000f0005000a000c0008001100180008000f0005000b0029000f00080018001600190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -23.7598 Td
+/P <<
+/MCID 29 
+>>
+BDC
 /F1 9 Tf
 0 Ts
 <00010002000900050013000f0016001c00050019000f0006001c0005000300100005000d000200030004000500190007001a001600050003000400050004001b0007001400140009001a001100050013000a000d0005000d000200090005001a0009001b> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 30 
+>>
+BDC
 <000200090007001600030010000800050004000d0003001400140005001a00090004000f0014001d000900040005000700080007000300100004000d0005000d00020009000500060007000800090005001a000f000f000d0005001a0007000d00020009001a> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 31 
+>>
+BDC
 <000d0002000700100005000d0002000900050014000f0019000700140005000600070010000900140005000e000f0010000d0012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -25.6201 Td
+/H4 <<
+/MCID 32 
+>>
+BDC
 /F0 15 Tf
 0 Ts
 <0028000a000f0005000a000c0008001100210008000f0005000b0029000f00080016002400190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -22.3799 Td
+/P <<
+/MCID 33 
+>>
+BDC
 /F1 9 Tf
 0 Ts
 <00010002000300040005001b0007000d00190002000900040005000d00020009000500140009000e000d00150019000f0014000a001b001000050002002500050009001d000900100005000d0002000f000a000800020005000d00020009> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 34 
+>>
+BDC
 <00060007001a00070008001a0007000600020005000d00090018000d000500030004000500260006000d0012> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -23.3101 Td
+/H6 <<
+/MCID 35 
+>>
+BDC
 /F0 12 Tf
 0 Ts
 <0028000a000f0005000a000c0008001100270008000f0005000b0029000f00080016001800190005> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 0 -21.6899 Td
+/P <<
+/MCID 36 
+>>
+BDC
 /F1 9 Tf
 0 Ts
 <00010002000900050004001b00070014001400090004000d0005000200090007001600030010000800050004000d000300140014000500040003000d0004000500070013000f001d00090005000d0002000900050014000f00190007001400050013000f0016001c> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 37 
+>>
+BDC
 <000400030022000900110005001700020003001900020005001b00070027000900040005000d00020009000500060007000800090015001a000f000f000d00050013000900020007001d0003000f001a0005000f0013001d0003000f000a0004> Tj
+EMC
 0 -9 Td
+/P <<
+/MCID 38 
+>>
+BDC
 <0007000d0005000700050008001400070010001900090012> Tj
+EMC
 ET
 endstream
 endobj
-13 0 obj
+39 0 obj
 <<
 /Length 830 
 >>
@@ -348,14 +1085,14 @@ CMap end
 end
 endstream
 endobj
-14 0 obj
+40 0 obj
 <<
 /Length 80 
 >>
 stream
    7 K L V  S D J H X   W I R Q   E O  G Z [ F U P \ Y ( / 6 & ] - 0   Nendstream
 endobj
-15 0 obj
+41 0 obj
 <<
 /Length 16588 
 /Length1 16588 
@@ -482,7 +1219,7 @@ FIGw xW((++;;èè	 
 © p© Ä©  Ä© ©≤2æ, % & ∂Á1-Â1∏≤¬'∏≤¡∏@¿ûøgæg´'∏≤™)∏∂©lì∏ö≤í∏≤ë∏≤u∏∂m)ñd1∏ö≤Lñ∏´≤9∏V@68!5‰/'∏@-L*1Õ$∏´≤ ∏%@ì:LE':E'ª™õ *õ≤%J∫õ %z≥I)8ñ∏{≥H(1%∏z@6H(ñ)H'%)L%)F'')H'V»Ñ[A2+(&!
 ∏¨≤?ª´ ? ´≥∏Æ≤?ª≠ ? ≠∑ ∏ˇ‡¥   ∏´¥   ∏´∂   ∏≠≥   ∏≠@               J ∞ç∏ Öv??>9FD>9FD>9FD>9FD>9FD>9F`D>9F`D>9F`D+++++++++++++++++++++++++++∞ñKSX∞™Y∞2KSX∞ˇY+++++++++++++++++++++++++++++++++++++++++tu+++eB++KRy≥vpjfEe#E`#Ee`#E`∞ãvh∞Äb  ±jpEe#E ∞&`bch ∞&ae∞p#eD∞j#D ±vfEe#E ∞&`bch ∞&ae∞f#eD∞v#D± fETX±f@eD≤v@vE#aDY≥bBr]Ee#E`#Ee`#E`∞âvh∞Äb  ±rBEe#E ∞&`bch ∞&ae∞B#eD∞r#D ±b]Ee#E ∞&`bch ∞&ae∞]#eD∞b#D± ]ETX±]@eD≤b@bE#aDY++++EiSBst∏ö EiK ∞(S∞IQZX∞ aYD∏¶ EiDu  endstream
 endobj
-16 0 obj
+42 0 obj
 <<
 /Length 886 
 >>
@@ -546,14 +1283,14 @@ CMap end
 end
 endstream
 endobj
-17 0 obj
+43 0 obj
 <<
 /Length 88 
 >>
 stream
    % X L O W  Q  + H D G J 7 V : K U P 6 ]     S  E ! 3 R F ≥        1 \  endstream
 endobj
-18 0 obj
+44 0 obj
 <<
 /Length 15968 
 /Length1 15968 
@@ -631,31 +1368,57 @@ TÜ˛˘˛˘¯ÒÕª=1BèL~xIàlVÇtª8˘8∏     ?ˇﬁe¿  o∏ f+ ∏  EX∏ /π  
                         ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~  Ä Å Ç É Ñ Ö Ü á à â ä ã å ç é ê ë í ì î ï ñ ó ö õ ù û ü † ° ¢ £ § ¶ ® © ™ ´ ¨ ≠ Æ Ø ∞ ± ≤ ≥old_notequalold_partialdiffold_summationold_integralold_radicalold_approxequal  ∏ f+ ∫   h+∫   h+ø  (       n+ø  %       n+ ø  - %      n+ø  K = 0 "    n+ø  &       n+ ∫   m+∏   E}iDendstream
 endobj
 xref
-0 19
+0 45
 0000000000 65535 f
 0000000009 00000 n
 0000000070 00000 n
 0000000118 00000 n
-0000000206 00000 n
-0000000303 00000 n
-0000000464 00000 n
-0000000793 00000 n
-0000001180 00000 n
-0000001334 00000 n
-0000001652 00000 n
-0000002017 00000 n
-0000002168 00000 n
-0000007660 00000 n
-0000008542 00000 n
-0000008673 00000 n
-0000025331 00000 n
-0000026269 00000 n
-0000026408 00000 n
+0000000260 00000 n
+0000000358 00000 n
+0000000666 00000 n
+0000000925 00000 n
+0000001104 00000 n
+0000001256 00000 n
+0000001585 00000 n
+0000001973 00000 n
+0000002129 00000 n
+0000002667 00000 n
+0000002986 00000 n
+0000003352 00000 n
+0000003503 00000 n
+0000003634 00000 n
+0000003838 00000 n
+0000004024 00000 n
+0000004155 00000 n
+0000004353 00000 n
+0000004493 00000 n
+0000004687 00000 n
+0000004827 00000 n
+0000005025 00000 n
+0000005163 00000 n
+0000005373 00000 n
+0000005520 00000 n
+0000005706 00000 n
+0000005847 00000 n
+0000005986 00000 n
+0000006352 00000 n
+0000006490 00000 n
+0000006818 00000 n
+0000006956 00000 n
+0000007186 00000 n
+0000007324 00000 n
+0000007637 00000 n
+0000015189 00000 n
+0000016071 00000 n
+0000016202 00000 n
+0000032860 00000 n
+0000033798 00000 n
+0000033937 00000 n
 trailer
 <<
 /Root 3 0 R 
-/Size 19 
+/Size 45 
 >>
 startxref
-42446
+49975
 %%EOF

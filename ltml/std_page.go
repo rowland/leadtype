@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/options"
 )
 
 type StdPage struct {
@@ -360,7 +361,7 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 
 	if force {
 		p.rebuildActiveChildren()
-		w.NewPage()
+		p.newPhysicalPage(w)
 		LayoutContainer(p, w)
 	} else {
 		probe := newLayoutProbeWriter(w)
@@ -375,7 +376,7 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 			return errNoProgressPage
 		}
 		p.rebuildActiveChildren()
-		w.NewPage()
+		p.newPhysicalPage(w)
 		LayoutContainer(p, w)
 	}
 	if doc != nil {
@@ -384,6 +385,17 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 		}
 	}
 	return nil
+}
+
+func (p *StdPage) newPhysicalPage(w Writer) {
+	if pageWriter, ok := any(w).(PageOptionWriter); ok {
+		pageWriter.NewPageWithOptions(options.Options{
+			"page_width":  p.Width(),
+			"page_height": p.Height(),
+		})
+		return
+	}
+	w.NewPage()
 }
 
 func (p *StdPage) countVisibleOnceChildren() int {
@@ -565,6 +577,9 @@ func (p *StdPage) trySplitChild(item *pageItem, child Widget, w Writer) (bool, e
 	}
 	p.copySplitGeometry(result.Head, child)
 	result.Head.LayoutWidget(w)
+	if !result.Head.HeightIsSet() {
+		result.Head.SetHeight(result.Head.PreferredHeight(w))
+	}
 	if result.Tail != nil {
 		if wc, ok := result.Tail.(WantsContainer); ok {
 			_ = wc.SetContainer(p)
@@ -584,9 +599,6 @@ func (p *StdPage) copySplitGeometry(dst, src Widget) {
 	dst.SetLeft(src.Left())
 	dst.SetTop(src.Top())
 	dst.SetWidth(src.Width())
-	if src.HeightIsSet() {
-		dst.SetHeight(src.Height())
-	}
 	dst.SetPosition(src.Position())
 	dst.SetVisible(true)
 	dst.SetDisabled(false)

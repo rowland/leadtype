@@ -239,6 +239,8 @@ func TestSamples(t *testing.T) {
 		"test_046_text_fill_clipping",
 		"test_047_style_src",
 		"test_048_bullet_variants",
+		"test_049_rem_headings",
+		"test_050_lists",
 	}
 
 	for _, sample := range samples {

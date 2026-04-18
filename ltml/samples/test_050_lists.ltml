@@ -1,0 +1,75 @@
+<ltml units="in" margin="0.5">
+  <font id="body" name="Helvetica" size="12" />
+  <pagestyle id="compact" width="6in" height="5.5in" />
+  <bullet id="brand-star" shape="star" width="24pt" r="5pt" brush="Gold" pen="solid" points="5" r0="2.5pt" />
+  <bullet id="ordered-mark" font="body" />
+  <page style="compact" font="body" layout="vbox" layout.vpadding="8pt">
+    <div display="always" align="top" border="dashed" padding="5pt">
+      <label display="always" font.weight="Bold">List splitting</label>
+      <label display="always">Ordered lists should continue numbering across pages.</label>
+    </div>
+
+    <vbox border="dotted" padding="5pt" layout.vpadding="4pt">
+      <label font.weight="Bold">Default unordered list</label>
+      <ul>
+        <p>Default unordered list items use a built-in disc marker.</p>
+        <p>Only direct child paragraphs receive markers automatically.</p>
+      </ul>
+
+      <label font.weight="Bold">Default ordered list</label>
+      <ol>
+        <p>Default ordered list items use decimal markers.</p>
+        <p>Markers auto-size so double-digit ordinals stay aligned.</p>
+      </ol>
+
+      <label font.weight="Bold">Custom bullets</label>
+      <ul bullets="brand-star">
+        <p>Custom unordered lists can reuse named bullet styles.</p>
+        <p>This example uses a filled star marker.</p>
+      </ul>
+    </vbox>
+
+    <ol bullets="ordered-mark" border="solid" padding="8pt" layout.vpadding="6pt">
+      <p>
+        This first ordered item is intentionally long so the list container must
+        split it across pages without reprinting the marker on the continuation
+        fragment. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+        veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit
+        esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
+        non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+        incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
+        nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
+        eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+        sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>Second ordered item continues the numbering after the split.</p>
+      <p>Third ordered item confirms numbering remains stable on later fragments.</p>
+      <p>Fourth ordered item keeps the decimal sequence going.</p>
+      <p>Fifth ordered item leaves enough content to require a continuation page.</p>
+      <p>Sixth ordered item should not restart at one.</p>
+      <p>Seventh ordered item remains aligned with the rest of the list.</p>
+      <p>Eighth ordered item gives the second page more than one ordinal.</p>
+      <p>Ninth ordered item keeps the list moving.</p>
+      <p>Tenth ordered item exercises double-digit width alignment.</p>
+      <p>Eleventh ordered item keeps the auto-sized marker slot in use.</p>
+      <p>Twelfth ordered item closes the sample.</p>
+      <p>Thirteenth ordered item keeps the list going.</p>
+      <p>Fourteenth ordered item adds one more body row.</p>
+      <p>Fifteenth ordered item confirms numbering stays monotonic.</p>
+      <p>Sixteenth ordered item leaves no room for a restart bug.</p>
+      <p>Seventeenth ordered item ensures a later fragment still has markers.</p>
+      <p>Eighteenth ordered item keeps the footer and marker logic busy.</p>
+      <p>Nineteenth ordered item remains aligned in the same slot width.</p>
+      <p>Twentieth ordered item finishes the ordered sequence.</p>
+    </ol>
+
+    <div display="always" align="bottom" border="dotted" padding="3pt" margin-top="4pt">
+      <label display="odd">Odd list footer</label>
+      <label display="even">Even list footer</label>
+    </div>
+  </page>
+</ltml>

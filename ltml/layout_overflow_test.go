@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -551,8 +552,8 @@ func TestSample_ParagraphSplit_RepeatsHeaderAndSplitsBody(t *testing.T) {
 	if err := doc.Print(w); err != nil {
 		t.Fatal(err)
 	}
-	if w.pageCount != 3 {
-		t.Fatalf("page count = %d, want 3", w.pageCount)
+	if w.pageCount != 4 {
+		t.Fatalf("page count = %d, want 4", w.pageCount)
 	}
 	pageTexts := map[int][]string{}
 	for i, rt := range w.printed {
@@ -561,8 +562,9 @@ func TestSample_ParagraphSplit_RepeatsHeaderAndSplitsBody(t *testing.T) {
 	page1Text := strings.Join(pageTexts[1], "\n")
 	page2Text := strings.Join(pageTexts[2], "\n")
 	page3Text := strings.Join(pageTexts[3], "\n")
-	if !strings.Contains(page1Text, "Paragraph split") || !strings.Contains(page2Text, "Paragraph split") || !strings.Contains(page3Text, "Paragraph split") {
-		t.Fatalf("expected repeating paragraph header on all pages, got page1=%q page2=%q page3=%q", page1Text, page2Text, page3Text)
+	page4Text := strings.Join(pageTexts[4], "\n")
+	if !strings.Contains(page1Text, "Paragraph split") || !strings.Contains(page2Text, "Paragraph split") || !strings.Contains(page3Text, "Paragraph split") || !strings.Contains(page4Text, "Paragraph split") {
+		t.Fatalf("expected repeating paragraph header on all pages, got page1=%q page2=%q page3=%q page4=%q", page1Text, page2Text, page3Text, page4Text)
 	}
 	if !strings.Contains(page1Text, "Odd paragraph footer") || strings.Contains(page1Text, "Even paragraph footer") {
 		t.Fatalf("expected only odd paragraph footer on page 1, got %q", page1Text)
@@ -573,6 +575,9 @@ func TestSample_ParagraphSplit_RepeatsHeaderAndSplitsBody(t *testing.T) {
 	if !strings.Contains(page3Text, "Odd paragraph footer") || strings.Contains(page3Text, "Even paragraph footer") {
 		t.Fatalf("expected only odd paragraph footer on page 3, got %q", page3Text)
 	}
+	if !strings.Contains(page4Text, "Even paragraph footer") || strings.Contains(page4Text, "Odd paragraph footer") {
+		t.Fatalf("expected only even paragraph footer on page 4, got %q", page4Text)
+	}
 	pagePlain := map[int][]string{}
 	for i, text := range w.plainPrinted {
 		pagePlain[w.plainPages[i]] = append(pagePlain[w.plainPages[i]], text)
@@ -580,8 +585,306 @@ func TestSample_ParagraphSplit_RepeatsHeaderAndSplitsBody(t *testing.T) {
 	if !strings.Contains(strings.Join(pagePlain[1], "\n"), "*") {
 		t.Fatalf("expected bullet on page 1, got %q", strings.Join(pagePlain[1], "\n"))
 	}
-	if strings.Contains(strings.Join(pagePlain[2], "\n"), "*") || strings.Contains(strings.Join(pagePlain[3], "\n"), "*") {
-		t.Fatalf("did not expect bullets on continuation pages, got page2=%q page3=%q", strings.Join(pagePlain[2], "\n"), strings.Join(pagePlain[3], "\n"))
+	if strings.Contains(strings.Join(pagePlain[2], "\n"), "*") || strings.Contains(strings.Join(pagePlain[3], "\n"), "*") || strings.Contains(strings.Join(pagePlain[4], "\n"), "*") {
+		t.Fatalf("did not expect bullets on continuation pages, got page2=%q page3=%q page4=%q", strings.Join(pagePlain[2], "\n"), strings.Join(pagePlain[3], "\n"), strings.Join(pagePlain[4], "\n"))
+	}
+}
+
+func TestStdContainer_SplitForHeight_VBoxRepeatsHeadersAndFooters(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.width = 180
+	box.widthSet = true
+	page.AddChild(box)
+
+	add := func(name string, height float64, align string) {
+		child := &flowTestWidget{name: name, preferredHeight: height}
+		_ = child.SetContainer(box)
+		if align != "" {
+			child.SetAttrs(map[string]string{"align": align})
+		}
+		box.AddChild(child)
+	}
+
+	add("header", 10, "top")
+	add("body-1", 20, "")
+	add("body-2", 20, "")
+	add("footer", 10, "bottom")
+
+	result, err := box.SplitForHeight(40, &labelTestWriter{t: t})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("expected split result, got nil")
+	}
+	head := result.Head.(*StdContainer)
+	tail := result.Tail.(*StdContainer)
+
+	var headNames []string
+	for _, child := range head.Widgets() {
+		headNames = append(headNames, child.(*flowTestWidget).name)
+	}
+	if got, want := strings.Join(headNames, ","), "header,body-1,footer"; got != want {
+		t.Fatalf("head widgets = %q, want %q", got, want)
+	}
+
+	var tailNames []string
+	for _, child := range tail.Widgets() {
+		tailNames = append(tailNames, child.(*flowTestWidget).name)
+	}
+	if got, want := strings.Join(tailNames, ","), "header,body-2,footer"; got != want {
+		t.Fatalf("tail widgets = %q, want %q", got, want)
+	}
+}
+
+func TestStdContainer_SplitForHeight_VBoxSplitsBodyParagraph(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.width = 120
+	box.widthSet = true
+	page.AddChild(box)
+
+	header := &flowTestWidget{name: "header", preferredHeight: 10}
+	_ = header.SetContainer(box)
+	header.SetAttrs(map[string]string{"align": "top"})
+	box.AddChild(header)
+
+	para := &StdParagraph{}
+	_ = para.SetContainer(box)
+	para.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	para.splitEnabled = true
+	para.splitExplicit = true
+	para.bullet = &BulletStyle{text: "*", width: 18, font: para.font}
+	para.AddText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
+	box.AddChild(para)
+
+	footer := &flowTestWidget{name: "footer", preferredHeight: 10}
+	_ = footer.SetContainer(box)
+	footer.SetAttrs(map[string]string{"align": "bottom"})
+	box.AddChild(footer)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	result, err := box.SplitForHeight(80, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("expected split result, got nil")
+	}
+
+	head := result.Head.(*StdContainer)
+	tail := result.Tail.(*StdContainer)
+	headPara, ok := head.Widgets()[1].(*StdParagraph)
+	if !ok {
+		t.Fatalf("head body type = %T, want *StdParagraph", head.Widgets()[1])
+	}
+	tailPara, ok := tail.Widgets()[1].(*StdParagraph)
+	if !ok {
+		t.Fatalf("tail body type = %T, want *StdParagraph", tail.Widgets()[1])
+	}
+	if len(headPara.splitLines) == 0 || len(tailPara.splitLines) == 0 {
+		t.Fatalf("expected split paragraph fragments, got head=%d tail=%d", len(headPara.splitLines), len(tailPara.splitLines))
+	}
+	if headPara.suppressBullet {
+		t.Fatal("expected head paragraph to keep its bullet")
+	}
+	if !tailPara.suppressBullet {
+		t.Fatal("expected tail paragraph to suppress its continuation bullet")
+	}
+}
+
+func TestStdContainer_SplitForHeight_VBoxReturnsNilWhenRepeatedChromeConsumesPage(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.width = 180
+	box.widthSet = true
+	page.AddChild(box)
+
+	header := &flowTestWidget{name: "header", preferredHeight: 20}
+	_ = header.SetContainer(box)
+	header.SetAttrs(map[string]string{"align": "top"})
+	box.AddChild(header)
+
+	body := &flowTestWidget{name: "body", preferredHeight: 20}
+	_ = body.SetContainer(box)
+	box.AddChild(body)
+
+	footer := &flowTestWidget{name: "footer", preferredHeight: 20}
+	_ = footer.SetContainer(box)
+	footer.SetAttrs(map[string]string{"align": "bottom"})
+	box.AddChild(footer)
+
+	result, err := box.SplitForHeight(35, &labelTestWriter{t: t})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != nil {
+		t.Fatalf("expected nil split result, got %#v", result)
+	}
+}
+
+func TestSample_ListSplit_RepeatsPageChromeAndContinuesOrderedMarkers(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<pagestyle id="tiny" width="200pt" height="120pt" />
+			<page style="tiny" margin="0" font.name="Helvetica" font.size="12" layout="vbox">
+				<div display="always" align="top" padding="4pt">
+					<label display="always" font.weight="Bold">List splitting</label>
+				</div>
+				<ol padding="4pt">
+					<p>
+						First ordered item starts the list and leaves room for later items to
+						overflow onto following pages.
+					</p>
+					<p>Second ordered item continues the numbering after the split.</p>
+					<p>Third ordered item confirms numbering remains stable on later fragments.</p>
+					<p>Fourth ordered item keeps the decimal sequence going.</p>
+					<p>Fifth ordered item leaves enough content to require another page.</p>
+					<p>Sixth ordered item should not restart at one.</p>
+					<p>Seventh ordered item remains aligned with the rest of the list.</p>
+					<p>Eighth ordered item gives the next page more than one ordinal.</p>
+					<p>Ninth ordered item keeps the list moving.</p>
+					<p>Tenth ordered item exercises double-digit width alignment.</p>
+				</ol>
+				<div display="always" align="bottom" padding="4pt">
+					<label display="odd">Odd list footer</label>
+					<label display="even">Even list footer</label>
+				</div>
+			</page>
+		</ltml>`)
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount < 2 {
+		t.Fatalf("page count = %d, want at least 2", w.pageCount)
+	}
+
+	pageTexts := map[int][]string{}
+	for i, rt := range w.printed {
+		pageTexts[w.printedPages[i]] = append(pageTexts[w.printedPages[i]], rt.String())
+	}
+	page1Text := strings.Join(pageTexts[1], "\n")
+	page2Text := strings.Join(pageTexts[2], "\n")
+	if !strings.Contains(page1Text, "List splitting") || !strings.Contains(page2Text, "List splitting") {
+		t.Fatalf("expected repeating list header on both pages, got page1=%q page2=%q", page1Text, page2Text)
+	}
+	if !strings.Contains(page1Text, "Odd list footer") || strings.Contains(page1Text, "Even list footer") {
+		t.Fatalf("expected only odd footer on page 1, got %q", page1Text)
+	}
+	if !strings.Contains(page2Text, "Even list footer") || strings.Contains(page2Text, "Odd list footer") {
+		t.Fatalf("expected only even footer on page 2, got %q", page2Text)
+	}
+
+	pagePlain := map[int][]string{}
+	for i, text := range w.plainPrinted {
+		pagePlain[w.plainPages[i]] = append(pagePlain[w.plainPages[i]], text)
+	}
+	if !slices.Contains(pagePlain[1], "1.") {
+		t.Fatalf("expected ordered marker 1. on page 1, got %v", pagePlain[1])
+	}
+	foundSecond := false
+	foundTenth := false
+	for pageNo := 2; pageNo <= w.pageCount; pageNo++ {
+		if slices.Contains(pagePlain[pageNo], "1.") {
+			t.Fatalf("did not expect ordered marker 1. after page 1, got page %d markers %v", pageNo, pagePlain[pageNo])
+		}
+		if slices.Contains(pagePlain[pageNo], "2.") {
+			foundSecond = true
+		}
+		if slices.Contains(pagePlain[pageNo], "10.") {
+			foundTenth = true
+		}
+	}
+	if !foundSecond {
+		t.Fatalf("expected ordered marker 2. after the first page, got %v", pagePlain)
+	}
+	if !foundTenth {
+		t.Fatalf("expected double-digit ordered marker 10. on a later page, got %v", pagePlain)
+	}
+}
+
+func TestSample_ListSplit_FirstFragmentBottomTracksRepeatedFooter(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<pagestyle id="tiny" width="200pt" height="120pt" />
+			<page style="tiny" margin="0" font.name="Helvetica" font.size="12" layout="vbox">
+				<div display="always" align="top" padding="4pt">
+					<label display="always" font.weight="Bold">List splitting</label>
+					<p>Ordered lists should continue numbering across pages.</p>
+				</div>
+				<ol padding="4pt" border="thin">
+					<p>
+						This first ordered item is intentionally long so the list container must split it
+						across pages without reprinting the marker on the continuation fragment. Lorem ipsum
+						dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+						labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+						ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+						reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+					</p>
+					<p>Second ordered item continues the numbering after the split.</p>
+				</ol>
+				<div display="always" align="bottom" padding="4pt">
+					<label display="odd">Odd list footer</label>
+					<label display="even">Even list footer</label>
+				</div>
+			</page>
+		</ltml>`)
+	page := doc.Root().Page(0)
+	var list *StdContainer
+	for _, child := range page.children {
+		candidate, ok := child.(*StdContainer)
+		if ok && candidate.listKind == listKindOrdered {
+			list = candidate
+			break
+		}
+	}
+	if list == nil {
+		t.Fatal("expected direct child ordered list")
+	}
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	page.initFlowItems()
+	if err := page.preparePhysicalPage(w, true); err != nil {
+		t.Fatal(err)
+	}
+	result, err := list.SplitForHeight(page.availableHeightForChild(list), w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil || result.Head == nil {
+		t.Fatal("expected ordered list to split")
+	}
+
+	head := result.Head.(*StdContainer)
+	page.copySplitGeometry(head, list)
+	head.LayoutWidget(w)
+
+	lastVisibleBottom := 0.0
+	for _, child := range head.Widgets() {
+		if child.Visible() && !child.Disabled() {
+			lastVisibleBottom = max(lastVisibleBottom, child.Bottom())
+		}
+	}
+	if lastVisibleBottom == 0 {
+		t.Fatal("expected visible content on first fragment")
+	}
+
+	if gap := head.Bottom() - lastVisibleBottom; gap > 8 {
+		t.Fatalf("first fragment bottom gap below visible content = %vpt, want <= 8pt", gap)
 	}
 }
 
