@@ -70,6 +70,10 @@ func (i *StdIndex) SplitForHeight(avail float64, w Writer) (*SplitResult, error)
 	}, nil
 }
 
+func (i *StdIndex) SplitEnabled() bool {
+	return i != nil
+}
+
 func (i *StdIndex) clearSplitOverride() {
 	i.entriesOverride = nil
 }
@@ -98,7 +102,7 @@ func (i *StdIndex) currentEntries() []resolvedIndexEntry {
 		return i.entriesOverride
 	}
 	doc := documentForContainer(i.container)
-	if doc == nil {
+	if doc == nil || documentVisualCaptureActive(doc) {
 		return nil
 	}
 	return doc.activeIndexEntries(i.ID)

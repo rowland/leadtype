@@ -193,7 +193,18 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	if parentCurrent, ok := doc.current().(Container); ok && err == nil {
 		parent = parentCurrent
 		if widget, ok := e.(Widget); ok {
-			if isRadialLayoutStyle(parent.LayoutStyle()) {
+			if canvas, ok := widget.(*StdCanvas); ok {
+				if _, ok := doc.current().(*StdDocument); !ok {
+					doc.parseErr = fmt.Errorf("<canvas> must be direct child of <ltml>")
+					return e, capturesBody
+				}
+				if wc, ok := any(canvas).(WantsContainer); ok {
+					if err = wc.SetContainer(parentCurrent); err != nil {
+						doc.parseErr = err
+						return e, capturesBody
+					}
+				}
+			} else if isRadialLayoutStyle(parent.LayoutStyle()) {
 				if _, isSector := widget.(*StdSector); !isSector {
 					wrapper = &StdSector{}
 					if ws, ok := any(wrapper).(WantsScope); ok {
@@ -264,6 +275,22 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	applyElementAttrs(doc.scope(), e, defaultAttrs, attrs, sourcePath)
 	if wrapper != nil {
 		applyElementAttrs(doc.scope(), wrapper, defaultAttrs, attrs, sourcePath)
+	}
+	switch value := e.(type) {
+	case *StdCanvas:
+		if doc.root == nil {
+			doc.parseErr = fmt.Errorf("<canvas> must be direct child of <ltml>")
+			return e, capturesBody
+		}
+		if err := doc.root.registerCanvas(value); err != nil {
+			doc.parseErr = err
+			return e, capturesBody
+		}
+	case *StdDraw:
+		if strings.TrimSpace(value.key) == "" {
+			doc.parseErr = fmt.Errorf("<draw> requires a key")
+			return e, capturesBody
+		}
 	}
 	if widget, ok := e.(interface{ SetRawAttrs(map[string]string) }); ok {
 		widget.SetRawAttrs(attrs)
@@ -358,6 +385,9 @@ func (doc *Doc) applyPseudoRules() {
 	resolver := newSelectorStructureResolver()
 	if doc.root != nil {
 		doc.applyPseudoRulesToWidget(doc.root, resolver)
+		doc.root.eachCanvas(func(canvas *StdCanvas) {
+			doc.applyPseudoRulesToWidget(canvas, resolver)
+		})
 	}
 }
 

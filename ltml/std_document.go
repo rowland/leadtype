@@ -5,6 +5,8 @@ package ltml
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/rowland/leadtype/pdf"
 )
@@ -21,6 +23,9 @@ type StdDocument struct {
 	compressEmbeddedFonts      bool
 	svgGradientStopOpacityMode string
 	renderContext              *documentRenderContext
+	canvases                   map[string]*StdCanvas
+	canvasCaptureStack         []string
+	visualCaptureDepth         int
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -72,10 +77,86 @@ func (d *StdDocument) SetPendingStart(start int) {
 }
 
 func (d *StdDocument) Print(w Writer) error {
+	if err := d.validateCanvasAssets(); err != nil {
+		return err
+	}
 	applyWriterAccessibility(w, d)
 	d.applyWriterCompression(w)
 	d.applyWriterSVGCompatibility(w)
 	return d.printWithIndexes(w)
+}
+
+func (d *StdDocument) Canvas(key string) *StdCanvas {
+	if d == nil || d.canvases == nil {
+		return nil
+	}
+	return d.canvases[key]
+}
+
+func (d *StdDocument) registerCanvas(canvas *StdCanvas) error {
+	if d == nil || canvas == nil {
+		return nil
+	}
+	if err := canvas.validateDefinition(); err != nil {
+		return err
+	}
+	if d.canvases == nil {
+		d.canvases = make(map[string]*StdCanvas)
+	}
+	key := canvas.Key()
+	if _, exists := d.canvases[key]; exists {
+		return fmt.Errorf("duplicate canvas key %q", key)
+	}
+	d.canvases[key] = canvas
+	return nil
+}
+
+func (d *StdDocument) eachCanvas(fn func(*StdCanvas)) {
+	if d == nil || len(d.canvases) == 0 || fn == nil {
+		return
+	}
+	keys := make([]string, 0, len(d.canvases))
+	for key := range d.canvases {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		fn(d.canvases[key])
+	}
+}
+
+func (d *StdDocument) validateCanvasAssets() error {
+	if d == nil {
+		return nil
+	}
+	missing := make(map[string]struct{})
+	walkWidgets(d, func(widget Widget) bool {
+		draw, ok := widget.(*StdDraw)
+		if !ok {
+			return true
+		}
+		key := strings.TrimSpace(draw.key)
+		if key == "" {
+			missing["<blank>"] = struct{}{}
+			return true
+		}
+		if d.Canvas(key) == nil {
+			missing[key] = struct{}{}
+		}
+		return true
+	})
+	if len(missing) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(missing))
+	for key := range missing {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	if len(keys) == 1 && keys[0] == "<blank>" {
+		return fmt.Errorf("<draw> requires a key")
+	}
+	return fmt.Errorf("missing canvas definition(s): %s", strings.Join(keys, ", "))
 }
 
 func (d *StdDocument) NetworkAssetsEnabled() bool {

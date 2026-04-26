@@ -507,6 +507,114 @@ func TestPageWriter_ClipEllipseClosesPath(t *testing.T) {
 	}
 }
 
+func TestPageWriter_RoundedRectangleDoesNotSplitPathWhenTextIsPending(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	pw.Print("Hello")
+	pw.Rectangle2(10, 10, 40, 20, true, false, []float64{6}, false, false)
+
+	got := pw.stream.String()
+	if strings.Contains(got, "c\nET\nS\n") {
+		t.Fatalf("expected pending text flush not to split rounded rectangle path, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_RoundedRectangleClosesQueuedRichTextBeforePathOperators(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	rt, err := pw.richTextForString("Hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(72, 720)
+	pw.PrintRichText(rt)
+	pw.Rectangle2(10, 10, 40, 20, true, false, []float64{6}, false, false)
+
+	got := pw.stream.String()
+	moveIdx := strings.Index(got, "50 776 m\n")
+	if moveIdx < 0 {
+		t.Fatalf("expected rounded rectangle moveTo in stream, got:\n%s", got)
+	}
+	textEndIdx := strings.Index(got, "ET\n")
+	if textEndIdx < 0 {
+		t.Fatalf("expected text object close in stream, got:\n%s", got)
+	}
+	if textEndIdx > moveIdx {
+		t.Fatalf("expected rounded rectangle path to start after ET, got:\n%s", got)
+	}
+	if strings.Contains(got[textEndIdx+3:moveIdx], "BT\n") {
+		t.Fatalf("unexpected reopened text object before rounded rectangle path, got:\n%s", got)
+	}
+}
+
+func TestPageWriter_PrintImageClosesQueuedRichTextBeforeXObject(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	if _, err := pw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	rt, err := pw.richTextForString("Hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pw.MoveTo(72, 720)
+	pw.PrintRichText(rt)
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	if _, _, err := pw.PrintImage(mustEncodePNG(t, img), 10, 20, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	got := pw.stream.String()
+	tjIdx := strings.Index(got, " Tj\n")
+	if tjIdx < 0 {
+		t.Fatalf("expected text show operator in stream, got:\n%s", got)
+	}
+	textEndIdx := strings.Index(got, "ET\n")
+	if textEndIdx < 0 {
+		t.Fatalf("expected text object close in stream, got:\n%s", got)
+	}
+	doIdx := strings.Index(got, " Do\n")
+	if doIdx < 0 {
+		t.Fatalf("expected image XObject draw operator in stream, got:\n%s", got)
+	}
+	if tjIdx > doIdx {
+		t.Fatalf("expected queued rich text to flush before image draw, got:\n%s", got)
+	}
+	if textEndIdx > doIdx {
+		t.Fatalf("expected image draw to begin after ET, got:\n%s", got)
+	}
+	if strings.Contains(got[textEndIdx+3:doIdx], "BT\n") {
+		t.Fatalf("unexpected reopened text object before image draw, got:\n%s", got)
+	}
+}
+
 func TestPageWriter_CircleUsesTranslatedMoveTo(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{"units": "in"})

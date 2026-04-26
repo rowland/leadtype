@@ -372,6 +372,20 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 	}
 }
 
+func (c *StdContainer) SplitEnabled() bool {
+	if c == nil || c.LayoutStyle() == nil {
+		return false
+	}
+	switch c.LayoutStyle().manager {
+	case "table":
+		return c.tableSplitEnabled()
+	case "vbox":
+		return c.vboxSplitEnabled()
+	default:
+		return false
+	}
+}
+
 func (c *StdContainer) tableSplitEnabled() bool {
 	if c.splitExplicit {
 		return c.splitEnabled
