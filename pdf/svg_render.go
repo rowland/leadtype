@@ -521,9 +521,7 @@ func (r *svgRenderer) withMask(maskRef string, fn func() error) error {
 	if fn != nil {
 		err = fn()
 	}
-	if r.pw.inText {
-		r.pw.endText()
-	}
+	r.pw.endText()
 	if r.pw.inGraph {
 		r.pw.endGraph()
 	}
@@ -547,9 +545,7 @@ func (r *svgRenderer) withScopedGraphicsState(fillAlpha, strokeAlpha float64, bl
 	if fn != nil {
 		err = fn()
 	}
-	if r.pw.inText {
-		r.pw.endText()
-	}
+	r.pw.endText()
 	if r.pw.inGraph {
 		r.pw.endGraph()
 	}
@@ -577,9 +573,7 @@ func clipPathWithRule(pw *PageWriter, rule string, fn func() error) error {
 	if fn != nil {
 		err = fn()
 	}
-	if pw.inText {
-		pw.endText()
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}

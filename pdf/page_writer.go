@@ -752,9 +752,7 @@ func (pw *PageWriter) Clip(fn func()) error {
 	if fn != nil {
 		fn()
 	}
-	if pw.inText {
-		pw.endText()
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}
@@ -768,14 +766,7 @@ func (pw *PageWriter) scopedTransform(a, b, c, d, x, y float64, fn func()) error
 		return errTransformInsideManualPath
 	}
 	savedLast := pw.last
-	if pw.inText {
-		pw.endText()
-	} else if pw.line != nil {
-		pw.flushText()
-		if pw.inText {
-			pw.endText()
-		}
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}
@@ -784,14 +775,7 @@ func (pw *PageWriter) scopedTransform(a, b, c, d, x, y float64, fn func()) error
 	if fn != nil {
 		fn()
 	}
-	if pw.inText {
-		pw.endText()
-	} else if pw.line != nil {
-		pw.flushText()
-		if pw.inText {
-			pw.endText()
-		}
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}
@@ -1396,6 +1380,7 @@ func (pw *PageWriter) flushText() {
 		return
 	}
 	pw.flushing = true
+	pw.startText()
 	line := pw.line
 	pw.line = nil
 	pw.emitRichTextLine(line, pw.visibleTextEmission())
@@ -2156,14 +2141,7 @@ func (pw *PageWriter) clipRichTextWithOptions(text *rich_text.RichText, emit tex
 	if len(pw.pathStates) > 0 {
 		return errTextClipInsideManualPath
 	}
-	if pw.inText {
-		pw.endText()
-	} else if pw.line != nil {
-		pw.flushText()
-		if pw.inText {
-			pw.endText()
-		}
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}
@@ -2180,14 +2158,7 @@ func (pw *PageWriter) clipRichTextWithOptions(text *rich_text.RichText, emit tex
 	if fn != nil {
 		fn()
 	}
-	if pw.inText {
-		pw.endText()
-	} else if pw.line != nil {
-		pw.flushText()
-		if pw.inText {
-			pw.endText()
-		}
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}
@@ -2230,9 +2201,7 @@ func (pw *PageWriter) prepareXObjectDraw() {
 	if pw.inPath {
 		pw.endPath()
 	}
-	if pw.inText {
-		pw.endText()
-	}
+	pw.endText()
 	if pw.inGraph {
 		pw.endGraph()
 	}
@@ -2924,22 +2893,20 @@ func (pw *PageWriter) SetVTextAlign(vTextAlign string) (prev string) {
 }
 
 func (pw *PageWriter) startGraph() {
+	pw.endText()
 	if pw.inGraph {
 		return
-	}
-	if pw.inText {
-		pw.endText()
 	}
 	pw.last.loc = Location{0, 0}
 	pw.inGraph = true
 }
 
 func (pw *PageWriter) startText() {
-	if pw.inText {
-		return
-	}
 	if pw.inGraph {
 		pw.endGraph()
+	}
+	if pw.inText {
+		return
 	}
 	pw.last.loc = Location{0, 0}
 	pw.resetTextStateCache()
