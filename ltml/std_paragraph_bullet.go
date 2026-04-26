@@ -114,7 +114,7 @@ func (p *StdParagraph) drawBulletShape(w Writer, layout paragraphBulletLayout, b
 func (p *StdParagraph) bulletLayout(w Writer, bullet *BulletStyle, line *rich_text.RichText, slotX, baselineY, textHeight float64) paragraphBulletLayout {
 	slotWidth := bullet.Width()
 	lineHeight, lineAscent := bulletLineMetrics(w, line)
-	renderWidth, renderHeight := p.bulletRenderSize(w, bullet, line, lineHeight)
+	renderWidth, renderHeight := p.bulletRenderSize(w, bullet, lineHeight)
 	if renderWidth <= 0 {
 		renderWidth = min(slotWidth, renderHeight)
 	}
@@ -168,7 +168,7 @@ func bulletLineMetrics(w Writer, line *rich_text.RichText) (lineHeight, lineAsce
 	return lineHeight, lineAscent
 }
 
-func (p *StdParagraph) bulletRenderSize(w Writer, bullet *BulletStyle, line *rich_text.RichText, lineHeight float64) (renderWidth, renderHeight float64) {
+func (p *StdParagraph) bulletRenderSize(w Writer, bullet *BulletStyle, lineHeight float64) (renderWidth, renderHeight float64) {
 	if bullet.IsImage() {
 		renderHeight = bullet.Height()
 		if renderHeight <= 0 {
@@ -241,7 +241,7 @@ func (p *StdParagraph) bulletBoxHeightForLines(w Writer, lines []*rich_text.Rich
 
 func (p *StdParagraph) bulletBoxHeight(w Writer, bullet *BulletStyle, line *rich_text.RichText, textHeight float64) float64 {
 	lineHeight, _ := bulletLineMetrics(w, line)
-	_, renderHeight := p.bulletRenderSize(w, bullet, line, lineHeight)
+	_, renderHeight := p.bulletRenderSize(w, bullet, lineHeight)
 	boxHeight := renderHeight
 	if bullet.Height() > boxHeight {
 		boxHeight = bullet.Height()
