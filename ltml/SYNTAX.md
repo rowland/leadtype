@@ -6,11 +6,15 @@ declarative control over layout, typography, and visual elements.
 ## Document Structure
 
 Every LTML document begins with a root `<ltml>` element containing style
-definitions and one or more `<page>` elements.
+definitions, optional reusable `<canvas>` assets, and one or more `<page>`
+elements.
 
 ```xml
 <ltml units="in" margin="1">
   <!-- style definitions -->
+  <canvas key="badge" width="120" height="60">
+    <!-- reusable drawing -->
+  </canvas>
   <page>
     <!-- content -->
   </page>
@@ -19,13 +23,13 @@ definitions and one or more `<page>` elements.
 
 ### Scope
 
-Both `<ltml>` and `<page>` establish a style scope. Style definitions
+`<ltml>`, `<canvas>`, and `<page>` establish a style scope. Style definitions
 (`<font>`, `<pen>`, `<brush>`, `<para>`, `<bullet>`, `<layout>`), aliases
-(`<define>`), and selector styles (`<style>`) placed inside a
-`<page>` are visible only to that page. Definitions placed directly inside
-`<ltml>` are visible to all pages. A page can always reference definitions from
-its parent `<ltml>` scope, but other pages cannot see definitions made inside a
-sibling page.
+(`<define>`), and selector styles (`<style>`) placed inside a `<canvas>` are
+visible only to that canvas capture. Definitions placed inside a `<page>` are
+visible only to that page. Definitions placed directly inside `<ltml>` are
+visible to all pages and canvases. A page or canvas can always reference
+definitions from its parent `<ltml>` scope, but sibling scopes stay isolated.
 
 ```xml
 <ltml>
@@ -50,7 +54,9 @@ sibling page.
 
 ### `<ltml>` — Document Root
 
-The root element. Attributes set here apply as defaults to all pages.
+The root element. Attributes set here apply as defaults to all pages. Direct
+children may include style definitions, `<canvas>` definitions, and `<page>`
+elements.
 
 | Attribute | Description |
 |-----------|-------------|
@@ -127,6 +133,52 @@ for the PDF and Go API versions of the same setting.
 
 ---
 
+### `<canvas>` — Reusable Drawing Asset
+
+Defines a document-scoped reusable drawing with its own local coordinate
+system. `<canvas>` is captured once at its natural size and later placed with
+`<draw>` one or more times.
+
+`<canvas>` must be a direct child of `<ltml>`. It is not rendered directly into
+page flow.
+
+```xml
+<ltml units="pt">
+  <canvas key="badge" width="160" height="80" layout="absolute">
+    <circle left="16" top="16" width="48" height="48" fill.color="#cfe4ff" />
+    <label left="76" top="24">Score 92</label>
+  </canvas>
+
+  <page>
+    <draw key="badge" />
+    <draw key="badge" width="80" />
+  </page>
+</ltml>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `key` | Required document-wide asset key used by `<draw>`. Duplicate keys are rejected. |
+| `width`, `height` | Required natural canvas size. LTML captures the canvas using this fixed coordinate system. |
+| `layout` | Optional layout manager for child widgets. Default: `absolute`. Use `layout.*` for inline overrides. |
+| `font` | Optional default font style for child text widgets. |
+| `fill` / `fill.*` | Optional background brush for the canvas root box. |
+| `border` / `border.*` | Optional border pen for the canvas root box. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Optional inner spacing before child content begins. |
+
+`<canvas>` supports ordinary LTML child widgets and local style definitions, but
+not page-only behavior such as page creation, overflow retries, debug grids, or
+page-flow splitting.
+
+Inner page-dependent semantics are treated as visual-only during capture:
+
+- inner links and destinations do not create PDF annotations
+- inner `<pageno>` resolves to empty text
+- inner `<index>` and `<index_entry>` widgets do not participate in document indexes
+- child tagged-PDF structure is suppressed so accessibility stays on the outer `<draw>`
+
+---
+
 ### `<page>` — Page
 
 Defines a single page in the document. Pages must be direct children of `<ltml>`.
@@ -144,6 +196,32 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `font`        | Reference to a named `<font>` style. |
 | `fill`        | Reference to a named `<brush>` style for the background. |
 | `border`      | Reference to a named `<pen>` style for all borders. |
+
+---
+
+### `<draw>` — Canvas Placement
+
+Places a named `<canvas>` asset into page or container layout. `<draw>` behaves
+like an image-style placement widget.
+
+```xml
+<draw key="badge" width="96" alt="Score badge" />
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `key` | Required canvas key to place. |
+| `width`, `height` | Optional explicit placement dimensions. If both are omitted, LTML uses the canvas natural size. If only one is supplied, LTML preserves aspect ratio. If both are supplied, LTML stretches to the exact box. |
+| `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
+| `border` | Optional enclosing widget border, separate from the captured canvas content. |
+| `fill` | Optional enclosing widget background, separate from the captured canvas content. |
+| `rotate`, `origin-x`, `origin-y`, `shift`, `align`, `display` | Same placement and transform attributes supported by other widgets. |
+| `alt` | When `ua="true"`, opt the draw placement into tagged output and use this text as `/ActualText`. |
+| `role` | Override the default tagged role when `ua="true"`. Draws with `alt` default to `Figure`. |
+
+In v1, `<draw>` places only `<canvas>` assets even though the tag name is
+generic.
 
 ---
 

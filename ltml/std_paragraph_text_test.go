@@ -285,7 +285,7 @@ func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *test
 	_ = p.SetContainer(page)
 	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 	p.bullet = &BulletStyle{text: "*", width: 18, font: p.font}
-	p.splitEnabled = true
+	p.splitDisabled = false
 	p.orphans = 2
 	p.widows = 2
 	p.SetWidth(90)
@@ -750,7 +750,7 @@ func TestStdParagraph_SplitForHeight_ImageBulletSuppressesContinuationRendering(
 	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 	p.paragraphStyle = &ParagraphStyle{}
 	p.bullet = &BulletStyle{src: "fixture.jpg", width: 18, height: 12}
-	p.splitEnabled = true
+	p.splitDisabled = false
 	p.orphans = 2
 	p.widows = 2
 	p.SetWidth(90)

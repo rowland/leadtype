@@ -19,8 +19,7 @@ type StdParagraph struct {
 	richText           *rich_text.RichText
 	textFill           *BrushStyle
 	bullet             *BulletStyle
-	splitEnabled       bool
-	splitExplicit      bool
+	splitDisabled      bool
 	orphans            int
 	widows             int
 	splitLines         []*rich_text.RichText
@@ -237,7 +236,6 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 		}
 		p.textFill.SetAttrs(addUnits(filterMapAttrs("text-fill.", attrs), p.Units()))
 	}
-	p.splitEnabled = true
 	p.orphans = 2
 	p.widows = 2
 	if style, ok := attrs["style"]; ok {
@@ -251,8 +249,7 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 		p.bullet = BulletStyleFor(bullet, p.scope)
 	}
 	if split, ok := attrs["split"]; ok {
-		p.splitExplicit = true
-		p.splitEnabled = split != "false"
+		p.splitDisabled = split == "false"
 	}
 	if orphans, ok := attrs["orphans"]; ok {
 		if value, err := strconv.Atoi(orphans); err == nil {
@@ -290,7 +287,7 @@ func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, start
 }
 
 func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
-	if !p.splitEnabled {
+	if p.splitDisabled {
 		return nil, nil
 	}
 	lines := p.Lines(w, p.lineWidth())
@@ -315,6 +312,10 @@ func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 	head := p.cloneForSplit(lines[:fit], p.suppressBullet, p.continuationIndent)
 	tail := p.cloneForSplit(lines[fit:], true, p.textIndent())
 	return &SplitResult{Head: head, Tail: tail}, nil
+}
+
+func (p *StdParagraph) SplitEnabled() bool {
+	return !p.splitDisabled
 }
 
 func (p *StdParagraph) cloneForSplit(lines []*rich_text.RichText, suppressBullet bool, continuationIndent float64) *StdParagraph {

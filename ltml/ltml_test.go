@@ -244,6 +244,7 @@ func TestSamples(t *testing.T) {
 		"test_051_paper_sizes",
 		"test_052_large_paper_sizes",
 		"test_053_avery_labels",
+		"test_054_canvas_draw",
 	}
 
 	for _, sample := range samples {

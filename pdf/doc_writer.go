@@ -43,6 +43,7 @@ type DocWriter struct {
 	fontDescriptors       map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 	images                map[string]*cachedImage
 	svgForms              map[string]*cachedSVGForm
+	memoForms             map[string]*cachedForm
 	gradientShadings      map[string]string // gradient key → shading resource name
 	gradientPatterns      map[string]string // gradient key → pattern resource name
 	extGStates            map[string]string // graphics-state key → ExtGState resource name
@@ -103,6 +104,7 @@ func NewDocWriter() *DocWriter {
 		fontDescriptors:  make(map[string]*fontDescriptor),
 		images:           make(map[string]*cachedImage),
 		svgForms:         make(map[string]*cachedSVGForm),
+		memoForms:        make(map[string]*cachedForm),
 		gradientShadings: make(map[string]string),
 		gradientPatterns: make(map[string]string),
 		extGStates:       make(map[string]string),
@@ -914,6 +916,52 @@ func (dw *DocWriter) loadSVGForm(data []byte, key string, renderOptions options.
 	}
 	dw.svgForms[key] = cached
 	return cached, nil
+}
+
+func (dw *DocWriter) loadMemoForm(cacheKey string, base *PageWriter, canvasWidthPts, canvasHeightPts float64, render func(*PageWriter) error) (*cachedForm, error) {
+	if cached, ok := dw.memoForms[cacheKey]; ok {
+		return cached, nil
+	}
+
+	content := newContentWriterFromPage(base, canvasWidthPts, canvasHeightPts)
+	if err := render(content); err != nil {
+		return nil, err
+	}
+	content.endText()
+	content.endGraph()
+
+	formResources := dw.resources.clone(dw.nextSeq(), 0)
+	form := newPDFForm(dw.nextSeq(), 0, content.stream.Bytes())
+	form.setBBox(canvasWidthPts, canvasHeightPts)
+	form.setResources(formResources)
+	if dw.compressPages {
+		if err := form.compress(); err != nil {
+			return nil, err
+		}
+	}
+
+	name := fmt.Sprintf("Mf%d", len(dw.memoForms))
+	dw.file.body.add(formResources, form)
+	dw.resources.setXObject(name, &indirectObjectRef{form})
+
+	cached := &cachedForm{
+		form:   form,
+		name:   name,
+		width:  canvasWidthPts,
+		height: canvasHeightPts,
+	}
+	dw.memoForms[cacheKey] = cached
+	return cached, nil
+}
+
+func (dw *DocWriter) MemoizeForm(key string, x, y, width, height float64, render func(*PageWriter) error) error {
+	return dw.CurPage().MemoizeForm(key, x, y, width, height, render)
+}
+
+// MemoizeFormOnCanvas captures a form once on the supplied logical canvas size,
+// then places that form at the requested destination size.
+func (dw *DocWriter) MemoizeFormOnCanvas(key string, x, y, width, height, canvasWidth, canvasHeight float64, render func(*PageWriter) error) error {
+	return dw.CurPage().MemoizeFormOnCanvas(key, x, y, width, height, canvasWidth, canvasHeight, render)
 }
 
 func (dw *DocWriter) gradientKey(prefix string, coords []float64, stops []GradientStop) string {

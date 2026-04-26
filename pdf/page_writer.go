@@ -75,6 +75,7 @@ type PageWriter struct {
 	flushing              boolean
 	artifactDepth         int
 	accessibilityStack    []*structElem
+	memoCapture           bool
 }
 
 type pathState struct {
@@ -96,6 +97,21 @@ func newPageWriter(dw *DocWriter, options options.Options) *PageWriter {
 
 func newContentWriter(dw *DocWriter, options options.Options, pageWidth, pageHeight float64) *PageWriter {
 	return new(PageWriter).initContent(dw, options, pageWidth, pageHeight)
+}
+
+func newContentWriterFromPage(base *PageWriter, pageWidth, pageHeight float64) *PageWriter {
+	opts := base.options
+	if opts == nil {
+		opts = options.Options{}
+	}
+	content := newContentWriter(base.dw, opts.Merge(options.Options{"units": base.Units()}), pageWidth, pageHeight)
+	content.drawState = base.drawState
+	content.loc = Location{}
+	content.last = drawState{}
+	content.fonts = append([]*font.Font(nil), base.fonts...)
+	content.supportsArabicShaping = base.supportsArabicShaping
+	content.memoCapture = true
+	return content
 }
 
 func clonePageWriter(opw *PageWriter) *PageWriter {
@@ -165,6 +181,12 @@ func fontsSupportArabicShaping(fonts []*font.Font) bool {
 }
 
 func (pw *PageWriter) WithAccessibilityTag(tag string, opts AccessibilityOptions, fn func()) error {
+	if pw.memoCapture {
+		if fn != nil {
+			fn()
+		}
+		return nil
+	}
 	if tag == "" {
 		if fn != nil {
 			fn()
@@ -198,6 +220,12 @@ func (pw *PageWriter) WithAccessibilityTag(tag string, opts AccessibilityOptions
 }
 
 func (pw *PageWriter) WithAccessibilityArtifact(fn func()) error {
+	if pw.memoCapture {
+		if fn != nil {
+			fn()
+		}
+		return nil
+	}
 	if !pw.dw.taggedPDFEnabled() {
 		if fn != nil {
 			fn()
@@ -245,6 +273,9 @@ func (pw *PageWriter) beginActualTextContent(actualText string) bool {
 }
 
 func (pw *PageWriter) currentStructElem() *structElem {
+	if pw.memoCapture {
+		return nil
+	}
 	if len(pw.accessibilityStack) > 0 {
 		return pw.accessibilityStack[len(pw.accessibilityStack)-1]
 	}
@@ -1367,8 +1398,17 @@ func (pw *PageWriter) flushText() {
 	pw.flushing = true
 	line := pw.line
 	pw.line = nil
-	pw.emitRichTextLine(line, visibleTextEmission)
+	pw.emitRichTextLine(line, pw.visibleTextEmission())
 	pw.flushing = false
+}
+
+func (pw *PageWriter) visibleTextEmission() textEmissionOptions {
+	emit := visibleTextEmission
+	if pw.memoCapture {
+		emit.emitLinks = false
+		emit.emitAccessibility = false
+	}
+	return emit
 }
 
 func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissionOptions) {
@@ -1957,6 +1997,89 @@ func (pw *PageWriter) Loc() (x, y float64) {
 	return pw.X(), pw.Y()
 }
 
+func (pw *PageWriter) MemoizeForm(key string, x, y, width, height float64, render func(*PageWriter) error) error {
+	return pw.MemoizeFormOnCanvas(key, x, y, width, height, width, height, render)
+}
+
+// MemoizeFormOnCanvas captures a form once on the supplied logical canvas size,
+// then places that form at the requested destination size.
+func (pw *PageWriter) MemoizeFormOnCanvas(key string, x, y, width, height, canvasWidth, canvasHeight float64, render func(*PageWriter) error) error {
+	if key == "" {
+		return fmt.Errorf("memo form key must not be empty")
+	}
+	if render == nil || width <= 0 || height <= 0 || canvasWidth <= 0 || canvasHeight <= 0 {
+		return nil
+	}
+
+	xPts := pw.units.toPts(x)
+	yPts := pw.units.toPts(y)
+	widthPts := pw.units.toPts(width)
+	heightPts := pw.units.toPts(height)
+	canvasWidthPts := pw.units.toPts(canvasWidth)
+	canvasHeightPts := pw.units.toPts(canvasHeight)
+	cacheKey := pw.memoFormCacheKey(key, canvasWidthPts, canvasHeightPts)
+	form, err := pw.dw.loadMemoForm(cacheKey, pw, canvasWidthPts, canvasHeightPts, render)
+	if err != nil {
+		return err
+	}
+	return pw.placeFormXObject(
+		form.name,
+		xPts,
+		yPts,
+		widthPts,
+		heightPts,
+		form.width,
+		form.height,
+		1,
+	)
+}
+
+func (pw *PageWriter) memoFormCacheKey(key string, widthPts, heightPts float64) string {
+	return fmt.Sprintf(
+		"memo:%s;w=%s;h=%s;state=%s;opts=%s",
+		key,
+		g(widthPts),
+		g(heightPts),
+		pw.memoFormStateKey(),
+		memoFormOptionsKey(pw.options, pw.Units()),
+	)
+}
+
+func (pw *PageWriter) memoFormStateKey() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "fillColor=%06x;", int32(pw.fillColor))
+	fmt.Fprintf(&b, "fillGradient=%s;", pw.fillGradient)
+	fmt.Fprintf(&b, "fontColor=%06x;", int32(pw.fontColor))
+	fmt.Fprintf(&b, "fontKey=%s;", pw.fontKey)
+	fmt.Fprintf(&b, "fontSize=%s;", g(pw.fontSize))
+	fmt.Fprintf(&b, "lineCap=%d;", pw.lineCapStyle)
+	fmt.Fprintf(&b, "lineJoin=%d;", pw.lineJoinStyle)
+	fmt.Fprintf(&b, "lineColor=%06x;", int32(pw.lineColor))
+	fmt.Fprintf(&b, "lineGradient=%s;", pw.lineGradient)
+	fmt.Fprintf(&b, "lineDash=%s;", pw.lineDashPattern)
+	fmt.Fprintf(&b, "lineSpacing=%s;", g(pw.lineSpacing))
+	fmt.Fprintf(&b, "lineWidth=%s;", g(pw.lineWidth))
+	fmt.Fprintf(&b, "miter=%s;", g(pw.miterLimit))
+	fmt.Fprintf(&b, "strikeout=%t;", pw.strikeout)
+	fmt.Fprintf(&b, "underline=%t;", pw.underline)
+	fmt.Fprintf(&b, "vTextAlign=%s;", pw.vTextAlign.String())
+	fmt.Fprintf(&b, "charSpacing=%s;", g(pw.charSpacing))
+	fmt.Fprintf(&b, "wordSpacing=%s;", g(pw.wordSpacing))
+	if len(pw.fonts) > 0 {
+		b.WriteString("fonts=")
+		for _, current := range pw.fonts {
+			if current == nil {
+				b.WriteString("<nil>,")
+				continue
+			}
+			b.WriteString(current.PostScriptName())
+			b.WriteByte(',')
+		}
+		b.WriteByte(';')
+	}
+	return b.String()
+}
+
 func (pw *PageWriter) MoveTo(x, y float64) {
 	xpts, ypts := pw.units.toPts(x), pw.translate(pw.units.toPts(y))
 	pw.moveTo(xpts, ypts)
@@ -2348,6 +2471,9 @@ var errEmptyLinkURI = errors.New("uri link requires a non-empty URI")
 var errEmptyLinkTarget = errors.New("target link requires a non-empty destination name")
 
 func (pw *PageWriter) RegisterDestination(name string, x, y float64) {
+	if pw.memoCapture {
+		return
+	}
 	if name == "" {
 		return
 	}
@@ -2357,6 +2483,9 @@ func (pw *PageWriter) RegisterDestination(name string, x, y float64) {
 }
 
 func (pw *PageWriter) AddURILink(x, y, width, height float64, uri string) error {
+	if pw.memoCapture {
+		return nil
+	}
 	if uri == "" {
 		return errEmptyLinkURI
 	}
@@ -2369,6 +2498,9 @@ func (pw *PageWriter) AddURILink(x, y, width, height float64, uri string) error 
 }
 
 func (pw *PageWriter) AddTargetLink(x, y, width, height float64, target string) error {
+	if pw.memoCapture {
+		return nil
+	}
 	if target == "" {
 		return errEmptyLinkTarget
 	}
@@ -2389,6 +2521,9 @@ func (pw *PageWriter) annotationRect(x, y, width, height float64) rectangle {
 }
 
 func (pw *PageWriter) addTextLinkAnnotation(rect rectangle, uri, target string, elem *structElem) {
+	if pw.memoCapture {
+		return
+	}
 	if rect.x2 <= rect.x1 || rect.y2 <= rect.y1 {
 		return
 	}

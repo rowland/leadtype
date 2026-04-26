@@ -21,7 +21,7 @@ func (p *StdPageNo) Dynamic() bool {
 }
 
 func (p *StdPageNo) Resolve(doc *StdDocument) string {
-	if p.hidden || doc == nil {
+	if p.hidden || doc == nil || documentVisualCaptureActive(doc) {
 		return ""
 	}
 	return formatPageNo(doc.CurrentPageNo())

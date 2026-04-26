@@ -66,6 +66,15 @@ func (dw *DocWriter) SetLineCapStyle(style string) (prev string) {
 	}
 }
 
+func (dw *DocWriter) DrawCanvas(key string, x, y, width, height, canvasWidth, canvasHeight float64, draw func(any) error) error {
+	if draw == nil {
+		return nil
+	}
+	return dw.DocWriter.MemoizeFormOnCanvas(canvasMemoKey(key), x, y, width, height, canvasWidth, canvasHeight, func(pw *pdf.PageWriter) error {
+		return draw(&canvasWriter{PageWriter: pw, docWriter: dw.DocWriter})
+	})
+}
+
 func NewDocWriter() *DocWriter {
 	dw, err := NewDocWriterWithFontDirs(nil)
 	if err != nil {

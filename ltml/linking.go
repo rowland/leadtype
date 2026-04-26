@@ -288,6 +288,7 @@ func (d *StdDocument) resetRenderState() {
 	d.documentPageNo = 0
 	d.physicalPageNo = 0
 	d.pendingStart = nil
+	d.canvasCaptureStack = nil
 	walkWidgets(d, func(widget Widget) bool {
 		widget.SetPrinted(false)
 		widget.SetVisible(true)
@@ -304,6 +305,9 @@ func (d *StdDocument) resetRenderState() {
 		}
 		return true
 	})
+	d.eachCanvas(func(canvas *StdCanvas) {
+		resetCanvasWidgetRenderState(canvas)
+	})
 }
 
 func registerPrintedWidgetMetadata(widget Widget, writer Writer) error {
@@ -313,6 +317,9 @@ func registerPrintedWidgetMetadata(widget Widget, writer Writer) error {
 	}
 	doc := documentForContainer(containerWidget.Container())
 	if doc == nil || doc.renderContext == nil {
+		return nil
+	}
+	if documentVisualCaptureActive(doc) {
 		return nil
 	}
 	switch value := widget.(type) {

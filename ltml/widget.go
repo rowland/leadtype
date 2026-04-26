@@ -209,7 +209,7 @@ func shouldSkipRenderForPreflight(widget Widget) bool {
 		return false
 	}
 	switch widget.(type) {
-	case *StdA, *StdIndex, *StdIndexEntry, *StdLabel, *StdPageNo, *StdParagraph, *StdPre, *StdSpan, *StdTarget:
+	case *StdA, *StdDraw, *StdIndex, *StdIndexEntry, *StdLabel, *StdPageNo, *StdParagraph, *StdPre, *StdSpan, *StdTarget:
 		return true
 	default:
 		_, isContainer := widget.(Container)
