@@ -3,26 +3,22 @@
 
   <page layout="vbox">
     <style>
-      p { font.color: blue; }
+      index-title { font.color: blue; font.weight: Bold; }
+      index-page { font.color: red; }
     </style>
 
     <label font.size="18" font.weight="Bold">Contents</label>
 
-    <index id="main_toc">
-      <p><index-title font.weight="Bold" /><index-leader /><span font.color="red"><index-page /></span></p>
+    <index id="main_toc" layout.vpadding="8pt">
+      <p><index-title /><index-leader /><index-page /></p>
     </index>
-
-    <p>Fee</p>
-    <p>Fie</p>
-    <p>Foe</p>
-    <p>Fum</p>
 
     <p align="bottom" style.text-align="center"><pageno hidden="true" reset="1" /></p>
   </page>
 
   <page layout="vbox">
     <label id="intro" font.size="16" font.weight="Bold">Introduction</label>
-    <index_entry index="main_toc" target="intro">Introduction</index_entry>
+    <index-entry index="main_toc" target="intro">Introduction</index-entry>
     <p>Leadtype can now collect explicit index entries and resolve them into a table of contents after layout stabilizes.</p>
     <p align="bottom" style.text-align="center"><pageno /></p>
   </page>
@@ -30,8 +26,316 @@
   <page layout="vbox">
     <target id="appendix_a" />
     <label font.size="16" font.weight="Bold">Appendix A</label>
-    <index_entry index="main_toc" target="appendix_a">Appendix A</index_entry>
+    <index-entry index="main_toc" target="appendix_a">Appendix A</index-entry>
     <p>This page demonstrates an explicit target element that does not render visible content on the destination page.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="alpha" font.size="16" font.weight="Bold">Alpha</label>
+    <index-entry index="main_toc" target="alpha">Alpha</index-entry>
+    <p>Alpha represents the letter A in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="bravo" font.size="16" font.weight="Bold">Bravo</label>
+    <index-entry index="main_toc" target="bravo">Bravo</index-entry>
+    <p>Bravo represents the letter B in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="charlie" font.size="16" font.weight="Bold">Charlie</label>
+    <index-entry index="main_toc" target="charlie">Charlie</index-entry>
+    <p>Charlie represents the letter C in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="delta" font.size="16" font.weight="Bold">Delta</label>
+    <index-entry index="main_toc" target="delta">Delta</index-entry>
+    <p>Delta represents the letter D in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="echo" font.size="16" font.weight="Bold">Echo</label>
+    <index-entry index="main_toc" target="echo">Echo</index-entry>
+    <p>Echo represents the letter E in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="foxtrot" font.size="16" font.weight="Bold">Foxtrot</label>
+    <index-entry index="main_toc" target="foxtrot">Foxtrot</index-entry>
+    <p>Foxtrot represents the letter F in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="golf" font.size="16" font.weight="Bold">Golf</label>
+    <index-entry index="main_toc" target="golf">Golf</index-entry>
+    <p>Golf represents the letter G in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="hotel" font.size="16" font.weight="Bold">Hotel</label>
+    <index-entry index="main_toc" target="hotel">Hotel</index-entry>
+    <p>Hotel represents the letter H in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="india" font.size="16" font.weight="Bold">India</label>
+    <index-entry index="main_toc" target="india">India</index-entry>
+    <p>India represents the letter I in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="juliett" font.size="16" font.weight="Bold">Juliett</label>
+    <index-entry index="main_toc" target="juliett">Juliett</index-entry>
+    <p>Juliett represents the letter J in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="kilo" font.size="16" font.weight="Bold">Kilo</label>
+    <index-entry index="main_toc" target="kilo">Kilo</index-entry>
+    <p>Kilo represents the letter K in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="lima" font.size="16" font.weight="Bold">Lima</label>
+    <index-entry index="main_toc" target="lima">Lima</index-entry>
+    <p>Lima represents the letter L in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="mike" font.size="16" font.weight="Bold">Mike</label>
+    <index-entry index="main_toc" target="mike">Mike</index-entry>
+    <p>Mike represents the letter M in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="november" font.size="16" font.weight="Bold">November</label>
+    <index-entry index="main_toc" target="november">November</index-entry>
+    <p>November represents the letter N in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="oscar" font.size="16" font.weight="Bold">Oscar</label>
+    <index-entry index="main_toc" target="oscar">Oscar</index-entry>
+    <p>Oscar represents the letter O in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="papa" font.size="16" font.weight="Bold">Papa</label>
+    <index-entry index="main_toc" target="papa">Papa</index-entry>
+    <p>Papa represents the letter P in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="quebec" font.size="16" font.weight="Bold">Quebec</label>
+    <index-entry index="main_toc" target="quebec">Quebec</index-entry>
+    <p>Quebec represents the letter Q in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="romeo" font.size="16" font.weight="Bold">Romeo</label>
+    <index-entry index="main_toc" target="romeo">Romeo</index-entry>
+    <p>Romeo represents the letter R in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="sierra" font.size="16" font.weight="Bold">Sierra</label>
+    <index-entry index="main_toc" target="sierra">Sierra</index-entry>
+    <p>Sierra represents the letter S in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="tango" font.size="16" font.weight="Bold">Tango</label>
+    <index-entry index="main_toc" target="tango">Tango</index-entry>
+    <p>Tango represents the letter T in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="uniform" font.size="16" font.weight="Bold">Uniform</label>
+    <index-entry index="main_toc" target="uniform">Uniform</index-entry>
+    <p>Uniform represents the letter U in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="victor" font.size="16" font.weight="Bold">Victor</label>
+    <index-entry index="main_toc" target="victor">Victor</index-entry>
+    <p>Victor represents the letter V in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="whiskey" font.size="16" font.weight="Bold">Whiskey</label>
+    <index-entry index="main_toc" target="whiskey">Whiskey</index-entry>
+    <p>Whiskey represents the letter W in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="xray" font.size="16" font.weight="Bold">X-ray</label>
+    <index-entry index="main_toc" target="xray">X-ray</index-entry>
+    <p>X-ray represents the letter X in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="yankee" font.size="16" font.weight="Bold">Yankee</label>
+    <index-entry index="main_toc" target="yankee">Yankee</index-entry>
+    <p>Yankee represents the letter Y in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="zulu" font.size="16" font.weight="Bold">Zulu</label>
+    <index-entry index="main_toc" target="zulu">Zulu</index-entry>
+    <p>Zulu represents the letter Z in the NATO phonetic alphabet.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="cat" font.size="16" font.weight="Bold">Cat</label>
+    <index-entry index="main_toc" target="cat">Cat</index-entry>
+    <p>Cat appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="dog" font.size="16" font.weight="Bold">Dog</label>
+    <index-entry index="main_toc" target="dog">Dog</index-entry>
+    <p>Dog appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="fox" font.size="16" font.weight="Bold">Fox</label>
+    <index-entry index="main_toc" target="fox">Fox</index-entry>
+    <p>Fox appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="hare" font.size="16" font.weight="Bold">Hare</label>
+    <index-entry index="main_toc" target="hare">Hare</index-entry>
+    <p>Hare appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="owl" font.size="16" font.weight="Bold">Owl</label>
+    <index-entry index="main_toc" target="owl">Owl</index-entry>
+    <p>Owl appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="lynx" font.size="16" font.weight="Bold">Lynx</label>
+    <index-entry index="main_toc" target="lynx">Lynx</index-entry>
+    <p>Lynx appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="otter" font.size="16" font.weight="Bold">Otter</label>
+    <index-entry index="main_toc" target="otter">Otter</index-entry>
+    <p>Otter appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="panda" font.size="16" font.weight="Bold">Panda</label>
+    <index-entry index="main_toc" target="panda">Panda</index-entry>
+    <p>Panda appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="quail" font.size="16" font.weight="Bold">Quail</label>
+    <index-entry index="main_toc" target="quail">Quail</index-entry>
+    <p>Quail appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="raven" font.size="16" font.weight="Bold">Raven</label>
+    <index-entry index="main_toc" target="raven">Raven</index-entry>
+    <p>Raven appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="seal" font.size="16" font.weight="Bold">Seal</label>
+    <index-entry index="main_toc" target="seal">Seal</index-entry>
+    <p>Seal appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="tiger" font.size="16" font.weight="Bold">Tiger</label>
+    <index-entry index="main_toc" target="tiger">Tiger</index-entry>
+    <p>Tiger appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="badger" font.size="16" font.weight="Bold">Badger</label>
+    <index-entry index="main_toc" target="badger">Badger</index-entry>
+    <p>Badger appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="falcon" font.size="16" font.weight="Bold">Falcon</label>
+    <index-entry index="main_toc" target="falcon">Falcon</index-entry>
+    <p>Falcon appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="jaguar" font.size="16" font.weight="Bold">Jaguar</label>
+    <index-entry index="main_toc" target="jaguar">Jaguar</index-entry>
+    <p>Jaguar appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="koala" font.size="16" font.weight="Bold">Koala</label>
+    <index-entry index="main_toc" target="koala">Koala</index-entry>
+    <p>Koala appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="turtle" font.size="16" font.weight="Bold">Turtle</label>
+    <index-entry index="main_toc" target="turtle">Turtle</index-entry>
+    <p>Turtle appears in the radial-out animal sample as one of the sector labels.</p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page layout="vbox">
+    <label id="walrus" font.size="16" font.weight="Bold">Walrus</label>
+    <index-entry index="main_toc" target="walrus">Walrus</index-entry>
+    <p>Walrus appears in the radial-out animal sample as one of the sector labels.</p>
     <p align="bottom" style.text-align="center"><pageno /></p>
   </page>
 

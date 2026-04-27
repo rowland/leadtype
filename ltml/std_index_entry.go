@@ -53,7 +53,7 @@ func (e *StdIndexEntry) ZeroFootprint() bool {
 }
 
 func init() {
-	registerTag(DefaultSpace, "index_entry", func() any { return &StdIndexEntry{} })
+	registerTag(DefaultSpace, "index-entry", func() any { return &StdIndexEntry{} })
 }
 
 var _ HasAttrs = (*StdIndexEntry)(nil)

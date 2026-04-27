@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
@@ -53,30 +52,11 @@ func (s *StdSector) AddText(text string) {
 }
 
 func (s *StdSector) AddTextWithFont(text string, font *FontStyle) {
-	text = normalizeLabelXMLText(text)
-	if text == "" {
-		return
-	}
-	if len(s.textPieces) == 0 {
-		text = strings.TrimLeftFunc(text, unicode.IsSpace)
-		if text == "" {
-			return
-		}
-	} else if last := &s.textPieces[len(s.textPieces)-1]; strings.HasSuffix(last.ResolvedText(nil), " ") && strings.HasPrefix(text, " ") {
-		text = text[1:]
-	}
-	s.richText = nil
-	if len(s.textPieces) > 0 && s.textPieces[len(s.textPieces)-1].font == font && !s.textPieces[len(s.textPieces)-1].Dynamic() {
-		lastText := s.textPieces[len(s.textPieces)-1].ResolvedText(nil)
-		s.textPieces[len(s.textPieces)-1].content = staticInlineText(lastText + text)
-		return
-	}
-	s.textPieces = append(s.textPieces, newStaticTextPiece(text, font))
+	addNormalizedTextPiece(&s.textPieces, &s.richText, text, font, normalizeLabelXMLText)
 }
 
 func (s *StdSector) AddInlineWithFont(content inlineText, font *FontStyle) {
-	s.richText = nil
-	s.textPieces = append(s.textPieces, textPiece{content: content, font: font})
+	addInlineTextPiece(&s.textPieces, &s.richText, content, font)
 }
 
 func (s *StdSector) AccessibilityText() string {
@@ -222,33 +202,7 @@ func (s *StdSector) ResolveSectorReferenceY(widget Widget) float64 {
 }
 
 func (s *StdSector) RichText(w Writer) *rich_text.RichText {
-	doc := documentForContainer(s)
-	if s.richText != nil {
-		return s.richText
-	}
-	rt := &rich_text.RichText{}
-	lastText := ""
-	for _, piece := range s.textPieces {
-		font := applyTextPieceFontForContainer(w, s, piece, s.Font())
-		text := piece.ResolvedText(doc)
-		if text == "" {
-			continue
-		}
-		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
-			text = text[1:]
-		}
-		if text == "" {
-			continue
-		}
-		var err error
-		rt, err = rt.Add(text, w.Fonts(), w.FontSize(), piece.RichTextOptions(font.RichTextOptions()))
-		if err != nil {
-			debugf("StdSector.RichText: %v", err)
-		}
-		lastText = text
-	}
-	s.richText = rt
-	return rt
+	return richTextForTextPieces(w, s, s.textPieces, &s.richText, s.Font())
 }
 
 func (s *StdSector) SetAttrs(attrs map[string]string) {

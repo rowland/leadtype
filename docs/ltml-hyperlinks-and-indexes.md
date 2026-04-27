@@ -12,14 +12,14 @@ The implementation adds three capabilities:
 
 - Inline hyperlinks with `<a>` for LTML text.
 - Internal destinations from page/widget `id` values and explicit `<target>` elements.
-- A general `index` / `index_entry` mechanism for tables of contents and similar lists.
+- A general `index` / `index-entry` mechanism for tables of contents and similar lists.
 
 V1 keeps the authoring model intentionally small:
 
 - `<a uri="...">` creates an external link.
 - `<a target="...">` creates an internal link.
 - `href` and `page` are not part of v1.
-- `index_entry` labels are explicit author text; there is no title inference fallback.
+- `index-entry` labels are explicit author text; there is no title inference fallback.
 - Duplicate destination names resolve to the first printed destination.
 
 ---
@@ -58,7 +58,7 @@ resolve to the widget's top-left corner.
 
 ### Indexes
 
-`<index>` renders collected entries. `<index_entry>` contributes hidden metadata
+`<index>` renders collected entries. `<index-entry>` contributes hidden metadata
 from later pages.
 
 ```xml
@@ -70,7 +70,7 @@ from later pages.
 
 <page>
   <label id="intro">Introduction</label>
-  <index_entry index="main_toc" target="intro">Introduction</index_entry>
+  <index-entry index="main_toc" target="intro">Introduction</index-entry>
 </page>
 ```
 
@@ -126,7 +126,7 @@ delivery while still supporting TOCs that grow to an unknown number of pages.
 - V1 links are inline-text only.
 - Explicit `<target>` is block/widget-level only, not an inline anchor inside a
   paragraph.
-- `index_entry` labels are still plain text; rich entry-local label markup is
+- `index-entry` labels are still plain text; rich entry-local label markup is
   not part of this pass.
 - Missing internal targets are render errors.
 - Multiple `<index>` widgets may exist, but each `index` id must be unique.

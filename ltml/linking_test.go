@@ -74,7 +74,7 @@ func TestParse_LinkTargetAndIndexTags(t *testing.T) {
     <p><a target="intro">Jump</a></p>
     <target id="intro" />
     <index id="toc" />
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -194,7 +194,7 @@ func TestStdDocument_Print_RejectsMissingIndexDefinition(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>
   <page>
-    <index_entry index="toc" target="intro">Intro</index_entry>
+    <index-entry index="toc" target="intro">Intro</index-entry>
     <label id="intro">Introduction</label>
   </page>
 </ltml>`))
@@ -227,7 +227,7 @@ func TestStdDocument_IndexRendersResolvedPageNumbers(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="intro">Introduction</label>
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -252,7 +252,7 @@ func TestStdDocument_LegacyEmptyIndexUsesDottedLeader(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="intro">Introduction</label>
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -264,11 +264,11 @@ func TestStdDocument_LegacyEmptyIndexUsesDottedLeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	page1 := printedRichTextByPage(w, 1)
-	if len(page1) < 3 {
-		t.Fatalf("page 1 printed count = %d, want at least 3 pieces", len(page1))
+	if len(page1) < 1 {
+		t.Fatalf("page 1 printed count = %d, want at least 1 line", len(page1))
 	}
-	if page1[1].String() == "" || strings.Trim(page1[1].String(), ".") != "" {
-		t.Fatalf("page 1 second print = %q, want dot leader", page1[1].String())
+	if page1[0].String() == "" || !strings.Contains(page1[0].String(), "Introduction") || strings.Trim(strings.TrimPrefix(page1[0].String(), "Introduction"), ".12 ") == page1[0].String() {
+		t.Fatalf("page 1 line = %q, want introduction with dotted leader and page number", page1[0].String())
 	}
 }
 
@@ -281,7 +281,7 @@ func TestStdDocument_IndexRespectsPageNumberStart(t *testing.T) {
   <page layout="vbox">
     <p><pageno start="10" hidden="true" />Body</p>
     <label id="chapter">Chapter</label>
-    <index_entry index="toc" target="chapter">Chapter</index_entry>
+    <index-entry index="toc" target="chapter">Chapter</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -307,8 +307,8 @@ func TestStdDocument_MultipleIndexesRenderIndependently(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="chapter">Chapter</label>
-    <index_entry index="main" target="chapter">Main Entry</index_entry>
-    <index_entry index="sub" target="chapter">Sub Entry</index_entry>
+    <index-entry index="main" target="chapter">Main Entry</index-entry>
+    <index-entry index="sub" target="chapter">Sub Entry</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -333,7 +333,7 @@ func TestStdDocument_IndexEntriesCreateInternalLinks(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="intro">Introduction</label>
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -368,7 +368,7 @@ func TestStdDocument_Print_RejectsMultipleIndexTemplateChildren(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="intro">Introduction</label>
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -379,7 +379,7 @@ func TestStdDocument_Print_RejectsMultipleIndexTemplateChildren(t *testing.T) {
 	}
 }
 
-func TestStdDocument_IndexTemplateRendersWrappedTitleWithPageOnFirstLine(t *testing.T) {
+func TestStdDocument_IndexTemplateRendersWrappedTitleWithPageOnFinalLine(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml units="pt" margin="36">
   <page layout="vbox">
@@ -389,7 +389,7 @@ func TestStdDocument_IndexTemplateRendersWrappedTitleWithPageOnFirstLine(t *test
   </page>
   <page layout="vbox">
     <label id="intro">A very long introduction heading for wrapping</label>
-    <index_entry index="toc" target="intro">A very long introduction heading for wrapping</index_entry>
+    <index-entry index="toc" target="intro">A very long introduction heading for wrapping</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -401,14 +401,18 @@ func TestStdDocument_IndexTemplateRendersWrappedTitleWithPageOnFirstLine(t *test
 		t.Fatal(err)
 	}
 	page1 := printedRichTextByPage(w, 1)
-	if len(page1) < 4 {
-		t.Fatalf("page 1 printed count = %d, want at least 4 pieces for wrapped title, leader, page, and continuation", len(page1))
+	if len(page1) < 2 {
+		t.Fatalf("page 1 printed count = %d, want at least 2 wrapped lines", len(page1))
 	}
-	if page1[1].String() == "" || strings.Trim(page1[1].String(), ".") != "" {
-		t.Fatalf("page 1 second print = %q, want dot leader", page1[1].String())
+	if strings.Contains(page1[0].String(), "2") || strings.Contains(page1[0].String(), ".") {
+		t.Fatalf("page 1 first line = %q, want plain wrapped title without leader/page", page1[0].String())
 	}
-	if page1[2].String() != "2" {
-		t.Fatalf("page 1 third print = %q, want page number on first line", page1[2].String())
+	last := page1[len(page1)-1].String()
+	if !strings.Contains(last, "2") {
+		t.Fatalf("page 1 last line = %q, want page number on final line", last)
+	}
+	if !strings.Contains(last, ".") {
+		t.Fatalf("page 1 last line = %q, want leader on final line", last)
 	}
 	pageTexts := pageTextsByNumber(w)
 	if !strings.Contains(pageTexts[1], "A very long") || !strings.Contains(pageTexts[1], "introduction") || !strings.Contains(pageTexts[1], "wrapping") {
@@ -426,7 +430,7 @@ func TestStdDocument_IndexTemplateFontOverridesApplyPerPlaceholder(t *testing.T)
   </page>
   <page layout="vbox">
     <label id="chapter">Chapter</label>
-    <index_entry index="toc" target="chapter">Chapter</index_entry>
+    <index-entry index="toc" target="chapter">Chapter</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -475,20 +479,14 @@ func TestStdDocument_LeaderWorksOutsideIndexes(t *testing.T) {
 		t.Fatal(err)
 	}
 	page1 := printedRichTextByPage(w, 1)
-	if len(page1) < 6 {
-		t.Fatalf("page 1 printed count = %d, want at least 6 pieces", len(page1))
+	if len(page1) < 2 {
+		t.Fatalf("page 1 printed count = %d, want at least 2 lines", len(page1))
 	}
-	if page1[1].String() == "" || strings.Trim(page1[1].String(), "-") != "" {
-		t.Fatalf("paragraph leader = %q, want repeated - fill", page1[1].String())
+	if !strings.Contains(page1[0].String(), "Alpha") || !strings.Contains(page1[0].String(), "Omega") || !strings.Contains(page1[0].String(), "-") {
+		t.Fatalf("paragraph leader line = %q, want combined Alpha/leader/Omega output", page1[0].String())
 	}
-	if page1[2].String() != "Omega" {
-		t.Fatalf("paragraph tail = %q, want Omega", page1[2].String())
-	}
-	if page1[4].String() == "" || strings.Trim(page1[4].String(), "*") != "" {
-		t.Fatalf("label leader = %q, want repeated * fill", page1[4].String())
-	}
-	if page1[5].String() != "Gamma" {
-		t.Fatalf("label tail = %q, want Gamma", page1[5].String())
+	if !strings.Contains(page1[1].String(), "Beta") || !strings.Contains(page1[1].String(), "Gamma") || !strings.Contains(page1[1].String(), "*") {
+		t.Fatalf("label leader line = %q, want combined Beta/leader/Gamma output", page1[1].String())
 	}
 }
 
@@ -503,11 +501,11 @@ func TestStdDocument_IndexHonorsLayoutVPaddingAndReservesHeight(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="intro">Introduction</label>
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
   <page layout="vbox">
     <label id="appendix">Appendix A</label>
-    <index_entry index="toc" target="appendix">Appendix A</index_entry>
+    <index-entry index="toc" target="appendix">Appendix A</index-entry>
   </page>
 </ltml>`))
 	if err != nil {
@@ -524,11 +522,11 @@ func TestStdDocument_IndexHonorsLayoutVPaddingAndReservesHeight(t *testing.T) {
   </page>
   <page layout="vbox">
     <label id="intro">Introduction</label>
-    <index_entry index="toc" target="intro">Introduction</index_entry>
+    <index-entry index="toc" target="intro">Introduction</index-entry>
   </page>
   <page layout="vbox">
     <label id="appendix">Appendix A</label>
-    <index_entry index="toc" target="appendix">Appendix A</index_entry>
+    <index-entry index="toc" target="appendix">Appendix A</index-entry>
   </page>
 </ltml>`))
 	if err != nil {

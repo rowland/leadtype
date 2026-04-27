@@ -64,18 +64,6 @@ func newDocumentRenderContext(snapshot *documentIndexSnapshot, preflight bool) *
 	}
 }
 
-func withActiveIndexEntry(doc *StdDocument, entry *resolvedIndexEntry, fn func() error) error {
-	if doc == nil || doc.renderContext == nil {
-		return fn()
-	}
-	prev := doc.renderContext.activeIndexEntry
-	doc.renderContext.activeIndexEntry = entry
-	defer func() {
-		doc.renderContext.activeIndexEntry = prev
-	}()
-	return fn()
-}
-
 func (ctx *documentRenderContext) registerDestination(name string, pageNo, physicalPageNo int, x, y float64) {
 	if name == "" {
 		return
@@ -219,11 +207,11 @@ func (d *StdDocument) describeLinking() (*documentLinkSummary, error) {
 			summary.indexIDs[value.ID] = struct{}{}
 		case *StdIndexEntry:
 			if value.indexID == "" {
-				err = fmt.Errorf("<index_entry> requires an index attribute")
+				err = fmt.Errorf("<index-entry> requires an index attribute")
 				return false
 			}
 			if value.target == "" {
-				err = fmt.Errorf("<index_entry> requires a target attribute")
+				err = fmt.Errorf("<index-entry> requires a target attribute")
 				return false
 			}
 			summary.hasIndexes = true

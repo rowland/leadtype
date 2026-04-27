@@ -20,14 +20,6 @@ type leaderInline interface {
 	LeaderText() string
 }
 
-type preparedLeaderLayout struct {
-	leftLines  []*rich_text.RichText
-	tailText   *rich_text.RichText
-	leaderText *rich_text.RichText
-	tailX      float64
-	height     float64
-}
-
 type leaderPieceSpec struct {
 	leftPieces  []textPiece
 	rightPieces []textPiece
@@ -98,65 +90,75 @@ func detectLeaderPieces(pieces []textPiece) (*leaderPieceSpec, bool) {
 	}, true
 }
 
-func prepareLeaderLayout(w Writer, container Container, pieces []textPiece, width float64, wrap bool) (*preparedLeaderLayout, bool) {
+func prepareLeaderLines(w Writer, container Container, pieces []textPiece, width float64, wrap bool) ([]*rich_text.RichText, bool) {
 	spec, ok := detectLeaderPieces(pieces)
 	if !ok {
 		return nil, false
 	}
-	leftText := richTextForPieces(w, container, spec.leftPieces)
-	tailText := richTextForPieces(w, container, spec.rightPieces)
-	tailX := width
-	if tailText != nil && tailText.Len() > 0 {
-		tailX -= tailText.Width()
+	leftText := richTextForTextPieces(w, container, spec.leftPieces, nil, container.Font())
+	tailText := richTextForTextPieces(w, container, spec.rightPieces, nil, container.Font())
+
+	if !wrap {
+		// Labels stay single-line. When a leader is present we synthesize one
+		// composed rich-text run, then let the host widget apply its usual
+		// alignment, rotation, and optional shrink-to-fit rules.
+		return []*rich_text.RichText{
+			buildLeaderLine(w, container, spec.leaderPiece, spec.leader, leftText, tailText, max(width, 0)),
+		}, true
 	}
-	leftWidth := tailX - leaderGapWidth(w, container, spec.leaderPiece, spec.leader)
-	if leftWidth < 0 {
-		leftWidth = 0
+
+	if leftText == nil || leftText.Len() == 0 {
+		return []*rich_text.RichText{
+			buildLeaderLine(w, container, spec.leaderPiece, spec.leader, nil, tailText, max(width, 0)),
+		}, true
 	}
-	var leftLines []*rich_text.RichText
-	if wrap {
-		leftLines = wrapRichText(leftText, leftWidth)
-	} else if leftText != nil && leftText.Len() > 0 {
-		leftLines = []*rich_text.RichText{leftText}
+
+	flags := make([]wordbreaking.Flags, leftText.Len())
+	wordbreaking.MarkRuneAttributes(leftText.String(), flags)
+	lineWidths := []float64{max(width, 1)}
+	lines := wrapRichTextToWidths(leftText, flags, lineWidths)
+
+	// Leaders belong on the final rendered line. We iteratively wrap the left
+	// side until the last line stabilizes with enough reserved space for the
+	// leader fill and trailing tail text.
+	finalLeftWidth := width - tailWidthWithLeaderGap(w, container, spec.leaderPiece, spec.leader, tailText)
+	if finalLeftWidth <= 0 {
+		finalLeftWidth = 1
 	}
-	leaderText := buildLeaderFillText(w, container, spec.leaderPiece, spec.leader, leftLines, tailX)
-	return &preparedLeaderLayout{
-		leftLines:  leftLines,
-		tailText:   tailText,
-		leaderText: leaderText,
-		tailX:      tailX,
-		height:     leaderLinesHeight(w, leftLines, tailText),
-	}, true
+	for range 8 {
+		if len(lines) == 0 {
+			lines = []*rich_text.RichText{{}}
+		}
+		widths := make([]float64, len(lines))
+		for idx := range widths {
+			widths[idx] = max(width, 1)
+		}
+		widths[len(widths)-1] = finalLeftWidth
+		next := wrapRichTextToWidths(leftText, flags, widths)
+		if richTextLinesEqual(lines, next) {
+			lines = next
+			break
+		}
+		lines = next
+	}
+	if len(lines) == 0 {
+		lines = []*rich_text.RichText{nil}
+	}
+	lines[len(lines)-1] = buildLeaderLine(w, container, spec.leaderPiece, spec.leader, lines[len(lines)-1], tailText, max(width, 0))
+	return lines, true
 }
 
-func richTextForPieces(w Writer, container Container, pieces []textPiece) *rich_text.RichText {
-	if len(pieces) == 0 {
-		return &rich_text.RichText{}
+func buildLeaderLine(w Writer, container Container, piece textPiece, leader leaderInline, leftLine *rich_text.RichText, tailText *rich_text.RichText, width float64) *rich_text.RichText {
+	leaderText := buildLeaderFillText(w, container, piece, leader, leftLine, tailText, width)
+	return combineRichText(leftLine, leaderText, tailText)
+}
+
+func tailWidthWithLeaderGap(w Writer, container Container, piece textPiece, leader leaderInline, tailText *rich_text.RichText) float64 {
+	width := leaderGapWidth(w, container, piece, leader)
+	if tailText != nil {
+		width += tailText.Width()
 	}
-	doc := documentForContainer(container)
-	rt := &rich_text.RichText{}
-	lastText := ""
-	for _, piece := range pieces {
-		font := applyTextPieceFontForContainer(w, container, piece, container.Font())
-		text := piece.ResolvedText(doc)
-		if text == "" {
-			continue
-		}
-		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
-			text = text[1:]
-		}
-		if text == "" {
-			continue
-		}
-		next, err := rt.Add(text, w.Fonts(), w.FontSize(), piece.RichTextOptions(font.RichTextOptions()))
-		if err != nil {
-			debugf("richTextForPieces: %v", err)
-			continue
-		}
-		rt = next
-		lastText = text
-	}
-	return rt
+	return width
 }
 
 func richTextForPieceText(w Writer, container Container, piece textPiece, text string) *rich_text.RichText {
@@ -177,15 +179,6 @@ func richTextForPieceText(w Writer, container Container, piece textPiece, text s
 	return rt
 }
 
-func wrapRichText(rt *rich_text.RichText, width float64) []*rich_text.RichText {
-	if rt == nil || rt.Len() == 0 {
-		return nil
-	}
-	flags := make([]wordbreaking.Flags, rt.Len())
-	wordbreaking.MarkRuneAttributes(rt.String(), flags)
-	return rt.WrapToWidth(width, flags, false)
-}
-
 func leaderGapWidth(w Writer, container Container, piece textPiece, leader leaderInline) float64 {
 	unit := leader.LeaderText()
 	dot := richTextForPieceText(w, container, piece, unit+unit)
@@ -195,16 +188,21 @@ func leaderGapWidth(w Writer, container Container, piece textPiece, leader leade
 	return dot.Width()
 }
 
-func buildLeaderFillText(w Writer, container Container, piece textPiece, leader leaderInline, leftLines []*rich_text.RichText, tailX float64) *rich_text.RichText {
-	if len(leftLines) == 0 {
-		return nil
-	}
+func buildLeaderFillText(w Writer, container Container, piece textPiece, leader leaderInline, leftLine *rich_text.RichText, tailText *rich_text.RichText, width float64) *rich_text.RichText {
 	unitText := leader.LeaderText()
 	unit := richTextForPieceText(w, container, piece, unitText)
 	if unit.Len() == 0 || unit.Width() <= 0 {
 		return nil
 	}
-	gapWidth := tailX - leftLines[0].Width()
+	leftWidth := 0.0
+	if leftLine != nil {
+		leftWidth = leftLine.Width()
+	}
+	tailWidth := 0.0
+	if tailText != nil {
+		tailWidth = tailText.Width()
+	}
+	gapWidth := width - leftWidth - tailWidth
 	if gapWidth <= unit.Width() {
 		return nil
 	}
@@ -215,58 +213,6 @@ func buildLeaderFillText(w Writer, container Container, piece textPiece, leader 
 	return richTextForPieceText(w, container, piece, strings.Repeat(unitText, count))
 }
 
-func leaderLinesHeight(w Writer, leftLines []*rich_text.RichText, tailText *rich_text.RichText) float64 {
-	if len(leftLines) == 0 {
-		if tailText == nil || tailText.Len() == 0 {
-			return 0
-		}
-		return tailText.Leading()*w.LineSpacing() - tailText.Height()*(w.LineSpacing()-1) - tailText.LineGap()
-	}
-	height := 0.0
-	for _, line := range leftLines {
-		height += line.Leading() * w.LineSpacing()
-	}
-	last := leftLines[len(leftLines)-1]
-	height -= last.Height() * (w.LineSpacing() - 1)
-	height -= last.LineGap()
-	return height
-}
-
-func drawLeaderLayout(w Writer, left float64, top float64, layout *preparedLeaderLayout) {
-	if layout == nil {
-		return
-	}
-	if len(layout.leftLines) == 0 {
-		if layout.tailText != nil && layout.tailText.Len() > 0 {
-			baseline := top + layout.tailText.Ascent()
-			w.MoveTo(left+layout.tailX, baseline)
-			w.PrintRichText(layout.tailText)
-		}
-		return
-	}
-	currentTop := top
-	for idx, line := range layout.leftLines {
-		baseline := currentTop + line.Ascent()
-		w.MoveTo(left, baseline)
-		w.PrintRichText(line)
-		if idx == 0 {
-			if layout.leaderText != nil && layout.leaderText.Len() > 0 {
-				w.MoveTo(left+line.Width(), baseline)
-				w.PrintRichText(layout.leaderText)
-			}
-			if layout.tailText != nil && layout.tailText.Len() > 0 {
-				w.MoveTo(left+layout.tailX, baseline)
-				w.PrintRichText(layout.tailText)
-			}
-		}
-		currentTop += line.Leading() * w.LineSpacing()
-	}
-}
-
 func init() {
-	registerTag(DefaultSpace, "leader", func() any { return &StdLeader{text: defaultLeaderText} })
+	registerTag(DefaultSpace, "leader", func() any { return &StdLeader{} })
 }
-
-var _ HasAttrs = (*StdLeader)(nil)
-var _ HasText = (*StdLeader)(nil)
-var _ HasFont = (*StdLeader)(nil)
