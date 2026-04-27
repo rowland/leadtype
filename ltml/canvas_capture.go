@@ -55,7 +55,9 @@ func resetCanvasWidgetRenderState(root Widget) {
 		case *StdContainer:
 			value.activeChildren = nil
 		case *StdIndex:
-			value.clearSplitOverride()
+			// index is actually not valid in a canvas
+			value.clearExpandedState()
+			value.clearMeasuredGeometry()
 		}
 		return true
 	})

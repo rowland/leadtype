@@ -105,12 +105,45 @@ func (p *StdParagraph) bulletWidth() float64 {
 
 func (p *StdParagraph) DrawContent(w Writer) error {
 	return withWidgetRoleAccessibility(w, &p.StdWidget, "P", p.AccessibilityText(), func() error {
+		if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
+			para := p.Lines(w, p.lineWidth())
+			if len(para) == 0 {
+				return nil
+			}
+			return provider.drawSectorParagraph(p, w, provider.sectorParagraphLayoutFor(p, w))
+		}
+		if leaderLayout, ok := prepareLeaderLayout(w, p, p.textPieces, p.lineWidth(), true); ok {
+			indent := p.textIndent()
+			textX := p.textStartX(indent)
+			textHeight := leaderLayout.height
+			firstAscent := 0.0
+			if len(leaderLayout.leftLines) > 0 {
+				firstAscent = leaderLayout.leftLines[0].Ascent()
+			} else if leaderLayout.tailText != nil {
+				firstAscent = leaderLayout.tailText.Ascent()
+			}
+			baselineY := ContentTop(p) + firstAscent
+			w.MoveTo(textX, baselineY)
+			if b := p.Bullet(); b != nil && !p.suppressBullet {
+				x := p.bulletSlotX()
+				y := baselineY
+				w.MoveTo(x, y)
+				if err := withAccessibilityArtifact(w, func() error {
+					line := leaderLayout.tailText
+					if len(leaderLayout.leftLines) > 0 {
+						line = leaderLayout.leftLines[0]
+					}
+					return p.drawBullet(w, b, line, x, y, textHeight)
+				}); err != nil {
+					return err
+				}
+			}
+			drawLeaderLayout(w, textX, ContentTop(p), leaderLayout)
+			return nil
+		}
 		para := p.Lines(w, p.lineWidth())
 		if len(para) == 0 {
 			return nil
-		}
-		if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
-			return provider.drawSectorParagraph(p, w, provider.sectorParagraphLayoutFor(p, w))
 		}
 		indent := p.textIndent()
 		textX := p.textStartX(indent)
@@ -156,6 +189,9 @@ func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
 		return NonContentHeight(p) + provider.sectorParagraphLayoutFor(p, w).total
 	}
+	if leaderLayout, ok := prepareLeaderLayout(w, p, p.textPieces, p.lineWidth(), true); ok {
+		return NonContentHeight(p) + leaderLayout.height
+	}
 	return p.heightForLines(p.Lines(w, p.lineWidth()), w)
 }
 
@@ -166,6 +202,19 @@ func (p *StdParagraph) AccessibilityText() string {
 func (p *StdParagraph) PreferredWidth(w Writer) float64 {
 	if p.width != 0 {
 		return p.width
+	}
+	if leaderLayout, ok := prepareLeaderLayout(w, p, p.textPieces, ContentWidth(p.container), true); ok {
+		width := 0.0
+		if len(leaderLayout.leftLines) > 0 {
+			width += leaderLayout.leftLines[0].Width()
+		}
+		if leaderLayout.tailText != nil {
+			width += leaderLayout.tailText.Width()
+		}
+		if leaderLayout.leaderText != nil {
+			width += leaderLayout.leaderText.Width()
+		}
+		return width + p.bulletWidth() + NonContentWidth(p) + 1
 	}
 	return p.RichText(w).Width() + p.bulletWidth() + NonContentWidth(p) + 1
 }
@@ -288,6 +337,9 @@ func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, start
 
 func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
 	if p.splitDisabled {
+		return nil, nil
+	}
+	if _, ok := prepareLeaderLayout(w, p, p.textPieces, p.lineWidth(), true); ok {
 		return nil, nil
 	}
 	lines := p.Lines(w, p.lineWidth())

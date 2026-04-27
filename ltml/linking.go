@@ -48,6 +48,7 @@ type documentIndexSnapshot struct {
 // durable PDF output; the final pass uses the stabilized snapshot for rendering.
 type documentRenderContext struct {
 	activeSnapshot   *documentIndexSnapshot
+	activeIndexEntry *resolvedIndexEntry
 	destinations     map[string]documentDestination
 	indexEntries     []collectedIndexEntry
 	seenIndexEntries map[Widget]bool
@@ -61,6 +62,18 @@ func newDocumentRenderContext(snapshot *documentIndexSnapshot, preflight bool) *
 		seenIndexEntries: make(map[Widget]bool),
 		preflight:        preflight,
 	}
+}
+
+func withActiveIndexEntry(doc *StdDocument, entry *resolvedIndexEntry, fn func() error) error {
+	if doc == nil || doc.renderContext == nil {
+		return fn()
+	}
+	prev := doc.renderContext.activeIndexEntry
+	doc.renderContext.activeIndexEntry = entry
+	defer func() {
+		doc.renderContext.activeIndexEntry = prev
+	}()
+	return fn()
 }
 
 func (ctx *documentRenderContext) registerDestination(name string, pageNo, physicalPageNo int, x, y float64) {
@@ -301,7 +314,8 @@ func (d *StdDocument) resetRenderState() {
 		case *StdContainer:
 			value.activeChildren = nil
 		case *StdIndex:
-			value.clearSplitOverride()
+			value.clearExpandedState()
+			value.clearMeasuredGeometry()
 		}
 		return true
 	})

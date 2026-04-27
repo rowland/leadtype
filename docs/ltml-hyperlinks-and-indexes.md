@@ -63,7 +63,9 @@ from later pages.
 
 ```xml
 <page layout="vbox">
-  <index id="main_toc" />
+  <index id="main_toc">
+    <p><index-title font.weight="Bold" /><index-leader /><index-page /></p>
+  </index>
 </page>
 
 <page>
@@ -72,9 +74,18 @@ from later pages.
 </page>
 ```
 
-Entries are rendered in encounter order with dot leaders and right-aligned page
-numbers. The rendered label, leaders, and page number all link to the entry's
-target destination.
+`<index>` accepts one row-template child, typically a `<p>` or `<label>`.
+That template is replayed once per resolved index entry. Three inline
+placeholders are available inside the row template:
+
+- `<index-title />` resolves to the entry label text
+- `<index-leader />` expands into a dot leader between title and page number
+- `<index-page />` resolves to the destination page number
+
+Entries are still rendered in encounter order. By default, an empty
+`<index id="..."/>` keeps the legacy behavior of dot leaders with a
+right-aligned page number. The rendered row links to the entry's target
+destination.
 
 ---
 
@@ -115,7 +126,7 @@ delivery while still supporting TOCs that grow to an unknown number of pages.
 - V1 links are inline-text only.
 - Explicit `<target>` is block/widget-level only, not an inline anchor inside a
   paragraph.
-- Index labels render with the index widget's font/style, not entry-local rich
-  styling.
+- `index_entry` labels are still plain text; rich entry-local label markup is
+  not part of this pass.
 - Missing internal targets are render errors.
 - Multiple `<index>` widgets may exist, but each `index` id must be unique.

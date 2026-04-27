@@ -85,6 +85,24 @@ func (l *StdLabel) LayoutWidget(Writer) {
 
 func (l *StdLabel) DrawContent(w Writer) error {
 	return withWidgetRoleAccessibility(w, &l.StdWidget, "P", l.AccessibilityText(), func() error {
+		if leaderLayout, ok := prepareLeaderLayout(w, l, l.textPieces, ContentWidth(l), false); ok {
+			firstAscent := 0.0
+			if len(leaderLayout.leftLines) > 0 {
+				firstAscent = leaderLayout.leftLines[0].Ascent()
+			} else if leaderLayout.tailText != nil {
+				firstAscent = leaderLayout.tailText.Ascent()
+			}
+			draw := func() {
+				drawLeaderLayout(w, ContentLeft(l), ContentTop(l), leaderLayout)
+			}
+			if l.angle == 0 {
+				draw()
+				return nil
+			}
+			anchorX := ContentLeft(l)
+			anchorY := ContentTop(l) + firstAscent
+			return w.Rotate(l.angle, anchorX, anchorY, draw)
+		}
 		rt := l.fittedRichText(w)
 		if rt.Len() == 0 {
 			return nil
@@ -137,6 +155,12 @@ func (l *StdLabel) PreferredHeight(w Writer) float64 {
 	if l.height != 0 {
 		return l.height
 	}
+	if leaderLayout, ok := prepareLeaderLayout(w, l, l.textPieces, ContentWidth(l), false); ok {
+		if leaderLayout.height == 0 {
+			return effectiveFontSizeForContainer(l)*w.LineSpacing() + NonContentHeight(l)
+		}
+		return leaderLayout.height + NonContentHeight(l)
+	}
 	rt := l.fittedRichText(w)
 	if rt.Len() == 0 {
 		return effectiveFontSizeForContainer(l)*w.LineSpacing() + NonContentHeight(l)
@@ -147,6 +171,19 @@ func (l *StdLabel) PreferredHeight(w Writer) float64 {
 func (l *StdLabel) PreferredWidth(w Writer) float64 {
 	if l.width != 0 {
 		return l.width
+	}
+	if leaderLayout, ok := prepareLeaderLayout(w, l, l.textPieces, ContentWidth(l.container), false); ok {
+		width := 0.0
+		if len(leaderLayout.leftLines) > 0 {
+			width += leaderLayout.leftLines[0].Width()
+		}
+		if leaderLayout.tailText != nil {
+			width += leaderLayout.tailText.Width()
+		}
+		if leaderLayout.leaderText != nil {
+			width += leaderLayout.leaderText.Width()
+		}
+		return width + NonContentWidth(l)
 	}
 	rt := l.RichText(w)
 	return rt.Width() + NonContentWidth(l)

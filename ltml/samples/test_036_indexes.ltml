@@ -1,8 +1,22 @@
 <ltml units="in" margin="1">
   <layout id="vbox" vpadding="6pt" />
+
   <page layout="vbox">
+    <style>
+      p { font.color: blue; }
+    </style>
+
     <label font.size="18" font.weight="Bold">Contents</label>
-    <index id="main_toc" />
+
+    <index id="main_toc">
+      <p><index-title font.weight="Bold" /><index-leader /><span font.color="red"><index-page /></span></p>
+    </index>
+
+    <p>Fee</p>
+    <p>Fie</p>
+    <p>Foe</p>
+    <p>Fum</p>
+
     <p align="bottom" style.text-align="center"><pageno hidden="true" reset="1" /></p>
   </page>
 
@@ -20,4 +34,5 @@
     <p>This page demonstrates an explicit target element that does not render visible content on the destination page.</p>
     <p align="bottom" style.text-align="center"><pageno /></p>
   </page>
+
 </ltml>

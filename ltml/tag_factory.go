@@ -13,12 +13,12 @@ const DefaultSpace = "std"
 type TagFactory func() any
 
 var (
-	reTag           = regexp.MustCompile(`^\w+$`)
+	reTag           = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 	registeredTags  = make(map[string]TagFactory)
 	componentTags   = make(map[string]bool)
 	errStdReserved  = errors.New("namespace '" + DefaultSpace + "' is reserved")
-	errBadNamespace = errors.New("namespace restricted to letters, numbers and the underscore")
-	errBadTag       = errors.New("namespace restricted to letters, numbers and the underscore")
+	errBadNamespace = errors.New("namespace restricted to letters, numbers, underscores, and hyphens")
+	errBadTag       = errors.New("tag restricted to letters, numbers, underscores, and hyphens")
 )
 
 func registerTag(namespace, tag string, f TagFactory) error {
