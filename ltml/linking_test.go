@@ -490,6 +490,46 @@ func TestStdDocument_LeaderWorksOutsideIndexes(t *testing.T) {
 	}
 }
 
+func TestStdDocument_DefaultLeaderUsesSpacedDots(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml units="pt" margin="36">
+  <page layout="vbox">
+    <p width="160">Alpha<leader />Omega</p>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	page1 := printedRichTextByPage(w, 1)
+	if len(page1) < 1 {
+		t.Fatalf("page 1 printed count = %d, want at least 1 line", len(page1))
+	}
+	if !strings.Contains(page1[0].String(), "Alpha .") {
+		t.Fatalf("default leader line = %q, want breathing room before dots", page1[0].String())
+	}
+	if !strings.Contains(page1[0].String(), ". Omega") {
+		t.Fatalf("default leader line = %q, want breathing room before tail text", page1[0].String())
+	}
+	var sawSpacedDotLeader bool
+	page1[0].VisitAll(func(p *rich_text.RichText) {
+		if p != nil && p.Text != "" && strings.Trim(p.Text, ".") == "" && p.CharSpacing > 0 {
+			sawSpacedDotLeader = true
+		}
+	})
+	if !sawSpacedDotLeader {
+		t.Fatalf("default leader rich text = %#v, want dot leader leaf with positive char spacing", page1[0])
+	}
+	paragraph := doc.Root().Page(0).children[0].(*StdParagraph)
+	if got, want := page1[0].Width(), paragraph.lineWidth(); got < want-0.05 || got > want+0.05 {
+		t.Fatalf("default leader width = %v, want approx %v for edge-aligned tail", got, want)
+	}
+}
+
 func TestStdDocument_IndexHonorsLayoutVPaddingAndReservesHeight(t *testing.T) {
 	docWithGap, err := Parse([]byte(`
 <ltml units="pt" margin="36">

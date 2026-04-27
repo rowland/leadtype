@@ -2,8 +2,10 @@ package ltml
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
+	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/wordbreaking"
 )
@@ -179,21 +181,67 @@ func richTextForPieceText(w Writer, container Container, piece textPiece, text s
 	return rt
 }
 
+func leaderPatternText(leader leaderInline) string {
+	text := leader.LeaderText()
+	return text
+}
+
+func isDefaultDotLeader(leader leaderInline) bool {
+	return strings.TrimSpace(leader.LeaderText()) == defaultLeaderText
+}
+
+func defaultDotLeaderMetrics(w Writer, container Container, piece textPiece) (dotWidth, preferredGap float64) {
+	single := richTextForPieceText(w, container, piece, defaultLeaderText)
+	if single.Len() == 0 || single.Width() <= 0 {
+		return 0, 0
+	}
+	dotWidth = single.Width()
+	space := richTextForPieceText(w, container, piece, " ")
+	if space.Len() == 0 || space.Width() <= 0 {
+		return dotWidth, 0
+	}
+	return dotWidth, space.Width()
+}
+
+func richTextForPieceTextWithOptions(w Writer, container Container, piece textPiece, text string, extra options.Options) *rich_text.RichText {
+	if text == "" {
+		return &rich_text.RichText{}
+	}
+	font, explicit := piece.Font(container.Font())
+	if explicit {
+		applyExplicitFontForContainer(w, container, font)
+	} else {
+		applyContainerFont(w, container)
+	}
+	opts := piece.RichTextOptions(font.RichTextOptions())
+	for k, v := range extra {
+		opts[k] = v
+	}
+	rt, err := rich_text.New(text, w.Fonts(), w.FontSize(), opts)
+	if err != nil {
+		debugf("richTextForPieceTextWithOptions: %v", err)
+		return &rich_text.RichText{}
+	}
+	return rt
+}
+
 func leaderGapWidth(w Writer, container Container, piece textPiece, leader leaderInline) float64 {
-	unit := leader.LeaderText()
-	dot := richTextForPieceText(w, container, piece, unit+unit)
-	if dot.Len() == 0 || dot.Width() == 0 {
+	if isDefaultDotLeader(leader) {
+		dotWidth, preferredGap := defaultDotLeaderMetrics(w, container, piece)
+		if dotWidth > 0 {
+			return (dotWidth * 2) + (preferredGap * 2)
+		}
 		return 8
 	}
-	return dot.Width()
+	pattern := leaderPatternText(leader)
+	unit := richTextForPieceText(w, container, piece, pattern+pattern)
+	if unit.Len() == 0 || unit.Width() == 0 {
+		return 8
+	}
+	return unit.Width()
 }
 
 func buildLeaderFillText(w Writer, container Container, piece textPiece, leader leaderInline, leftLine *rich_text.RichText, tailText *rich_text.RichText, width float64) *rich_text.RichText {
-	unitText := leader.LeaderText()
-	unit := richTextForPieceText(w, container, piece, unitText)
-	if unit.Len() == 0 || unit.Width() <= 0 {
-		return nil
-	}
 	leftWidth := 0.0
 	if leftLine != nil {
 		leftWidth = leftLine.Width()
@@ -203,6 +251,55 @@ func buildLeaderFillText(w Writer, container Container, piece textPiece, leader 
 		tailWidth = tailText.Width()
 	}
 	gapWidth := width - leftWidth - tailWidth
+	if isDefaultDotLeader(leader) {
+		dotWidth, preferredGap := defaultDotLeaderMetrics(w, container, piece)
+		if dotWidth <= 0 {
+			return nil
+		}
+		startGap := 0.0
+		endGap := 0.0
+		if preferredGap > 0 && gapWidth >= dotWidth+(2*preferredGap) {
+			startGap = preferredGap
+			endGap = preferredGap
+		}
+		usableGapWidth := gapWidth - startGap - endGap
+		if usableGapWidth <= 0 {
+			return nil
+		}
+		stride := math.Max(dotWidth+preferredGap, dotWidth)
+		count := int(usableGapWidth / stride)
+		if count < 1 && usableGapWidth >= dotWidth {
+			count = 1
+		}
+		if count < 1 {
+			return nil
+		}
+		charSpacing := (usableGapWidth - (float64(count) * dotWidth)) / float64(count)
+		if charSpacing < 0 {
+			charSpacing = 0
+		}
+		dots := richTextForPieceTextWithOptions(
+			w,
+			container,
+			piece,
+			strings.Repeat(defaultLeaderText, count),
+			options.Options{"char_spacing": charSpacing},
+		)
+		var parts []*rich_text.RichText
+		if startGap > 0 {
+			parts = append(parts, richTextForPieceText(w, container, piece, " "))
+		}
+		parts = append(parts, dots)
+		if endGap > 0 {
+			parts = append(parts, richTextForPieceText(w, container, piece, " "))
+		}
+		return combineRichText(parts...)
+	}
+	unitText := leaderPatternText(leader)
+	unit := richTextForPieceText(w, container, piece, unitText)
+	if unit.Len() == 0 || unit.Width() <= 0 {
+		return nil
+	}
 	if gapWidth <= unit.Width() {
 		return nil
 	}

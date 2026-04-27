@@ -1,0 +1,85 @@
+<ltml ua="true">
+  <layout id="vbox" padding="10pt" />
+  <font id="body" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="12" />
+  <font id="heading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="18" weight="Bold" />
+  <font id="subheading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="14" weight="Bold" />
+
+  <define id="h1" tag="p" font="heading" role="H1" />
+  <define id="h2" tag="p" font="subheading" role="H2" />
+
+  <style>
+    index-title { font.weight: Bold; }
+    index-page { font.color: FireBrick; }
+  </style>
+
+  <page units="in" margin="0.75in" layout="vbox" font="body" dir="rtl">
+    <h1>فهرس البرنامج</h1>
+    <p>
+      يعرض هذا المثال مستندًا عربيًا من اليمين إلى اليسار مع صفحة فهرس في
+      البداية. تُسجل كل صفحة لاحقة عنوانها باستخدام <span font.weight="Bold">index-entry</span>
+      ثم يعيد الفهرس تجميع العناصر مع أرقام الصفحات بعد استقرار التخطيط.
+    </p>
+
+    <index id="arabic_toc" layout.vpadding="8pt">
+      <p width="100%"><index-title /><index-leader /><index-page /></p>
+    </index>
+
+    <p align="bottom" style.text-align="center"><pageno hidden="true" reset="1" /></p>
+  </page>
+
+  <page units="in" margin="0.75in" layout="vbox" font="body" dir="rtl">
+    <h1 id="overview">نظرة عامة</h1>
+    <index-entry index="arabic_toc" target="overview">نظرة عامة</index-entry>
+    <p>
+      يوضح هذا القسم الفكرة العامة للمستند وكيف يمكن لصفحة الفهرس أن تشير إلى
+      العناوين العربية من دون الحاجة إلى كتابة أرقام الصفحات يدويًا.
+    </p>
+    <p>
+      يمكن للكاتب أن يحدد عناوين الصفحات أو الأقسام المستهدفة، ثم يترك لمحرك
+      LTML مهمة تجميع الفهرس بعد اكتمال توزيع الصفحات.
+    </p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page units="in" margin="0.75in" layout="vbox" font="body" dir="rtl">
+    <h1 id="schedule">الجدول اليومي</h1>
+    <index-entry index="arabic_toc" target="schedule">الجدول اليومي</index-entry>
+    <p>
+      يبدأ اليوم بجلسة استقبال قصيرة، ثم ورشة قراءة جماعية، وبعدها استراحة
+      للشاي والقهوة قبل الانتقال إلى الحوار المفتوح.
+    </p>
+    <p>
+      يبيّن هذا النوع من الصفحات أن الفهرس لا يقتصر على الكتب التقليدية، بل
+      يصلح أيضًا للكتيبات، والبرامج، والوثائق التعريفية متعددة الأقسام.
+    </p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page units="in" margin="0.75in" layout="vbox" font="body" dir="rtl">
+    <h1 id="speakers">المتحدثون</h1>
+    <index-entry index="arabic_toc" target="speakers">المتحدثون</index-entry>
+    <p>
+      يضم البرنامج مجموعة من الضيوف المحليين الذين يشاركون خبراتهم في الكتابة،
+      والتصميم، والعمل المجتمعي، مع مساحة للأسئلة في نهاية كل لقاء.
+    </p>
+    <p>
+      استخدام الفهرس في مستند عربي يساعد القارئ على التنقل السريع بين الأقسام
+      حتى عندما تختلف أطوال العناوين أو تتغير أرقام الصفحات أثناء التحرير.
+    </p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+
+  <page units="in" margin="0.75in" layout="vbox" font="body" dir="rtl">
+    <h1 id="notes">ملاحظات عملية</h1>
+    <index-entry index="arabic_toc" target="notes">ملاحظات عملية</index-entry>
+    <p>
+      تتوفر أماكن جلوس مرنة، ومداخل مهيأة، ويمكن طلب مساعدة إضافية من فريق
+      التنظيم عند التسجيل أو عند الوصول إلى موقع الفعالية.
+    </p>
+    <p>
+      إذا تغيّر ترتيب الأقسام أو امتد أحد النصوص إلى صفحة جديدة، يعاد حساب
+      الفهرس تلقائيًا في الممرات اللاحقة للطباعة.
+    </p>
+    <p align="bottom" style.text-align="center"><pageno /></p>
+  </page>
+</ltml>

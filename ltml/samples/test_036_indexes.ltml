@@ -3,6 +3,7 @@
 
   <page layout="vbox">
     <style>
+      index p { width: 100%; }
       index-title { font.color: blue; font.weight: Bold; }
       index-page { font.color: red; }
     </style>
@@ -10,10 +11,14 @@
     <label font.size="18" font.weight="Bold">Contents</label>
 
     <index id="main_toc" layout.vpadding="8pt">
-      <p><index-title /><index-leader /><index-page /></p>
+      <p>
+        <index-title />
+        <index-leader />
+        <index-page />
+      </p>
     </index>
 
-    <p align="bottom" style.text-align="center"><pageno hidden="true" reset="1" /></p>
+    <p align="bottom" style.style.text-align="center"><pageno hidden="true" reset="1" /></p>
   </page>
 
   <page layout="vbox">
