@@ -28,30 +28,11 @@ func (l *StdLabel) AddText(text string) {
 }
 
 func (l *StdLabel) AddTextWithFont(text string, font *FontStyle) {
-	text = normalizeLabelXMLText(text)
-	if text == "" {
-		return
-	}
-	if len(l.textPieces) == 0 {
-		text = strings.TrimLeftFunc(text, unicode.IsSpace)
-		if text == "" {
-			return
-		}
-	} else if last := &l.textPieces[len(l.textPieces)-1]; strings.HasSuffix(last.ResolvedText(nil), " ") && strings.HasPrefix(text, " ") {
-		text = text[1:]
-	}
-	l.richText = nil
-	if len(l.textPieces) > 0 && l.textPieces[len(l.textPieces)-1].font == font && !l.textPieces[len(l.textPieces)-1].Dynamic() {
-		lastText := l.textPieces[len(l.textPieces)-1].ResolvedText(nil)
-		l.textPieces[len(l.textPieces)-1].content = staticInlineText(lastText + text)
-		return
-	}
-	l.textPieces = append(l.textPieces, newStaticTextPiece(text, font))
+	addNormalizedTextPiece(&l.textPieces, &l.richText, text, font, normalizeLabelXMLText)
 }
 
 func (l *StdLabel) AddInlineWithFont(content inlineText, font *FontStyle) {
-	l.richText = nil
-	l.textPieces = append(l.textPieces, textPiece{content: content, font: font})
+	addInlineTextPiece(&l.textPieces, &l.richText, content, font)
 }
 
 func normalizeLabelXMLText(text string) string {
@@ -85,7 +66,7 @@ func (l *StdLabel) LayoutWidget(Writer) {
 
 func (l *StdLabel) DrawContent(w Writer) error {
 	return withWidgetRoleAccessibility(w, &l.StdWidget, "P", l.AccessibilityText(), func() error {
-		rt := l.fittedRichText(w)
+		rt := l.layoutRichText(w)
 		if rt.Len() == 0 {
 			return nil
 		}
@@ -137,7 +118,7 @@ func (l *StdLabel) PreferredHeight(w Writer) float64 {
 	if l.height != 0 {
 		return l.height
 	}
-	rt := l.fittedRichText(w)
+	rt := l.layoutRichText(w)
 	if rt.Len() == 0 {
 		return effectiveFontSizeForContainer(l)*w.LineSpacing() + NonContentHeight(l)
 	}
@@ -148,7 +129,7 @@ func (l *StdLabel) PreferredWidth(w Writer) float64 {
 	if l.width != 0 {
 		return l.width
 	}
-	rt := l.RichText(w)
+	rt := l.layoutRichText(w)
 	return rt.Width() + NonContentWidth(l)
 }
 
@@ -157,47 +138,7 @@ func (l *StdLabel) AccessibilityText() string {
 }
 
 func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
-	doc := documentForContainer(l)
-	if l.richText != nil && !l.hasDynamicText() {
-		l.applyFonts(w)
-		return l.richText
-	}
-	rt := &rich_text.RichText{}
-	lastText := ""
-	for _, piece := range l.textPieces {
-		font := applyTextPieceFontForContainer(w, l, piece, l.Font())
-		text := piece.ResolvedText(doc)
-		if text == "" {
-			continue
-		}
-		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
-			text = text[1:]
-		}
-		if text == "" {
-			continue
-		}
-		var err error
-		rt, err = rt.Add(
-			text,
-			w.Fonts(),
-			w.FontSize(),
-			piece.RichTextOptions(font.RichTextOptions()),
-		)
-		if err != nil {
-			debugf("StdLabel.RichText: %v", err)
-		}
-		lastText = text
-	}
-	if !l.hasDynamicText() {
-		l.richText = rt
-	}
-	return rt
-}
-
-func (l *StdLabel) applyFonts(w Writer) {
-	for _, piece := range l.textPieces {
-		applyTextPieceFontForContainer(w, l, piece, l.Font())
-	}
+	return richTextForTextPieces(w, l, l.textPieces, &l.richText, l.Font())
 }
 
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
@@ -246,13 +187,25 @@ func (l *StdLabel) fittedRichText(w Writer) *rich_text.RichText {
 	return rt.Scale(availableWidth/measuredWidth, 6.0)
 }
 
-func (l *StdLabel) hasDynamicText() bool {
-	for _, piece := range l.textPieces {
-		if piece.Dynamic() {
-			return true
+func (l *StdLabel) layoutRichText(w Writer) *rich_text.RichText {
+	if width := ContentWidth(l); width > 0 {
+		// Leader-bearing labels are composed as a single rich-text line first.
+		// The shrink-to-fit logic below is intentionally the same policy used by
+		// ordinary labels; the leader path just supplies a different source line.
+		if lines, ok := prepareLeaderLines(w, l, l.textPieces, width, false); ok && len(lines) > 0 {
+			rt := lines[0]
+			if rt == nil || rt.Len() == 0 || !l.shrinkToFit || l.width == 0 {
+				return rt
+			}
+			availableWidth := ContentWidth(l)
+			measuredWidth := rt.Width()
+			if measuredWidth <= 0 || measuredWidth <= availableWidth {
+				return rt
+			}
+			return rt.Scale(availableWidth/measuredWidth, 6.0)
 		}
 	}
-	return false
+	return l.fittedRichText(w)
 }
 
 func (l *StdLabel) textAnchorX() float64 {

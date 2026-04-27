@@ -1,25 +1,13 @@
 package ltml
 
-import (
-	"strings"
-
-	"github.com/rowland/leadtype/rich_text"
-	"github.com/rowland/leadtype/wordbreaking"
-)
+import "fmt"
 
 type StdIndex struct {
-	StdWidget
-	source          *StdIndex
-	entriesOverride []resolvedIndexEntry
-}
-
-type preparedIndexEntry struct {
-	labelLines []*rich_text.RichText
-	pageText   *rich_text.RichText
-	dots       *rich_text.RichText
-	height     float64
-	pageX      float64
-	target     string
+	StdContainer
+	expandedTargets []string
+	explicitWidth   bool
+	explicitHeight  bool
+	expandErr       error
 }
 
 // targetLinkWriter lets StdIndex attach one row-sized internal link annotation
@@ -28,79 +16,113 @@ type targetLinkWriter interface {
 	AddTargetLink(x, y, width, height float64, target string) error
 }
 
-func (i *StdIndex) PreferredHeight(w Writer) float64 {
-	if i.height != 0 {
-		return i.height
+func (i *StdIndex) BeforePrint(w Writer) error {
+	if err := i.ensureExpanded(); err != nil {
+		return err
 	}
-	return NonContentHeight(i) + i.contentHeight(w)
+	return i.StdContainer.BeforePrint(w)
+}
+
+func (i *StdIndex) LayoutWidget(w Writer) {
+	if err := i.ensureExpanded(); err != nil {
+		debugf("StdIndex.LayoutWidget: %v", err)
+		return
+	}
+	i.StdContainer.LayoutWidget(w)
+}
+
+func (i *StdIndex) PreferredHeight(w Writer) float64 {
+	if i.HeightIsSet() {
+		return i.Height()
+	}
+	if err := i.ensureExpanded(); err != nil {
+		debugf("StdIndex.PreferredHeight: %v", err)
+		return NonContentHeight(i)
+	}
+	return i.StdContainer.PreferredHeight(w)
 }
 
 func (i *StdIndex) PreferredWidth(Writer) float64 {
-	if i.width != 0 {
-		return i.width
+	if i.WidthIsSet() {
+		return i.Width()
 	}
 	return 0
 }
 
-func (i *StdIndex) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
-	entries := i.currentEntries()
-	if len(entries) < 2 {
-		return nil, nil
+func (i *StdIndex) DrawContent(w Writer) error {
+	if err := i.ensureExpanded(); err != nil {
+		return err
 	}
-	avail -= NonContentHeight(i)
-	if avail <= 0 {
-		return nil, nil
+	if err := i.StdContainer.DrawContent(w); err != nil {
+		return err
 	}
-	prepared := i.preparedEntries(w)
-	fit := 0
-	height := 0.0
-	for idx, entry := range prepared {
-		if height+entry.height > avail {
-			break
+	adder, ok := w.(targetLinkWriter)
+	if !ok {
+		return nil
+	}
+	children := i.Widgets()
+	for idx, child := range children {
+		if idx >= len(i.expandedTargets) || !child.Visible() || child.Disabled() {
+			continue
 		}
-		height += entry.height
-		fit = idx + 1
+		target := i.expandedTargets[idx]
+		if target == "" || child.Width() <= 0 || child.Height() <= 0 {
+			continue
+		}
+		if err := adder.AddTargetLink(child.Left(), child.Top(), child.Width(), child.Height(), target); err != nil {
+			return err
+		}
 	}
-	if fit == 0 || fit >= len(entries) {
+	return nil
+}
+
+func (i *StdIndex) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
+	if err := i.ensureExpanded(); err != nil {
+		return nil, err
+	}
+	if len(i.Widgets()) < 2 {
 		return nil, nil
 	}
-	return &SplitResult{
-		Head: i.cloneWithEntries(entries[:fit]),
-		Tail: i.cloneWithEntries(entries[fit:]),
-	}, nil
-}
-
-func (i *StdIndex) SplitEnabled() bool {
-	return i != nil
-}
-
-func (i *StdIndex) clearSplitOverride() {
-	i.entriesOverride = nil
-}
-
-func (i *StdIndex) cloneWithEntries(entries []resolvedIndexEntry) *StdIndex {
-	clone := *i
-	clone.source = i.sourceKey()
-	clone.entriesOverride = append([]resolvedIndexEntry(nil), entries...)
-	clone.printed = false
-	clone.invisible = false
-	clone.disabled = false
-	clone.path = ""
-	return &clone
-}
-
-func (i *StdIndex) contentHeight(w Writer) float64 {
-	height := 0.0
-	for _, entry := range i.preparedEntries(w) {
-		height += entry.height
+	result, err := i.StdContainer.SplitForHeight(avail, w)
+	if err != nil || result == nil {
+		return result, err
 	}
-	return height
+	head := i.wrapSplitFragment(result.Head)
+	tail := i.wrapSplitFragment(result.Tail)
+	if head == nil {
+		return nil, nil
+	}
+	return &SplitResult{Head: head, Tail: tail}, nil
+}
+
+func (i *StdIndex) SetAttrs(attrs map[string]string) {
+	i.StdContainer.SetAttrs(attrs)
+	i.explicitWidth = MapHasAnyKey(attrs, "width") || (i.sides[leftSide].IsSet && i.sides[rightSide].IsSet)
+	i.explicitHeight = MapHasAnyKey(attrs, "height") || (i.sides[topSide].IsSet && i.sides[bottomSide].IsSet)
+}
+
+func (i *StdIndex) clearExpandedState() {
+	i.activeChildren = nil
+	i.expandedTargets = nil
+	i.expandErr = nil
+}
+
+func (i *StdIndex) clearMeasuredGeometry() {
+	if !i.explicitWidth {
+		i.width = 0
+		i.widthPct = 0
+		i.widthRel = 0
+		i.widthSet = false
+	}
+	if !i.explicitHeight {
+		i.height = 0
+		i.heightPct = 0
+		i.heightRel = 0
+		i.heightSet = false
+	}
 }
 
 func (i *StdIndex) currentEntries() []resolvedIndexEntry {
-	if i.entriesOverride != nil {
-		return i.entriesOverride
-	}
 	doc := documentForContainer(i.container)
 	if doc == nil || documentVisualCaptureActive(doc) {
 		return nil
@@ -108,158 +130,201 @@ func (i *StdIndex) currentEntries() []resolvedIndexEntry {
 	return doc.activeIndexEntries(i.ID)
 }
 
-func (i *StdIndex) DrawContent(w Writer) error {
-	top := ContentTop(i)
-	left := ContentLeft(i)
-	for _, entry := range i.preparedEntries(w) {
-		entryTop := top
-		if len(entry.labelLines) == 0 {
-			baseline := top + entry.pageText.Ascent()
-			w.MoveTo(entry.pageX, baseline)
-			w.PrintRichText(entry.pageText)
-			top += entry.height
-		} else {
-			for lineIndex, line := range entry.labelLines {
-				baseline := top + line.Ascent()
-				w.MoveTo(left, baseline)
-				w.PrintRichText(line)
-				if lineIndex == 0 {
-					if entry.dots != nil && entry.dots.Len() > 0 {
-						w.MoveTo(left+line.Width(), baseline)
-						w.PrintRichText(entry.dots)
-					}
-					w.MoveTo(entry.pageX, baseline)
-					w.PrintRichText(entry.pageText)
-				}
-				top += line.Leading() * w.LineSpacing()
-			}
-			last := entry.labelLines[len(entry.labelLines)-1]
-			top -= last.Height() * (w.LineSpacing() - 1)
-			top -= last.LineGap()
+func (i *StdIndex) ensureExpanded() error {
+	if i.expandErr != nil {
+		return i.expandErr
+	}
+	if i.activeChildren != nil {
+		return nil
+	}
+	template, err := i.templateWidget()
+	if err != nil {
+		i.expandErr = err
+		return err
+	}
+	entries := i.currentEntries()
+	i.activeChildren = make([]Widget, 0, len(entries))
+	i.expandedTargets = make([]string, 0, len(entries))
+	for _, entry := range entries {
+		child, err := i.cloneTemplateWidget(template, entry)
+		if err != nil {
+			i.activeChildren = nil
+			i.expandedTargets = nil
+			i.expandErr = err
+			return err
 		}
-		if adder, ok := w.(targetLinkWriter); ok && entry.target != "" {
-			// Viewers were more reliable with one link covering the whole row than
-			// several tiny adjacent annotations for label, leaders, and page no.
-			if err := adder.AddTargetLink(left, entryTop, ContentRight(i)-left, entry.height, entry.target); err != nil {
-				return err
-			}
-		}
+		i.activeChildren = append(i.activeChildren, child)
+		i.expandedTargets = append(i.expandedTargets, entry.Target)
 	}
 	return nil
 }
 
-func (i *StdIndex) preparedEntries(w Writer) []preparedIndexEntry {
-	entries := i.currentEntries()
-	if len(entries) == 0 {
+func (i *StdIndex) templateWidget() (Widget, error) {
+	children := i.children
+	if len(children) == 0 {
+		return i.defaultTemplateWidget(), nil
+	}
+	if len(children) != 1 {
+		return nil, fmt.Errorf("<index> supports exactly one block template child")
+	}
+	switch children[0].(type) {
+	case *StdParagraph, *StdLabel, *StdContainer:
+		return children[0], nil
+	default:
+		return nil, fmt.Errorf("<index> template child must be a block widget, got %T", children[0])
+	}
+}
+
+func (i *StdIndex) defaultTemplateWidget() Widget {
+	row := &StdParagraph{}
+	row.SetScope(i.scope)
+	row.SetDoc(i.doc)
+	baseFont := i.Font()
+	row.textPieces = []textPiece{
+		{content: &StdIndexTitle{}, font: baseFont},
+		{content: &StdLeader{}, font: baseFont},
+		{content: &StdIndexPage{}, font: baseFont},
+	}
+	row.SetWidthPct(100)
+	return row
+}
+
+func (i *StdIndex) cloneTemplateWidget(widget Widget, entry resolvedIndexEntry) (Widget, error) {
+	clone := cloneWidgetShallow(widget)
+	clone.SetPrinted(false)
+	clone.SetVisible(true)
+	clone.SetDisabled(false)
+	if pathSetter, ok := clone.(interface{ SetPath(string) }); ok {
+		pathSetter.SetPath("")
+	}
+
+	switch value := clone.(type) {
+	case *StdParagraph:
+		value.children = nil
+		value.activeChildren = nil
+		value.textPieces = rewriteIndexTextPieces(value.textPieces, entry)
+		value.richText = nil
+		value.splitLines = nil
+	case *StdLabel:
+		value.children = nil
+		value.activeChildren = nil
+		value.textPieces = rewriteIndexTextPieces(value.textPieces, entry)
+		value.richText = nil
+	case *StdContainer:
+		value.children = nil
+		value.activeChildren = nil
+		source := widget.(Container)
+		for _, child := range source.Widgets() {
+			next, err := i.cloneTemplateWidget(child, entry)
+			if err != nil {
+				return nil, err
+			}
+			if wc, ok := next.(WantsContainer); ok {
+				if err := wc.SetContainer(value); err != nil {
+					return nil, err
+				}
+			}
+			value.activeChildren = append(value.activeChildren, next)
+		}
+	}
+	if wc, ok := clone.(WantsContainer); ok {
+		if err := wc.SetContainer(i); err != nil {
+			return nil, err
+		}
+	}
+	return clone, nil
+}
+
+func rewriteIndexTextPieces(pieces []textPiece, entry resolvedIndexEntry) []textPiece {
+	if len(pieces) == 0 {
 		return nil
 	}
-	result := make([]preparedIndexEntry, 0, len(entries))
-	for _, entry := range entries {
-		// Rebuild measurement data from the active snapshot on each pass so the
-		// index can respond to page-number changes while convergence settles.
-		pageText := i.richTextForString(w, formatPageNo(entry.PageNo))
-		pageX := ContentRight(i) - pageText.Width()
-		labelWidth := pageX - ContentLeft(i) - i.gapWidth(w)
-		if labelWidth < 0 {
-			labelWidth = 0
+	result := make([]textPiece, 0, len(pieces))
+	for _, piece := range pieces {
+		switch piece.content.(type) {
+		case *StdIndexTitle:
+			result = append(result, newStaticTextPiece(entry.Label, indexPieceFont(piece)))
+		case *StdIndexPage:
+			result = append(result, newStaticTextPiece(formatPageNo(entry.PageNo), indexPieceFont(piece)))
+		default:
+			result = append(result, piece)
 		}
-		labelText := i.richTextForString(w, entry.Label)
-		labelLines := i.wrapLines(labelText, labelWidth)
-		dots := i.dotLeader(w, labelLines, pageX)
-		height := i.linesHeight(w, labelLines, pageText)
-		result = append(result, preparedIndexEntry{
-			labelLines: labelLines,
-			pageText:   pageText,
-			dots:       dots,
-			height:     height,
-			pageX:      pageX,
-			target:     entry.Target,
-		})
 	}
 	return result
 }
 
-func (i *StdIndex) dotLeader(w Writer, labelLines []*rich_text.RichText, pageX float64) *rich_text.RichText {
-	if len(labelLines) == 0 {
+func indexPieceFont(piece textPiece) *FontStyle {
+	if piece.font != nil {
+		return piece.font
+	}
+	content, ok := piece.content.(inlineTextWithFont)
+	if !ok {
 		return nil
 	}
-	dot := i.richTextForString(w, ".")
-	if dot.Len() == 0 || dot.Width() <= 0 {
-		return nil
-	}
-	gapWidth := pageX - ContentLeft(i) - labelLines[0].Width()
-	if gapWidth <= dot.Width() {
-		return nil
-	}
-	count := int(gapWidth / dot.Width())
-	if count < 2 {
-		return nil
-	}
-	return i.richTextForString(w, strings.Repeat(".", count))
+	return content.Font()
 }
 
-func (i *StdIndex) gapWidth(w Writer) float64 {
-	dot := i.richTextForString(w, "..")
-	if dot.Len() == 0 || dot.Width() == 0 {
-		return 8
+func (i *StdIndex) wrapSplitFragment(fragment Widget) *StdIndex {
+	if fragment == nil {
+		return nil
 	}
-	return dot.Width()
-}
-
-func (i *StdIndex) linesHeight(w Writer, labelLines []*rich_text.RichText, pageText *rich_text.RichText) float64 {
-	if len(labelLines) == 0 {
-		if pageText == nil || pageText.Len() == 0 {
-			return 0
+	fragmentContainer, ok := fragment.(*StdContainer)
+	if !ok {
+		return nil
+	}
+	targets := i.targetsForChildren(fragmentContainer.Widgets())
+	clone := *i
+	clone.activeChildren = append([]Widget(nil), fragmentContainer.Widgets()...)
+	clone.expandedTargets = targets
+	clone.expandErr = nil
+	clone.clearMeasuredGeometry()
+	clone.printed = false
+	clone.invisible = false
+	clone.disabled = false
+	clone.path = ""
+	for _, child := range clone.activeChildren {
+		if wc, ok := child.(WantsContainer); ok {
+			_ = wc.SetContainer(&clone)
 		}
-		return pageText.Leading()*w.LineSpacing() - pageText.Height()*(w.LineSpacing()-1) - pageText.LineGap()
 	}
-	height := 0.0
-	for _, line := range labelLines {
-		height += line.Leading() * w.LineSpacing()
-	}
-	last := labelLines[len(labelLines)-1]
-	height -= last.Height() * (w.LineSpacing() - 1)
-	height -= last.LineGap()
-	return height
+	return &clone
 }
 
-func (i *StdIndex) richTextForString(w Writer, text string) *rich_text.RichText {
-	if text == "" {
-		return &rich_text.RichText{}
-	}
-	if i.font != nil {
-		i.font.applyWithSize(w, i.font.ResolveAgainstBase(rootFontSizeForContainer(i.container)))
-	} else {
-		i.Font().applyWithSize(w, effectiveFontSizeForContainer(i.container))
-	}
-	rt, err := rich_text.New(text, w.Fonts(), w.FontSize(), i.Font().RichTextOptions())
-	if err != nil {
-		debugf("StdIndex.richTextForString: %v", err)
-		return &rich_text.RichText{}
-	}
-	return rt
-}
-
-func (i *StdIndex) sourceKey() *StdIndex {
-	if i.source != nil {
-		return i.source
-	}
-	return i
-}
-
-func (i *StdIndex) wrapLines(rt *rich_text.RichText, width float64) []*rich_text.RichText {
-	if rt == nil || rt.Len() == 0 {
+func (i *StdIndex) targetsForChildren(children []Widget) []string {
+	if len(children) == 0 {
 		return nil
 	}
-	flags := make([]wordbreaking.Flags, rt.Len())
-	wordbreaking.MarkRuneAttributes(rt.String(), flags)
-	return rt.WrapToWidth(width, flags, false)
+	byLogicalID := make(map[string]string, len(i.activeChildren))
+	for idx, child := range i.activeChildren {
+		if idx >= len(i.expandedTargets) {
+			break
+		}
+		logicalID := widgetLogicalID(child)
+		if logicalID == "" {
+			continue
+		}
+		byLogicalID[logicalID] = i.expandedTargets[idx]
+	}
+	targets := make([]string, 0, len(children))
+	for _, child := range children {
+		targets = append(targets, byLogicalID[widgetLogicalID(child)])
+	}
+	return targets
+}
+
+func widgetLogicalID(widget Widget) string {
+	identified, ok := widget.(interface{ AccessibilityLogicalID() string })
+	if !ok {
+		return ""
+	}
+	return identified.AccessibilityLogicalID()
 }
 
 func init() {
 	registerTag(DefaultSpace, "index", func() any { return &StdIndex{} })
 }
 
+var _ Container = (*StdIndex)(nil)
 var _ HasAttrs = (*StdIndex)(nil)
 var _ Identifier = (*StdIndex)(nil)
 var _ Splittable = (*StdIndex)(nil)

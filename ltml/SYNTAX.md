@@ -174,7 +174,7 @@ Inner page-dependent semantics are treated as visual-only during capture:
 
 - inner links and destinations do not create PDF annotations
 - inner `<pageno>` resolves to empty text
-- inner `<index>` and `<index_entry>` widgets do not participate in document indexes
+- inner `<index>` and `<index-entry>` widgets do not participate in document indexes
 - child tagged-PDF structure is suppressed so accessibility stays on the outer `<draw>`
 
 ---

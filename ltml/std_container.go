@@ -373,7 +373,7 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 }
 
 func (c *StdContainer) SplitEnabled() bool {
-	if c == nil || c.LayoutStyle() == nil {
+	if c.LayoutStyle() == nil {
 		return false
 	}
 	switch c.LayoutStyle().manager {

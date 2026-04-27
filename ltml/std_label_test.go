@@ -503,6 +503,46 @@ func TestStdLabel_RichText_ReappliesFontsWhenUsingCachedRichText(t *testing.T) {
 	}
 }
 
+func TestStdLabel_LeaderRespectsTextAlignAndAngle(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.angle = 30
+	l.textAlign = HAlignRight
+	l.textAlignSet = true
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.SetWidth(120)
+	l.AddText("Beta")
+	l.AddInlineWithFont(&StdLeader{text: "*"}, l.font)
+	l.AddText("Gamma")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	rt := l.layoutRichText(w)
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.moves) != 1 {
+		t.Fatalf("move count = %d, want 1", len(w.moves))
+	}
+	wantX := ContentRight(l) - rt.Width()
+	wantY := ContentTop(l) + rt.Ascent()
+	if math.Abs(w.moves[0][0]-wantX) > 0.001 {
+		t.Fatalf("move x = %v, want %v", w.moves[0][0], wantX)
+	}
+	if math.Abs(w.moves[0][1]-wantY) > 0.001 {
+		t.Fatalf("move y = %v, want %v", w.moves[0][1], wantY)
+	}
+	if len(w.rotations) != 1 {
+		t.Fatalf("rotation count = %d, want 1", len(w.rotations))
+	}
+	if math.Abs(w.rotations[0].x-ContentRight(l)) > 0.001 {
+		t.Fatalf("rotation x = %v, want %v", w.rotations[0].x, ContentRight(l))
+	}
+	if math.Abs(w.rotations[0].y-wantY) > 0.001 {
+		t.Fatalf("rotation y = %v, want %v", w.rotations[0].y, wantY)
+	}
+}
+
 func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -655,6 +695,25 @@ func TestStdLabel_DrawContent_ShrinksToFitWidth(t *testing.T) {
 		t.Fatalf("printed width = %v, want shrink from %v", gotWidth, l.RichText(w).Width())
 	}
 	assertAllLeafFontSizesBelow(t, got, 12)
+}
+
+func TestStdLabel_LeaderShrinksToFitWidth(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetWidth(45)
+	l.shrinkToFit = true
+	l.AddText("Beta")
+	l.AddInlineWithFont(&StdLeader{text: "."}, l.font)
+	l.AddText("Gamma")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	rt := l.layoutRichText(w)
+	if rt.Width() > ContentWidth(l)+0.001 {
+		t.Fatalf("leader layout width = %v, want <= %v", rt.Width(), ContentWidth(l))
+	}
+	if rt.Width() >= l.RichText(w).Width() {
+		t.Fatalf("leader layout width = %v, want shrink from %v", rt.Width(), l.RichText(w).Width())
+	}
 }
 
 func TestStdLabel_DrawContent_DoesNotShrinkWithoutFit(t *testing.T) {

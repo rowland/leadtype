@@ -198,11 +198,9 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 					doc.parseErr = fmt.Errorf("<canvas> must be direct child of <ltml>")
 					return e, capturesBody
 				}
-				if wc, ok := any(canvas).(WantsContainer); ok {
-					if err = wc.SetContainer(parentCurrent); err != nil {
-						doc.parseErr = err
-						return e, capturesBody
-					}
+				if err = setWidgetContainer(parentCurrent, canvas); err != nil {
+					doc.parseErr = err
+					return e, capturesBody
 				}
 			} else if isRadialLayoutStyle(parent.LayoutStyle()) {
 				if _, isSector := widget.(*StdSector); !isSector {
@@ -210,32 +208,24 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 					if ws, ok := any(wrapper).(WantsScope); ok {
 						ws.SetScope(doc.scope())
 					}
-					parentCurrent.AddChild(wrapper)
-					if wc, ok := any(wrapper).(WantsContainer); ok {
-						if err = wc.SetContainer(parentCurrent); err != nil {
-							debugf("Setting radial wrapper container: %s\n", err)
-						}
+					if err = attachWidgetToContainer(wrapper, widget); err != nil {
+						doc.parseErr = err
+						return e, capturesBody
 					}
-					wrapper.AddChild(widget)
-					if wc, ok := e.(WantsContainer); ok {
-						if err = wc.SetContainer(wrapper); err != nil {
-							debugf("Setting wrapped container: %s\n", err)
-						}
+					if err = attachWidgetToContainer(parentCurrent, wrapper); err != nil {
+						doc.parseErr = err
+						return e, capturesBody
 					}
 				} else {
-					parentCurrent.AddChild(widget)
-					if wc, ok := e.(WantsContainer); ok {
-						if err = wc.SetContainer(parentCurrent); err != nil {
-							debugf("Setting container: %s\n", err)
-						}
+					if err = attachWidgetToContainer(parentCurrent, widget); err != nil {
+						doc.parseErr = err
+						return e, capturesBody
 					}
 				}
 			} else {
-				parentCurrent.AddChild(widget)
-				if wc, ok := e.(WantsContainer); ok {
-					if err = wc.SetContainer(parentCurrent); err != nil {
-						debugf("Setting container: %s\n", err)
-					}
+				if err = attachWidgetToContainer(parentCurrent, widget); err != nil {
+					doc.parseErr = err
+					return e, capturesBody
 				}
 			}
 		}
@@ -349,6 +339,23 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		capturesBody = true
 	}
 	return e, capturesBody
+}
+
+func attachWidgetToContainer(parent Container, widget Widget) error {
+	if err := setWidgetContainer(parent, widget); err != nil {
+		return err
+	}
+	parent.AddChild(widget)
+	return nil
+}
+
+func setWidgetContainer(parent Container, widget Widget) error {
+	if wc, ok := any(widget).(WantsContainer); ok {
+		if err := wc.SetContainer(parent); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func defaultElementAttrs(scope HasScope, target any, aliasDefaults map[string]string) map[string]string {

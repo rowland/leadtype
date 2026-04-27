@@ -48,6 +48,7 @@ type documentIndexSnapshot struct {
 // durable PDF output; the final pass uses the stabilized snapshot for rendering.
 type documentRenderContext struct {
 	activeSnapshot   *documentIndexSnapshot
+	activeIndexEntry *resolvedIndexEntry
 	destinations     map[string]documentDestination
 	indexEntries     []collectedIndexEntry
 	seenIndexEntries map[Widget]bool
@@ -206,11 +207,11 @@ func (d *StdDocument) describeLinking() (*documentLinkSummary, error) {
 			summary.indexIDs[value.ID] = struct{}{}
 		case *StdIndexEntry:
 			if value.indexID == "" {
-				err = fmt.Errorf("<index_entry> requires an index attribute")
+				err = fmt.Errorf("<index-entry> requires an index attribute")
 				return false
 			}
 			if value.target == "" {
-				err = fmt.Errorf("<index_entry> requires a target attribute")
+				err = fmt.Errorf("<index-entry> requires a target attribute")
 				return false
 			}
 			summary.hasIndexes = true
@@ -301,7 +302,8 @@ func (d *StdDocument) resetRenderState() {
 		case *StdContainer:
 			value.activeChildren = nil
 		case *StdIndex:
-			value.clearSplitOverride()
+			value.clearExpandedState()
+			value.clearMeasuredGeometry()
 		}
 		return true
 	})

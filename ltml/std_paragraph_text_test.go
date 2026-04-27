@@ -2,6 +2,7 @@ package ltml
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/rowland/leadtype/pdf"
@@ -148,6 +149,51 @@ func TestStdParagraph_RichText_ReappliesFontsWhenUsingCachedRichText(t *testing.
 	}
 	if len(render.setFontCalls) == 0 {
 		t.Fatal("expected cached rich text path to apply fonts to the render writer")
+	}
+}
+
+func TestStdParagraph_LeaderWrapsWithLeaderOnFinalLine(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.SetWidth(90)
+	p.AddText("A very long introduction heading ")
+	p.AddInlineWithFont(&StdLeader{text: "."}, p.font)
+	p.AddText("2")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) < 2 {
+		t.Fatalf("wrapped line count = %d, want at least 2", len(lines))
+	}
+	if strings.Contains(lines[0].String(), "2") || strings.Contains(lines[0].String(), ".") {
+		t.Fatalf("first line = %q, want no leader or page number", lines[0].String())
+	}
+	last := lines[len(lines)-1].String()
+	if !strings.Contains(last, "2") || !strings.Contains(last, ".") {
+		t.Fatalf("last line = %q, want final-line leader and page number", last)
+	}
+}
+
+func TestStdParagraph_LeaderPathStillDrawsBullet(t *testing.T) {
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.paragraphStyle = &ParagraphStyle{}
+	p.bullet = &BulletStyle{text: "*", width: 18, font: p.font}
+	p.SetWidth(120)
+	p.AddText("Alpha")
+	p.AddInlineWithFont(&StdLeader{text: "-"}, p.font)
+	p.AddText("Omega")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := p.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.plainPrinted) != 1 || w.plainPrinted[0] != "*" {
+		t.Fatalf("bullet output = %#v, want [*]", w.plainPrinted)
+	}
+	if len(w.printed) != 1 || !strings.Contains(w.printed[0].String(), "Omega") || !strings.Contains(w.printed[0].String(), "-") {
+		t.Fatalf("printed lines = %#v, want leader paragraph output", w.printed)
 	}
 }
 

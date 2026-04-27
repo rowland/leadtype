@@ -12,6 +12,25 @@ func testSectorFont() *FontStyle {
 	return &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 }
 
+func TestStdSector_RichText_ReappliesFontsWhenUsingCachedRichText(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	sector.AddText("Hello")
+
+	probe := &mockWriter{t: t}
+	if got := sector.RichText(probe); got == nil {
+		t.Fatal("expected cached rich text to be built")
+	}
+
+	render := &mockWriter{t: t}
+	if got := sector.RichText(render); got == nil {
+		t.Fatal("expected cached rich text to be returned")
+	}
+	if len(render.setFontCalls) == 0 {
+		t.Fatal("expected cached rich text path to apply fonts to the render writer")
+	}
+}
+
 func TestParse_RadialWrapsDirectChildInSector(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>

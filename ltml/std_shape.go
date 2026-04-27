@@ -32,10 +32,6 @@ func (s *StdShape) drawChildren(w Writer) error {
 	return s.StdContainer.drawChildren(w)
 }
 
-func (s *StdShape) hasBorderOrFill() (bool, bool) {
-	return s.border != nil, s.fill != nil
-}
-
 func (s *StdShape) applyBorderAndFill(w Writer) {
 	if s.border != nil {
 		s.border.Apply(w)

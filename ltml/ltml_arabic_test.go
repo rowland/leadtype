@@ -5,6 +5,7 @@ import "testing"
 func TestArabicSamples(t *testing.T) {
 	samples := []string{
 		"test_033_arabic_program",
+		"test_055_arabic_index",
 	}
 
 	for _, sample := range samples {

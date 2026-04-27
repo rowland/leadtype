@@ -32,30 +32,11 @@ func (p *StdParagraph) AddText(text string) {
 }
 
 func (p *StdParagraph) AddTextWithFont(text string, font *FontStyle) {
-	text = normalizeXMLText(text)
-	if text == "" {
-		return
-	}
-	if len(p.textPieces) == 0 {
-		text = strings.TrimLeftFunc(text, unicode.IsSpace)
-		if text == "" {
-			return
-		}
-	} else if last := &p.textPieces[len(p.textPieces)-1]; strings.HasSuffix(last.ResolvedText(nil), " ") && strings.HasPrefix(text, " ") {
-		text = text[1:]
-	}
-	p.richText = nil
-	if len(p.textPieces) > 0 && p.textPieces[len(p.textPieces)-1].font == font && !p.textPieces[len(p.textPieces)-1].Dynamic() {
-		lastText := p.textPieces[len(p.textPieces)-1].ResolvedText(nil)
-		p.textPieces[len(p.textPieces)-1].content = staticInlineText(lastText + text)
-		return
-	}
-	p.textPieces = append(p.textPieces, newStaticTextPiece(text, font))
+	addNormalizedTextPiece(&p.textPieces, &p.richText, text, font, normalizeXMLText)
 }
 
 func (p *StdParagraph) AddInlineWithFont(content inlineText, font *FontStyle) {
-	p.richText = nil
-	p.textPieces = append(p.textPieces, textPiece{content: content, font: font})
+	addInlineTextPiece(&p.textPieces, &p.richText, content, font)
 }
 
 func normalizeXMLText(text string) string {
@@ -105,12 +86,16 @@ func (p *StdParagraph) bulletWidth() float64 {
 
 func (p *StdParagraph) DrawContent(w Writer) error {
 	return withWidgetRoleAccessibility(w, &p.StdWidget, "P", p.AccessibilityText(), func() error {
+		if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
+			para := p.Lines(w, p.lineWidth())
+			if len(para) == 0 {
+				return nil
+			}
+			return provider.drawSectorParagraph(p, w, provider.sectorParagraphLayoutFor(p, w))
+		}
 		para := p.Lines(w, p.lineWidth())
 		if len(para) == 0 {
 			return nil
-		}
-		if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
-			return provider.drawSectorParagraph(p, w, provider.sectorParagraphLayoutFor(p, w))
 		}
 		indent := p.textIndent()
 		textX := p.textStartX(indent)
@@ -143,6 +128,12 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
 		return provider.sectorParagraphLayoutFor(p, w).lines
 	}
+	// A leader only changes how the final visible line is composed. If no
+	// leader placeholder is present, this falls straight through to ordinary
+	// rich-text wrapping.
+	if lines, ok := prepareLeaderLines(w, p, p.textPieces, width, true); ok {
+		return lines
+	}
 	rt := p.RichText(w)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
@@ -167,60 +158,14 @@ func (p *StdParagraph) PreferredWidth(w Writer) float64 {
 	if p.width != 0 {
 		return p.width
 	}
+	if lines, ok := prepareLeaderLines(w, p, p.textPieces, ContentWidth(p.container), true); ok {
+		return lineMaxWidth(lines) + p.bulletWidth() + NonContentWidth(p) + 1
+	}
 	return p.RichText(w).Width() + p.bulletWidth() + NonContentWidth(p) + 1
 }
 
 func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
-	doc := documentForContainer(p)
-	if p.richText != nil && !p.hasDynamicText() {
-		p.applyFonts(w)
-		return p.richText
-	}
-	rt := &rich_text.RichText{}
-	lastText := ""
-	for _, piece := range p.textPieces {
-		font := applyTextPieceFontForContainer(w, p, piece, p.Font())
-		text := piece.ResolvedText(doc)
-		if text == "" {
-			continue
-		}
-		if strings.HasSuffix(lastText, " ") && strings.HasPrefix(text, " ") {
-			text = text[1:]
-		}
-		if text == "" {
-			continue
-		}
-		var err error
-		rt, err = rt.Add(
-			text,
-			w.Fonts(),
-			w.FontSize(),
-			piece.RichTextOptions(font.RichTextOptions()),
-		)
-		if err != nil {
-			debugf("StdParagraph.RichText: %v", err)
-		}
-		lastText = text
-	}
-	if !p.hasDynamicText() {
-		p.richText = rt
-	}
-	return rt
-}
-
-func (p *StdParagraph) applyFonts(w Writer) {
-	for _, piece := range p.textPieces {
-		applyTextPieceFontForContainer(w, p, piece, p.Font())
-	}
-}
-
-func (p *StdParagraph) hasDynamicText() bool {
-	for _, piece := range p.textPieces {
-		if piece.Dynamic() {
-			return true
-		}
-	}
-	return false
+	return richTextForTextPieces(w, p, p.textPieces, &p.richText, p.Font())
 }
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
@@ -288,6 +233,9 @@ func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, start
 
 func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
 	if p.splitDisabled {
+		return nil, nil
+	}
+	if _, ok := detectLeaderPieces(p.textPieces); ok {
 		return nil, nil
 	}
 	lines := p.Lines(w, p.lineWidth())
