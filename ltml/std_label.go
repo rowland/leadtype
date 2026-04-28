@@ -116,7 +116,7 @@ func (l *StdLabel) DrawContent(w Writer) error {
 
 func (l *StdLabel) PreferredHeight(w Writer) float64 {
 	if l.height != 0 {
-		return l.height
+		return float64(l.height)
 	}
 	rt := l.layoutRichText(w)
 	if rt.Len() == 0 {
@@ -127,7 +127,7 @@ func (l *StdLabel) PreferredHeight(w Writer) float64 {
 
 func (l *StdLabel) PreferredWidth(w Writer) float64 {
 	if l.width != 0 {
-		return l.width
+		return float64(l.width)
 	}
 	rt := l.layoutRichText(w)
 	return rt.Width() + NonContentWidth(l)

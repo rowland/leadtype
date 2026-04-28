@@ -41,14 +41,14 @@ func (l *StdLine) Length() float64 {
 
 func (l *StdLine) PreferredHeight(Writer) float64 {
 	if l.height != 0 {
-		return l.height
+		return float64(l.height)
 	}
 	return math.Abs(math.Sin(degreesToRadians(l.Angle())))*l.Length() + NonContentHeight(l)
 }
 
 func (l *StdLine) PreferredWidth(Writer) float64 {
 	if l.width != 0 {
-		return l.width
+		return float64(l.width)
 	}
 	return math.Abs(math.Cos(degreesToRadians(l.Angle())))*l.Length() + NonContentWidth(l)
 }

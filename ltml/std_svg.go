@@ -39,28 +39,28 @@ func (svg *StdSVG) DrawContent(w Writer) error {
 
 func (svg *StdSVG) PreferredHeight(w Writer) float64 {
 	if svg.height != 0 {
-		return svg.height
+		return float64(svg.height)
 	}
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
 	if err != nil || infoWidth == 0 {
 		return NonContentHeight(svg)
 	}
 	if svg.width != 0 {
-		return svg.width*float64(infoHeight)/float64(infoWidth) + NonContentHeight(svg)
+		return float64(svg.width)*float64(infoHeight)/float64(infoWidth) + NonContentHeight(svg)
 	}
 	return float64(infoHeight) + NonContentHeight(svg)
 }
 
 func (svg *StdSVG) PreferredWidth(w Writer) float64 {
 	if svg.width != 0 {
-		return svg.width
+		return float64(svg.width)
 	}
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
 	if err != nil || infoHeight == 0 {
 		return NonContentWidth(svg)
 	}
 	if svg.height != 0 {
-		return svg.height*float64(infoWidth)/float64(infoHeight) + NonContentWidth(svg)
+		return float64(svg.height)*float64(infoWidth)/float64(infoHeight) + NonContentWidth(svg)
 	}
 	return float64(infoWidth) + NonContentWidth(svg)
 }

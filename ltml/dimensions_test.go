@@ -36,23 +36,23 @@ func TestDimensions_SetAttrs(t *testing.T) {
 			var d Dimensions
 			d.SetAttrs(tc.attrs, "")
 
-			if d.width != tc.wantWidth {
-				t.Errorf("width: expected %v, got %v", tc.wantWidth, d.width)
+			if got := float64(d.width); got != tc.wantWidth {
+				t.Errorf("width: expected %v, got %v", tc.wantWidth, got)
 			}
-			if d.widthPct != tc.wantWidthPct {
-				t.Errorf("widthPct: expected %v, got %v", tc.wantWidthPct, d.widthPct)
+			if got := float64(d.widthPct); got != tc.wantWidthPct {
+				t.Errorf("widthPct: expected %v, got %v", tc.wantWidthPct, got)
 			}
-			if d.widthRel != tc.wantWidthRel {
-				t.Errorf("widthRel: expected %v, got %v", tc.wantWidthRel, d.widthRel)
+			if got := float64(d.widthRel); got != tc.wantWidthRel {
+				t.Errorf("widthRel: expected %v, got %v", tc.wantWidthRel, got)
 			}
-			if d.height != tc.wantHeight {
-				t.Errorf("height: expected %v, got %v", tc.wantHeight, d.height)
+			if got := float64(d.height); got != tc.wantHeight {
+				t.Errorf("height: expected %v, got %v", tc.wantHeight, got)
 			}
-			if d.heightPct != tc.wantHeightPct {
-				t.Errorf("heightPct: expected %v, got %v", tc.wantHeightPct, d.heightPct)
+			if got := float64(d.heightPct); got != tc.wantHeightPct {
+				t.Errorf("heightPct: expected %v, got %v", tc.wantHeightPct, got)
 			}
-			if d.heightRel != tc.wantHeightRel {
-				t.Errorf("heightRel: expected %v, got %v", tc.wantHeightRel, d.heightRel)
+			if got := float64(d.heightRel); got != tc.wantHeightRel {
+				t.Errorf("heightRel: expected %v, got %v", tc.wantHeightRel, got)
 			}
 			if d.widthSet != tc.wantWidthSet {
 				t.Errorf("widthSet: expected %v, got %v", tc.wantWidthSet, d.widthSet)

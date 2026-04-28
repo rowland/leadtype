@@ -107,7 +107,7 @@ func (c *StdContainer) Widgets() []Widget {
 
 func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	if c.height != 0 {
-		return c.height
+		return float64(c.height)
 	}
 	c.prepareForLayout(w)
 	if isRadialLayoutStyle(c.layout) {
@@ -126,7 +126,7 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 
 func (c *StdContainer) PreferredWidth(w Writer) float64 {
 	if c.width != 0 {
-		return c.width
+		return float64(c.width)
 	}
 	if isRadialLayoutStyle(c.layout) {
 		if width, ok := c.radialInferredWidth(); ok {

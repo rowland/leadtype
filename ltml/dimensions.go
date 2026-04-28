@@ -14,13 +14,13 @@ type Dimensions struct {
 	margin    Sides
 	padding   Sides
 	corners   Corners
-	width     float64
-	widthPct  float64
-	widthRel  float64
+	width     float32
+	widthPct  float32
+	widthRel  float32
+	height    float32
+	heightPct float32
+	heightRel float32
 	widthSet  bool
-	height    float64
-	heightPct float64
-	heightRel float64
 	heightSet bool
 }
 
@@ -30,35 +30,35 @@ var (
 )
 
 func (d *Dimensions) MarginTop() float64 {
-	return d.margin[topSide].Value
+	return d.margin[topSide].Float64()
 }
 
 func (d *Dimensions) MarginRight() float64 {
-	return d.margin[rightSide].Value
+	return d.margin[rightSide].Float64()
 }
 
 func (d *Dimensions) MarginBottom() float64 {
-	return d.margin[bottomSide].Value
+	return d.margin[bottomSide].Float64()
 }
 
 func (d *Dimensions) MarginLeft() float64 {
-	return d.margin[leftSide].Value
+	return d.margin[leftSide].Float64()
 }
 
 func (d *Dimensions) PaddingTop() float64 {
-	return d.padding[topSide].Value
+	return d.padding[topSide].Float64()
 }
 
 func (d *Dimensions) PaddingRight() float64 {
-	return d.padding[rightSide].Value
+	return d.padding[rightSide].Float64()
 }
 
 func (d *Dimensions) PaddingBottom() float64 {
-	return d.padding[bottomSide].Value
+	return d.padding[bottomSide].Float64()
 }
 
 func (d *Dimensions) PaddingLeft() float64 {
-	return d.padding[leftSide].Value
+	return d.padding[leftSide].Float64()
 }
 
 func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
@@ -109,15 +109,15 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 }
 
 func (d *Dimensions) SetHeight(value float64) {
-	d.height, d.heightPct, d.heightRel, d.heightSet = value, 0, 0, true
+	d.height, d.heightPct, d.heightRel, d.heightSet = float32(value), 0, 0, true
 }
 
 func (d *Dimensions) SetHeightPct(value float64) {
-	d.heightPct, d.height, d.heightRel, d.heightSet = value, 0, 0, true
+	d.heightPct, d.height, d.heightRel, d.heightSet = float32(value), 0, 0, true
 }
 
 func (d *Dimensions) SetHeightRel(value float64) {
-	d.heightRel, d.height, d.heightPct, d.heightSet = value, 0, 0, true
+	d.heightRel, d.height, d.heightPct, d.heightSet = float32(value), 0, 0, true
 }
 
 func (d *Dimensions) HeightIsSet() bool {
@@ -141,15 +141,15 @@ func (d *Dimensions) SetLeft(value float64) {
 }
 
 func (d *Dimensions) SetWidth(value float64) {
-	d.width, d.widthPct, d.widthRel, d.widthSet = value, 0, 0, true
+	d.width, d.widthPct, d.widthRel, d.widthSet = float32(value), 0, 0, true
 }
 
 func (d *Dimensions) SetWidthPct(value float64) {
-	d.widthPct, d.widthRel, d.width, d.widthSet = value, 0, 0, true
+	d.widthPct, d.widthRel, d.width, d.widthSet = float32(value), 0, 0, true
 }
 
 func (d *Dimensions) SetWidthRel(value float64) {
-	d.widthRel, d.widthPct, d.width, d.widthSet = value, 0, 0, true
+	d.widthRel, d.widthPct, d.width, d.widthSet = float32(value), 0, 0, true
 }
 
 func (d *Dimensions) String() string {

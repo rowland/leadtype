@@ -142,7 +142,7 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 
 func (p *StdParagraph) PreferredHeight(w Writer) float64 {
 	if p.height != 0 {
-		return p.height
+		return float64(p.height)
 	}
 	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
 		return NonContentHeight(p) + provider.sectorParagraphLayoutFor(p, w).total
@@ -156,7 +156,7 @@ func (p *StdParagraph) AccessibilityText() string {
 
 func (p *StdParagraph) PreferredWidth(w Writer) float64 {
 	if p.width != 0 {
-		return p.width
+		return float64(p.width)
 	}
 	if lines, ok := prepareLeaderLines(w, p, p.textPieces, ContentWidth(p.container), true); ok {
 		return lineMaxWidth(lines) + p.bulletWidth() + NonContentWidth(p) + 1

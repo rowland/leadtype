@@ -29,28 +29,28 @@ func (img *StdImage) DrawContent(w Writer) error {
 
 func (img *StdImage) PreferredHeight(w Writer) float64 {
 	if img.height != 0 {
-		return img.height
+		return float64(img.height)
 	}
 	infoWidth, infoHeight, err := img.imageDimensions(w)
 	if err != nil || infoWidth == 0 {
 		return NonContentHeight(img)
 	}
 	if img.width != 0 {
-		return img.width*float64(infoHeight)/float64(infoWidth) + NonContentHeight(img)
+		return float64(img.width)*float64(infoHeight)/float64(infoWidth) + NonContentHeight(img)
 	}
 	return float64(infoHeight) + NonContentHeight(img)
 }
 
 func (img *StdImage) PreferredWidth(w Writer) float64 {
 	if img.width != 0 {
-		return img.width
+		return float64(img.width)
 	}
 	infoWidth, infoHeight, err := img.imageDimensions(w)
 	if err != nil || infoHeight == 0 {
 		return NonContentWidth(img)
 	}
 	if img.height != 0 {
-		return img.height*float64(infoWidth)/float64(infoHeight) + NonContentWidth(img)
+		return float64(img.height)*float64(infoWidth)/float64(infoHeight) + NonContentWidth(img)
 	}
 	return float64(infoWidth) + NonContentWidth(img)
 }

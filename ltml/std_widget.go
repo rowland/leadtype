@@ -106,7 +106,7 @@ func (widget *StdWidget) DrawBorder(w Writer) error {
 		w.Rectangle2(x1, y1,
 			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
 			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
-			true, false, widget.corners, false, false)
+			true, false, widget.corners.Float64s(), false, false)
 	}
 	if widget.borders[topSide] != nil {
 		widget.borders[topSide].Apply(w)
@@ -385,7 +385,7 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		return widget.paintImageBrushInRect(w, brush.image, x, y, width, height)
 	default:
 		brush.Apply(w)
-		w.Rectangle2(x, y, width, height, false, true, widget.corners, false, false)
+		w.Rectangle2(x, y, width, height, false, true, widget.corners.Float64s(), false, false)
 		return nil
 	}
 }
@@ -393,7 +393,7 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 func (widget *StdWidget) paintClippedRect(w Writer, x, y, width, height float64, paint func() error) error {
 	var paintErr error
 	if err := w.Path(func() {
-		w.Rectangle2(x, y, width, height, false, false, widget.corners, true, false)
+		w.Rectangle2(x, y, width, height, false, false, widget.corners.Float64s(), true, false)
 		if err := w.Clip(func() {
 			paintErr = paint()
 		}); err != nil && paintErr == nil {
@@ -700,42 +700,42 @@ func (widget *StdWidget) String() string {
 
 func (widget *StdWidget) Top() float64 {
 	if widget.sides[topSide].IsSet {
-		return widget.resolveTop(widget.sides[topSide].Value)
+		return widget.resolveTop(widget.sides[topSide].Float64())
 	}
 	if !widget.sides[bottomSide].IsSet || widget.Height() == 0 {
 		return 0
 	}
-	return widget.resolveBottom(widget.sides[bottomSide].Value) - widget.Height()
+	return widget.resolveBottom(widget.sides[bottomSide].Float64()) - widget.Height()
 }
 
 func (widget *StdWidget) Right() float64 {
 	if widget.sides[rightSide].IsSet {
-		return widget.resolveRight(widget.sides[rightSide].Value)
+		return widget.resolveRight(widget.sides[rightSide].Float64())
 	}
 	if !widget.sides[leftSide].IsSet || widget.Width() == 0 {
 		return 0
 	}
-	return widget.resolveLeft(widget.sides[leftSide].Value) + widget.Width()
+	return widget.resolveLeft(widget.sides[leftSide].Float64()) + widget.Width()
 }
 
 func (widget *StdWidget) Bottom() float64 {
 	if widget.sides[bottomSide].IsSet {
-		return widget.resolveBottom(widget.sides[bottomSide].Value)
+		return widget.resolveBottom(widget.sides[bottomSide].Float64())
 	}
 	if !widget.sides[topSide].IsSet || widget.Height() == 0 {
 		return 0
 	}
-	return widget.resolveTop(widget.sides[topSide].Value) + widget.Height()
+	return widget.resolveTop(widget.sides[topSide].Float64()) + widget.Height()
 }
 
 func (widget *StdWidget) Left() float64 {
 	if widget.sides[leftSide].IsSet {
-		return widget.resolveLeft(widget.sides[leftSide].Value)
+		return widget.resolveLeft(widget.sides[leftSide].Float64())
 	}
 	if !widget.sides[rightSide].IsSet || widget.Width() == 0 {
 		return 0
 	}
-	return widget.resolveRight(widget.sides[rightSide].Value) - widget.Width()
+	return widget.resolveRight(widget.sides[rightSide].Float64()) - widget.Width()
 }
 
 func (widget *StdWidget) TopIsSet() bool {
@@ -763,34 +763,34 @@ func (widget *StdWidget) Units() Units {
 
 func (widget *StdWidget) Width() float64 {
 	if widget.widthPct > 0 {
-		return widget.widthPct / 100.0 * ContentWidth(widget.container)
+		return float64(widget.widthPct) / 100.0 * ContentWidth(widget.container)
 	}
 	if widget.widthRel != 0 {
-		return ContentWidth(widget.container) + widget.widthRel
+		return ContentWidth(widget.container) + float64(widget.widthRel)
 	}
 	if widget.widthSet {
-		return widget.width
+		return float64(widget.width)
 	}
 	if widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet {
-		return widget.resolveRight(widget.sides[rightSide].Value) - widget.resolveLeft(widget.sides[leftSide].Value)
+		return widget.resolveRight(widget.sides[rightSide].Float64()) - widget.resolveLeft(widget.sides[leftSide].Float64())
 	}
-	return widget.width
+	return float64(widget.width)
 }
 
 func (widget *StdWidget) Height() float64 {
 	if widget.heightPct > 0 {
-		return widget.heightPct / 100.0 * ContentHeight(widget.container)
+		return float64(widget.heightPct) / 100.0 * ContentHeight(widget.container)
 	}
 	if widget.heightRel != 0 {
-		return ContentHeight(widget.container) + widget.heightRel
+		return ContentHeight(widget.container) + float64(widget.heightRel)
 	}
 	if widget.heightSet {
-		return widget.height
+		return float64(widget.height)
 	}
 	if widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet {
-		return widget.resolveBottom(widget.sides[bottomSide].Value) - widget.resolveTop(widget.sides[topSide].Value)
+		return widget.resolveBottom(widget.sides[bottomSide].Float64()) - widget.resolveTop(widget.sides[topSide].Float64())
 	}
-	return widget.height
+	return float64(widget.height)
 }
 
 func (widget *StdWidget) HeightIsSet() bool {

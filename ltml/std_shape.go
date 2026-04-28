@@ -97,10 +97,10 @@ func (c *StdCircle) DrawContent(w Writer) error {
 
 func (c *StdCircle) PreferredHeight(Writer) float64 {
 	if c.height != 0 {
-		return c.height
+		return float64(c.height)
 	}
 	if c.width != 0 {
-		return c.width
+		return float64(c.width)
 	}
 	if c.radiusValue != 0 {
 		return c.radiusValue*2 + NonContentHeight(c)
@@ -110,10 +110,10 @@ func (c *StdCircle) PreferredHeight(Writer) float64 {
 
 func (c *StdCircle) PreferredWidth(Writer) float64 {
 	if c.width != 0 {
-		return c.width
+		return float64(c.width)
 	}
 	if c.height != 0 {
-		return c.height
+		return float64(c.height)
 	}
 	if c.radiusValue != 0 {
 		return c.radiusValue*2 + NonContentWidth(c)
@@ -209,7 +209,7 @@ func (p *StdPolygon) SetAttrs(attrs map[string]string) {
 
 func (p *StdPolygon) PreferredHeight(Writer) float64 {
 	if p.height != 0 {
-		return p.height
+		return float64(p.height)
 	}
 	if p.r != 0 {
 		return p.r*2 + NonContentHeight(p)
@@ -219,7 +219,7 @@ func (p *StdPolygon) PreferredHeight(Writer) float64 {
 
 func (p *StdPolygon) PreferredWidth(Writer) float64 {
 	if p.width != 0 {
-		return p.width
+		return float64(p.width)
 	}
 	if p.r != 0 {
 		return p.r*2 + NonContentWidth(p)
@@ -281,7 +281,7 @@ func (s *StdStar) SetAttrs(attrs map[string]string) {
 
 func (s *StdStar) PreferredHeight(Writer) float64 {
 	if s.height != 0 {
-		return s.height
+		return float64(s.height)
 	}
 	if s.r1 != 0 {
 		return s.r1*2 + NonContentHeight(s)
@@ -291,7 +291,7 @@ func (s *StdStar) PreferredHeight(Writer) float64 {
 
 func (s *StdStar) PreferredWidth(Writer) float64 {
 	if s.width != 0 {
-		return s.width
+		return float64(s.width)
 	}
 	if s.r1 != 0 {
 		return s.r1*2 + NonContentWidth(s)
@@ -352,7 +352,7 @@ func (a *StdArc) DrawContent(w Writer) error {
 
 func (a *StdArc) PreferredHeight(Writer) float64 {
 	if a.height != 0 {
-		return a.height
+		return float64(a.height)
 	}
 	if a.r != 0 {
 		return a.r*2 + NonContentHeight(a)
@@ -362,7 +362,7 @@ func (a *StdArc) PreferredHeight(Writer) float64 {
 
 func (a *StdArc) PreferredWidth(Writer) float64 {
 	if a.width != 0 {
-		return a.width
+		return float64(a.width)
 	}
 	if a.r != 0 {
 		return a.r*2 + NonContentWidth(a)
@@ -426,7 +426,7 @@ func (a *StdArch) DrawContent(w Writer) error {
 
 func (a *StdArch) PreferredHeight(Writer) float64 {
 	if a.height != 0 {
-		return a.height
+		return float64(a.height)
 	}
 	if a.r1 != 0 {
 		return a.r1*2 + NonContentHeight(a)
@@ -436,7 +436,7 @@ func (a *StdArch) PreferredHeight(Writer) float64 {
 
 func (a *StdArch) PreferredWidth(Writer) float64 {
 	if a.width != 0 {
-		return a.width
+		return float64(a.width)
 	}
 	if a.r1 != 0 {
 		return a.r1*2 + NonContentWidth(a)

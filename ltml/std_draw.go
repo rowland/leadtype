@@ -53,28 +53,28 @@ func (d *StdDraw) DrawContent(w Writer) error {
 
 func (d *StdDraw) PreferredHeight(Writer) float64 {
 	if d.height != 0 {
-		return d.height
+		return float64(d.height)
 	}
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalWidth <= 0 {
 		return NonContentHeight(d)
 	}
 	if d.width != 0 {
-		return d.width*naturalHeight/naturalWidth + NonContentHeight(d)
+		return float64(d.width)*naturalHeight/naturalWidth + NonContentHeight(d)
 	}
 	return naturalHeight + NonContentHeight(d)
 }
 
 func (d *StdDraw) PreferredWidth(Writer) float64 {
 	if d.width != 0 {
-		return d.width
+		return float64(d.width)
 	}
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalHeight <= 0 {
 		return NonContentWidth(d)
 	}
 	if d.height != 0 {
-		return d.height*naturalWidth/naturalHeight + NonContentWidth(d)
+		return float64(d.height)*naturalWidth/naturalHeight + NonContentWidth(d)
 	}
 	return naturalWidth + NonContentWidth(d)
 }

@@ -80,7 +80,7 @@ func (p *StdPre) Font() *FontStyle {
 
 func (p *StdPre) PreferredHeight(w Writer) float64 {
 	if p.height != 0 {
-		return p.height
+		return float64(p.height)
 	}
 	lines := p.Lines()
 	if len(lines) == 0 {
@@ -91,7 +91,7 @@ func (p *StdPre) PreferredHeight(w Writer) float64 {
 
 func (p *StdPre) PreferredWidth(w Writer) float64 {
 	if p.width != 0 {
-		return p.width
+		return float64(p.width)
 	}
 	applyWidgetFont(w, p)
 	maxWidth := 0.0

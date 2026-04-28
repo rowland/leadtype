@@ -173,7 +173,7 @@ func (s *StdSector) PaintBackground(w Writer) error {
 
 func (s *StdSector) PreferredHeight(w Writer) float64 {
 	if s.height != 0 {
-		return s.height
+		return float64(s.height)
 	}
 	if len(s.localPolygon) > 0 {
 		return (s.localBounds.MaxY - s.localBounds.MinY) + NonContentHeight(s)
@@ -183,7 +183,7 @@ func (s *StdSector) PreferredHeight(w Writer) float64 {
 
 func (s *StdSector) PreferredWidth(w Writer) float64 {
 	if s.width != 0 {
-		return s.width
+		return float64(s.width)
 	}
 	if len(s.localPolygon) > 0 {
 		return (s.localBounds.MaxX - s.localBounds.MinX) + NonContentWidth(s)

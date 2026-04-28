@@ -64,8 +64,8 @@ func TestSides_SetAttrs(t *testing.T) {
 func assertSides(t *testing.T, sides Sides, expected []float64) {
 	t.Helper()
 	for i := range sides {
-		if sides[i].Value != expected[i] {
-			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], sides[i].Value)
+		if got := sides[i].Float64(); got != expected[i] {
+			t.Errorf("Side %s: expected %f, got %f", sideNames[i], expected[i], got)
 		}
 	}
 }

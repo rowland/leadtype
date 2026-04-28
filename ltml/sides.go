@@ -17,12 +17,12 @@ const (
 )
 
 type Side struct {
-	Value float64
+	Value float32
 	IsSet bool
 }
 
 func (side *Side) Set(value float64) {
-	side.Value = value
+	side.Value = float32(value)
 	side.IsSet = true
 }
 
@@ -70,4 +70,8 @@ func (sides *Sides) String() string {
 	}
 	buf.WriteString("]")
 	return buf.String()
+}
+
+func (side Side) Float64() float64 {
+	return float64(side.Value)
 }
