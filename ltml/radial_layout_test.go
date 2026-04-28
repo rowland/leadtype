@@ -661,11 +661,167 @@ func TestStdSector_OriginAliasesResolveToSectorReferencePoints(t *testing.T) {
 	if got, want := child.Top(), sector.ResolveSectorReferenceY(child); got != want {
 		t.Fatalf("Top() = %v, want %v", got, want)
 	}
-	if got, want := child.OriginX(), sector.ResolveSectorReferenceX(child); got != want {
-		t.Fatalf("OriginX() = %v, want %v", got, want)
+	if got, want := child.OriginXValue(), sector.ResolveSectorReferenceX(child); got != want {
+		t.Fatalf("OriginXValue() = %v, want %v", got, want)
 	}
-	if got, want := child.OriginY(), sector.ResolveSectorReferenceY(child); got != want {
-		t.Fatalf("OriginY() = %v, want %v", got, want)
+	if got, want := child.OriginYValue(), sector.ResolveSectorReferenceY(child); got != want {
+		t.Fatalf("OriginYValue() = %v, want %v", got, want)
+	}
+}
+
+func TestStdSector_UnspecifiedOriginsResolveToSectorMidpoint(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	ax, ay := radialPointAt(100, 100, 35, 45)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 50,
+		StartAngle:  0,
+		EndAngle:    90,
+		AnchorAngle: 45,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{
+		"position": "relative",
+		"left":     "0",
+		"top":      "0",
+	})
+
+	wantX, wantY := ax, ay
+	if got := child.OriginX(); got != OriginXUnspecified {
+		t.Fatalf("OriginX() = %v, want %v", got, OriginXUnspecified)
+	}
+	if got := child.OriginY(); got != OriginYUnspecified {
+		t.Fatalf("OriginY() = %v, want %v", got, OriginYUnspecified)
+	}
+	if got := sector.ResolveSectorReferenceX(child); got != wantX {
+		t.Fatalf("ResolveSectorReferenceX() = %v, want %v", got, wantX)
+	}
+	if got := sector.ResolveSectorReferenceY(child); got != wantY {
+		t.Fatalf("ResolveSectorReferenceY() = %v, want %v", got, wantY)
+	}
+	if got := child.Left(); got != wantX {
+		t.Fatalf("Left() = %v, want %v", got, wantX)
+	}
+	if got := child.Top(); got != wantY {
+		t.Fatalf("Top() = %v, want %v", got, wantY)
+	}
+}
+
+func TestStdSector_MixedCustomAndRadialOriginsResolvePerAxis(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	ax, ay := radialPointAt(100, 100, 35, 45)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX:     100,
+		CenterY:     100,
+		InnerRadius: 20,
+		OuterRadius: 50,
+		StartAngle:  0,
+		EndAngle:    90,
+		AnchorAngle: 45,
+		AnchorX:     ax,
+		AnchorY:     ay,
+	})
+
+	tests := []struct {
+		name  string
+		attrs map[string]string
+		wantX float64
+		wantY float64
+	}{
+		{
+			name: "custom x unspecified y",
+			attrs: map[string]string{
+				"position": "relative",
+				"units":    "pt",
+				"origin-x": "12",
+				"left":     "0",
+				"top":      "0",
+			},
+			wantX: sector.geometry.AnchorX + sector.localBounds.MinX + 12,
+			wantY: func() float64 {
+				_, y := sector.toLocal(ax, ay)
+				return sector.geometry.AnchorY + y
+			}(),
+		},
+		{
+			name: "unspecified x custom y",
+			attrs: map[string]string{
+				"position": "relative",
+				"units":    "pt",
+				"origin-y": "8",
+				"left":     "0",
+				"top":      "0",
+			},
+			wantX: ax,
+			wantY: sector.geometry.AnchorY + sector.localBounds.MinY + 8,
+		},
+		{
+			name: "start x custom y",
+			attrs: map[string]string{
+				"position": "relative",
+				"units":    "pt",
+				"origin-x": "start",
+				"origin-y": "8",
+				"left":     "0",
+				"top":      "0",
+			},
+			wantX: func() float64 {
+				x, y := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY, 35, sector.geometry.StartAngle)
+				localX, _ := sector.toLocal(x, y)
+				return sector.geometry.AnchorX + localX
+			}(),
+			wantY: sector.geometry.AnchorY + sector.localBounds.MinY + 8,
+		},
+		{
+			name: "custom x outer y",
+			attrs: map[string]string{
+				"position": "relative",
+				"units":    "pt",
+				"origin-x": "12",
+				"origin-y": "outer",
+				"left":     "0",
+				"top":      "0",
+			},
+			wantX: sector.geometry.AnchorX + sector.localBounds.MinX + 12,
+			wantY: func() float64 {
+				x, y := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY, sector.geometry.OuterRadius, sector.geometry.AnchorAngle)
+				_, localY := sector.toLocal(x, y)
+				return sector.geometry.AnchorY + localY
+			}(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			child := &StdWidget{}
+			if err := child.SetContainer(sector); err != nil {
+				t.Fatal(err)
+			}
+			child.SetAttrs(tt.attrs)
+
+			if got := sector.ResolveSectorReferenceX(child); got != tt.wantX {
+				t.Fatalf("ResolveSectorReferenceX() = %v, want %v", got, tt.wantX)
+			}
+			if got := sector.ResolveSectorReferenceY(child); got != tt.wantY {
+				t.Fatalf("ResolveSectorReferenceY() = %v, want %v", got, tt.wantY)
+			}
+			if got := child.Left(); got != tt.wantX {
+				t.Fatalf("Left() = %v, want %v", got, tt.wantX)
+			}
+			if got := child.Top(); got != tt.wantY {
+				t.Fatalf("Top() = %v, want %v", got, tt.wantY)
+			}
+		})
 	}
 }
 

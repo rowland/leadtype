@@ -260,7 +260,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `border`           | Reference to a named `<pen>` style. |
 | `fill`             | Reference to a named `<brush>` style. |
 | `rotate`           | Rotate the widget around its origin by the given degrees. |
-| `origin-x`         | Rotation origin on the x axis: `left`, `center`, `right`, or a measurement. |
+| `origin-x`         | Rotation origin on the x axis: `start`, `center`, `end`, or a measurement. |
 | `origin-y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
 | `shift`            | Offset the widget after layout using `x,y` measurements. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
@@ -357,8 +357,12 @@ implicit sector and to the original child widget.
 | `facing` | Curved-text/content facing: `auto` (default), `upright`, or `upside-down`. |
 | `angle` | Absolute angle in degrees for sector content. Overrides the default tangent-based orientation. |
 | `text-align` | For inline sector text, anchor to the sector `left`/start, `center`, or `right`/end. |
-| `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` are radial aliases in addition to the normal box-relative values. |
-| `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` are radial aliases in addition to the normal box-relative values. |
+| `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` anchor to the sector start angle, midpoint angle, and end angle. |
+| `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` anchor to the inner radius, midpoint radius, and outer radius. |
+
+When `origin-x` or `origin-y` is omitted for a positioned child inside a
+sector, LTML defaults to the sector midpoint: anchor angle for `origin-x` and
+midpoint radius for `origin-y`.
 
 Sector text comes in two flavors:
 
@@ -1210,6 +1214,7 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
+- When omitted, sector child origins default to midpoint angle and midpoint radius.
 
 ### Radial-Out Details
 
@@ -1230,6 +1235,7 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
+- When omitted, sector child origins default to midpoint angle and midpoint radius.
 
 Example:
 

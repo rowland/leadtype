@@ -33,8 +33,10 @@ type StdWidget struct {
 	align           Align
 	selfAlign       SelfAlign
 	rotate          *float64
-	originX         string
-	originY         string
+	originX         OriginX
+	originY         OriginY
+	originXValue    float64
+	originYValue    float64
 	shiftX          float64
 	shiftY          float64
 	zIndex          int
@@ -181,11 +183,11 @@ func (widget *StdWidget) SetRawAttrs(attrs map[string]string) {
 	widget.rawAttrs = maps.Clone(attrs)
 }
 
-func (widget *StdWidget) OriginXToken() string {
+func (widget *StdWidget) OriginX() OriginX {
 	return widget.originX
 }
 
-func (widget *StdWidget) OriginYToken() string {
+func (widget *StdWidget) OriginY() OriginY {
 	return widget.originY
 }
 
@@ -323,10 +325,10 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if originX, ok := attrs["origin-x"]; ok {
-		widget.originX = strings.TrimSpace(originX)
+		widget.originX, widget.originXValue = parseOriginX(strings.TrimSpace(originX), widget.Units())
 	}
 	if originY, ok := attrs["origin-y"]; ok {
-		widget.originY = strings.TrimSpace(originY)
+		widget.originY, widget.originYValue = parseOriginY(strings.TrimSpace(originY), widget.Units())
 	}
 	if shift, ok := attrs["shift"]; ok {
 		x, y := split2(shift, ",")
@@ -898,7 +900,7 @@ func (widget *StdWidget) paintWithTransform(w Writer, fn func() error) error {
 		return fn()
 	}
 	var renderErr error
-	if err := w.Rotate(*widget.rotate, widget.OriginX(), widget.OriginY(), func() {
+	if err := w.Rotate(*widget.rotate, widget.OriginXValue(), widget.OriginYValue(), func() {
 		renderErr = fn()
 	}); err != nil {
 		return err
@@ -906,41 +908,69 @@ func (widget *StdWidget) paintWithTransform(w Writer, fn func() error) error {
 	return renderErr
 }
 
-func (widget *StdWidget) OriginX() float64 {
+func (widget *StdWidget) OriginXValue() float64 {
+	if widget.originX == OriginXCustom {
+		return widget.originXValue
+	}
 	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-		switch widget.originX {
-		case "start", "center", "end":
-			return resolver.ResolveSectorReferenceX(widget)
-		}
+		return resolver.ResolveSectorReferenceX(widget)
 	}
 	switch widget.originX {
-	case "center":
-		return (widget.Left() + widget.Right()) / 2
-	case "right":
-		return widget.Right()
-	case "":
+	case OriginXUnspecified, OriginXStart:
 		return widget.Left()
+	case OriginXCenter:
+		return (widget.Left() + widget.Right()) / 2
+	case OriginXEnd:
+		return widget.Right()
+	}
+	return widget.Left()
+}
+
+func (widget *StdWidget) OriginYValue() float64 {
+	if widget.originY == OriginYCustom {
+		return widget.originYValue
+	}
+	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
+		return resolver.ResolveSectorReferenceY(widget)
+	}
+	switch widget.originY {
+	case OriginYUnspecified, OriginYTop:
+		return widget.Top()
+	case OriginYMiddle:
+		return (widget.Top() + widget.Bottom()) / 2
+	case OriginYBottom:
+		return widget.Bottom()
+	}
+	return widget.Top()
+}
+
+func parseOriginX(token string, units Units) (OriginX, float64) {
+	switch token {
+	case "":
+		return OriginXUnspecified, 0
+	case "start":
+		return OriginXStart, 0
+	case "center":
+		return OriginXCenter, 0
+	case "end":
+		return OriginXEnd, 0
 	default:
-		return ParseMeasurement(widget.originX, widget.Units())
+		return OriginXCustom, ParseMeasurement(token, units)
 	}
 }
 
-func (widget *StdWidget) OriginY() float64 {
-	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-		switch widget.originY {
-		case "inner", "middle", "outer":
-			return resolver.ResolveSectorReferenceY(widget)
-		}
-	}
-	switch widget.originY {
-	case "middle":
-		return (widget.Top() + widget.Bottom()) / 2
-	case "bottom":
-		return widget.Bottom()
+func parseOriginY(token string, units Units) (OriginY, float64) {
+	switch token {
 	case "":
-		return widget.Top()
+		return OriginYUnspecified, 0
+	case "top", "inner":
+		return OriginYTop, 0
+	case "middle":
+		return OriginYMiddle, 0
+	case "bottom", "outer":
+		return OriginYBottom, 0
 	default:
-		return ParseMeasurement(widget.originY, widget.Units())
+		return OriginYCustom, ParseMeasurement(token, units)
 	}
 }
 

@@ -40,6 +40,44 @@ func (sa SelfAlign) String() string {
 	return "unknown"
 }
 
+type OriginX int8
+
+const (
+	OriginXUnspecified OriginX = iota
+	OriginXStart
+	OriginXCenter
+	OriginXEnd
+	OriginXCustom
+)
+
+var originXStrings = []string{"unspecified", "start", "center", "end", "custom"}
+
+func (o OriginX) String() string {
+	if int(o) < len(originXStrings) {
+		return originXStrings[o]
+	}
+	return "unknown"
+}
+
+type OriginY int8
+
+const (
+	OriginYUnspecified OriginY = iota
+	OriginYTop
+	OriginYMiddle
+	OriginYBottom
+	OriginYCustom
+)
+
+var originYStrings = []string{"unspecified", "top", "middle", "bottom", "custom"}
+
+func (o OriginY) String() string {
+	if int(o) < len(originYStrings) {
+		return originYStrings[o]
+	}
+	return "unknown"
+}
+
 type HAlign int8
 
 const (

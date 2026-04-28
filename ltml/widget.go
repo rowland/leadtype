@@ -53,6 +53,10 @@ type Widget interface {
 	DrawContent(writer Writer) error
 	PaintBackground(writer Writer) error
 	Position() Position
+	OriginX() OriginX
+	OriginY() OriginY
+	OriginXValue() float64
+	OriginYValue() float64
 
 	Align() Align
 	SelfAlign() SelfAlign

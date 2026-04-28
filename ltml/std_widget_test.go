@@ -169,3 +169,85 @@ func TestStdWidget_SetAttrs_FontDecorationOverridesPreserveInheritedDecorationOv
 		t.Fatalf("strikeoutPenID = %q, want inherited dashed", widget.font.strikeoutPenID)
 	}
 }
+
+func TestStdWidget_SetAttrs_ParsesLogicalOrigins(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetAttrs(map[string]string{
+		"origin-x": "end",
+		"origin-y": "middle",
+	})
+
+	if got := widget.originX; got != OriginXEnd {
+		t.Fatalf("originX = %v, want %v", got, OriginXEnd)
+	}
+	if got := widget.originY; got != OriginYMiddle {
+		t.Fatalf("originY = %v, want %v", got, OriginYMiddle)
+	}
+	if got := widget.OriginX(); got != OriginXEnd {
+		t.Fatalf("OriginX() = %v, want %v", got, OriginXEnd)
+	}
+	if got := widget.OriginY(); got != OriginYMiddle {
+		t.Fatalf("OriginY() = %v, want %v", got, OriginYMiddle)
+	}
+}
+
+func TestStdWidget_SetAttrs_DefaultOriginsRemainUnspecified(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetAttrs(map[string]string{})
+
+	if got := widget.originX; got != OriginXUnspecified {
+		t.Fatalf("originX = %v, want %v", got, OriginXUnspecified)
+	}
+	if got := widget.originY; got != OriginYUnspecified {
+		t.Fatalf("originY = %v, want %v", got, OriginYUnspecified)
+	}
+}
+
+func TestStdWidget_SetAttrs_ParsesRadialVerticalOriginAliases(t *testing.T) {
+	tests := []struct {
+		name  string
+		token string
+		want  OriginY
+	}{
+		{name: "inner", token: "inner", want: OriginYTop},
+		{name: "outer", token: "outer", want: OriginYBottom},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			widget := &StdWidget{}
+			widget.SetAttrs(map[string]string{
+				"origin-y": tt.token,
+			})
+
+			if got := widget.originY; got != tt.want {
+				t.Fatalf("originY = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStdWidget_SetAttrs_ParsesExplicitOriginMeasurements(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetAttrs(map[string]string{
+		"units":    "in",
+		"origin-x": "1.5",
+		"origin-y": "0.25",
+	})
+
+	if got := widget.originX; got != OriginXCustom {
+		t.Fatalf("originX = %v, want %v", got, OriginXCustom)
+	}
+	if got := widget.originY; got != OriginYCustom {
+		t.Fatalf("originY = %v, want %v", got, OriginYCustom)
+	}
+	if got := widget.originXValue; got != 108 {
+		t.Fatalf("originXValue = %v, want 108", got)
+	}
+	if got := widget.originYValue; got != 18 {
+		t.Fatalf("originYValue = %v, want 18", got)
+	}
+	if got := widget.OriginY(); got != OriginYCustom {
+		t.Fatalf("OriginY() = %v, want %v", got, OriginYCustom)
+	}
+}

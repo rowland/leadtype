@@ -59,29 +59,29 @@ func TestStdWidget_OriginHelpers(t *testing.T) {
 	w.SetWidth(30)
 	w.SetHeight(40)
 
-	if got := w.OriginX(); got != 10 {
-		t.Fatalf("default OriginX() = %v, want 10", got)
+	if got := w.OriginXValue(); got != 10 {
+		t.Fatalf("default OriginXValue() = %v, want 10", got)
 	}
-	if got := w.OriginY(); got != 20 {
-		t.Fatalf("default OriginY() = %v, want 20", got)
-	}
-
-	w.originX = "center"
-	w.originY = "middle"
-	if got := w.OriginX(); got != 25 {
-		t.Fatalf("center OriginX() = %v, want 25", got)
-	}
-	if got := w.OriginY(); got != 40 {
-		t.Fatalf("middle OriginY() = %v, want 40", got)
+	if got := w.OriginYValue(); got != 20 {
+		t.Fatalf("default OriginYValue() = %v, want 20", got)
 	}
 
-	w.originX = "right"
-	w.originY = "bottom"
-	if got := w.OriginX(); got != 40 {
-		t.Fatalf("right OriginX() = %v, want 40", got)
+	w.originX = OriginXCenter
+	w.originY = OriginYMiddle
+	if got := w.OriginXValue(); got != 25 {
+		t.Fatalf("center OriginXValue() = %v, want 25", got)
 	}
-	if got := w.OriginY(); got != 60 {
-		t.Fatalf("bottom OriginY() = %v, want 60", got)
+	if got := w.OriginYValue(); got != 40 {
+		t.Fatalf("middle OriginYValue() = %v, want 40", got)
+	}
+
+	w.originX = OriginXEnd
+	w.originY = OriginYBottom
+	if got := w.OriginXValue(); got != 40 {
+		t.Fatalf("end OriginXValue() = %v, want 40", got)
+	}
+	if got := w.OriginYValue(); got != 60 {
+		t.Fatalf("bottom OriginYValue() = %v, want 60", got)
 	}
 }
 
@@ -93,8 +93,8 @@ func TestPrint_RotateWrapsWidgetRendering(t *testing.T) {
 	widget.SetWidth(30)
 	widget.SetHeight(40)
 	widget.rotate = &angle
-	widget.originX = "center"
-	widget.originY = "middle"
+	widget.originX = OriginXCenter
+	widget.originY = OriginYMiddle
 
 	writer := &labelTestWriter{t: t}
 	if err := Print(widget, writer); err != nil {

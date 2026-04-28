@@ -399,55 +399,49 @@ func (s *StdSector) resolvedTextAlign() HAlign {
 }
 
 func (s *StdSector) resolveSectorReference(widget Widget) (float64, float64) {
-	xToken, yToken := "", ""
-	if originer, ok := widget.(interface {
-		OriginXToken() string
-		OriginYToken() string
-	}); ok {
-		xToken, yToken = originer.OriginXToken(), originer.OriginYToken()
+	xOrigin, yOrigin := widget.OriginX(), widget.OriginY()
+	midRadius := (s.geometry.InnerRadius + s.geometry.OuterRadius) / 2
+	angleForOrigin := func(origin OriginX) float64 {
+		switch origin {
+		case OriginXStart:
+			return s.geometry.StartAngle
+		case OriginXEnd:
+			return s.geometry.EndAngle
+		default:
+			return s.geometry.AnchorAngle
+		}
 	}
-	if radialToken(xToken) || radialRadiusToken(yToken) || (xToken == "" && yToken == "") {
-		angle := s.geometry.AnchorAngle
-		switch xToken {
-		case "start":
-			angle = s.geometry.StartAngle
-		case "end":
-			angle = s.geometry.EndAngle
+	radiusForOrigin := func(origin OriginY) float64 {
+		switch origin {
+		case OriginYTop:
+			return s.geometry.InnerRadius
+		case OriginYBottom:
+			return s.geometry.OuterRadius
+		default:
+			return midRadius
 		}
-		radius := (s.geometry.InnerRadius + s.geometry.OuterRadius) / 2
-		switch yToken {
-		case "inner":
-			radius = s.geometry.InnerRadius
-		case "outer":
-			radius = s.geometry.OuterRadius
-		}
-		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, angle)
+	}
+	if xOrigin != OriginXCustom && yOrigin != OriginYCustom {
+		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radiusForOrigin(yOrigin), angleForOrigin(xOrigin))
 		return s.toLocal(actualX, actualY)
 	}
 
-	localX := s.localBounds.MinX + (s.localBounds.MaxX-s.localBounds.MinX)/2
-	localY := s.localBounds.MinY + (s.localBounds.MaxY-s.localBounds.MinY)/2
-	switch xToken {
-	case "left":
-		localX = s.localBounds.MinX
-	case "right":
-		localX = s.localBounds.MaxX
-	case "center", "":
-	default:
-		if value, err := strconv.ParseFloat(strings.TrimSpace(xToken), 64); err == nil {
-			localX = s.localBounds.MinX + ParseMeasurement(fmt.Sprintf("%g", value), widget.(interface{ Units() Units }).Units())
-		}
+	localX := s.localBounds.MinX
+	if xOrigin == OriginXCustom {
+		localX += widget.OriginXValue()
 	}
-	switch yToken {
-	case "top":
-		localY = s.localBounds.MinY
-	case "bottom":
-		localY = s.localBounds.MaxY
-	case "middle", "":
-	default:
-		if value, err := strconv.ParseFloat(strings.TrimSpace(yToken), 64); err == nil {
-			localY = s.localBounds.MinY + ParseMeasurement(fmt.Sprintf("%g", value), widget.(interface{ Units() Units }).Units())
-		}
+	if xOrigin != OriginXCustom {
+		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, midRadius, angleForOrigin(xOrigin))
+		localX, _ = s.toLocal(actualX, actualY)
+	}
+
+	localY := s.localBounds.MinY
+	if yOrigin == OriginYCustom {
+		localY += widget.OriginYValue()
+	}
+	if yOrigin != OriginYCustom {
+		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radiusForOrigin(yOrigin), s.geometry.AnchorAngle)
+		_, localY = s.toLocal(actualX, actualY)
 	}
 	return localX, localY
 }
@@ -725,14 +719,6 @@ func polygonCentroid(points []radialPoint) (float64, float64, bool) {
 	}
 	scale := 1 / (3 * doubleArea)
 	return cx * scale, cy * scale, true
-}
-
-func radialToken(token string) bool {
-	return token == "start" || token == "center" || token == "end"
-}
-
-func radialRadiusToken(token string) bool {
-	return token == "inner" || token == "middle" || token == "outer"
 }
 
 func wrapRichTextToWidths(rt *rich_text.RichText, flags []wordbreaking.Flags, widths []float64) []*rich_text.RichText {
