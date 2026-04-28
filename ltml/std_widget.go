@@ -32,7 +32,7 @@ type StdWidget struct {
 	rowSpan         int
 	align           Align
 	selfAlign       SelfAlign
-	rotate          *float64
+	rotate          float32
 	originX         OriginX
 	originY         OriginY
 	originXValue    float32
@@ -321,7 +321,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	}
 	if rotate, ok := attrs["rotate"]; ok {
 		if value, err := strconv.ParseFloat(rotate, 64); err == nil {
-			widget.rotate = &value
+			widget.rotate = float32(value)
 		}
 	}
 	if originX, ok := attrs["origin-x"]; ok {
@@ -896,11 +896,11 @@ func (widget *StdWidget) resolveBottom(value float64) float64 {
 }
 
 func (widget *StdWidget) paintWithTransform(w Writer, fn func() error) error {
-	if widget.rotate == nil {
+	if widget.rotate == 0 {
 		return fn()
 	}
 	var renderErr error
-	if err := w.Rotate(*widget.rotate, widget.OriginXValue(), widget.OriginYValue(), func() {
+	if err := w.Rotate(float64(widget.rotate), widget.OriginXValue(), widget.OriginYValue(), func() {
 		renderErr = fn()
 	}); err != nil {
 		return err

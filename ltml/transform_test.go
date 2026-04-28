@@ -86,13 +86,12 @@ func TestStdWidget_OriginHelpers(t *testing.T) {
 }
 
 func TestPrint_RotateWrapsWidgetRendering(t *testing.T) {
-	angle := 30.0
 	widget := &transformWidget{}
 	widget.SetLeft(10)
 	widget.SetTop(20)
 	widget.SetWidth(30)
 	widget.SetHeight(40)
-	widget.rotate = &angle
+	widget.rotate = 30
 	widget.originX = OriginXCenter
 	widget.originY = OriginYMiddle
 
