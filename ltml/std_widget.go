@@ -35,10 +35,10 @@ type StdWidget struct {
 	rotate          *float64
 	originX         OriginX
 	originY         OriginY
-	originXValue    float64
-	originYValue    float64
-	shiftX          float64
-	shiftY          float64
+	originXValue    float32
+	originYValue    float32
+	shiftX          float32
+	shiftY          float32
 	zIndex          int
 	display         DisplayMode
 	printed         bool
@@ -332,8 +332,8 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	}
 	if shift, ok := attrs["shift"]; ok {
 		x, y := split2(shift, ",")
-		widget.shiftX = ParseMeasurement(strings.TrimSpace(x), widget.Units())
-		widget.shiftY = ParseMeasurement(strings.TrimSpace(y), widget.Units())
+		widget.shiftX = float32(ParseMeasurement(strings.TrimSpace(x), widget.Units()))
+		widget.shiftY = float32(ParseMeasurement(strings.TrimSpace(y), widget.Units()))
 	}
 	if zIndex, ok := attrs["z-index"]; ok {
 		widget.zIndex, _ = strconv.Atoi(strings.TrimSpace(zIndex))
@@ -834,7 +834,7 @@ func (widget *StdWidget) AccessibilityRole() string {
 func (widget *StdWidget) resolveLeft(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceX(widget) + value + widget.shiftX
+			return resolver.ResolveSectorReferenceX(widget) + value + float64(widget.shiftX)
 		}
 	}
 	if widget.container != nil && value < 0 {
@@ -843,14 +843,14 @@ func (widget *StdWidget) resolveLeft(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Left()
 	}
-	value += widget.shiftX
+	value += float64(widget.shiftX)
 	return value
 }
 
 func (widget *StdWidget) resolveRight(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceX(widget) + value + widget.shiftX
+			return resolver.ResolveSectorReferenceX(widget) + value + float64(widget.shiftX)
 		}
 	}
 	if widget.container != nil && value <= 0 {
@@ -859,14 +859,14 @@ func (widget *StdWidget) resolveRight(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Left()
 	}
-	value += widget.shiftX
+	value += float64(widget.shiftX)
 	return value
 }
 
 func (widget *StdWidget) resolveTop(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceY(widget) + value + widget.shiftY
+			return resolver.ResolveSectorReferenceY(widget) + value + float64(widget.shiftY)
 		}
 	}
 	if widget.container != nil && value < 0 {
@@ -875,14 +875,14 @@ func (widget *StdWidget) resolveTop(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Top()
 	}
-	value += widget.shiftY
+	value += float64(widget.shiftY)
 	return value
 }
 
 func (widget *StdWidget) resolveBottom(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceY(widget) + value + widget.shiftY
+			return resolver.ResolveSectorReferenceY(widget) + value + float64(widget.shiftY)
 		}
 	}
 	if widget.container != nil && value <= 0 {
@@ -891,7 +891,7 @@ func (widget *StdWidget) resolveBottom(value float64) float64 {
 	if widget.position == Relative && widget.container != nil {
 		value += widget.container.Top()
 	}
-	value += widget.shiftY
+	value += float64(widget.shiftY)
 	return value
 }
 
@@ -910,7 +910,7 @@ func (widget *StdWidget) paintWithTransform(w Writer, fn func() error) error {
 
 func (widget *StdWidget) OriginXValue() float64 {
 	if widget.originX == OriginXCustom {
-		return widget.originXValue
+		return float64(widget.originXValue)
 	}
 	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
 		return resolver.ResolveSectorReferenceX(widget)
@@ -928,7 +928,7 @@ func (widget *StdWidget) OriginXValue() float64 {
 
 func (widget *StdWidget) OriginYValue() float64 {
 	if widget.originY == OriginYCustom {
-		return widget.originYValue
+		return float64(widget.originYValue)
 	}
 	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
 		return resolver.ResolveSectorReferenceY(widget)
@@ -944,7 +944,7 @@ func (widget *StdWidget) OriginYValue() float64 {
 	return widget.Top()
 }
 
-func parseOriginX(token string, units Units) (OriginX, float64) {
+func parseOriginX(token string, units Units) (OriginX, float32) {
 	switch token {
 	case "":
 		return OriginXUnspecified, 0
@@ -955,11 +955,11 @@ func parseOriginX(token string, units Units) (OriginX, float64) {
 	case "end":
 		return OriginXEnd, 0
 	default:
-		return OriginXCustom, ParseMeasurement(token, units)
+		return OriginXCustom, float32(ParseMeasurement(token, units))
 	}
 }
 
-func parseOriginY(token string, units Units) (OriginY, float64) {
+func parseOriginY(token string, units Units) (OriginY, float32) {
 	switch token {
 	case "":
 		return OriginYUnspecified, 0
@@ -970,7 +970,7 @@ func parseOriginY(token string, units Units) (OriginY, float64) {
 	case "bottom", "outer":
 		return OriginYBottom, 0
 	default:
-		return OriginYCustom, ParseMeasurement(token, units)
+		return OriginYCustom, float32(ParseMeasurement(token, units))
 	}
 }
 
