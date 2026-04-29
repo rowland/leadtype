@@ -810,9 +810,6 @@ func (widget *StdWidget) ZIndex() int {
 }
 
 func (widget *StdWidget) Display() DisplayMode {
-	if widget.display == "" {
-		return DisplayOnce
-	}
 	return widget.display
 }
 

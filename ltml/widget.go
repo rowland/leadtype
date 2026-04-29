@@ -1,5 +1,7 @@
 package ltml
 
+import "strings"
+
 type Widget interface {
 	Printer
 
@@ -75,15 +77,15 @@ type Widget interface {
 	Path() string
 }
 
-type DisplayMode string
+type DisplayMode int8
 
 const (
-	DisplayOnce       DisplayMode = "once"
-	DisplayAlways     DisplayMode = "always"
-	DisplayFirst      DisplayMode = "first"
-	DisplaySucceeding DisplayMode = "succeeding"
-	DisplayEven       DisplayMode = "even"
-	DisplayOdd        DisplayMode = "odd"
+	DisplayOnce DisplayMode = iota
+	DisplayAlways
+	DisplayFirst
+	DisplaySucceeding
+	DisplayEven
+	DisplayOdd
 )
 
 type ZeroFootprint interface {
@@ -91,11 +93,38 @@ type ZeroFootprint interface {
 }
 
 func ParseDisplayMode(value string) DisplayMode {
-	switch DisplayMode(value) {
-	case DisplayAlways, DisplayFirst, DisplaySucceeding, DisplayEven, DisplayOdd:
-		return DisplayMode(value)
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "always":
+		return DisplayAlways
+	case "first":
+		return DisplayFirst
+	case "succeeding":
+		return DisplaySucceeding
+	case "even":
+		return DisplayEven
+	case "odd":
+		return DisplayOdd
 	default:
 		return DisplayOnce
+	}
+}
+
+func (d DisplayMode) String() string {
+	switch d {
+	case DisplayAlways:
+		return "always"
+	case DisplayFirst:
+		return "first"
+	case DisplaySucceeding:
+		return "succeeding"
+	case DisplayEven:
+		return "even"
+	case DisplayOdd:
+		return "odd"
+	case DisplayOnce:
+		fallthrough
+	default:
+		return "once"
 	}
 }
 

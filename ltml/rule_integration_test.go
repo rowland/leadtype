@@ -478,10 +478,10 @@ func TestRules_integration_table_row_and_col_pseudos_apply(t *testing.T) {
 		t.Fatalf("cell b font = %#v, want last-col size 20", b.font)
 	}
 	if b.display != DisplayAlways || b.alt != "col-odd" {
-		t.Fatalf("cell b display/alt = %q/%q, want always/col-odd", b.display, b.alt)
+		t.Fatalf("cell b display/alt = %s/%q, want always/col-odd", b.display, b.alt)
 	}
 	if c.zIndex != 3 || c.display != DisplayOdd {
-		t.Fatalf("cell c z-index/display = %d/%q, want 3/odd", c.zIndex, c.display)
+		t.Fatalf("cell c z-index/display = %d/%s, want 3/odd", c.zIndex, c.display)
 	}
 	if d.font == nil || d.font.weight != "Bold" {
 		t.Fatalf("cell d font = %#v, want Bold from :last-row", d.font)
