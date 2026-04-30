@@ -115,12 +115,10 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 			return height
 		}
 	}
-	savedHeight, savedHeightPct, savedHeightRel, savedHeightSet :=
-		c.height, c.heightPct, c.heightRel, c.heightSet
+	saved := c.SaveState()
 	LayoutContainer(c, newLayoutProbeWriter(w))
 	height := c.Height()
-	c.height, c.heightPct, c.heightRel, c.heightSet =
-		savedHeight, savedHeightPct, savedHeightRel, savedHeightSet
+	c.RestoreState(saved)
 	return height
 }
 
@@ -501,10 +499,7 @@ func (c *StdContainer) tableFragmentHeight(metrics *tableSplitMetrics, bodyStart
 func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int) *StdContainer {
 	clone := *c
 	clone.activeChildren = c.cloneTableWidgetsForRows(metrics.grid, rows, &clone)
-	clone.height = 0
-	clone.heightPct = 0
-	clone.heightRel = 0
-	clone.heightSet = false
+	clone.ClearHeight()
 	clone.printed = false
 	clone.invisible = false
 	clone.disabled = false
@@ -853,10 +848,7 @@ func (c *StdContainer) vboxHasVisibleWidget(groups ...[]Widget) bool {
 func (c *StdContainer) cloneVBoxFragment(included map[Widget]bool, replacements map[Widget]Widget) *StdContainer {
 	clone := *c
 	clone.activeChildren = make([]Widget, 0, len(included)+len(replacements))
-	clone.height = 0
-	clone.heightPct = 0
-	clone.heightRel = 0
-	clone.heightSet = false
+	clone.ClearHeight()
 	clone.printed = false
 	clone.invisible = false
 	clone.disabled = false

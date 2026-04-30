@@ -9,19 +9,37 @@ import (
 	"strconv"
 )
 
+type DimensionMode int8
+
+const (
+	DimUnspecified DimensionMode = iota
+	DimSpecified
+	DimPct
+	DimRel
+)
+
 type Dimensions struct {
-	sides     Sides
-	margin    Sides
-	padding   Sides
-	corners   Corners
-	width     float32
-	widthPct  float32
-	widthRel  float32
-	height    float32
-	heightPct float32
-	heightRel float32
-	widthSet  bool
-	heightSet bool
+	sides       Sides
+	margin      Sides
+	padding     Sides
+	corners     Corners
+	width       float32
+	height      float32
+	widthValue  float32
+	heightValue float32
+	widthMode   DimensionMode
+	heightMode  DimensionMode
+}
+
+type dimensionState struct {
+	resolved float32
+	value    float32
+	mode     DimensionMode
+}
+
+type dimensionsState struct {
+	width  dimensionState
+	height dimensionState
 }
 
 var (
@@ -109,19 +127,31 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 }
 
 func (d *Dimensions) SetHeight(value float64) {
-	d.height, d.heightPct, d.heightRel, d.heightSet = float32(value), 0, 0, true
+	d.height = float32(value)
+	d.heightValue = float32(value)
+	d.heightMode = DimSpecified
+}
+
+func (d *Dimensions) ClearHeight() {
+	d.height = 0
+	d.heightValue = 0
+	d.heightMode = DimUnspecified
 }
 
 func (d *Dimensions) SetHeightPct(value float64) {
-	d.heightPct, d.height, d.heightRel, d.heightSet = float32(value), 0, 0, true
+	d.height = 0
+	d.heightValue = float32(value)
+	d.heightMode = DimPct
 }
 
 func (d *Dimensions) SetHeightRel(value float64) {
-	d.heightRel, d.height, d.heightPct, d.heightSet = float32(value), 0, 0, true
+	d.height = 0
+	d.heightValue = float32(value)
+	d.heightMode = DimRel
 }
 
 func (d *Dimensions) HeightIsSet() bool {
-	return d.heightSet
+	return d.heightMode != DimUnspecified
 }
 
 func (d *Dimensions) SetTop(value float64) {
@@ -141,15 +171,27 @@ func (d *Dimensions) SetLeft(value float64) {
 }
 
 func (d *Dimensions) SetWidth(value float64) {
-	d.width, d.widthPct, d.widthRel, d.widthSet = float32(value), 0, 0, true
+	d.width = float32(value)
+	d.widthValue = float32(value)
+	d.widthMode = DimSpecified
+}
+
+func (d *Dimensions) ClearWidth() {
+	d.width = 0
+	d.widthValue = 0
+	d.widthMode = DimUnspecified
 }
 
 func (d *Dimensions) SetWidthPct(value float64) {
-	d.widthPct, d.widthRel, d.width, d.widthSet = float32(value), 0, 0, true
+	d.width = 0
+	d.widthValue = float32(value)
+	d.widthMode = DimPct
 }
 
 func (d *Dimensions) SetWidthRel(value float64) {
-	d.widthRel, d.widthPct, d.width, d.widthSet = float32(value), 0, 0, true
+	d.width = 0
+	d.widthValue = float32(value)
+	d.widthMode = DimRel
 }
 
 func (d *Dimensions) String() string {
@@ -158,13 +200,37 @@ func (d *Dimensions) String() string {
 }
 
 func (d *Dimensions) WidthPctIsSet() bool {
-	return d.widthPct > 0
+	return d.widthMode == DimPct
 }
 
 func (d *Dimensions) WidthRelIsSet() bool {
-	return d.widthRel != 0
+	return d.widthMode == DimRel
 }
 
 func (d *Dimensions) WidthIsSet() bool {
-	return d.widthSet
+	return d.widthMode != DimUnspecified
+}
+
+func (d *Dimensions) SaveState() dimensionsState {
+	return dimensionsState{
+		width: dimensionState{
+			resolved: d.width,
+			value:    d.widthValue,
+			mode:     d.widthMode,
+		},
+		height: dimensionState{
+			resolved: d.height,
+			value:    d.heightValue,
+			mode:     d.heightMode,
+		},
+	}
+}
+
+func (d *Dimensions) RestoreState(state dimensionsState) {
+	d.width = state.width.resolved
+	d.widthValue = state.width.value
+	d.widthMode = state.width.mode
+	d.height = state.height.resolved
+	d.heightValue = state.height.value
+	d.heightMode = state.height.mode
 }

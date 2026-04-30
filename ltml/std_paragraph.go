@@ -272,10 +272,7 @@ func (p *StdParagraph) cloneForSplit(lines []*rich_text.RichText, suppressBullet
 	clone.splitLines = append([]*rich_text.RichText(nil), lines...)
 	clone.suppressBullet = suppressBullet
 	clone.continuationIndent = continuationIndent
-	clone.height = 0
-	clone.heightPct = 0
-	clone.heightRel = 0
-	clone.heightSet = false
+	clone.ClearHeight()
 	clone.richText = nil
 	clone.printed = false
 	clone.invisible = false

@@ -142,7 +142,7 @@ func TestLayoutVBox_DirectChildSplitTableUsesOuterOverflowInsteadOfSelfClipping(
 	table.layout = defaultLayouts["table"].Clone()
 	table.order = TableOrderRows
 	table.cols = 2
-	table.widthPct = 100
+	table.SetWidthPct(100)
 	table.splitEnabled = true
 	table.splitExplicit = true
 	table.headerRows = 1
@@ -597,8 +597,7 @@ func TestStdContainer_SplitForHeight_VBoxRepeatsHeadersAndFooters(t *testing.T) 
 	box := &StdContainer{}
 	_ = box.SetContainer(page)
 	box.layout = defaultLayouts["vbox"].Clone()
-	box.width = 180
-	box.widthSet = true
+	box.SetWidth(180)
 	page.AddChild(box)
 
 	add := func(name string, height float64, align string) {
@@ -649,8 +648,7 @@ func TestStdContainer_SplitForHeight_VBoxSplitsBodyParagraph(t *testing.T) {
 	box := &StdContainer{}
 	_ = box.SetContainer(page)
 	box.layout = defaultLayouts["vbox"].Clone()
-	box.width = 120
-	box.widthSet = true
+	box.SetWidth(120)
 	page.AddChild(box)
 
 	header := &flowTestWidget{name: "header", preferredHeight: 10}
@@ -708,8 +706,7 @@ func TestStdContainer_SplitForHeight_VBoxReturnsNilWhenRepeatedChromeConsumesPag
 	box := &StdContainer{}
 	_ = box.SetContainer(page)
 	box.layout = defaultLayouts["vbox"].Clone()
-	box.width = 180
-	box.widthSet = true
+	box.SetWidth(180)
 	page.AddChild(box)
 
 	header := &flowTestWidget{name: "header", preferredHeight: 20}
@@ -896,8 +893,7 @@ func TestStdContainer_SplitForHeight_TableRepeatsHeaderAndFooterRows(t *testing.
 	table.layout = defaultLayouts["table"].Clone()
 	table.order = TableOrderRows
 	table.cols = 2
-	table.width = 180
-	table.widthSet = true
+	table.SetWidth(180)
 	table.splitEnabled = true
 	table.splitExplicit = true
 	table.headerRows = 1

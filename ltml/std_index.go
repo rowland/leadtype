@@ -109,16 +109,10 @@ func (i *StdIndex) clearExpandedState() {
 
 func (i *StdIndex) clearMeasuredGeometry() {
 	if !i.explicitWidth {
-		i.width = 0
-		i.widthPct = 0
-		i.widthRel = 0
-		i.widthSet = false
+		i.ClearWidth()
 	}
 	if !i.explicitHeight {
-		i.height = 0
-		i.heightPct = 0
-		i.heightRel = 0
-		i.heightSet = false
+		i.ClearHeight()
 	}
 }
 
