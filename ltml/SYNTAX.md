@@ -1178,6 +1178,12 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control vertical placement within the hbox track.
 - In `hbox`, `align-self="start"` means top and `align-self="end"` means bottom.
 - Unaligned children share remaining width equally unless `width` is specified.
+- When at least one child uses `width="auto"` and the hbox has true surplus
+  width beyond the preferred widths of the remaining unsized children plus
+  hpadding, omitted widths keep their preferred widths and the `auto` children
+  split the leftover space evenly.
+- In constrained hboxes, and in other layout managers, `width="auto"` behaves
+  the same as an omitted width.
 - In `dir="rtl"`, stacking order reverses: children flow right to left, `align="left"` pins to the right side, and `align="right"` pins to the left side.
 
 ### Table Details
@@ -1353,6 +1359,7 @@ Measurements can be expressed in several forms:
 | With unit     | `1in`, `2.5cm`, `14pt` | Explicit unit overrides the current `units`. |
 | Percentage    | `50%`       | Percentage of the container's content width or height. |
 | Relative      | `+10`, `-5` | Offset from the container's content dimension. |
+| Auto          | `auto`      | Automatic layout-managed size. Currently special-cased only for `hbox` width; elsewhere it behaves like omitting the dimension. |
 
 **Supported units:** `pt` (points), `in` (inches, 72pt), `cm` (centimeters, 28.35pt).
 

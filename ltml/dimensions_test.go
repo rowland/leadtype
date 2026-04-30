@@ -24,10 +24,12 @@ func TestDimensions_SetAttrs(t *testing.T) {
 		{name: "WidthPct", attrs: map[string]string{"width": "40%"}, wantWidthValue: 40, wantWidthMode: DimPct, wantWidthSet: true},
 		{name: "WidthRelPlus", attrs: map[string]string{"width": "+50"}, wantWidthValue: 50, wantWidthMode: DimRel, wantWidthSet: true},
 		{name: "WidthRelMinus", attrs: map[string]string{"width": "-60"}, wantWidthValue: -60, wantWidthMode: DimRel, wantWidthSet: true},
+		{name: "WidthAuto", attrs: map[string]string{"width": "auto"}, wantWidthMode: DimAuto},
 		{name: "Height", attrs: map[string]string{"height": "30"}, wantHeight: 30, wantHeightValue: 30, wantHeightMode: DimSpecified, wantHeightSet: true},
 		{name: "HeightPct", attrs: map[string]string{"height": "40%"}, wantHeightValue: 40, wantHeightMode: DimPct, wantHeightSet: true},
 		{name: "HeightRelPlus", attrs: map[string]string{"height": "+50"}, wantHeightValue: 50, wantHeightMode: DimRel, wantHeightSet: true},
 		{name: "HeightRelMinus", attrs: map[string]string{"height": "-60"}, wantHeightValue: -60, wantHeightMode: DimRel, wantHeightSet: true},
+		{name: "HeightAuto", attrs: map[string]string{"height": "auto"}, wantHeightMode: DimAuto},
 	}
 
 	for _, tc := range tests {
@@ -42,8 +44,8 @@ func TestDimensions_SetAttrs(t *testing.T) {
 			if got := float64(d.widthValue); got != tc.wantWidthValue {
 				t.Errorf("widthValue: expected %v, got %v", tc.wantWidthValue, got)
 			}
-			if d.widthMode != tc.wantWidthMode {
-				t.Errorf("widthMode: expected %v, got %v", tc.wantWidthMode, d.widthMode)
+			if got := d.WidthMode(); got != tc.wantWidthMode {
+				t.Errorf("WidthMode: expected %v, got %v", tc.wantWidthMode, got)
 			}
 			if got := float64(d.height); got != tc.wantHeight {
 				t.Errorf("height: expected %v, got %v", tc.wantHeight, got)
@@ -51,8 +53,8 @@ func TestDimensions_SetAttrs(t *testing.T) {
 			if got := float64(d.heightValue); got != tc.wantHeightValue {
 				t.Errorf("heightValue: expected %v, got %v", tc.wantHeightValue, got)
 			}
-			if d.heightMode != tc.wantHeightMode {
-				t.Errorf("heightMode: expected %v, got %v", tc.wantHeightMode, d.heightMode)
+			if got := d.HeightMode(); got != tc.wantHeightMode {
+				t.Errorf("HeightMode: expected %v, got %v", tc.wantHeightMode, got)
 			}
 			if got := d.WidthIsSet(); got != tc.wantWidthSet {
 				t.Errorf("WidthIsSet: expected %v, got %v", tc.wantWidthSet, got)
@@ -61,6 +63,18 @@ func TestDimensions_SetAttrs(t *testing.T) {
 				t.Errorf("HeightIsSet: expected %v, got %v", tc.wantHeightSet, got)
 			}
 		})
+	}
+}
+
+func TestDimensions_SetAttrs_AutoIsCaseSensitive(t *testing.T) {
+	var d Dimensions
+	d.SetAttrs(map[string]string{"width": "AUTO", "height": "Auto"}, "")
+
+	if got := d.WidthMode(); got == DimAuto {
+		t.Fatalf("WidthMode() = %v, want non-auto for uppercase AUTO", got)
+	}
+	if got := d.HeightMode(); got == DimAuto {
+		t.Fatalf("HeightMode() = %v, want non-auto for mixed-case Auto", got)
 	}
 }
 
@@ -87,6 +101,21 @@ func TestStdWidget_DimensionResolution(t *testing.T) {
 	}
 	if got := rel.Height(); got != 135 {
 		t.Fatalf("rel.Height() = %v, want 135", got)
+	}
+
+	auto := &StdWidget{}
+	_ = auto.SetContainer(page)
+	auto.SetWidthAuto()
+	auto.SetHeightAuto()
+	auto.SetLeft(10)
+	auto.SetRight(-10)
+	auto.SetTop(5)
+	auto.SetBottom(-5)
+	if got := auto.Width(); got != 180 {
+		t.Fatalf("auto.Width() = %v, want 180", got)
+	}
+	if got := auto.Height(); got != 110 {
+		t.Fatalf("auto.Height() = %v, want 110", got)
 	}
 }
 
@@ -116,6 +145,24 @@ func TestDetectWidths_PreservesPercentClassification(t *testing.T) {
 	}
 	if got := widths[1].Size; got != 80 {
 		t.Fatalf("widths[1].Size = %v, want 80", got)
+	}
+}
+
+func TestDetectWidths_TreatsAutoAsUnspecified(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
+	grid := NewWidgetGrid(1, 1)
+
+	auto := &StdWidget{}
+	_ = auto.SetContainer(page)
+	auto.SetWidthAuto()
+	grid.SetCell(0, 0, auto)
+
+	widths := detectWidths(grid, nil)
+	if got := widths[0].How; got != Unspecified {
+		t.Fatalf("widths[0].How = %v, want %v", got, Unspecified)
+	}
+	if got := widths[0].Size; got != 0 {
+		t.Fatalf("widths[0].Size = %v, want 0", got)
 	}
 }
 

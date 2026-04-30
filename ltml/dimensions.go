@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type DimensionMode int8
@@ -16,6 +17,7 @@ const (
 	DimSpecified
 	DimPct
 	DimRel
+	DimAuto
 )
 
 type Dimensions struct {
@@ -101,7 +103,10 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 	}
 
 	if width, ok := attrs["width"]; ok {
-		if rePct.MatchString(width) {
+		width = strings.TrimSpace(width)
+		if width == "auto" {
+			d.SetWidthAuto()
+		} else if rePct.MatchString(width) {
 			widthPct, _ := strconv.ParseFloat(width[:len(width)-1], 64)
 			d.SetWidthPct(widthPct)
 		} else if reRel.MatchString(width) {
@@ -113,7 +118,10 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 		}
 	}
 	if height, ok := attrs["height"]; ok {
-		if rePct.MatchString(height) {
+		height = strings.TrimSpace(height)
+		if height == "auto" {
+			d.SetHeightAuto()
+		} else if rePct.MatchString(height) {
 			heightPct, _ := strconv.ParseFloat(height[:len(height)-1], 64)
 			d.SetHeightPct(heightPct)
 		} else if reRel.MatchString(height) {
@@ -130,6 +138,12 @@ func (d *Dimensions) SetHeight(value float64) {
 	d.height = float32(value)
 	d.heightValue = float32(value)
 	d.heightMode = DimSpecified
+}
+
+func (d *Dimensions) SetHeightAuto() {
+	d.height = 0
+	d.heightValue = 0
+	d.heightMode = DimAuto
 }
 
 func (d *Dimensions) ClearHeight() {
@@ -151,7 +165,12 @@ func (d *Dimensions) SetHeightRel(value float64) {
 }
 
 func (d *Dimensions) HeightIsSet() bool {
-	return d.heightMode != DimUnspecified
+	switch d.heightMode {
+	case DimSpecified, DimPct, DimRel:
+		return true
+	default:
+		return false
+	}
 }
 
 func (d *Dimensions) SetTop(value float64) {
@@ -174,6 +193,12 @@ func (d *Dimensions) SetWidth(value float64) {
 	d.width = float32(value)
 	d.widthValue = float32(value)
 	d.widthMode = DimSpecified
+}
+
+func (d *Dimensions) SetWidthAuto() {
+	d.width = 0
+	d.widthValue = 0
+	d.widthMode = DimAuto
 }
 
 func (d *Dimensions) ClearWidth() {
@@ -208,7 +233,20 @@ func (d *Dimensions) WidthRelIsSet() bool {
 }
 
 func (d *Dimensions) WidthIsSet() bool {
-	return d.widthMode != DimUnspecified
+	switch d.widthMode {
+	case DimSpecified, DimPct, DimRel:
+		return true
+	default:
+		return false
+	}
+}
+
+func (d *Dimensions) WidthMode() DimensionMode {
+	return d.widthMode
+}
+
+func (d *Dimensions) HeightMode() DimensionMode {
+	return d.heightMode
 }
 
 func (d *Dimensions) SaveState() dimensionsState {

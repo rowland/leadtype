@@ -22,14 +22,16 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 
-	var percents, specified, others []Widget
+	var percents, specified, omitted, auto []Widget
 	for _, widget := range static {
 		if widget.WidthPctIsSet() {
 			percents = append(percents, widget)
+		} else if widget.WidthMode() == DimAuto {
+			auto = append(auto, widget)
 		} else if widget.WidthIsSet() {
 			specified = append(specified, widget)
 		} else {
-			others = append(others, widget)
+			omitted = append(omitted, widget)
 		}
 	}
 
@@ -63,15 +65,47 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 	widthAvail -= style.HPadding()
 
-	if widthAvail-float64(len(others)-1)*style.HPadding() >= float64(len(others)) {
-		widthAvail -= float64(len(others)-1) * style.HPadding()
-		othersWidth := widthAvail / float64(len(others))
-		for _, widget := range others {
-			widget.SetWidth(othersWidth)
+	if len(auto) > 0 {
+		remaining := make([]Widget, 0, len(omitted)+len(auto))
+		remaining = append(remaining, omitted...)
+		remaining = append(remaining, auto...)
+		paddingCost := float64(len(remaining)-1) * style.HPadding()
+		preferredTotal := 0.0
+		for _, widget := range remaining {
+			preferredTotal += widget.PreferredWidth(writer)
 		}
-	} else {
+		if widthAvail > preferredTotal+paddingCost {
+			widthAvail -= paddingCost
+			for _, widget := range omitted {
+				pw := widget.PreferredWidth(writer)
+				widget.SetWidth(pw)
+				widthAvail -= pw
+			}
+			autoWidth := widthAvail / float64(len(auto))
+			for _, widget := range auto {
+				widget.SetWidth(autoWidth)
+			}
+		} else if widthAvail-float64(len(remaining)-1)*style.HPadding() >= float64(len(remaining)) {
+			widthAvail -= float64(len(remaining)-1) * style.HPadding()
+			remainingWidth := widthAvail / float64(len(remaining))
+			for _, widget := range remaining {
+				widget.SetWidth(remainingWidth)
+			}
+		} else {
+			containerFull = true
+			for _, widget := range remaining {
+				widget.SetDisabled(true)
+			}
+		}
+	} else if len(omitted) > 0 && widthAvail-float64(len(omitted)-1)*style.HPadding() >= float64(len(omitted)) {
+		widthAvail -= float64(len(omitted)-1) * style.HPadding()
+		omittedWidth := widthAvail / float64(len(omitted))
+		for _, widget := range omitted {
+			widget.SetWidth(omittedWidth)
+		}
+	} else if len(omitted) > 0 {
 		containerFull = true
-		for _, widget := range others {
+		for _, widget := range omitted {
 			widget.SetDisabled(true)
 		}
 	}

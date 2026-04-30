@@ -792,11 +792,11 @@ func (widget *StdWidget) Height() float64 {
 }
 
 func (widget *StdWidget) HeightIsSet() bool {
-	return widget.heightMode != DimUnspecified || (widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet)
+	return widget.Dimensions.HeightIsSet() || (widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet)
 }
 
 func (widget *StdWidget) WidthIsSet() bool {
-	return widget.widthMode != DimUnspecified || (widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet)
+	return widget.Dimensions.WidthIsSet() || (widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet)
 }
 
 func (widget *StdWidget) Visible() bool {
