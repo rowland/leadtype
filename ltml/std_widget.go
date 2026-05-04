@@ -762,33 +762,39 @@ func (widget *StdWidget) Units() Units {
 }
 
 func (widget *StdWidget) Width() float64 {
+	if widget.widthValid {
+		return float64(widget.width)
+	}
 	switch widget.widthMode {
 	case DimPct:
 		return float64(widget.widthValue) / 100.0 * ContentWidth(widget.container)
 	case DimRel:
 		return ContentWidth(widget.container) + float64(widget.widthValue)
-	case DimSpecified:
-		return float64(widget.width)
+	case DimLiteral:
+		return float64(widget.widthValue)
 	}
 	if widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet {
 		return widget.resolveRight(widget.sides[rightSide].Float64()) - widget.resolveLeft(widget.sides[leftSide].Float64())
 	}
-	return float64(widget.width)
+	return 0
 }
 
 func (widget *StdWidget) Height() float64 {
+	if widget.heightValid {
+		return float64(widget.height)
+	}
 	switch widget.heightMode {
 	case DimPct:
 		return float64(widget.heightValue) / 100.0 * ContentHeight(widget.container)
 	case DimRel:
 		return ContentHeight(widget.container) + float64(widget.heightValue)
-	case DimSpecified:
-		return float64(widget.height)
+	case DimLiteral:
+		return float64(widget.heightValue)
 	}
 	if widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet {
 		return widget.resolveBottom(widget.sides[bottomSide].Float64()) - widget.resolveTop(widget.sides[topSide].Float64())
 	}
-	return float64(widget.height)
+	return 0
 }
 
 func (widget *StdWidget) HeightIsSet() bool {

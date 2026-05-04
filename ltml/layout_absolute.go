@@ -39,11 +39,11 @@ func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Positio
 			widget.SetTop(0)
 		}
 		if !widget.WidthIsSet() {
-			widget.SetWidth(widget.PreferredWidth(writer))
+			widget.ResolveWidth(widget.PreferredWidth(writer))
 		}
 		widget.LayoutWidget(writer)
 		if !widget.HeightIsSet() {
-			widget.SetHeight(widget.PreferredHeight(writer))
+			widget.ResolveHeight(widget.PreferredHeight(writer))
 		}
 	}
 }

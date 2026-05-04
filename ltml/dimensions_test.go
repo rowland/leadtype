@@ -20,12 +20,12 @@ func TestDimensions_SetAttrs(t *testing.T) {
 		wantWidthSet    bool
 		wantHeightSet   bool
 	}{
-		{name: "Width", attrs: map[string]string{"width": "30"}, wantWidth: 30, wantWidthValue: 30, wantWidthMode: DimSpecified, wantWidthSet: true},
+		{name: "Width", attrs: map[string]string{"width": "30"}, wantWidth: 30, wantWidthValue: 30, wantWidthMode: DimLiteral, wantWidthSet: true},
 		{name: "WidthPct", attrs: map[string]string{"width": "40%"}, wantWidthValue: 40, wantWidthMode: DimPct, wantWidthSet: true},
 		{name: "WidthRelPlus", attrs: map[string]string{"width": "+50"}, wantWidthValue: 50, wantWidthMode: DimRel, wantWidthSet: true},
 		{name: "WidthRelMinus", attrs: map[string]string{"width": "-60"}, wantWidthValue: -60, wantWidthMode: DimRel, wantWidthSet: true},
 		{name: "WidthAuto", attrs: map[string]string{"width": "auto"}, wantWidthMode: DimAuto},
-		{name: "Height", attrs: map[string]string{"height": "30"}, wantHeight: 30, wantHeightValue: 30, wantHeightMode: DimSpecified, wantHeightSet: true},
+		{name: "Height", attrs: map[string]string{"height": "30"}, wantHeight: 30, wantHeightValue: 30, wantHeightMode: DimLiteral, wantHeightSet: true},
 		{name: "HeightPct", attrs: map[string]string{"height": "40%"}, wantHeightValue: 40, wantHeightMode: DimPct, wantHeightSet: true},
 		{name: "HeightRelPlus", attrs: map[string]string{"height": "+50"}, wantHeightValue: 50, wantHeightMode: DimRel, wantHeightSet: true},
 		{name: "HeightRelMinus", attrs: map[string]string{"height": "-60"}, wantHeightValue: -60, wantHeightMode: DimRel, wantHeightSet: true},
@@ -168,31 +168,26 @@ func TestDetectWidths_TreatsAutoAsUnspecified(t *testing.T) {
 
 func TestStdIndex_ClearMeasuredGeometry_ClearsOnlyImplicitDimensions(t *testing.T) {
 	index := &StdIndex{}
-	index.width = 140
-	index.widthValue = 25
-	index.widthMode = DimPct
-	index.height = 90
-	index.heightValue = 12
-	index.heightMode = DimRel
+	index.ResolveWidth(140)
+	index.ResolveHeight(90)
 	index.clearMeasuredGeometry()
 
-	if index.width != 0 || index.widthValue != 0 || index.widthMode != DimUnspecified {
-		t.Fatalf("implicit width not cleared: width=%v value=%v mode=%v", index.width, index.widthValue, index.widthMode)
+	if index.width != 0 || index.widthValue != 0 || index.widthMode != DimUnspecified || index.widthValid {
+		t.Fatalf("implicit width not cleared: width=%v value=%v mode=%v valid=%v", index.width, index.widthValue, index.widthMode, index.widthValid)
 	}
-	if index.height != 0 || index.heightValue != 0 || index.heightMode != DimUnspecified {
-		t.Fatalf("implicit height not cleared: height=%v value=%v mode=%v", index.height, index.heightValue, index.heightMode)
+	if index.height != 0 || index.heightValue != 0 || index.heightMode != DimUnspecified || index.heightValid {
+		t.Fatalf("implicit height not cleared: height=%v value=%v mode=%v valid=%v", index.height, index.heightValue, index.heightMode, index.heightValid)
 	}
 
-	index.SetAttrs(map[string]string{"width": "40%", "height": "30"})
-	index.width = 160
-	index.height = 30
+	index.SetAttrs(map[string]string{"width": "40%", "height": "30", "units": "pt"})
+	index.ResolveWidth(160)
 	index.clearMeasuredGeometry()
 
-	if index.width != 160 || index.widthValue != 40 || index.widthMode != DimPct {
-		t.Fatalf("explicit width was not preserved: width=%v value=%v mode=%v", index.width, index.widthValue, index.widthMode)
+	if index.width != 0 || index.widthValue != 40 || index.widthMode != DimPct || index.widthValid {
+		t.Fatalf("explicit width was not preserved: width=%v value=%v mode=%v valid=%v", index.width, index.widthValue, index.widthMode, index.widthValid)
 	}
-	if index.height != 30 || index.heightValue != 30 || index.heightMode != DimSpecified {
-		t.Fatalf("explicit height was not preserved: height=%v value=%v mode=%v", index.height, index.heightValue, index.heightMode)
+	if index.height != 30 || index.heightValue != 30 || index.heightMode != DimLiteral || index.heightValid {
+		t.Fatalf("explicit height was not preserved: height=%v value=%v mode=%v valid=%v", index.height, index.heightValue, index.heightMode, index.heightValid)
 	}
 }
 
@@ -214,7 +209,82 @@ func TestDimensions_SaveStateAndClearHelpers(t *testing.T) {
 	if d.widthMode != DimPct || d.widthValue != 40 || d.width != 0 {
 		t.Fatalf("width state restore failed: mode=%v value=%v width=%v", d.widthMode, d.widthValue, d.width)
 	}
-	if d.heightMode != DimSpecified || d.heightValue != 24 || d.height != 24 {
+	if d.heightMode != DimLiteral || d.heightValue != 24 || d.height != 24 {
 		t.Fatalf("height state restore failed: mode=%v value=%v height=%v", d.heightMode, d.heightValue, d.height)
+	}
+}
+
+func TestStdWidget_ResolveWidthPreservesSpecifiedModeAndOverridesUntilCleared(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
+	widget := &StdWidget{}
+	_ = widget.SetContainer(page)
+	widget.SetWidthPct(25)
+
+	if got := widget.Width(); got != 50 {
+		t.Fatalf("Width() before resolve = %v, want 50", got)
+	}
+
+	widget.ResolveWidth(80)
+	page.pageStyle.width = 400
+	if got := widget.Width(); got != 80 {
+		t.Fatalf("Width() after resolve = %v, want 80", got)
+	}
+	if got := widget.WidthMode(); got != DimPct {
+		t.Fatalf("WidthMode() after resolve = %v, want %v", got, DimPct)
+	}
+	if got := widget.widthValue; got != 25 {
+		t.Fatalf("widthValue after resolve = %v, want 25", got)
+	}
+
+	widget.ClearResolvedWidth()
+	if got := widget.Width(); got != 100 {
+		t.Fatalf("Width() after clear = %v, want 100", got)
+	}
+}
+
+func TestStdWidget_ResolveAutoWidthOverridesSideResolutionUntilCleared(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
+	widget := &StdWidget{}
+	_ = widget.SetContainer(page)
+	widget.SetWidthAuto()
+	widget.SetLeft(10)
+	widget.SetRight(-10)
+
+	if got := widget.Width(); got != 180 {
+		t.Fatalf("Width() before resolve = %v, want 180", got)
+	}
+
+	widget.ResolveWidth(90)
+	widget.SetRight(-40)
+	if got := widget.Width(); got != 90 {
+		t.Fatalf("Width() after resolve = %v, want 90", got)
+	}
+	if got := widget.WidthIsSet(); !got {
+		t.Fatalf("WidthIsSet() after resolve = %v, want true", got)
+	}
+
+	widget.ClearResolvedWidth()
+	if got := widget.Width(); got != 150 {
+		t.Fatalf("Width() after clear = %v, want 150", got)
+	}
+	if got := widget.WidthIsSet(); !got {
+		t.Fatalf("WidthIsSet() after clear = %v, want true from left/right anchors", got)
+	}
+}
+
+func TestDimensions_ClearResolvedHeightPreservesSpecifiedHeight(t *testing.T) {
+	var d Dimensions
+	d.SetHeight(24)
+	d.ResolveHeight(36)
+	d.ClearResolvedHeight()
+
+	if got := d.HeightMode(); got != DimLiteral {
+		t.Fatalf("HeightMode() = %v, want %v", got, DimLiteral)
+	}
+	if got := d.height; got != 24 {
+		t.Fatalf("height = %v, want 24", got)
+	}
+	if got := d.HeightIsSet(); !got {
+		t.Fatalf("HeightIsSet() = %v, want true", got)
 	}
 }

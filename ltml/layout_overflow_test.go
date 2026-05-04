@@ -14,6 +14,7 @@ type flowTestWidget struct {
 	preferredWidth  float64
 	preferredHeight float64
 	printedOn       *[]int
+	printedHeights  *[]float64
 	layoutCalls     int
 }
 
@@ -38,6 +39,9 @@ func (w *flowTestWidget) DrawContent(Writer) error {
 		if doc != nil {
 			*w.printedOn = append(*w.printedOn, doc.CurrentPhysicalPageNo())
 		}
+	}
+	if w.printedHeights != nil {
+		*w.printedHeights = append(*w.printedHeights, w.Height())
 	}
 	return nil
 }
@@ -313,6 +317,162 @@ func TestStdPage_VBoxOverflowDefaultsToTrue(t *testing.T) {
 	}
 	if len(body2Pages) != 1 || body2Pages[0] != 2 {
 		t.Fatalf("body2 pages = %v, want [2]", body2Pages)
+	}
+}
+
+func TestStdPage_FixedHeightVBoxSplitDistributesAutoHeightPerPage(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.overflow = true
+	doc := newFlowPageDoc(page)
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.SetWidth(180)
+	box.SetHeight(140)
+	page.AddChild(box)
+
+	row1 := &flowTestWidget{name: "row1", preferredHeight: 30}
+	row1.SetHeight(30)
+	_ = row1.SetContainer(box)
+	box.AddChild(row1)
+
+	var auto1Pages, auto2Pages, auto3Pages []int
+	var auto1Heights, auto2Heights, auto3Heights []float64
+
+	auto1 := &flowTestWidget{name: "auto1", preferredHeight: 10, printedOn: &auto1Pages, printedHeights: &auto1Heights}
+	auto1.SetHeightAuto()
+	_ = auto1.SetContainer(box)
+	box.AddChild(auto1)
+
+	row3 := &flowTestWidget{name: "row3", preferredHeight: 20}
+	_ = row3.SetContainer(box)
+	box.AddChild(row3)
+
+	auto2 := &flowTestWidget{name: "auto2", preferredHeight: 10, printedOn: &auto2Pages, printedHeights: &auto2Heights}
+	auto2.SetHeightAuto()
+	_ = auto2.SetContainer(box)
+	box.AddChild(auto2)
+
+	row5 := &flowTestWidget{name: "row5", preferredHeight: 20}
+	_ = row5.SetContainer(box)
+	box.AddChild(row5)
+
+	row6 := &flowTestWidget{name: "row6", preferredHeight: 20}
+	_ = row6.SetContainer(box)
+	box.AddChild(row6)
+
+	auto3 := &flowTestWidget{name: "auto3", preferredHeight: 10, printedOn: &auto3Pages, printedHeights: &auto3Heights}
+	auto3.SetHeightAuto()
+	_ = auto3.SetContainer(box)
+	box.AddChild(auto3)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(auto1Pages, []int{1}) || len(auto1Heights) != 1 || auto1Heights[0] != 15 {
+		t.Fatalf("auto1 = pages:%v heights:%v, want page 1 height 15", auto1Pages, auto1Heights)
+	}
+	if !slices.Equal(auto2Pages, []int{1}) || len(auto2Heights) != 1 || auto2Heights[0] != 15 {
+		t.Fatalf("auto2 = pages:%v heights:%v, want page 1 height 15", auto2Pages, auto2Heights)
+	}
+	if !slices.Equal(auto3Pages, []int{2}) || len(auto3Heights) != 1 || auto3Heights[0] != 80 {
+		t.Fatalf("auto3 = pages:%v heights:%v, want page 2 height 80", auto3Pages, auto3Heights)
+	}
+}
+
+func TestStdPage_FixedHeightVBoxSplitOnlySharesOnPagesWithAutoChildren(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.overflow = true
+	doc := newFlowPageDoc(page)
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.SetWidth(180)
+	box.SetHeight(140)
+	page.AddChild(box)
+
+	var row1Heights, row2Heights, autoHeights []float64
+	var row1Pages, row2Pages, autoPages []int
+
+	row1 := &flowTestWidget{name: "row1", preferredHeight: 50, printedOn: &row1Pages, printedHeights: &row1Heights}
+	_ = row1.SetContainer(box)
+	box.AddChild(row1)
+
+	row2 := &flowTestWidget{name: "row2", preferredHeight: 50, printedOn: &row2Pages, printedHeights: &row2Heights}
+	_ = row2.SetContainer(box)
+	box.AddChild(row2)
+
+	auto := &flowTestWidget{name: "auto", preferredHeight: 10, printedOn: &autoPages, printedHeights: &autoHeights}
+	auto.SetHeightAuto()
+	_ = auto.SetContainer(box)
+	box.AddChild(auto)
+
+	row4 := &flowTestWidget{name: "row4", preferredHeight: 20}
+	_ = row4.SetContainer(box)
+	box.AddChild(row4)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(row1Pages, []int{1}) || len(row1Heights) != 1 || row1Heights[0] != 50 {
+		t.Fatalf("row1 = pages:%v heights:%v, want page 1 height 50", row1Pages, row1Heights)
+	}
+	if !slices.Equal(row2Pages, []int{1}) || len(row2Heights) != 1 || row2Heights[0] != 50 {
+		t.Fatalf("row2 = pages:%v heights:%v, want page 1 height 50", row2Pages, row2Heights)
+	}
+	if !slices.Equal(autoPages, []int{2}) || len(autoHeights) != 1 || autoHeights[0] != 80 {
+		t.Fatalf("auto = pages:%v heights:%v, want page 2 height 80", autoPages, autoHeights)
+	}
+}
+
+func TestStdPage_NaturalVBoxSplitLeavesAutoHeightAtPreferredSize(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.overflow = true
+	doc := newFlowPageDoc(page)
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.SetWidth(180)
+	page.AddChild(box)
+
+	row1 := &flowTestWidget{name: "row1", preferredHeight: 60}
+	_ = row1.SetContainer(box)
+	box.AddChild(row1)
+
+	var autoPages []int
+	var autoHeights []float64
+	auto := &flowTestWidget{name: "auto", preferredHeight: 10, printedOn: &autoPages, printedHeights: &autoHeights}
+	auto.SetHeightAuto()
+	_ = auto.SetContainer(box)
+	box.AddChild(auto)
+
+	row3 := &flowTestWidget{name: "row3", preferredHeight: 60}
+	_ = row3.SetContainer(box)
+	box.AddChild(row3)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(autoPages, []int{1}) || len(autoHeights) != 1 || autoHeights[0] != 10 {
+		t.Fatalf("auto = pages:%v heights:%v, want page 1 height 10", autoPages, autoHeights)
 	}
 }
 

@@ -38,10 +38,14 @@ type Widget interface {
 	SetHeightAuto()
 	SetHeightPct(value float64)
 	SetHeightRel(value float64)
+	ResolveHeight(value float64)
+	ClearResolvedHeight()
 	SetWidth(value float64)
 	SetWidthAuto()
 	SetWidthPct(value float64)
 	SetWidthRel(value float64)
+	ResolveWidth(value float64)
+	ClearResolvedWidth()
 
 	Height() float64
 	HeightIsSet() bool

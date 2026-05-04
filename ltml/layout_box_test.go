@@ -5,6 +5,15 @@ import (
 	"testing"
 )
 
+func testHBoxLabel(t *testing.T, text string) *StdLabel {
+	t.Helper()
+	label := &StdLabel{}
+	label.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 11}
+	label.SetAttrs(map[string]string{"padding": "6pt"})
+	label.AddText(text)
+	return label
+}
+
 func TestLayoutVBox_AlignSelfCenterCentersTopChildHorizontally(t *testing.T) {
 	c := positionedContainer(0, 0, 300, 200)
 	style := &LayoutStyle{}
@@ -150,6 +159,70 @@ func TestLayoutHBox_AutoWidthHasNoEffectWhenConstrained(t *testing.T) {
 	}
 }
 
+func TestLayoutHBox_AutoWidthMatchesDirectLayoutAfterVBoxProbe(t *testing.T) {
+	writer := &labelTestWriter{t: t}
+	hboxStyle := &LayoutStyle{manager: "hbox", hpadding: 10}
+
+	buildBox := func() (*StdContainer, []*StdLabel) {
+		box := &StdContainer{}
+		box.layout = hboxStyle
+		box.SetWidth(3.9 * 72)
+		box.SetAttrs(map[string]string{"padding": "8pt"})
+
+		fixed := testHBoxLabel(t, "fixed")
+		fixed.SetWidth(0.75 * 72)
+		if err := fixed.SetContainer(box); err != nil {
+			t.Fatal(err)
+		}
+		box.AddChild(fixed)
+
+		preferred := testHBoxLabel(t, "preferred width")
+		if err := preferred.SetContainer(box); err != nil {
+			t.Fatal(err)
+		}
+		box.AddChild(preferred)
+
+		auto1 := testHBoxLabel(t, "auto A")
+		auto1.SetWidthAuto()
+		if err := auto1.SetContainer(box); err != nil {
+			t.Fatal(err)
+		}
+		box.AddChild(auto1)
+
+		auto2 := testHBoxLabel(t, "auto B")
+		auto2.SetWidthAuto()
+		if err := auto2.SetContainer(box); err != nil {
+			t.Fatal(err)
+		}
+		box.AddChild(auto2)
+
+		return box, []*StdLabel{fixed, preferred, auto1, auto2}
+	}
+
+	directBox, directLabels := buildBox()
+	LayoutHBox(directBox, hboxStyle, writer)
+	directWidths := make([]float64, len(directLabels))
+	for i, label := range directLabels {
+		directWidths[i] = label.Width()
+	}
+
+	probedBox, probedLabels := buildBox()
+	outer := positionedContainer(0, 0, 400, 300)
+	outer.layout = &LayoutStyle{manager: "vbox"}
+	if err := probedBox.SetContainer(outer); err != nil {
+		t.Fatal(err)
+	}
+	outer.AddChild(probedBox)
+
+	LayoutVBox(outer, outer.layout, writer)
+
+	for i, label := range probedLabels {
+		if got := label.Width(); math.Abs(got-directWidths[i]) > 0.001 {
+			t.Fatalf("label %d width after vbox probe = %v, want %v", i, got, directWidths[i])
+		}
+	}
+}
+
 func TestLayoutHBox_WithoutAutoKeepsExistingEqualShareBehavior(t *testing.T) {
 	c := positionedContainer(0, 0, 300, 100)
 	style := &LayoutStyle{hpadding: 10}
@@ -234,6 +307,116 @@ func TestLayoutVBox_AutoWidthMatchesOmittedWidth(t *testing.T) {
 	}
 	if got := auto.Width(); got != 80 {
 		t.Fatalf("auto.Width() = %v, want 80", got)
+	}
+}
+
+func TestLayoutVBox_AutoHeightAbsorbsOnlySurplusSpace(t *testing.T) {
+	c := positionedContainer(0, 0, 200, 200)
+	style := &LayoutStyle{vpadding: 10}
+
+	fixed := &positionedTestWidget{preferredWidth: 80, preferredHeight: 40}
+	fixed.SetHeight(40)
+	_ = fixed.SetContainer(c)
+	c.AddChild(fixed)
+
+	pct := &positionedTestWidget{preferredWidth: 80, preferredHeight: 15}
+	pct.SetHeightPct(25)
+	_ = pct.SetContainer(c)
+	c.AddChild(pct)
+
+	omitted := &positionedTestWidget{preferredWidth: 80, preferredHeight: 30}
+	_ = omitted.SetContainer(c)
+	c.AddChild(omitted)
+
+	auto1 := &positionedTestWidget{preferredWidth: 80, preferredHeight: 20}
+	auto1.SetHeightAuto()
+	_ = auto1.SetContainer(c)
+	c.AddChild(auto1)
+
+	auto2 := &positionedTestWidget{preferredWidth: 80, preferredHeight: 10}
+	auto2.SetHeightAuto()
+	_ = auto2.SetContainer(c)
+	c.AddChild(auto2)
+
+	LayoutVBox(c, style, nil)
+
+	if got := fixed.Height(); got != 40 {
+		t.Fatalf("fixed.Height() = %v, want 40", got)
+	}
+	if got := pct.Height(); got != 50 {
+		t.Fatalf("pct.Height() = %v, want 50", got)
+	}
+	if got := omitted.Height(); got != 30 {
+		t.Fatalf("omitted.Height() = %v, want 30", got)
+	}
+	if got := auto1.Height(); got != 25 {
+		t.Fatalf("auto1.Height() = %v, want 25", got)
+	}
+	if got := auto2.Height(); got != 15 {
+		t.Fatalf("auto2.Height() = %v, want 15", got)
+	}
+}
+
+func TestLayoutVBox_AutoHeightHasNoEffectWhenNotRoomy(t *testing.T) {
+	c := positionedContainer(0, 0, 200, 130)
+	style := &LayoutStyle{vpadding: 10}
+
+	fixed := &positionedTestWidget{preferredWidth: 80, preferredHeight: 40}
+	fixed.SetHeight(40)
+	_ = fixed.SetContainer(c)
+	c.AddChild(fixed)
+
+	omitted := &positionedTestWidget{preferredWidth: 80, preferredHeight: 30}
+	_ = omitted.SetContainer(c)
+	c.AddChild(omitted)
+
+	auto1 := &positionedTestWidget{preferredWidth: 80, preferredHeight: 20}
+	auto1.SetHeightAuto()
+	_ = auto1.SetContainer(c)
+	c.AddChild(auto1)
+
+	auto2 := &positionedTestWidget{preferredWidth: 80, preferredHeight: 10}
+	auto2.SetHeightAuto()
+	_ = auto2.SetContainer(c)
+	c.AddChild(auto2)
+
+	LayoutVBox(c, style, nil)
+
+	if got := omitted.Height(); got != 30 {
+		t.Fatalf("omitted.Height() = %v, want 30", got)
+	}
+	if got := auto1.Height(); got != 20 {
+		t.Fatalf("auto1.Height() = %v, want 20", got)
+	}
+	if got := auto2.Height(); got != 10 {
+		t.Fatalf("auto2.Height() = %v, want 10", got)
+	}
+}
+
+func TestLayoutVBox_AutoHeightMatchesOmittedHeightWhenContainerIsNatural(t *testing.T) {
+	c := positionedContainer(0, 0, 200, 0)
+	c.ClearHeight()
+	style := &LayoutStyle{vpadding: 10}
+
+	omitted := &positionedTestWidget{preferredWidth: 80, preferredHeight: 30}
+	_ = omitted.SetContainer(c)
+	c.AddChild(omitted)
+
+	auto := &positionedTestWidget{preferredWidth: 80, preferredHeight: 20}
+	auto.SetHeightAuto()
+	_ = auto.SetContainer(c)
+	c.AddChild(auto)
+
+	LayoutVBox(c, style, nil)
+
+	if got := omitted.Height(); got != 30 {
+		t.Fatalf("omitted.Height() = %v, want 30", got)
+	}
+	if got := auto.Height(); got != 20 {
+		t.Fatalf("auto.Height() = %v, want 20", got)
+	}
+	if got := c.Height(); got != 60 {
+		t.Fatalf("container.Height() = %v, want 60", got)
 	}
 }
 

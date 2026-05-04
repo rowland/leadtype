@@ -1,0 +1,55 @@
+<ltml units="in" margin="0.75">
+  <pen id="frame" color="#334155" width="1pt" />
+  <pen id="cell" color="#475569" width="1pt" />
+  <brush id="fixed-fill" color="#e2e8f0" />
+  <brush id="preferred-fill" color="#fef3c7" />
+  <brush id="auto-fill" color="#dbeafe" />
+
+  <style>
+    div.split-demo {
+      layout: vbox;
+      layout.vpadding: 10pt;
+      width: 100%;
+      height: 9in;
+      border: frame;
+      padding: 8pt;
+    }
+
+    div.split-demo > label {
+      padding: 8pt;
+      border: cell;
+    }
+
+    label.fragment-one {
+      height: 2.55in;
+      fill: fixed-fill;
+    }
+
+    label.preferred {
+      fill: preferred-fill;
+    }
+
+    label.auto {
+      height: auto;
+      fill: auto-fill;
+    }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt" font.name="Helvetica" font.size="11">
+    <label font.size="18" font.weight="Bold">VBox auto height overflow</label>
+    <p>
+      This fixed-height vbox splits across pages. The first fragment contains
+      only fixed-height children. The continuation fragment contains an omitted
+      height and a height="auto" child, so only that page shares surplus height
+      with the auto child.
+    </p>
+
+    <div class="split-demo">
+      <label class="fragment-one">Fragment 1 fixed A</label>
+      <label class="fragment-one">Fragment 1 fixed B</label>
+      <label class="fragment-one">Fragment 1 fixed C</label>
+      <label class="preferred">Fragment 2 preferred height</label>
+      <label class="auto">Fragment 2 auto absorbs fragment slack</label>
+    </div>
+  </page>
+</ltml>

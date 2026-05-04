@@ -106,8 +106,8 @@ func (c *StdContainer) Widgets() []Widget {
 }
 
 func (c *StdContainer) PreferredHeight(w Writer) float64 {
-	if c.height != 0 {
-		return float64(c.height)
+	if c.HeightIsSet() {
+		return c.Height()
 	}
 	c.prepareForLayout(w)
 	if isRadialLayoutStyle(c.layout) {
@@ -118,13 +118,20 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 	saved := c.SaveState()
 	LayoutContainer(c, newLayoutProbeWriter(w))
 	height := c.Height()
+	walkWidgets(c, func(widget Widget) bool {
+		if widget != c {
+			widget.ClearResolvedWidth()
+			widget.ClearResolvedHeight()
+		}
+		return true
+	})
 	c.RestoreState(saved)
 	return height
 }
 
 func (c *StdContainer) PreferredWidth(w Writer) float64 {
-	if c.width != 0 {
-		return float64(c.width)
+	if c.WidthIsSet() {
+		return c.Width()
 	}
 	if isRadialLayoutStyle(c.layout) {
 		if width, ok := c.radialInferredWidth(); ok {
@@ -446,9 +453,9 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 			for i := 0; i < widget.ColSpan(); i++ {
 				width += widths[col+i].Size
 			}
-			widget.SetWidth(width + float64(widget.ColSpan()-1)*c.LayoutStyle().HPadding())
+			widget.ResolveWidth(width + float64(widget.ColSpan()-1)*c.LayoutStyle().HPadding())
 			height := widget.Height()
-			if !widget.HeightIsSet() {
+			if !widgetHeightSpecified(widget) {
 				height = widget.PreferredHeight(w)
 			}
 			if height > maxHeight {
@@ -499,7 +506,8 @@ func (c *StdContainer) tableFragmentHeight(metrics *tableSplitMetrics, bodyStart
 func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int) *StdContainer {
 	clone := *c
 	clone.activeChildren = c.cloneTableWidgetsForRows(metrics.grid, rows, &clone)
-	clone.ClearHeight()
+	clone.ClearResolvedWidth()
+	clone.ClearResolvedHeight()
 	clone.printed = false
 	clone.invisible = false
 	clone.disabled = false
@@ -753,7 +761,7 @@ func (c *StdContainer) vboxSplitMetrics(w Writer) *vboxSplitMetrics {
 	}
 	rtl := IsRTL(c)
 	for _, child := range static {
-		if !child.WidthIsSet() {
+		if widgetAutoWidth(child) || !widgetWidthSpecified(child) {
 			cw := ContentWidth(c)
 			pw := 0.0
 			if _, ok := child.(*StdParagraph); ok {
@@ -764,11 +772,11 @@ func (c *StdContainer) vboxSplitMetrics(w Writer) *vboxSplitMetrics {
 			if pw == 0 {
 				pw = cw
 			}
-			child.SetWidth(min(pw, cw))
+			child.ResolveWidth(min(pw, cw))
 		}
 		child.SetLeft(vboxCrossAxisLeft(c, child, rtl))
 		height := child.Height()
-		if !child.HeightIsSet() {
+		if !widgetHeightSpecified(child) {
 			height = child.PreferredHeight(w)
 		}
 		metrics.heights[child] = height
@@ -848,7 +856,8 @@ func (c *StdContainer) vboxHasVisibleWidget(groups ...[]Widget) bool {
 func (c *StdContainer) cloneVBoxFragment(included map[Widget]bool, replacements map[Widget]Widget) *StdContainer {
 	clone := *c
 	clone.activeChildren = make([]Widget, 0, len(included)+len(replacements))
-	clone.ClearHeight()
+	clone.ClearResolvedWidth()
+	clone.ClearResolvedHeight()
 	clone.printed = false
 	clone.invisible = false
 	clone.disabled = false
@@ -890,6 +899,8 @@ func cloneWidgetShallow(widget Widget) Widget {
 	if !ok {
 		panic("cloneWidgetShallow produced non-widget clone")
 	}
+	w.ClearResolvedWidth()
+	w.ClearResolvedHeight()
 	w.SetPrinted(false)
 	w.SetVisible(true)
 	w.SetDisabled(false)

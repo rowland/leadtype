@@ -89,7 +89,7 @@ func detectWidths(grid *WidgetGrid, writer Writer) SpecifiedSizes {
 			widths[c] = &SpecifiedSize{How: Unspecified, Size: 0}
 		} else if widget.WidthPctIsSet() {
 			widths[c] = &SpecifiedSize{How: Percent, Size: widget.Width()}
-		} else if widget.WidthIsSet() {
+		} else if widgetWidthSpecified(widget) {
 			widths[c] = &SpecifiedSize{How: Specified, Size: widget.Width()}
 		} else {
 			max := 0.0
@@ -194,7 +194,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 				for i := 0; i < widget.ColSpan(); i++ {
 					width += widths[c+i].Size
 				}
-				widget.SetWidth(width + float64(widget.ColSpan()-1)*style.HPadding())
+				widget.ResolveWidth(width + float64(widget.ColSpan()-1)*style.HPadding())
 				var height float64
 				if widget.HeightIsSet() {
 					height = widget.Height()
@@ -265,7 +265,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 				for rowOffset := 0; rowOffset < ss.Span; rowOffset++ {
 					height += heights.Cell(c, r+rowOffset).Size
 				}
-				widget.SetHeight(height)
+				widget.ResolveHeight(height)
 				if ss.Span == 1 && ss.Size > maxHeight {
 					maxHeight = ss.Size
 				}
@@ -289,7 +289,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 	if !container.HeightIsSet() {
-		container.SetHeight(top - ContentTop(container) + NonContentHeight(container) - style.VPadding())
+		container.ResolveHeight(top - ContentTop(container) + NonContentHeight(container) - style.VPadding())
 	}
 	static, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {

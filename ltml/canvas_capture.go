@@ -51,6 +51,8 @@ func resetCanvasWidgetRenderState(root Widget) {
 		widget.SetPrinted(false)
 		widget.SetVisible(true)
 		widget.SetDisabled(false)
+		widget.ClearResolvedWidth()
+		widget.ClearResolvedHeight()
 		switch value := widget.(type) {
 		case *StdContainer:
 			value.activeChildren = nil

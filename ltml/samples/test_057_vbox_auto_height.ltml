@@ -1,0 +1,75 @@
+<ltml units="in" margin="0.75">
+  <pen id="frame" color="#334155" width="1pt" />
+  <pen id="cell" color="#475569" width="1pt" />
+  <brush id="fixed-fill" color="#e2e8f0" />
+  <brush id="preferred-fill" color="#fef3c7" />
+  <brush id="auto-a-fill" color="#dbeafe" />
+  <brush id="auto-b-fill" color="#dcfce7" />
+
+  <style>
+    div.demo-column {
+      layout: vbox;
+      layout.vpadding: 8pt;
+      border: frame;
+      padding: 8pt;
+    }
+
+    div.demo-column.roomy {
+      height: 3.2in;
+    }
+
+    div.demo-column.tight {
+      height: 1.8in;
+    }
+
+    div.demo-column > label {
+      padding: 6pt;
+      border: cell;
+    }
+
+    label.fixed {
+      height: 0.45in;
+      fill: fixed-fill;
+    }
+
+    label.preferred {
+      fill: preferred-fill;
+    }
+
+    label.auto {
+      height: auto;
+    }
+
+    label.auto-a {
+      fill: auto-a-fill;
+    }
+
+    label.auto-b {
+      fill: auto-b-fill;
+    }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt" font.name="Helvetica" font.size="11">
+    <label font.size="18" font.weight="Bold">VBox auto height</label>
+    <p>
+      When a fixed-height vbox has surplus room, omitted heights stay at their
+      preferred size and only height="auto" children grow. In a constrained
+      fixed-height vbox, auto behaves like an omitted height.
+    </p>
+
+    <h6>Roomy fixed-height container</h6>
+    <div class="demo-column roomy">
+      <label class="fixed">fixed height</label>
+      <label class="preferred">preferred height</label>
+      <label class="auto auto-a">auto A grows</label>
+      <label class="auto auto-b">auto B grows</label>
+    </div>
+
+    <h6>Constrained fixed-height container</h6>
+    <div class="demo-column tight">
+      <label class="fixed">fixed height</label>
+      <label class="preferred">preferred height</label>
+      <label class="auto auto-a">auto A stays preferred</label>
+    </div>
+  </page>
+</ltml>

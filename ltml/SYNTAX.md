@@ -1169,6 +1169,15 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control horizontal placement within the vbox row.
 - In `dir="rtl"`, `align-self="start"` means right and `align-self="end"` means left.
 - In `dir="rtl"`, children are flush against the right edge plus padding instead of the left.
+- When at least one child uses `height="auto"` and a height-constrained vbox
+  fragment has true surplus height beyond the specified, percent, and preferred
+  heights of the children on that fragment plus `layout.vpadding`, omitted
+  heights keep their preferred heights and the `auto` children split the
+  leftover height evenly.
+- In natural-height vboxes, and in constrained vboxes without surplus,
+  `height="auto"` behaves the same as an omitted height.
+- When a vbox splits across pages, `height="auto"` is evaluated separately for
+  each fragment page based only on the children present on that fragment.
 
 ### HBox Details
 
@@ -1359,7 +1368,7 @@ Measurements can be expressed in several forms:
 | With unit     | `1in`, `2.5cm`, `14pt` | Explicit unit overrides the current `units`. |
 | Percentage    | `50%`       | Percentage of the container's content width or height. |
 | Relative      | `+10`, `-5` | Offset from the container's content dimension. |
-| Auto          | `auto`      | Automatic layout-managed size. Currently special-cased only for `hbox` width; elsewhere it behaves like omitting the dimension. |
+| Auto          | `auto`      | Automatic layout-managed size. Currently special-cased for `hbox` width and `vbox` height; elsewhere it behaves like omitting the dimension. |
 
 **Supported units:** `pt` (points), `in` (inches, 72pt), `cm` (centimeters, 28.35pt).
 
