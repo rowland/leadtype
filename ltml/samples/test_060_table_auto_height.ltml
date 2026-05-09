@@ -1,0 +1,78 @@
+<ltml units="in" margin="0.75">
+  <pen id="frame" color="#334155" width="1pt" />
+  <pen id="cell" color="#475569" width="1pt" />
+  <brush id="fixed-fill" color="#e2e8f0" />
+  <brush id="percent-fill" color="#ede9fe" />
+  <brush id="preferred-fill" color="#fef3c7" />
+  <brush id="auto-fill" color="#dbeafe" />
+
+  <style>
+    table.demo {
+      layout: table;
+      cols: 2;
+      order: rows;
+      width: 100%;
+      border: frame;
+      padding: 8pt;
+      layout.hpadding: 8pt;
+      layout.vpadding: 8pt;
+    }
+
+    table.roomy {
+      height: 3.4in;
+    }
+
+    table.demo > label {
+      border: cell;
+      padding: 6pt;
+    }
+
+    label.fixed {
+      height: 0.45in;
+      fill: fixed-fill;
+    }
+
+    label.percent {
+      height: 15%;
+      fill: percent-fill;
+    }
+
+    label.preferred {
+      fill: preferred-fill;
+    }
+
+    label.auto {
+      height: auto;
+      fill: auto-fill;
+    }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt" font.name="Helvetica" font.size="11">
+    <label font.size="18" font.weight="Bold">Table auto height</label>
+    <p>
+      Fixed-height tables preserve fixed and percent rows, then share true
+      surplus height only with rows containing height="auto" cells.
+      Natural-height tables leave auto rows at preferred height.
+    </p>
+
+    <h6>Roomy fixed-height table</h6>
+    <table class="demo roomy">
+      <label class="fixed">fixed row A</label>
+      <label class="fixed">fixed row B</label>
+      <label class="percent">15% row A</label>
+      <label class="percent">15% row B</label>
+      <label class="preferred">preferred row A</label>
+      <label class="preferred">preferred row B</label>
+      <label class="auto">auto row grows A</label>
+      <label class="auto">auto row grows B</label>
+    </table>
+
+    <h6>Natural-height table</h6>
+    <table class="demo">
+      <label class="preferred">preferred row A</label>
+      <label class="preferred">preferred row B</label>
+      <label class="auto">auto row stays preferred A</label>
+      <label class="auto">auto row stays preferred B</label>
+    </table>
+  </page>
+</ltml>

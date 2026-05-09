@@ -1432,6 +1432,33 @@ func TestSample_TableSplitHeadersFooters_RepeatsTableFooterRows(t *testing.T) {
 	}
 }
 
+func TestSample_TableAutoSplit_RendersMultiplePages(t *testing.T) {
+	doc, err := ParseFile(sampleFile("test_061_table_auto_split.ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount < 2 {
+		t.Fatalf("page count = %d, want at least 2 (printed=%q plain=%q)", w.pageCount, joinRichTexts(w.printed), strings.Join(w.plainPrinted, "\n"))
+	}
+	pageTexts := map[int][]string{}
+	for i, rt := range w.printed {
+		pageTexts[w.printedPages[i]] = append(pageTexts[w.printedPages[i]], rt.String())
+	}
+	page1Text := strings.Join(pageTexts[1], "\n")
+	page2Text := strings.Join(pageTexts[2], "\n")
+	if !strings.Contains(page1Text, "Repeating table header") || !strings.Contains(page2Text, "Repeating table header") {
+		t.Fatalf("expected repeating table header on first two pages, got page1=%q page2=%q", page1Text, page2Text)
+	}
+	allText := strings.Join(w.plainPrinted, "\n") + "\n" + joinRichTexts(w.printed)
+	if !strings.Contains(allText, "row 10 A") || !strings.Contains(allText, "row 10 B") {
+		t.Fatalf("expected final table row to render, got %q", allText)
+	}
+}
+
 func joinRichTexts(texts []*rich_text.RichText) string {
 	parts := make([]string, 0, len(texts))
 	for _, text := range texts {

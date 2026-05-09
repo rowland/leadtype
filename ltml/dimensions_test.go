@@ -119,7 +119,7 @@ func TestStdWidget_DimensionResolution(t *testing.T) {
 	}
 }
 
-func TestDetectWidths_PreservesPercentClassification(t *testing.T) {
+func TestDetectTableColumnTracks_PreservesPercentClassification(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
 	grid := NewWidgetGrid(2, 1)
 
@@ -133,36 +133,36 @@ func TestDetectWidths_PreservesPercentClassification(t *testing.T) {
 	specified.SetWidth(80)
 	grid.SetCell(1, 0, specified)
 
-	widths := detectWidths(grid, nil)
-	if got := widths[0].How; got != Percent {
-		t.Fatalf("widths[0].How = %v, want %v", got, Percent)
+	tracks := detectTableColumnTracks(grid, nil)
+	if got := tracks[0].kind; got != tableTrackPercent {
+		t.Fatalf("tracks[0].kind = %v, want %v", got, tableTrackPercent)
 	}
-	if got := widths[0].Size; got != 80 {
-		t.Fatalf("widths[0].Size = %v, want 80", got)
+	if got := tracks[0].size; got != 80 {
+		t.Fatalf("tracks[0].size = %v, want 80", got)
 	}
-	if got := widths[1].How; got != Specified {
-		t.Fatalf("widths[1].How = %v, want %v", got, Specified)
+	if got := tracks[1].kind; got != tableTrackSpecified {
+		t.Fatalf("tracks[1].kind = %v, want %v", got, tableTrackSpecified)
 	}
-	if got := widths[1].Size; got != 80 {
-		t.Fatalf("widths[1].Size = %v, want 80", got)
+	if got := tracks[1].size; got != 80 {
+		t.Fatalf("tracks[1].size = %v, want 80", got)
 	}
 }
 
-func TestDetectWidths_TreatsAutoAsUnspecified(t *testing.T) {
+func TestDetectTableColumnTracks_ClassifiesAuto(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
 	grid := NewWidgetGrid(1, 1)
 
-	auto := &StdWidget{}
+	auto := &positionedTestWidget{preferredWidth: 35}
 	_ = auto.SetContainer(page)
 	auto.SetWidthAuto()
 	grid.SetCell(0, 0, auto)
 
-	widths := detectWidths(grid, nil)
-	if got := widths[0].How; got != Unspecified {
-		t.Fatalf("widths[0].How = %v, want %v", got, Unspecified)
+	tracks := detectTableColumnTracks(grid, nil)
+	if got := tracks[0].kind; got != tableTrackAuto {
+		t.Fatalf("tracks[0].kind = %v, want %v", got, tableTrackAuto)
 	}
-	if got := widths[0].Size; got != 0 {
-		t.Fatalf("widths[0].Size = %v, want 0", got)
+	if got := tracks[0].preferred; got != 35 {
+		t.Fatalf("tracks[0].preferred = %v, want 35", got)
 	}
 }
 

@@ -338,6 +338,14 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 			return nil, err
 		}
 		bodyCount := metrics.bodyEnd - metrics.bodyStart
+		if c.tableFragmentHeight(metrics, metrics.bodyStart, metrics.bodyEnd) <= avail {
+			rows := append([]int{}, metrics.headerRows...)
+			for r := metrics.bodyStart; r < metrics.bodyEnd; r++ {
+				rows = append(rows, r)
+			}
+			rows = append(rows, metrics.footerRows...)
+			return &SplitResult{Head: c.cloneTableFragment(metrics, rows), Tail: nil}, nil
+		}
 		if bodyCount < 2 {
 			return nil, nil
 		}
@@ -430,13 +438,7 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 			return nil, errTableSplitUnsupportedRowSpan
 		}
 	}
-	widths := detectWidths(grid, w)
-	percents, others := widths.Partition(func(w *SpecifiedSize) bool { return w.How == Percent })
-	specified, others := others.Partition(func(w *SpecifiedSize) bool { return w.How == Specified })
-	widthAvail := ContentWidth(c)
-	widthAvail = allocateSpecifiedWidths(widthAvail, specified, c.LayoutStyle())
-	widthAvail = allocatePercentWidths(widthAvail, percents, c.LayoutStyle())
-	_ = allocateOtherWidths(widthAvail, others, c.LayoutStyle())
+	widths := planTableColumnWidths(grid, c, c.LayoutStyle(), w).resolvedSizes()
 
 	rowHeights := make([]float64, grid.Rows())
 	for r := 0; r < grid.Rows(); r++ {
@@ -446,14 +448,10 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 			if widget == nil {
 				continue
 			}
-			if widths[col].Size <= 0 {
+			if widths[col] <= 0 {
 				continue
 			}
-			width := 0.0
-			for i := 0; i < widget.ColSpan(); i++ {
-				width += widths[col+i].Size
-			}
-			widget.ResolveWidth(width + float64(widget.ColSpan()-1)*c.LayoutStyle().HPadding())
+			widget.ResolveWidth(tableCellWidth(widths, col, widget.ColSpan(), c.LayoutStyle().HPadding()))
 			height := widget.Height()
 			if !widgetHeightSpecified(widget) {
 				height = widget.PreferredHeight(w)

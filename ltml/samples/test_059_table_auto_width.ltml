@@ -1,0 +1,85 @@
+<ltml units="in" margin="0.75">
+  <pen id="frame" color="#334155" width="1pt" />
+  <pen id="cell" color="#475569" width="1pt" />
+  <brush id="fixed-fill" color="#e2e8f0" />
+  <brush id="percent-fill" color="#ede9fe" />
+  <brush id="preferred-fill" color="#fef3c7" />
+  <brush id="auto-a-fill" color="#dbeafe" />
+  <brush id="auto-b-fill" color="#dcfce7" />
+
+  <style>
+    table.demo {
+      layout: table;
+      cols: 5;
+      order: rows;
+      border: frame;
+      padding: 8pt;
+      layout.hpadding: 8pt;
+      layout.vpadding: 8pt;
+      width: 100%;
+    }
+
+    table.tight {
+      width: 4in;
+    }
+
+    table.demo > label {
+      border: cell;
+      padding: 6pt;
+    }
+
+    label.fixed {
+      width: 0.75in;
+      fill: fixed-fill;
+    }
+
+    label.percent {
+      width: 20%;
+      fill: percent-fill;
+    }
+
+    label.preferred {
+      fill: preferred-fill;
+    }
+
+    label.auto {
+      width: auto;
+    }
+
+    label.auto-a {
+      fill: auto-a-fill;
+    }
+
+    label.auto-b {
+      fill: auto-b-fill;
+    }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt" font.name="Helvetica" font.size="11">
+    <label font.size="18" font.weight="Bold">Table auto width</label>
+    <p>
+      Fixed and percent columns keep their authored sizes. In a roomy table,
+      omitted columns keep preferred width while width="auto" columns split
+      surplus. In a tight table, auto columns shrink first so omitted columns
+      can keep preferred width.
+    </p>
+
+    <h6>Roomy table</h6>
+    <table class="demo">
+      <label class="fixed">fixed</label>
+      <label class="percent">20%</label>
+      <label class="preferred">preferred width</label>
+      <label class="auto auto-a">auto A fills surplus</label>
+      <label class="auto auto-b">auto B fills surplus</label>
+    </table>
+
+    <h6>Tight table fallback</h6>
+    <table class="demo tight">
+      <label class="fixed">fixed</label>
+      <label class="percent">20%</label>
+      <label class="preferred">preferred width</label>
+      <label class="auto auto-a">A</label>
+      <label class="auto auto-b">B</label>
+    </table>
+  </page>
+</ltml>
