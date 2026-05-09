@@ -1169,6 +1169,15 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control horizontal placement within the vbox row.
 - In `dir="rtl"`, `align-self="start"` means right and `align-self="end"` means left.
 - In `dir="rtl"`, children are flush against the right edge plus padding instead of the left.
+- When at least one child uses `height="auto"` and a height-constrained vbox
+  fragment has true surplus height beyond the specified, percent, and preferred
+  heights of the children on that fragment plus `layout.vpadding`, omitted
+  heights keep their preferred heights and the `auto` children split the
+  leftover height evenly.
+- In natural-height vboxes, and in constrained vboxes without surplus,
+  `height="auto"` behaves the same as an omitted height.
+- When a vbox splits across pages, `height="auto"` is evaluated separately for
+  each fragment page based only on the children present on that fragment.
 
 ### HBox Details
 
@@ -1178,6 +1187,12 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Use `align-self="start"`, `align-self="center"`, or `align-self="end"` to control vertical placement within the hbox track.
 - In `hbox`, `align-self="start"` means top and `align-self="end"` means bottom.
 - Unaligned children share remaining width equally unless `width` is specified.
+- When at least one child uses `width="auto"` and the hbox has true surplus
+  width beyond the preferred widths of the remaining unsized children plus
+  hpadding, omitted widths keep their preferred widths and the `auto` children
+  split the leftover space evenly.
+- In constrained hboxes, and in layout managers without their own `auto`
+  sizing policy, `width="auto"` behaves the same as an omitted width.
 - In `dir="rtl"`, stacking order reverses: children flow right to left, `align="left"` pins to the right side, and `align="right"` pins to the left side.
 
 ### Table Details
@@ -1186,7 +1201,25 @@ not automatically change paragraph shaping or bidi behavior inside text widgets.
 - Set `rows` for column-major order (`order="cols"`).
 - Use `colspan` and `rowspan` attributes on cells to span multiple slots.
 - Column widths can be fixed (`width="120pt"`), percentage (`width="40%"`), or
-  automatic (equal share of remaining space).
+  omitted. Omitted columns keep the historical table behavior: they share the
+  remaining width equally.
+- When at least one single-column cell uses `width="auto"` and the table has
+  true surplus width beyond the preferred widths of omitted and auto columns,
+  omitted columns keep their preferred widths and auto columns split the
+  remaining width evenly. In constrained tables where omitted preferred widths
+  can still fit, omitted columns keep those preferred widths and auto columns
+  split the remaining width. Only when omitted preferred widths cannot fit does
+  the table fall back to equal sharing.
+- Cells with `colspan > 1` receive the resolved width of their spanned columns
+  but do not drive auto column sizing.
+- When at least one row contains a `height="auto"` cell and a height-constrained
+  table has true surplus height beyond fixed and preferred row heights, omitted
+  rows keep their preferred heights and auto rows split the remaining height
+  evenly.
+- In natural-height tables, and in constrained tables without surplus,
+  `height="auto"` behaves the same as an omitted height.
+- When a direct page-child table splits across pages, auto row height is
+  evaluated separately for each fragment page.
 - In `dir="rtl"`, columns are placed right to left (column 0 at the right edge).
 
 ### Flow Details
@@ -1353,6 +1386,7 @@ Measurements can be expressed in several forms:
 | With unit     | `1in`, `2.5cm`, `14pt` | Explicit unit overrides the current `units`. |
 | Percentage    | `50%`       | Percentage of the container's content width or height. |
 | Relative      | `+10`, `-5` | Offset from the container's content dimension. |
+| Auto          | `auto`      | Automatic layout-managed size. Supported by `hbox` width, `vbox` height, table column width, and table row height; elsewhere it behaves like omitting the dimension. |
 
 **Supported units:** `pt` (points), `in` (inches, 72pt), `cm` (centimeters, 28.35pt).
 

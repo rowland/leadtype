@@ -47,13 +47,6 @@ func (p *StdPage) BottomIsSet() bool {
 	return true
 }
 
-func (p *StdPage) root() *StdPage {
-	if p.container == nil {
-		return p
-	}
-	return p.container.(*StdPage)
-}
-
 func (p *StdPage) document() *StdDocument {
 	if p.container != nil {
 		return p.container.(*StdDocument)
@@ -201,7 +194,7 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 		p.overflowSet = true
 		p.overflow = overflow == "true"
 	}
-	for k, _ := range attrs {
+	for k := range attrs {
 		if reMargin.MatchString(k) {
 			p.marginChanged = true
 			break
@@ -517,6 +510,8 @@ func (p *StdPage) resetWidgetRenderState(widget Widget) {
 	widget.SetPrinted(false)
 	widget.SetVisible(true)
 	widget.SetDisabled(false)
+	widget.ClearResolvedWidth()
+	widget.ClearResolvedHeight()
 	container, ok := widget.(Container)
 	if !ok {
 		return
@@ -585,10 +580,14 @@ func (p *StdPage) trySplitChild(item *pageItem, child Widget, w Writer) (bool, e
 	if wc, ok := result.Head.(WantsContainer); ok {
 		_ = wc.SetContainer(p)
 	}
+	p.resetWidgetRenderState(result.Head)
 	p.copySplitGeometry(result.Head, child)
+	if widgetAutoHeight(child) || widgetHeightSpecified(child) {
+		result.Head.ResolveHeight(p.availableHeightForChild(child))
+	}
 	result.Head.LayoutWidget(w)
 	if !result.Head.HeightIsSet() {
-		result.Head.SetHeight(result.Head.PreferredHeight(w))
+		result.Head.ResolveHeight(result.Head.PreferredHeight(w))
 	}
 	if result.Tail != nil {
 		if wc, ok := result.Tail.(WantsContainer); ok {
@@ -608,7 +607,7 @@ func (p *StdPage) trySplitChild(item *pageItem, child Widget, w Writer) (bool, e
 func (p *StdPage) copySplitGeometry(dst, src Widget) {
 	dst.SetLeft(src.Left())
 	dst.SetTop(src.Top())
-	dst.SetWidth(src.Width())
+	dst.ResolveWidth(src.Width())
 	dst.SetPosition(src.Position())
 	dst.SetVisible(true)
 	dst.SetDisabled(false)

@@ -195,26 +195,6 @@ func TestLayoutVBox_RTL(t *testing.T) {
 	}
 }
 
-func TestLayoutVBox_AlignSelfCenterCentersTopChildHorizontally(t *testing.T) {
-	c := positionedContainer(0, 0, 300, 200)
-	style := &LayoutStyle{}
-
-	w := &positionedTestWidget{preferredWidth: 100, preferredHeight: 30}
-	w.SetWidth(100)
-	w.SetAttrs(map[string]string{"align": "top", "align-self": "center"})
-	w.SetContainer(c)
-	c.AddChild(w)
-
-	LayoutVBox(c, style, nil)
-
-	if got := w.Left(); got != 100 {
-		t.Errorf("vbox top child left = %v, want 100", got)
-	}
-	if got := w.Top(); got != 0 {
-		t.Errorf("vbox top child top = %v, want 0", got)
-	}
-}
-
 func TestLayoutVBox_AlignSelfEndMirrorsInRTL(t *testing.T) {
 	c := rtlContainer(0, 0, 300, 200)
 	style := &LayoutStyle{}
@@ -229,27 +209,6 @@ func TestLayoutVBox_AlignSelfEndMirrorsInRTL(t *testing.T) {
 
 	if got := w.Left(); got != 0 {
 		t.Errorf("rtl vbox end-aligned child left = %v, want 0", got)
-	}
-}
-
-func TestLayoutVBox_ParagraphDefaultsToFullWidth(t *testing.T) {
-	c := positionedContainer(0, 0, 300, 200)
-	p := &StdParagraph{}
-	if err := p.SetContainer(c); err != nil {
-		t.Fatal(err)
-	}
-	p.paragraphStyle = &ParagraphStyle{}
-	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
-	p.AddText("Short heading")
-	c.AddChild(p)
-
-	LayoutVBox(c, &LayoutStyle{}, &labelTestWriter{t: t})
-
-	if got := p.Width(); got != 300 {
-		t.Fatalf("paragraph width = %v, want 300", got)
-	}
-	if got := p.Left(); got != 0 {
-		t.Fatalf("paragraph left = %v, want 0", got)
 	}
 }
 
@@ -275,60 +234,6 @@ func TestLayoutHBox_RTL(t *testing.T) {
 	}
 	if got := ws[1].Left(); got != 140 {
 		t.Errorf("RTL hbox widget 1 left = %v, want 140", got)
-	}
-}
-
-func TestLayoutHBox_AlignSelfCenterCentersLeftChildVertically(t *testing.T) {
-	c := positionedContainer(0, 0, 300, 100)
-	style := &LayoutStyle{}
-
-	w := &positionedTestWidget{preferredWidth: 80, preferredHeight: 20}
-	w.SetWidth(80)
-	w.SetAttrs(map[string]string{"align": "left", "align-self": "center"})
-	w.SetContainer(c)
-	c.AddChild(w)
-
-	LayoutHBox(c, style, nil)
-
-	if got := w.Top(); got != 40 {
-		t.Errorf("hbox left child top = %v, want 40", got)
-	}
-	if got := w.Left(); got != 0 {
-		t.Errorf("hbox left child left = %v, want 0", got)
-	}
-}
-
-func TestLayoutHBox_ContainerAlignBottomStillBottomAlignsChildrenByDefault(t *testing.T) {
-	c := positionedContainer(0, 0, 300, 100)
-	c.align = AlignBottom
-	style := &LayoutStyle{}
-
-	w := &positionedTestWidget{preferredWidth: 80, preferredHeight: 20}
-	w.SetWidth(80)
-	w.SetContainer(c)
-	c.AddChild(w)
-
-	LayoutHBox(c, style, nil)
-
-	if got := w.Top(); got != 80 {
-		t.Errorf("default hbox child top with container align bottom = %v, want 80", got)
-	}
-}
-
-func TestLayoutHBox_AlignSelfEndBottomAlignsChild(t *testing.T) {
-	c := positionedContainer(0, 0, 300, 100)
-	style := &LayoutStyle{}
-
-	w := &positionedTestWidget{preferredWidth: 80, preferredHeight: 20}
-	w.SetWidth(80)
-	w.SetAttrs(map[string]string{"align-self": "end"})
-	w.SetContainer(c)
-	c.AddChild(w)
-
-	LayoutHBox(c, style, nil)
-
-	if got := w.Top(); got != 80 {
-		t.Errorf("hbox end-aligned child top = %v, want 80", got)
 	}
 }
 

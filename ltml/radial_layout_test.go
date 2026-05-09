@@ -1006,3 +1006,42 @@ func TestStdSector_WithParagraphChild_DoesNotDefaultToTangentRotation(t *testing
 		t.Fatalf("content rotation = %v, want 0 for paragraph-bearing sector", got)
 	}
 }
+
+func TestRadialSample_ImplicitParagraphsKeepLegacyPlacement(t *testing.T) {
+	doc, err := ParseFile(sampleFile("test_038_radial_layout.ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	var direct *StdParagraph
+	var other *StdParagraph
+	walkWidgets(doc.Root(), func(widget Widget) bool {
+		paragraph, ok := widget.(*StdParagraph)
+		if !ok {
+			return true
+		}
+		text := paragraph.AccessibilityText()
+		if strings.HasPrefix(text, "This paragraph is a direct child") {
+			direct = paragraph
+		}
+		if strings.HasPrefix(text, "Another implicit sector paragraph") {
+			other = paragraph
+		}
+		return true
+	})
+
+	if direct == nil || other == nil {
+		t.Fatalf("missing implicit paragraphs: direct=%v other=%v", direct != nil, other != nil)
+	}
+	if got, want := direct.Top(), 175.03; math.Abs(got-want) > 0.5 {
+		t.Fatalf("direct implicit paragraph top = %v, want near %v", got, want)
+	}
+	if got, want := other.Top(), 386.59; math.Abs(got-want) > 0.5 {
+		t.Fatalf("secondary implicit paragraph top = %v, want near %v", got, want)
+	}
+}

@@ -5,8 +5,6 @@ import "fmt"
 type StdIndex struct {
 	StdContainer
 	expandedTargets []string
-	explicitWidth   bool
-	explicitHeight  bool
 	expandErr       error
 }
 
@@ -95,12 +93,6 @@ func (i *StdIndex) SplitForHeight(avail float64, w Writer) (*SplitResult, error)
 	return &SplitResult{Head: head, Tail: tail}, nil
 }
 
-func (i *StdIndex) SetAttrs(attrs map[string]string) {
-	i.StdContainer.SetAttrs(attrs)
-	i.explicitWidth = MapHasAnyKey(attrs, "width") || (i.sides[leftSide].IsSet && i.sides[rightSide].IsSet)
-	i.explicitHeight = MapHasAnyKey(attrs, "height") || (i.sides[topSide].IsSet && i.sides[bottomSide].IsSet)
-}
-
 func (i *StdIndex) clearExpandedState() {
 	i.activeChildren = nil
 	i.expandedTargets = nil
@@ -108,18 +100,8 @@ func (i *StdIndex) clearExpandedState() {
 }
 
 func (i *StdIndex) clearMeasuredGeometry() {
-	if !i.explicitWidth {
-		i.width = 0
-		i.widthPct = 0
-		i.widthRel = 0
-		i.widthSet = false
-	}
-	if !i.explicitHeight {
-		i.height = 0
-		i.heightPct = 0
-		i.heightRel = 0
-		i.heightSet = false
-	}
+	i.ClearResolvedWidth()
+	i.ClearResolvedHeight()
 }
 
 func (i *StdIndex) currentEntries() []resolvedIndexEntry {

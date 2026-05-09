@@ -1,0 +1,76 @@
+<ltml units="in" margin="0.75">
+  <pen id="frame" color="#334155" width="1pt" />
+  <pen id="cell" color="#475569" width="1pt" />
+  <brush id="fixed-fill" color="#e2e8f0" />
+  <brush id="preferred-fill" color="#fef3c7" />
+  <brush id="auto-a-fill" color="#dbeafe" />
+  <brush id="auto-b-fill" color="#dcfce7" />
+
+  <style>
+    div.demo-row {
+      layout: hbox;
+      layout.hpadding: 10pt;
+      border: frame;
+      padding: 8pt;
+    }
+
+    div.demo-row.roomy {
+      width: 100%;
+    }
+
+    div.demo-row.constrained {
+      width: 3.9in;
+    }
+
+    div.demo-row > label {
+      padding: 6pt;
+      border: cell;
+    }
+
+    label.fixed {
+      width: 0.75in;
+      fill: fixed-fill;
+    }
+
+    label.preferred {
+      fill: preferred-fill;
+    }
+
+    label.auto {
+      width: auto;
+    }
+
+    label.auto-a {
+      fill: auto-a-fill;
+    }
+
+    label.auto-b {
+      fill: auto-b-fill;
+    }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt" font.name="Helvetica" font.size="11">
+    <label font.size="18" font.weight="Bold">HBox auto width</label>
+    <p>
+      When an hbox has surplus room, omitted widths keep their preferred size
+      and only width="auto" children absorb the slack. In a constrained hbox,
+      auto behaves the same as an omitted width.
+    </p>
+
+    <h6>Roomy container</h6>
+    <div class="demo-row roomy">
+      <label class="fixed">fixed</label>
+      <label class="preferred">preferred width</label>
+      <label class="auto auto-a">auto A fills slack</label>
+      <label class="auto auto-b">auto B fills slack</label>
+    </div>
+
+    <h6>Constrained container</h6>
+    <div class="demo-row constrained">
+      <label class="fixed">fixed</label>
+      <label class="preferred">preferred width</label>
+      <label class="auto auto-a">auto A</label>
+      <label class="auto auto-b">auto B</label>
+    </div>
+  </page>
+</ltml>

@@ -762,43 +762,47 @@ func (widget *StdWidget) Units() Units {
 }
 
 func (widget *StdWidget) Width() float64 {
-	if widget.widthPct > 0 {
-		return float64(widget.widthPct) / 100.0 * ContentWidth(widget.container)
-	}
-	if widget.widthRel != 0 {
-		return ContentWidth(widget.container) + float64(widget.widthRel)
-	}
-	if widget.widthSet {
+	if widget.widthValid {
 		return float64(widget.width)
+	}
+	switch widget.widthMode {
+	case DimPct:
+		return float64(widget.widthValue) / 100.0 * ContentWidth(widget.container)
+	case DimRel:
+		return ContentWidth(widget.container) + float64(widget.widthValue)
+	case DimLiteral:
+		return float64(widget.widthValue)
 	}
 	if widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet {
 		return widget.resolveRight(widget.sides[rightSide].Float64()) - widget.resolveLeft(widget.sides[leftSide].Float64())
 	}
-	return float64(widget.width)
+	return 0
 }
 
 func (widget *StdWidget) Height() float64 {
-	if widget.heightPct > 0 {
-		return float64(widget.heightPct) / 100.0 * ContentHeight(widget.container)
-	}
-	if widget.heightRel != 0 {
-		return ContentHeight(widget.container) + float64(widget.heightRel)
-	}
-	if widget.heightSet {
+	if widget.heightValid {
 		return float64(widget.height)
+	}
+	switch widget.heightMode {
+	case DimPct:
+		return float64(widget.heightValue) / 100.0 * ContentHeight(widget.container)
+	case DimRel:
+		return ContentHeight(widget.container) + float64(widget.heightValue)
+	case DimLiteral:
+		return float64(widget.heightValue)
 	}
 	if widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet {
 		return widget.resolveBottom(widget.sides[bottomSide].Float64()) - widget.resolveTop(widget.sides[topSide].Float64())
 	}
-	return float64(widget.height)
+	return 0
 }
 
 func (widget *StdWidget) HeightIsSet() bool {
-	return widget.heightSet || (widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet)
+	return widget.Dimensions.HeightIsSet() || (widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet)
 }
 
 func (widget *StdWidget) WidthIsSet() bool {
-	return widget.widthSet || (widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet)
+	return widget.Dimensions.WidthIsSet() || (widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet)
 }
 
 func (widget *StdWidget) Visible() bool {

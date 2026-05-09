@@ -5,6 +5,23 @@ import (
 	"math"
 )
 
+type tableTrackKind int8
+
+const (
+	tableTrackOmitted tableTrackKind = iota
+	tableTrackSpecified
+	tableTrackPercent
+	tableTrackAuto
+)
+
+type tableTrackSize struct {
+	kind      tableTrackKind
+	size      float64
+	preferred float64
+}
+
+type tableTrackPlan []tableTrackSize
+
 func markGrid(grid *BoolGrid, a, b, c, d int, value bool) {
 	for aa := 0; aa < c; aa++ {
 		for bb := 0; bb < d; bb++ {
@@ -75,136 +92,186 @@ func colGrid(container Container) (*WidgetGrid, error) {
 	return grid, nil
 }
 
-func detectWidths(grid *WidgetGrid, writer Writer) SpecifiedSizes {
-	widths := make(SpecifiedSizes, grid.Cols())
+func detectTableColumnTracks(grid *WidgetGrid, writer Writer) tableTrackPlan {
+	tracks := make(tableTrackPlan, grid.Cols())
 	for c := 0; c < grid.Cols(); c++ {
-		var widget Widget
+		var specifiedWidget Widget
+		auto := false
+		preferred := 0.0
 		for r := 0; r < grid.Rows(); r++ {
 			if w := grid.Cell(c, r); w != nil && w.ColSpan() == 1 {
-				widget = w
-				break
-			}
-		}
-		if widget == nil {
-			widths[c] = &SpecifiedSize{How: Unspecified, Size: 0}
-		} else if widget.WidthPctIsSet() {
-			widths[c] = &SpecifiedSize{How: Percent, Size: widget.Width()}
-		} else if widget.WidthIsSet() {
-			widths[c] = &SpecifiedSize{How: Specified, Size: widget.Width()}
-		} else {
-			max := 0.0
-			for r := 0; r < grid.Rows(); r++ {
-				if w := grid.Cell(c, r); w != nil {
-					pw := w.PreferredWidth(writer)
-					if pw > max {
-						max = pw
-					}
+				if specifiedWidget == nil && (w.WidthPctIsSet() || widgetWidthSpecified(w)) {
+					specifiedWidget = w
+				}
+				if !widgetWidthSpecified(w) && !w.WidthPctIsSet() {
+					preferred = max(preferred, w.PreferredWidth(writer))
+				}
+				if widgetAutoWidth(w) {
+					auto = true
 				}
 			}
-			widths[c] = &SpecifiedSize{How: Unspecified, Size: max}
+		}
+		if specifiedWidget != nil && specifiedWidget.WidthPctIsSet() {
+			tracks[c] = tableTrackSize{kind: tableTrackPercent, size: specifiedWidget.Width()}
+		} else if specifiedWidget != nil {
+			tracks[c] = tableTrackSize{kind: tableTrackSpecified, size: specifiedWidget.Width()}
+		} else if auto {
+			tracks[c] = tableTrackSize{kind: tableTrackAuto, preferred: preferred}
+		} else {
+			tracks[c] = tableTrackSize{kind: tableTrackOmitted, preferred: preferred}
 		}
 	}
-	return widths
+	return tracks
 }
 
-func allocateSpecifiedWidths(widthAvail float64, specified SpecifiedSizes, style *LayoutStyle) float64 {
-	for _, w := range specified {
-		if widthAvail >= w.Size {
-			widthAvail -= (w.Size + style.HPadding())
+func (tracks tableTrackPlan) resolvedSizes() []float64 {
+	sizes := make([]float64, len(tracks))
+	for i, track := range tracks {
+		sizes[i] = track.size
+	}
+	return sizes
+}
+
+func allocateTableColumnTracks(widthAvail float64, tracks tableTrackPlan, style *LayoutStyle) {
+	for i := range tracks {
+		if tracks[i].kind == tableTrackSpecified && widthAvail >= tracks[i].size {
+			widthAvail -= tracks[i].size + style.HPadding()
 		}
 	}
-	return widthAvail
-}
 
-func allocatePercentWidths(widthAvail float64, percents SpecifiedSizes, style *LayoutStyle) float64 {
-	if widthAvail-(float64(len(percents)-1))*style.HPadding() >= float64(len(percents)) {
-		widthAvail -= float64((len(percents) - 1)) * style.HPadding()
+	var percentIndexes []int
+	for i, track := range tracks {
+		if track.kind == tableTrackPercent {
+			percentIndexes = append(percentIndexes, i)
+		}
+	}
+	if len(percentIndexes) > 0 && widthAvail-(float64(len(percentIndexes)-1))*style.HPadding() >= float64(len(percentIndexes)) {
+		widthAvail -= float64(len(percentIndexes)-1) * style.HPadding()
 		totalPercents := 0.0
-		for i := range percents {
-			totalPercents += percents[i].Size
+		for _, i := range percentIndexes {
+			totalPercents += tracks[i].size
 		}
 		ratio := widthAvail / totalPercents
-		for i := range percents {
+		for _, i := range percentIndexes {
 			if ratio < 1.0 {
-				percents[i].Size *= ratio
+				tracks[i].size *= ratio
 			}
-			widthAvail -= percents[i].Size
+			widthAvail -= tracks[i].size
 		}
-	} else {
-		for i := range percents {
-			percents[i].Size = 0
+		widthAvail -= style.HPadding()
+	} else if len(percentIndexes) > 0 {
+		for _, i := range percentIndexes {
+			tracks[i].size = 0
+		}
+		widthAvail -= style.HPadding()
+	}
+
+	var omittedIndexes, autoIndexes []int
+	for i, track := range tracks {
+		switch track.kind {
+		case tableTrackOmitted:
+			omittedIndexes = append(omittedIndexes, i)
+		case tableTrackAuto:
+			autoIndexes = append(autoIndexes, i)
 		}
 	}
-	widthAvail -= style.HPadding()
-	return widthAvail
+	otherCount := len(omittedIndexes) + len(autoIndexes)
+	if otherCount == 0 {
+		return
+	}
+	paddingCost := float64(otherCount-1) * style.HPadding()
+	if len(autoIndexes) > 0 {
+		preferredTotal := 0.0
+		omittedPreferredTotal := 0.0
+		for _, i := range omittedIndexes {
+			preferredTotal += tracks[i].preferred
+			omittedPreferredTotal += tracks[i].preferred
+		}
+		for _, i := range autoIndexes {
+			preferredTotal += tracks[i].preferred
+		}
+		if widthAvail > preferredTotal+paddingCost {
+			widthAvail -= paddingCost
+			for _, i := range omittedIndexes {
+				tracks[i].size = tracks[i].preferred
+				widthAvail -= tracks[i].size
+			}
+			autoWidth := widthAvail / float64(len(autoIndexes))
+			for _, i := range autoIndexes {
+				tracks[i].size = autoWidth
+			}
+			return
+		}
+		if widthAvail-paddingCost-omittedPreferredTotal >= float64(len(autoIndexes)) {
+			widthAvail -= paddingCost
+			for _, i := range omittedIndexes {
+				tracks[i].size = tracks[i].preferred
+				widthAvail -= tracks[i].size
+			}
+			autoWidth := widthAvail / float64(len(autoIndexes))
+			for _, i := range autoIndexes {
+				tracks[i].size = autoWidth
+			}
+			return
+		}
+	}
+	if widthAvail-paddingCost >= float64(otherCount) {
+		widthAvail -= paddingCost
+		otherWidth := widthAvail / float64(otherCount)
+		for _, i := range omittedIndexes {
+			tracks[i].size = otherWidth
+		}
+		for _, i := range autoIndexes {
+			tracks[i].size = otherWidth
+		}
+	} else {
+		for _, i := range omittedIndexes {
+			tracks[i].size = 0
+		}
+		for _, i := range autoIndexes {
+			tracks[i].size = 0
+		}
+	}
 }
 
-func allocateOtherWidths(widthAvail float64, others SpecifiedSizes, style *LayoutStyle) float64 {
-	if widthAvail-(float64(len(others)-1))*style.HPadding() >= float64(len(others)) {
-		widthAvail -= float64(len(others)-1) * style.HPadding()
-		othersWidth := widthAvail / float64(len(others))
-		for i := range others {
-			others[i].Size = othersWidth
-		}
-	} else {
-		for i := range others {
-			others[i].Size = 0
-		}
-	}
-	return widthAvail
+func planTableColumnWidths(grid *WidgetGrid, container Container, style *LayoutStyle, writer Writer) tableTrackPlan {
+	tracks := detectTableColumnTracks(grid, writer)
+	allocateTableColumnTracks(ContentWidth(container), tracks, style)
+	return tracks
 }
 
-func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
-	var grid *WidgetGrid
-	var err error
-
-	if container.Order() == TableOrderRows {
-		grid, err = rowGrid(container)
-	} else if container.Order() == TableOrderCols {
-		grid, err = colGrid(container)
-	} else {
-		panic("invalid order")
+func tableCellWidth(widths []float64, startCol, colSpan int, hpadding float64) float64 {
+	width := 0.0
+	for i := 0; i < colSpan; i++ {
+		width += widths[startCol+i]
 	}
-	if err != nil {
-		panic(err)
-	}
+	return width + float64(colSpan-1)*hpadding
+}
 
-	containerFull := false
-	widths := detectWidths(grid, writer)
-	if container.Width() <= 0 {
-		panic("container width not set")
-	}
-	percents, others := widths.Partition(func(w *SpecifiedSize) bool { return w.How == Percent })
-	specified, others := others.Partition(func(w *SpecifiedSize) bool { return w.How == Specified })
-
-	widthAvail := ContentWidth(container)
-	widthAvail = allocateSpecifiedWidths(widthAvail, specified, style)
-	widthAvail = allocatePercentWidths(widthAvail, percents, style)
-	widthAvail = allocateOtherWidths(widthAvail, others, style)
-
+func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, writer Writer) (*SpanSizeGrid, []bool) {
 	heights := NewSpanSizeGrid(grid.Cols(), grid.Rows())
+	autoRows := make([]bool, grid.Rows())
 	for c := 0; c < grid.Cols(); c++ {
 		for r := 0; r < grid.Rows(); r++ {
 			widget := grid.Cell(c, r)
 			if widget == nil {
 				continue
 			}
-			if widths[c].Size > 0 {
-				width := 0.0
-				for i := 0; i < widget.ColSpan(); i++ {
-					width += widths[c+i].Size
-				}
-				widget.SetWidth(width + float64(widget.ColSpan()-1)*style.HPadding())
-				var height float64
-				if widget.HeightIsSet() {
-					height = widget.Height()
-				} else {
-					height = widget.PreferredHeight(writer)
-				}
-				heights.SetCell(c, r, SpanSize{Span: widget.RowSpan(), Size: height})
-			} else {
+			if widths[c] <= 0 {
 				widget.SetDisabled(true)
+				continue
 			}
+			widget.ResolveWidth(tableCellWidth(widths, c, widget.ColSpan(), style.HPadding()))
+			var height float64
+			if widget.HeightIsSet() {
+				height = widget.Height()
+			} else {
+				height = widget.PreferredHeight(writer)
+				if widgetAutoHeight(widget) && widget.RowSpan() == 1 {
+					autoRows[r] = true
+				}
+			}
+			heights.SetCell(c, r, SpanSize{Span: widget.RowSpan(), Size: height})
 		}
 	}
 
@@ -230,6 +297,66 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 			heights.SetCell(c, r, ss)
 		}
 	}
+	return heights, autoRows
+}
+
+func applyTableAutoRowHeights(container Container, style *LayoutStyle, heights *SpanSizeGrid, autoRows []bool) {
+	if !container.HeightIsSet() {
+		return
+	}
+	autoCount := 0
+	baselineHeight := 0.0
+	for r := 0; r < heights.Rows(); r++ {
+		if r > 0 {
+			baselineHeight += style.VPadding()
+		}
+		baselineHeight += heights.Cell(0, r).Size
+		if autoRows[r] {
+			autoCount++
+		}
+	}
+	if autoCount == 0 {
+		return
+	}
+	surplus := ContentHeight(container) - baselineHeight
+	if surplus <= 0 {
+		return
+	}
+	extra := surplus / float64(autoCount)
+	for r := 0; r < heights.Rows(); r++ {
+		if !autoRows[r] {
+			continue
+		}
+		for c := 0; c < heights.Cols(); c++ {
+			ss := heights.Cell(c, r)
+			ss.Size += extra
+			heights.SetCell(c, r, ss)
+		}
+	}
+}
+
+func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
+	var grid *WidgetGrid
+	var err error
+
+	if container.Order() == TableOrderRows {
+		grid, err = rowGrid(container)
+	} else if container.Order() == TableOrderCols {
+		grid, err = colGrid(container)
+	} else {
+		panic("invalid order")
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	containerFull := false
+	if container.Width() <= 0 {
+		panic("container width not set")
+	}
+	widths := planTableColumnWidths(grid, container, style, writer).resolvedSizes()
+	heights, autoRows := tableBaseHeights(grid, widths, style, writer)
+	applyTableAutoRowHeights(container, style, heights, autoRows)
 
 	top := ContentTop(container)
 	bottom := top + MaxContentHeight(container)
@@ -253,11 +380,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 				ss := heights.Cell(c, r)
 				widget.SetTop(top)
 				if rtl {
-					colWidth := widths[c].Size
-					for i := 1; i < widget.ColSpan(); i++ {
-						colWidth += widths[c+i].Size + style.HPadding()
-					}
-					widget.SetLeft(right - colWidth)
+					widget.SetLeft(right - tableCellWidth(widths, c, widget.ColSpan(), style.HPadding()))
 				} else {
 					widget.SetLeft(left)
 				}
@@ -265,13 +388,13 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 				for rowOffset := 0; rowOffset < ss.Span; rowOffset++ {
 					height += heights.Cell(c, r+rowOffset).Size
 				}
-				widget.SetHeight(height)
+				widget.ResolveHeight(height)
 				if ss.Span == 1 && ss.Size > maxHeight {
 					maxHeight = ss.Size
 				}
 			}
-			left += widths[c].Size + style.HPadding()
-			right -= widths[c].Size + style.HPadding()
+			left += widths[c] + style.HPadding()
+			right -= widths[c] + style.HPadding()
 		}
 		if containerFull {
 			continue
@@ -289,7 +412,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 	if !container.HeightIsSet() {
-		container.SetHeight(top - ContentTop(container) + NonContentHeight(container) - style.VPadding())
+		container.ResolveHeight(top - ContentTop(container) + NonContentHeight(container) - style.VPadding())
 	}
 	static, remaining := printableWidgets(container, Static)
 	for _, widget := range remaining {

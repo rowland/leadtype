@@ -1,0 +1,76 @@
+<ltml units="in" margin="0.75">
+  <pen id="frame" color="#334155" width="1pt" />
+  <pen id="cell" color="#475569" width="1pt" />
+  <brush id="header-fill" color="#fef3c7" />
+  <brush id="auto-fill" color="#dbeafe" />
+  <brush id="body-fill" color="#dcfce7" />
+
+  <style>
+    table.demo {
+      layout: table;
+      cols: 2;
+      order: rows;
+      width: 100%;
+      height: auto;
+      split: true;
+      header-rows: 1;
+      border: frame;
+      padding: 8pt;
+      layout.hpadding: 8pt;
+      layout.vpadding: 8pt;
+    }
+
+    table.demo > p {
+      border: cell;
+      padding: 6pt;
+    }
+
+    p.header {
+      fill: header-fill;
+      font.weight: Bold;
+    }
+
+    p.auto {
+      height: auto;
+      fill: auto-fill;
+    }
+
+    p.body {
+      height: 1.05in;
+      fill: body-fill;
+    }
+  </style>
+
+  <page layout="vbox" layout.vpadding="12pt" font.name="Helvetica" font.size="11">
+    <label font.size="18" font.weight="Bold" display="always">Table auto height split</label>
+    <p display="always">
+      This direct page-child table is a height="auto" child of the page vbox.
+      Each split fragment receives the remaining page height, then shares
+      surplus only with the height="auto" table rows present on that fragment.
+    </p>
+
+    <table class="demo">
+      <p class="header" colspan="2" display="always">Repeating table header</p>
+      <p class="body">row 1 A</p>
+      <p class="body">row 1 B</p>
+      <p class="auto">row 2 auto A</p>
+      <p class="auto">row 2 auto B</p>
+      <p class="body">row 3 A</p>
+      <p class="body">row 3 B</p>
+      <p class="body">row 4 A</p>
+      <p class="body">row 4 B</p>
+      <p class="auto">row 5 auto A</p>
+      <p class="auto">row 5 auto B</p>
+      <p class="body">row 6 A</p>
+      <p class="body">row 6 B</p>
+      <p class="body">row 7 A</p>
+      <p class="body">row 7 B</p>
+      <p class="auto">row 8 auto A</p>
+      <p class="auto">row 8 auto B</p>
+      <p class="body">row 9 A</p>
+      <p class="body">row 9 B</p>
+      <p class="body">row 10 A</p>
+      <p class="body">row 10 B</p>
+    </table>
+  </page>
+</ltml>

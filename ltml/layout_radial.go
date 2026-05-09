@@ -75,10 +75,10 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 	if !container.HeightIsSet() {
-		container.SetHeight((outerRadius * 2) + NonContentHeight(container))
+		container.ResolveHeight((outerRadius * 2) + NonContentHeight(container))
 	}
 	if !container.WidthIsSet() {
-		container.SetWidth((outerRadius * 2) + NonContentWidth(container))
+		container.ResolveWidth((outerRadius * 2) + NonContentWidth(container))
 	}
 }
 
@@ -89,12 +89,12 @@ func inferRadialContainerDimensions(container Container) {
 	}
 	if !base.WidthIsSet() {
 		if width, ok := base.radialInferredWidth(); ok {
-			base.SetWidth(width)
+			base.ResolveWidth(width)
 		}
 	}
 	if !base.HeightIsSet() {
 		if height, ok := base.radialInferredHeight(); ok {
-			base.SetHeight(height)
+			base.ResolveHeight(height)
 		}
 	}
 }

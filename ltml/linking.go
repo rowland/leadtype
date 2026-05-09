@@ -294,6 +294,8 @@ func (d *StdDocument) resetRenderState() {
 		widget.SetPrinted(false)
 		widget.SetVisible(true)
 		widget.SetDisabled(false)
+		widget.ClearResolvedWidth()
+		widget.ClearResolvedHeight()
 		switch value := widget.(type) {
 		case *StdPage:
 			value.flowPageIndex = 0
