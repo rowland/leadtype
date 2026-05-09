@@ -5,7 +5,9 @@ package pdf
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/binary"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -208,6 +210,78 @@ func mutatePNGInterlace(t *testing.T, data []byte, interlace byte) []byte {
 	return mutated
 }
 
+func pngHeaderFields(t *testing.T, data []byte) (bitDepth, colorType byte) {
+	t.Helper()
+	if !isPNG(data) || len(data) < 29 {
+		t.Fatalf("expected PNG header, got %d bytes", len(data))
+	}
+	return data[24], data[25]
+}
+
+func writePNGChunk(t *testing.T, buf *bytes.Buffer, chunkType string, data []byte) {
+	t.Helper()
+	if len(chunkType) != 4 {
+		t.Fatalf("PNG chunk type %q must be 4 bytes", chunkType)
+	}
+	if err := binary.Write(buf, binary.BigEndian, uint32(len(data))); err != nil {
+		t.Fatal(err)
+	}
+	buf.WriteString(chunkType)
+	buf.Write(data)
+	crc := crc32.NewIEEE()
+	crc.Write([]byte(chunkType))
+	crc.Write(data)
+	if err := binary.Write(buf, binary.BigEndian, crc.Sum32()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testOneBitGrayPNG(t *testing.T) []byte {
+	t.Helper()
+	var compressed bytes.Buffer
+	zw := zlib.NewWriter(&compressed)
+	zw.Write([]byte{0x00, 0x40})
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	var ihdr bytes.Buffer
+	if err := binary.Write(&ihdr, binary.BigEndian, uint32(2)); err != nil {
+		t.Fatal(err)
+	}
+	if err := binary.Write(&ihdr, binary.BigEndian, uint32(1)); err != nil {
+		t.Fatal(err)
+	}
+	ihdr.Write([]byte{1, pngColorTypeGray, 0, 0, 0})
+
+	var pngData bytes.Buffer
+	pngData.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'})
+	writePNGChunk(t, &pngData, "IHDR", ihdr.Bytes())
+	writePNGChunk(t, &pngData, "IDAT", compressed.Bytes())
+	writePNGChunk(t, &pngData, "IEND", nil)
+	return pngData.Bytes()
+}
+
+func testPalettedPNG(t *testing.T, paletteSize int, transparent bool) []byte {
+	t.Helper()
+	palette := make(color.Palette, paletteSize)
+	for i := range palette {
+		palette[i] = color.NRGBA{
+			R: uint8(i),
+			G: uint8(0x80 + i/2),
+			B: uint8(0xF0 - i/2),
+			A: 0xFF,
+		}
+	}
+	if transparent {
+		palette[1] = color.NRGBA{R: 0x22, G: 0x44, B: 0x66, A: 0x80}
+	}
+	img := image.NewPaletted(image.Rect(0, 0, 2, 1), palette)
+	img.SetColorIndex(0, 0, 0)
+	img.SetColorIndex(1, 0, 1)
+	return mustEncodePNG(t, img)
+}
+
 func TestIsJPEG(t *testing.T) {
 	if !isJPEG(mustReadTestImage(t)) {
 		t.Fatal("expected fixture to be detected as JPEG")
@@ -273,6 +347,56 @@ func TestPNGInfo(t *testing.T) {
 	}
 	if info.bitsPerComponent != 8 {
 		t.Fatalf("expected 8 bits per component, got %d", info.bitsPerComponent)
+	}
+}
+
+func TestPNGInfo_PalettedBitDepthsExpandToRGB(t *testing.T) {
+	tests := []struct {
+		name        string
+		paletteSize int
+		wantDepth   byte
+	}{
+		{name: "2Bit", paletteSize: 4, wantDepth: 2},
+		{name: "4Bit", paletteSize: 16, wantDepth: 4},
+		{name: "8Bit", paletteSize: 256, wantDepth: 8},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := testPalettedPNG(t, tt.paletteSize, false)
+			bitDepth, colorType := pngHeaderFields(t, data)
+			if bitDepth != tt.wantDepth || colorType != pngColorTypePalette {
+				t.Fatalf("encoded PNG = colorType %d bitDepth %d, want palette/%d", colorType, bitDepth, tt.wantDepth)
+			}
+			info, err := pngInfo(data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.components != imageComponentsRGBA {
+				t.Fatalf("components = %d, want alpha-capable palette expansion", info.components)
+			}
+			if info.bitsPerComponent != 8 {
+				t.Fatalf("bitsPerComponent = %d, want expanded 8-bit samples", info.bitsPerComponent)
+			}
+		})
+	}
+}
+
+func TestPNGInfo_OneBitGrayExpandsToEightBitSamples(t *testing.T) {
+	data := testOneBitGrayPNG(t)
+	bitDepth, colorType := pngHeaderFields(t, data)
+	if bitDepth != 1 || colorType != pngColorTypeGray {
+		t.Fatalf("encoded PNG = colorType %d bitDepth %d, want 1-bit gray", colorType, bitDepth)
+	}
+
+	info, err := pngInfo(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.components != imageComponentsGray {
+		t.Fatalf("components = %d, want gray", info.components)
+	}
+	if info.bitsPerComponent != 8 {
+		t.Fatalf("bitsPerComponent = %d, want expanded 8-bit samples", info.bitsPerComponent)
 	}
 }
 
@@ -343,6 +467,60 @@ func TestDecodePNG_Gray(t *testing.T) {
 	want := []byte{0x11, 0x99}
 	if !bytes.Equal(decoded.data, want) {
 		t.Fatalf("expected gray data %v, got %v", want, decoded.data)
+	}
+	if len(decoded.alphaData) != 0 {
+		t.Fatalf("expected no alpha data, got %d bytes", len(decoded.alphaData))
+	}
+}
+
+func TestDecodePNG_PalettedOpaque(t *testing.T) {
+	data := testPalettedPNG(t, 4, false)
+
+	decoded, err := decodePNG(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.info.components != imageComponentsRGB {
+		t.Fatalf("components = %d, want opaque palette expanded to RGB", decoded.info.components)
+	}
+	if !bytes.Equal(decoded.data, []byte{0x00, 0x80, 0xF0, 0x01, 0x80, 0xF0}) {
+		t.Fatalf("unexpected RGB data %v", decoded.data)
+	}
+	if len(decoded.alphaData) != 0 {
+		t.Fatalf("expected opaque palette to omit alpha mask, got %d alpha bytes", len(decoded.alphaData))
+	}
+}
+
+func TestDecodePNG_PalettedTRNS(t *testing.T) {
+	data := testPalettedPNG(t, 4, true)
+
+	decoded, err := decodePNG(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.info.components != imageComponentsRGBA {
+		t.Fatalf("components = %d, want palette with tRNS expanded to RGBA", decoded.info.components)
+	}
+	if !bytes.Equal(decoded.data, []byte{0x00, 0x80, 0xF0, 0x22, 0x44, 0x66}) {
+		t.Fatalf("unexpected RGB data %v", decoded.data)
+	}
+	if !bytes.Equal(decoded.alphaData, []byte{0xFF, 0x80}) {
+		t.Fatalf("unexpected alpha mask %v", decoded.alphaData)
+	}
+}
+
+func TestDecodePNG_OneBitGray(t *testing.T) {
+	data := testOneBitGrayPNG(t)
+
+	decoded, err := decodePNG(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.info.components != imageComponentsGray {
+		t.Fatalf("components = %d, want gray", decoded.info.components)
+	}
+	if !bytes.Equal(decoded.data, []byte{0x00, 0xFF}) {
+		t.Fatalf("unexpected gray data %v", decoded.data)
 	}
 	if len(decoded.alphaData) != 0 {
 		t.Fatalf("expected no alpha data, got %d bytes", len(decoded.alphaData))

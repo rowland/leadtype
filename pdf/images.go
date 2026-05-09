@@ -41,6 +41,7 @@ const (
 const (
 	pngColorTypeGray      = 0
 	pngColorTypeRGB       = 2
+	pngColorTypePalette   = 3
 	pngColorTypeGrayAlpha = 4
 	pngColorTypeRGBA      = 6
 )
@@ -211,18 +212,32 @@ func pngInfo(data []byte) (imageInfo, error) {
 	if interlaceMethod != 0 {
 		return imageInfo{}, errUnsupportedPNG
 	}
-	if bitDepth != 8 {
-		return imageInfo{}, errUnsupportedPNG
-	}
 	components := 0
 	switch colorType {
 	case pngColorTypeGray:
+		if bitDepth != 1 && bitDepth != 2 && bitDepth != 4 && bitDepth != 8 {
+			return imageInfo{}, errUnsupportedPNG
+		}
 		components = imageComponentsGray
 	case pngColorTypeRGB:
+		if bitDepth != 8 {
+			return imageInfo{}, errUnsupportedPNG
+		}
 		components = imageComponentsRGB
+	case pngColorTypePalette:
+		if bitDepth != 1 && bitDepth != 2 && bitDepth != 4 && bitDepth != 8 {
+			return imageInfo{}, errUnsupportedPNG
+		}
+		components = imageComponentsRGBA
 	case pngColorTypeGrayAlpha:
+		if bitDepth != 8 {
+			return imageInfo{}, errUnsupportedPNG
+		}
 		components = imageComponentsGrayAlpha
 	case pngColorTypeRGBA:
+		if bitDepth != 8 {
+			return imageInfo{}, errUnsupportedPNG
+		}
 		components = imageComponentsRGBA
 	default:
 		return imageInfo{}, errUnsupportedPNG
@@ -231,7 +246,7 @@ func pngInfo(data []byte) (imageInfo, error) {
 		width:            width,
 		height:           height,
 		components:       components,
-		bitsPerComponent: bitDepth,
+		bitsPerComponent: 8,
 	}, nil
 }
 
@@ -347,6 +362,12 @@ func decodePNG(data []byte) (decodedImage, error) {
 	}
 	if allOpaque {
 		result.alphaData = nil
+		switch result.info.components {
+		case imageComponentsGrayAlpha:
+			result.info.components = imageComponentsGray
+		case imageComponentsRGBA:
+			result.info.components = imageComponentsRGB
+		}
 	}
 	return result, nil
 }
