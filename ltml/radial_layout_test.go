@@ -1008,7 +1008,7 @@ func TestStdSector_WithParagraphChild_DoesNotDefaultToTangentRotation(t *testing
 }
 
 func TestRadialSample_ImplicitParagraphsKeepLegacyPlacement(t *testing.T) {
-	doc, err := ParseFile("/Users/brent/src/leadtype/ltml/samples/test_038_radial_layout.ltml")
+	doc, err := ParseFile(sampleFile("test_038_radial_layout.ltml"))
 	if err != nil {
 		t.Fatal(err)
 	}
