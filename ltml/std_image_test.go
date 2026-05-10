@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -113,6 +114,37 @@ func TestStdImage_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
 	}
 }
 
+func TestStdImage_MaxHeightFitsSliverAspectRatio(t *testing.T) {
+	img := &StdImage{src: "sliver.jpg"}
+	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("sliver.jpg", "image-data"))))
+	img.SetMaxHeight(100)
+	w := &imageTestWriter{dimensions: map[string][2]int{"sliver.jpg": {38, 1080}}}
+
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if got := img.PreferredHeight(w); got != 100 {
+		t.Fatalf("PreferredHeight() = %v, want 100", got)
+	}
+	if got := img.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
+	}
+}
+
+func TestStdImage_MaxWidthAndMaxHeightUseDominantCap(t *testing.T) {
+	img := &StdImage{src: "sliver.jpg"}
+	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("sliver.jpg", "image-data"))))
+	img.SetMaxWidth(20)
+	img.SetMaxHeight(100)
+	w := &imageTestWriter{dimensions: map[string][2]int{"sliver.jpg": {38, 1080}}}
+
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if got := img.PreferredHeight(w); got != 100 {
+		t.Fatalf("PreferredHeight() = %v, want height cap 100", got)
+	}
+	if got := img.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
+	}
+}
+
 func TestStdImage_DrawContent_UsesContentBoxDimensions(t *testing.T) {
 	img := &StdImage{src: "fixture.jpg"}
 	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
@@ -144,6 +176,56 @@ func TestStdImage_DrawContent_UsesContentBoxDimensions(t *testing.T) {
 	}
 	if call.height == nil || *call.height != 48 {
 		t.Fatalf("height = %v, want 48", call.height)
+	}
+}
+
+func TestStdImage_DrawContent_FitsResolvedCellWithoutStretching(t *testing.T) {
+	img := &StdImage{src: "sliver.jpg"}
+	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("sliver.jpg", "image-data"))))
+	img.ResolveWidth(200)
+	img.ResolveHeight(100)
+	w := &imageTestWriter{dimensions: map[string][2]int{"sliver.jpg": {38, 1080}}}
+
+	if err := img.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("file call count = %d, want 1", len(w.fileCalls))
+	}
+	call := w.fileCalls[0]
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if call.width == nil || *call.width < wantWidth-0.001 || *call.width > wantWidth+0.001 {
+		t.Fatalf("width = %v, want approx %v", call.width, wantWidth)
+	}
+	if call.height == nil || *call.height != 100 {
+		t.Fatalf("height = %v, want 100", call.height)
+	}
+}
+
+func TestStdImage_TableWithCappedSliverPrintsFollowingCell(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page layout="table" cols="1">
+    <image src="sliver.jpg" max-height="100" />
+    <label>after</label>
+  </page>
+</ltml>`), WithAssetFS(testingMapFS("sliver.jpg", "image-data")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := &imageTestWriter{
+		labelTestWriter: labelTestWriter{t: t},
+		dimensions:      map[string][2]int{"sliver.jpg": {38, 1080}},
+	}
+
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 1 {
+		t.Fatalf("file call count = %d, want 1", len(w.fileCalls))
+	}
+	if got := captureTexts(&w.labelTestWriter); !strings.Contains(got, "after") {
+		t.Fatalf("printed text = %q, want following table cell to print", got)
 	}
 }
 

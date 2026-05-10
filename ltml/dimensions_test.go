@@ -9,16 +9,18 @@ import (
 
 func TestDimensions_SetAttrs(t *testing.T) {
 	tests := []struct {
-		name            string
-		attrs           map[string]string
-		wantWidth       float64
-		wantWidthValue  float64
-		wantWidthMode   DimensionMode
-		wantHeight      float64
-		wantHeightValue float64
-		wantHeightMode  DimensionMode
-		wantWidthSet    bool
-		wantHeightSet   bool
+		name             string
+		attrs            map[string]string
+		wantWidth        float64
+		wantWidthValue   float64
+		wantWidthMode    DimensionMode
+		wantHeight       float64
+		wantHeightValue  float64
+		wantHeightMode   DimensionMode
+		wantWidthSet     bool
+		wantHeightSet    bool
+		wantMaxWidthSet  bool
+		wantMaxHeightSet bool
 	}{
 		{name: "Width", attrs: map[string]string{"width": "30"}, wantWidth: 30, wantWidthValue: 30, wantWidthMode: DimLiteral, wantWidthSet: true},
 		{name: "WidthPct", attrs: map[string]string{"width": "40%"}, wantWidthValue: 40, wantWidthMode: DimPct, wantWidthSet: true},
@@ -30,6 +32,9 @@ func TestDimensions_SetAttrs(t *testing.T) {
 		{name: "HeightRelPlus", attrs: map[string]string{"height": "+50"}, wantHeightValue: 50, wantHeightMode: DimRel, wantHeightSet: true},
 		{name: "HeightRelMinus", attrs: map[string]string{"height": "-60"}, wantHeightValue: -60, wantHeightMode: DimRel, wantHeightSet: true},
 		{name: "HeightAuto", attrs: map[string]string{"height": "auto"}, wantHeightMode: DimAuto},
+		{name: "MaxWidth", attrs: map[string]string{"max-width": "30"}, wantMaxWidthSet: true},
+		{name: "MaxWidthAutoClears", attrs: map[string]string{"max-width": "auto"}},
+		{name: "MaxHeight", attrs: map[string]string{"max-height": "40%"}, wantMaxHeightSet: true},
 	}
 
 	for _, tc := range tests {
@@ -61,6 +66,12 @@ func TestDimensions_SetAttrs(t *testing.T) {
 			}
 			if got := d.HeightIsSet(); got != tc.wantHeightSet {
 				t.Errorf("HeightIsSet: expected %v, got %v", tc.wantHeightSet, got)
+			}
+			if got := d.MaxWidthIsSet(); got != tc.wantMaxWidthSet {
+				t.Errorf("MaxWidthIsSet: expected %v, got %v", tc.wantMaxWidthSet, got)
+			}
+			if got := d.MaxHeightIsSet(); got != tc.wantMaxHeightSet {
+				t.Errorf("MaxHeightIsSet: expected %v, got %v", tc.wantMaxHeightSet, got)
 			}
 		})
 	}
@@ -269,6 +280,41 @@ func TestStdWidget_ResolveAutoWidthOverridesSideResolutionUntilCleared(t *testin
 	}
 	if got := widget.WidthIsSet(); !got {
 		t.Fatalf("WidthIsSet() after clear = %v, want true from left/right anchors", got)
+	}
+}
+
+func TestStdWidget_MaxDimensionsCapResolvedAndContainerRelativeSizes(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
+	widget := &StdWidget{}
+	_ = widget.SetContainer(page)
+	widget.SetWidthPct(75)
+	widget.SetHeightRel(-10)
+	widget.SetMaxWidth(80)
+	widget.SetMaxHeightPct(50)
+
+	if got := widget.MaxWidth(); got != 80 {
+		t.Fatalf("MaxWidth() = %v, want 80", got)
+	}
+	if got := widget.MaxHeight(); got != 60 {
+		t.Fatalf("MaxHeight() = %v, want 60", got)
+	}
+	if got := widget.Width(); got != 80 {
+		t.Fatalf("Width() = %v, want capped 80", got)
+	}
+	if got := widget.Height(); got != 60 {
+		t.Fatalf("Height() = %v, want capped 60", got)
+	}
+
+	widget.ClearMaxWidth()
+	widget.ClearMaxHeight()
+	if widget.MaxWidthIsSet() || widget.MaxHeightIsSet() {
+		t.Fatalf("max dimensions should be clear")
+	}
+	if got := widget.Width(); got != 150 {
+		t.Fatalf("Width() after clear = %v, want 150", got)
+	}
+	if got := widget.Height(); got != 110 {
+		t.Fatalf("Height() after clear = %v, want 110", got)
 	}
 }
 

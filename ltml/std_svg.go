@@ -13,6 +13,13 @@ type StdSVG struct {
 }
 
 func (svg *StdSVG) LayoutWidget(w Writer) {
+	infoWidth, infoHeight, err := svg.svgDimensions(w)
+	if err != nil || infoWidth <= 0 || infoHeight <= 0 {
+		return
+	}
+	width, height := imageLikeLayoutSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
+	svg.ResolveWidth(width)
+	svg.ResolveHeight(height)
 }
 
 func (svg *StdSVG) DrawContent(w Writer) error {
@@ -25,44 +32,36 @@ func (svg *StdSVG) DrawContent(w Writer) error {
 			if ref.identifier == "" {
 				return fmt.Errorf("svg src or inline body must be specified")
 			}
-			_, _, err = w.PrintSVGFile(ref.identifier, ContentLeft(svg), ContentTop(svg), svg.widthForWriter(), svg.heightForWriter())
+			width, height := svg.placementSizeForWriter(w)
+			_, _, err = w.PrintSVGFile(ref.identifier, ContentLeft(svg), ContentTop(svg), width, height)
 			return err
 		}
 		body := svg.Body()
 		if strings.TrimSpace(body) == "" {
 			return fmt.Errorf("svg src or inline body must be specified")
 		}
-		_, _, err := w.PrintSVG([]byte(body), ContentLeft(svg), ContentTop(svg), svg.widthForWriter(), svg.heightForWriter())
+		width, height := svg.placementSizeForWriter(w)
+		_, _, err := w.PrintSVG([]byte(body), ContentLeft(svg), ContentTop(svg), width, height)
 		return err
 	})
 }
 
 func (svg *StdSVG) PreferredHeight(w Writer) float64 {
-	if svg.height != 0 {
-		return float64(svg.height)
-	}
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
 	if err != nil || infoWidth == 0 {
 		return NonContentHeight(svg)
 	}
-	if svg.width != 0 {
-		return float64(svg.width)*float64(infoHeight)/float64(infoWidth) + NonContentHeight(svg)
-	}
-	return float64(infoHeight) + NonContentHeight(svg)
+	_, height := imageLikeLayoutSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
+	return height
 }
 
 func (svg *StdSVG) PreferredWidth(w Writer) float64 {
-	if svg.width != 0 {
-		return float64(svg.width)
-	}
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
 	if err != nil || infoHeight == 0 {
 		return NonContentWidth(svg)
 	}
-	if svg.height != 0 {
-		return float64(svg.height)*float64(infoWidth)/float64(infoHeight) + NonContentWidth(svg)
-	}
-	return float64(infoWidth) + NonContentWidth(svg)
+	width, _ := imageLikeLayoutSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
+	return width
 }
 
 func (svg *StdSVG) svgDimensions(w Writer) (width, height int, err error) {
@@ -91,20 +90,12 @@ func (svg *StdSVG) String() string {
 	return fmt.Sprintf("StdSVG src=%s %s", svg.source.src, &svg.StdComponent.StdWidget)
 }
 
-func (svg *StdSVG) widthForWriter() *float64 {
-	if svg.WidthIsSet() {
-		width := ContentWidth(svg)
-		return &width
+func (svg *StdSVG) placementSizeForWriter(w Writer) (width, height *float64) {
+	infoWidth, infoHeight, err := svg.svgDimensions(w)
+	if err != nil {
+		return imageLikeFallbackPlacementSize(&svg.StdComponent.StdWidget)
 	}
-	return nil
-}
-
-func (svg *StdSVG) heightForWriter() *float64 {
-	if svg.HeightIsSet() {
-		height := ContentHeight(svg)
-		return &height
-	}
-	return nil
+	return imageLikePlacementSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
 }
 
 func init() {

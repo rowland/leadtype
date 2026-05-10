@@ -33,6 +33,14 @@ type Dimensions struct {
 	heightMode  DimensionMode
 	widthValid  bool
 	heightValid bool
+	max         maxDimensions
+}
+
+type maxDimensions struct {
+	widthValue  float32
+	heightValue float32
+	widthMode   DimensionMode
+	heightMode  DimensionMode
 }
 
 type dimensionState struct {
@@ -45,6 +53,7 @@ type dimensionState struct {
 type dimensionsState struct {
 	width  dimensionState
 	height dimensionState
+	max    maxDimensions
 }
 
 var (
@@ -134,6 +143,97 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 			height := ParseMeasurement(height, units)
 			d.SetHeight(height)
 		}
+	}
+	if width, ok := attrs["max-width"]; ok {
+		d.setMaxWidthAttr(strings.TrimSpace(width), units)
+	}
+	if height, ok := attrs["max-height"]; ok {
+		d.setMaxHeightAttr(strings.TrimSpace(height), units)
+	}
+}
+
+func (d *Dimensions) setMaxWidthAttr(width string, units Units) {
+	if width == "" || width == "auto" {
+		d.ClearMaxWidth()
+	} else if rePct.MatchString(width) {
+		widthPct, _ := strconv.ParseFloat(width[:len(width)-1], 64)
+		d.SetMaxWidthPct(widthPct)
+	} else if reRel.MatchString(width) {
+		widthRel, _ := strconv.ParseFloat(width, 64)
+		d.SetMaxWidthRel(widthRel)
+	} else {
+		d.SetMaxWidth(ParseMeasurement(width, units))
+	}
+}
+
+func (d *Dimensions) setMaxHeightAttr(height string, units Units) {
+	if height == "" || height == "auto" {
+		d.ClearMaxHeight()
+	} else if rePct.MatchString(height) {
+		heightPct, _ := strconv.ParseFloat(height[:len(height)-1], 64)
+		d.SetMaxHeightPct(heightPct)
+	} else if reRel.MatchString(height) {
+		heightRel, _ := strconv.ParseFloat(height, 64)
+		d.SetMaxHeightRel(heightRel)
+	} else {
+		d.SetMaxHeight(ParseMeasurement(height, units))
+	}
+}
+
+func (d *Dimensions) SetMaxWidth(value float64) {
+	d.max.widthValue = float32(value)
+	d.max.widthMode = DimLiteral
+}
+
+func (d *Dimensions) SetMaxWidthPct(value float64) {
+	d.max.widthValue = float32(value)
+	d.max.widthMode = DimPct
+}
+
+func (d *Dimensions) SetMaxWidthRel(value float64) {
+	d.max.widthValue = float32(value)
+	d.max.widthMode = DimRel
+}
+
+func (d *Dimensions) ClearMaxWidth() {
+	d.max.widthValue = 0
+	d.max.widthMode = DimUnspecified
+}
+
+func (d *Dimensions) MaxWidthIsSet() bool {
+	return maxDimensionIsSet(d.max.widthMode)
+}
+
+func (d *Dimensions) SetMaxHeight(value float64) {
+	d.max.heightValue = float32(value)
+	d.max.heightMode = DimLiteral
+}
+
+func (d *Dimensions) SetMaxHeightPct(value float64) {
+	d.max.heightValue = float32(value)
+	d.max.heightMode = DimPct
+}
+
+func (d *Dimensions) SetMaxHeightRel(value float64) {
+	d.max.heightValue = float32(value)
+	d.max.heightMode = DimRel
+}
+
+func (d *Dimensions) ClearMaxHeight() {
+	d.max.heightValue = 0
+	d.max.heightMode = DimUnspecified
+}
+
+func (d *Dimensions) MaxHeightIsSet() bool {
+	return maxDimensionIsSet(d.max.heightMode)
+}
+
+func maxDimensionIsSet(mode DimensionMode) bool {
+	switch mode {
+	case DimLiteral, DimPct, DimRel:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -297,7 +397,7 @@ func (d *Dimensions) HeightMode() DimensionMode {
 }
 
 func (d *Dimensions) SaveState() dimensionsState {
-	return dimensionsState{
+	state := dimensionsState{
 		width: dimensionState{
 			resolved: d.width,
 			value:    d.widthValue,
@@ -310,7 +410,9 @@ func (d *Dimensions) SaveState() dimensionsState {
 			mode:     d.heightMode,
 			valid:    d.heightValid,
 		},
+		max: d.max,
 	}
+	return state
 }
 
 func (d *Dimensions) RestoreState(state dimensionsState) {
@@ -322,4 +424,5 @@ func (d *Dimensions) RestoreState(state dimensionsState) {
 	d.heightValue = state.height.value
 	d.heightMode = state.height.mode
 	d.heightValid = state.height.valid
+	d.max = state.max
 }

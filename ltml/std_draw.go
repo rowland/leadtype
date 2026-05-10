@@ -18,6 +18,16 @@ type StdDraw struct {
 	key string
 }
 
+func (d *StdDraw) LayoutWidget(Writer) {
+	naturalWidth, naturalHeight, ok := d.naturalSize()
+	if !ok || naturalWidth <= 0 || naturalHeight <= 0 {
+		return
+	}
+	width, height := imageLikeLayoutSize(&d.StdWidget, naturalWidth, naturalHeight)
+	d.ResolveWidth(width)
+	d.ResolveHeight(height)
+}
+
 func (d *StdDraw) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &d.StdWidget, "Figure", func() error {
 		canvas, err := d.resolveCanvas()
@@ -52,31 +62,21 @@ func (d *StdDraw) DrawContent(w Writer) error {
 }
 
 func (d *StdDraw) PreferredHeight(Writer) float64 {
-	if d.height != 0 {
-		return float64(d.height)
-	}
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalWidth <= 0 {
 		return NonContentHeight(d)
 	}
-	if d.width != 0 {
-		return float64(d.width)*naturalHeight/naturalWidth + NonContentHeight(d)
-	}
-	return naturalHeight + NonContentHeight(d)
+	_, height := imageLikeLayoutSize(&d.StdWidget, naturalWidth, naturalHeight)
+	return height
 }
 
 func (d *StdDraw) PreferredWidth(Writer) float64 {
-	if d.width != 0 {
-		return float64(d.width)
-	}
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalHeight <= 0 {
 		return NonContentWidth(d)
 	}
-	if d.height != 0 {
-		return float64(d.height)*naturalWidth/naturalHeight + NonContentWidth(d)
-	}
-	return naturalWidth + NonContentWidth(d)
+	width, _ := imageLikeLayoutSize(&d.StdWidget, naturalWidth, naturalHeight)
+	return width
 }
 
 func (d *StdDraw) SetAttrs(attrs map[string]string) {
@@ -92,24 +92,7 @@ func (d *StdDraw) placementSize(canvas *StdCanvas) (width, height float64) {
 	if canvas == nil {
 		return 0, 0
 	}
-	if d.WidthIsSet() && d.HeightIsSet() {
-		return ContentWidth(d), ContentHeight(d)
-	}
-	if d.WidthIsSet() {
-		width = ContentWidth(d)
-		if canvas.Width() == 0 {
-			return width, 0
-		}
-		return width, width * canvas.Height() / canvas.Width()
-	}
-	if d.HeightIsSet() {
-		height = ContentHeight(d)
-		if canvas.Height() == 0 {
-			return 0, height
-		}
-		return height * canvas.Width() / canvas.Height(), height
-	}
-	return canvas.Width(), canvas.Height()
+	return imageLikeContentSize(&d.StdWidget, canvas.Width(), canvas.Height())
 }
 
 func (d *StdDraw) naturalSize() (width, height float64, ok bool) {

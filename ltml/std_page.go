@@ -263,7 +263,27 @@ func (p *StdPage) drawGrid(w Writer) error {
 	})
 }
 
+type LayoutOverflowError struct {
+	PagePath        string
+	WidgetPath      string
+	AvailableHeight float64
+	RequiredHeight  float64
+}
+
 var errNoProgressPage = errors.New("page overflow retry would print no display=once direct children")
+
+func (err *LayoutOverflowError) Error() string {
+	if err == nil {
+		return ""
+	}
+	return fmt.Sprintf(
+		"ltml layout overflow: page %s cannot place pending widget %s (available height %.2fpt, required height %.2fpt); set max-height, reduce content size, or enable compatible splitting",
+		err.PagePath,
+		err.WidgetPath,
+		err.AvailableHeight,
+		err.RequiredHeight,
+	)
+}
 
 func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 	printedOnce := 0
@@ -376,7 +396,11 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 				doc.physicalPageNo = savedPhysicalPageNo
 				doc.pendingStart = savedPendingStart
 			}
-			return errNoProgressPage
+			err := p.newLayoutOverflowError(probe)
+			if err == nil {
+				return errNoProgressPage
+			}
+			return err
 		}
 		p.rebuildActiveChildren()
 		p.newPhysicalPage(w)
@@ -476,6 +500,29 @@ func (p *StdPage) initFlowItems() {
 			p.flowItems = append(p.flowItems, &pageItem{Source: child, Current: child})
 		}
 	}
+}
+
+func (p *StdPage) newLayoutOverflowError(w Writer) error {
+	for _, child := range p.Widgets() {
+		if child.Display() != DisplayOnce || child.Printed() || widgetZeroFootprint(child) {
+			continue
+		}
+		available := p.availableHeightForChild(child)
+		required := child.Height()
+		if required == 0 || !child.HeightIsSet() {
+			required = child.PreferredHeight(w)
+		}
+		if required <= available+layoutFitEpsilon {
+			continue
+		}
+		return &LayoutOverflowError{
+			PagePath:        p.Path(),
+			WidgetPath:      child.Path(),
+			AvailableHeight: available,
+			RequiredHeight:  required,
+		}
+	}
+	return nil
 }
 
 func (p *StdPage) rebuildActiveChildren() {

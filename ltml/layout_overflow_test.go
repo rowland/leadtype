@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -173,35 +174,28 @@ func TestLayoutVBox_DirectChildSplitTableUsesOuterOverflowInsteadOfSelfClipping(
 	}
 }
 
-func TestStdPage_OverflowStopsWithoutPrintingAnyOnceChild(t *testing.T) {
+func TestStdPage_OverflowNoProgressReturnsLayoutOverflowError(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
 	page.overflow = true
 	doc := newFlowPageDoc(page)
 
-	var headerPages, bodyPages []int
+	first := &flowTestWidget{name: "first", preferredHeight: 20}
+	_ = first.SetContainer(page)
+	page.AddChild(first)
 
-	header := &flowTestWidget{name: "header", preferredHeight: 80, printedOn: &headerPages}
-	_ = header.SetContainer(page)
-	header.SetAttrs(map[string]string{"align": "top", "display": "always"})
-	page.AddChild(header)
-
-	body := &flowTestWidget{name: "body", preferredHeight: 40, printedOn: &bodyPages}
-	_ = body.SetContainer(page)
-	page.AddChild(body)
+	second := &flowTestWidget{name: "second", preferredHeight: 120}
+	_ = second.SetContainer(page)
+	page.AddChild(second)
 
 	w := &labelTestWriter{t: t}
-	if err := doc.Print(w); err != nil {
-		t.Fatal(err)
+	err := doc.Print(w)
+	var overflowErr *LayoutOverflowError
+	if !errors.As(err, &overflowErr) {
+		t.Fatalf("Print error = %v, want LayoutOverflowError", err)
 	}
-	if w.pageCount != 1 {
-		t.Fatalf("page count = %d, want 1", w.pageCount)
-	}
-	if len(headerPages) != 1 {
-		t.Fatalf("header printed %d times, want 1", len(headerPages))
-	}
-	if len(bodyPages) != 0 {
-		t.Fatalf("body printed %d times, want 0", len(bodyPages))
+	if overflowErr.AvailableHeight != 100 || overflowErr.RequiredHeight != 120 {
+		t.Fatalf("overflow sizes = available %v required %v, want 100 and 120", overflowErr.AvailableHeight, overflowErr.RequiredHeight)
 	}
 }
 

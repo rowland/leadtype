@@ -13,6 +13,16 @@ type StdImage struct {
 	src string
 }
 
+func (img *StdImage) LayoutWidget(w Writer) {
+	infoWidth, infoHeight, err := img.imageDimensions(w)
+	if err != nil || infoWidth <= 0 || infoHeight <= 0 {
+		return
+	}
+	width, height := imageLikeLayoutSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
+	img.ResolveWidth(width)
+	img.ResolveHeight(height)
+}
+
 func (img *StdImage) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &img.StdWidget, "Figure", func() error {
 		ref, err := img.assetSource()
@@ -22,37 +32,28 @@ func (img *StdImage) DrawContent(w Writer) error {
 		if ref.identifier == "" {
 			return fmt.Errorf("image src must be specified")
 		}
-		_, _, err = w.PrintImageFile(ref.identifier, ContentLeft(img), ContentTop(img), img.widthForWriter(), img.heightForWriter())
+		width, height := img.placementSizeForWriter(w)
+		_, _, err = w.PrintImageFile(ref.identifier, ContentLeft(img), ContentTop(img), width, height)
 		return err
 	})
 }
 
 func (img *StdImage) PreferredHeight(w Writer) float64 {
-	if img.height != 0 {
-		return float64(img.height)
-	}
 	infoWidth, infoHeight, err := img.imageDimensions(w)
 	if err != nil || infoWidth == 0 {
 		return NonContentHeight(img)
 	}
-	if img.width != 0 {
-		return float64(img.width)*float64(infoHeight)/float64(infoWidth) + NonContentHeight(img)
-	}
-	return float64(infoHeight) + NonContentHeight(img)
+	_, height := imageLikeLayoutSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
+	return height
 }
 
 func (img *StdImage) PreferredWidth(w Writer) float64 {
-	if img.width != 0 {
-		return float64(img.width)
-	}
 	infoWidth, infoHeight, err := img.imageDimensions(w)
 	if err != nil || infoHeight == 0 {
 		return NonContentWidth(img)
 	}
-	if img.height != 0 {
-		return float64(img.height)*float64(infoWidth)/float64(infoHeight) + NonContentWidth(img)
-	}
-	return float64(infoWidth) + NonContentWidth(img)
+	width, _ := imageLikeLayoutSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
+	return width
 }
 
 func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
@@ -87,20 +88,12 @@ func (img *StdImage) String() string {
 	return fmt.Sprintf("StdImage src=%s %s", img.src, &img.StdWidget)
 }
 
-func (img *StdImage) widthForWriter() *float64 {
-	if img.WidthIsSet() {
-		width := ContentWidth(img)
-		return &width
+func (img *StdImage) placementSizeForWriter(w Writer) (width, height *float64) {
+	infoWidth, infoHeight, err := img.imageDimensions(w)
+	if err != nil {
+		return imageLikeFallbackPlacementSize(&img.StdWidget)
 	}
-	return nil
-}
-
-func (img *StdImage) heightForWriter() *float64 {
-	if img.HeightIsSet() {
-		height := ContentHeight(img)
-		return &height
-	}
-	return nil
+	return imageLikePlacementSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
 }
 
 func init() {

@@ -762,6 +762,10 @@ func (widget *StdWidget) Units() Units {
 }
 
 func (widget *StdWidget) Width() float64 {
+	return widget.capWidth(widget.uncappedWidth())
+}
+
+func (widget *StdWidget) uncappedWidth() float64 {
 	if widget.widthValid {
 		return float64(widget.width)
 	}
@@ -780,6 +784,10 @@ func (widget *StdWidget) Width() float64 {
 }
 
 func (widget *StdWidget) Height() float64 {
+	return widget.capHeight(widget.uncappedHeight())
+}
+
+func (widget *StdWidget) uncappedHeight() float64 {
 	if widget.heightValid {
 		return float64(widget.height)
 	}
@@ -795,6 +803,58 @@ func (widget *StdWidget) Height() float64 {
 		return widget.resolveBottom(widget.sides[bottomSide].Float64()) - widget.resolveTop(widget.sides[topSide].Float64())
 	}
 	return 0
+}
+
+func (widget *StdWidget) MaxWidth() float64 {
+	switch widget.max.widthMode {
+	case DimPct:
+		if widget.container == nil {
+			return 0
+		}
+		return float64(widget.max.widthValue) / 100.0 * ContentWidth(widget.container)
+	case DimRel:
+		if widget.container == nil {
+			return float64(widget.max.widthValue)
+		}
+		return ContentWidth(widget.container) + float64(widget.max.widthValue)
+	case DimLiteral:
+		return float64(widget.max.widthValue)
+	default:
+		return 0
+	}
+}
+
+func (widget *StdWidget) MaxHeight() float64 {
+	switch widget.max.heightMode {
+	case DimPct:
+		if widget.container == nil {
+			return 0
+		}
+		return float64(widget.max.heightValue) / 100.0 * ContentHeight(widget.container)
+	case DimRel:
+		if widget.container == nil {
+			return float64(widget.max.heightValue)
+		}
+		return ContentHeight(widget.container) + float64(widget.max.heightValue)
+	case DimLiteral:
+		return float64(widget.max.heightValue)
+	default:
+		return 0
+	}
+}
+
+func (widget *StdWidget) capWidth(width float64) float64 {
+	if widget.MaxWidthIsSet() {
+		width = min(width, widget.MaxWidth())
+	}
+	return max(width, 0)
+}
+
+func (widget *StdWidget) capHeight(height float64) float64 {
+	if widget.MaxHeightIsSet() {
+		height = min(height, widget.MaxHeight())
+	}
+	return max(height, 0)
 }
 
 func (widget *StdWidget) HeightIsSet() bool {
