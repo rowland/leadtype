@@ -1402,17 +1402,75 @@ func (r *svgRenderer) withPreparedTextState(style svg.Style, fn func() error) er
 	}()
 	r.pw.SetFontColor(style.Fill.Color)
 	r.pw.units = UnitConversions["pt"]
-	if _, err := r.pw.SetFont(style.FontFamily, style.FontSize*r.scaleY, options.Options{
+	opts := options.Options{
 		"style":  normalizeFontStyle(style),
 		"weight": normalizeFontWeight(style),
-	}); err != nil {
-		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("font %q unavailable: %v", style.FontFamily, err)}})
-		return nil
 	}
-	if fn == nil {
-		return nil
+	candidates := svgFontFamilyCandidates(style)
+	var lastErr error
+	for i, candidate := range candidates {
+		if _, err := r.pw.SetFont(candidate.family, style.FontSize*r.scaleY, opts); err != nil {
+			lastErr = err
+			continue
+		}
+		if i > 0 {
+			logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("font %q unavailable; using fallback %q", candidates[0].label, candidate.label)}})
+		}
+		if fn == nil {
+			return nil
+		}
+		return fn()
 	}
-	return fn()
+	if lastErr != nil {
+		labels := make([]string, 0, len(candidates))
+		for _, candidate := range candidates {
+			labels = append(labels, fmt.Sprintf("%q", candidate.label))
+		}
+		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("fonts unavailable: tried %s: %v", strings.Join(labels, ", "), lastErr)}})
+	} else {
+		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: "no usable font families"}})
+	}
+	return nil
+}
+
+type svgFontFamilyCandidate struct {
+	label  string
+	family string
+}
+
+func svgFontFamilyCandidates(style svg.Style) []svgFontFamilyCandidate {
+	families := style.FontFamilies
+	if len(families) == 0 && strings.TrimSpace(style.FontFamily) != "" {
+		families = []string{style.FontFamily}
+	}
+	candidates := make([]svgFontFamilyCandidate, 0, len(families))
+	for _, family := range families {
+		family = strings.TrimSpace(family)
+		if family == "" {
+			continue
+		}
+		candidates = append(candidates, svgFontFamilyCandidate{
+			label:  family,
+			family: mapSVGGenericFontFamily(family),
+		})
+	}
+	if len(candidates) == 0 {
+		candidates = append(candidates, svgFontFamilyCandidate{label: "Helvetica", family: "Helvetica"})
+	}
+	return candidates
+}
+
+func mapSVGGenericFontFamily(family string) string {
+	switch strings.ToLower(strings.TrimSpace(family)) {
+	case "sans-serif":
+		return "Helvetica"
+	case "serif":
+		return "Times"
+	case "monospace":
+		return "Courier"
+	default:
+		return family
+	}
 }
 
 func (r *svgRenderer) resolveTextGradient(ref string, opacityScale float64, text *rich_text.RichText, startX, baselineY float64, transform svg.Transform) (*resolvedSVGGradient, error) {

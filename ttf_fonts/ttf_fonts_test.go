@@ -74,6 +74,40 @@ func TestTtfFonts(t *testing.T) {
 	}
 }
 
+func TestTtfFonts_SelectFixtureByPostScriptAndFullNames(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal.ttc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name           string
+		family         string
+		weight         string
+		style          string
+		postscriptName string
+	}{
+		{"postscript regular", "Minimal", "", "", "Minimal"},
+		{"postscript bold", "Minimal-Bold", "", "", "Minimal-Bold"},
+		{"full name bold", "Minimal Bold", "", "", "Minimal-Bold"},
+		{"postscript-style inferred", "Minimal-Bold", "Bold", "", "Minimal-Bold"},
+		{"case-insensitive postscript", "minimal-bold", "", "", "Minimal-Bold"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			f, err := fc.Select(test.family, test.weight, test.style, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if f.PostScriptName() != test.postscriptName {
+				t.Fatalf("PostScriptName = %q, want %q", f.PostScriptName(), test.postscriptName)
+			}
+		})
+	}
+	if _, err := fc.Select("Minimal", "", "Italic", nil); err == nil {
+		t.Fatal("expected exact PostScript name match not to override explicitly requested Italic style")
+	}
+}
+
 // 81,980,000 ns
 // 45,763,220 ns
 // 44,562,080 ns

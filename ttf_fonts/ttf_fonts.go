@@ -198,7 +198,7 @@ func (fc *TtfFonts) Select(family, weight, style string, ranges []string) (fontM
 	}
 search:
 	for _, f := range fc.FontInfos {
-		if strings.EqualFold(f.Family(), family) && strings.EqualFold(f.Style(), ws) {
+		if ttfFontInfoMatches(f, family, ws) {
 			for _, r := range ranges {
 				cpr, ok := ttf.CodepointRangesByName[r]
 				if !ok || !f.CharRanges().IsSet(int(cpr.Bit)) {
@@ -217,6 +217,69 @@ search:
 	}
 	err = fmt.Errorf("Font %s %s not found", family, ws)
 	return
+}
+
+func ttfFontInfoMatches(f *ttf.FontInfo, family, weightStyle string) bool {
+	if f == nil {
+		return false
+	}
+	if strings.EqualFold(f.Family(), family) && strings.EqualFold(f.Style(), weightStyle) {
+		return true
+	}
+	_, _, embedsStyle := splitPostScriptStyleName(family)
+	if (strings.EqualFold(f.PostScriptName(), family) || strings.EqualFold(f.FullName(), family)) && (styleCompatible(f.Style(), weightStyle) || embedsStyle) {
+		return true
+	}
+	base, inferredStyle, ok := splitPostScriptStyleName(family)
+	if !ok {
+		return false
+	}
+	return normalizedFontName(f.Family()) == normalizedFontName(base) && strings.EqualFold(f.Style(), inferredStyle)
+}
+
+func styleCompatible(fontStyle, requestedStyle string) bool {
+	return requestedStyle == "" || strings.EqualFold(requestedStyle, "Regular") || strings.EqualFold(fontStyle, requestedStyle)
+}
+
+func splitPostScriptStyleName(name string) (base, style string, ok bool) {
+	name = strings.TrimSpace(name)
+	for _, sep := range []string{"-", " "} {
+		for _, suffix := range []struct {
+			text  string
+			style string
+		}{
+			{"BoldItalic", "Bold Italic"},
+			{"BoldOblique", "Bold Oblique"},
+			{"Regular", "Regular"},
+			{"Italic", "Italic"},
+			{"Oblique", "Oblique"},
+			{"Bold", "Bold"},
+		} {
+			token := sep + suffix.text
+			if len(name) <= len(token) || !strings.EqualFold(name[len(name)-len(token):], token) {
+				continue
+			}
+			base = strings.TrimSpace(name[:len(name)-len(token)])
+			if base == "" {
+				return "", "", false
+			}
+			return base, suffix.style, true
+		}
+	}
+	return "", "", false
+}
+
+func normalizedFontName(name string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(name) {
+		switch r {
+		case ' ', '-', '_':
+			continue
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func (fc *TtfFonts) SubType() string {

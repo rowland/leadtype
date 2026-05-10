@@ -1,6 +1,9 @@
 package svg
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseRootUsesViewBoxWhenSizeMissing(t *testing.T) {
 	doc, warnings, err := Parse([]byte(`<svg viewBox="0 0 200 100"><rect width="200" height="100"/></svg>`))
@@ -137,6 +140,85 @@ func TestParseInternalStyleClassFill(t *testing.T) {
 	}
 	if int(style.Fill.Color) != 0x21495A {
 		t.Fatalf("fill color = %#x, want %#x", style.Fill.Color, 0x21495A)
+	}
+}
+
+func TestParseFontFamilyCandidates(t *testing.T) {
+	doc, warnings, err := Parse([]byte(`<svg width="100" height="20"><text font-family="'OpenSans-Regular', Minimal, &quot;serif&quot;">Hi</text></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %+v", warnings)
+	}
+	text, ok := doc.Children[0].(*Text)
+	if !ok {
+		t.Fatalf("child type = %T, want *Text", doc.Children[0])
+	}
+	style := text.Style.Resolve(DefaultStyle())
+	want := []string{"OpenSans-Regular", "Minimal", "serif"}
+	if style.FontFamily != want[0] {
+		t.Fatalf("FontFamily = %q, want %q", style.FontFamily, want[0])
+	}
+	if len(style.FontFamilies) != len(want) {
+		t.Fatalf("FontFamilies = %#v, want %#v", style.FontFamilies, want)
+	}
+	for i := range want {
+		if style.FontFamilies[i] != want[i] {
+			t.Fatalf("FontFamilies = %#v, want %#v", style.FontFamilies, want)
+		}
+	}
+}
+
+func TestParseFontFamilyDoubleWrappedQuotes(t *testing.T) {
+	doc, warnings, err := Parse([]byte(`<svg width="100" height="20"><text font-family="&quot;'Montserrat-Bold'&quot;">Hi</text></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %+v", warnings)
+	}
+	text := doc.Children[0].(*Text)
+	style := text.Style.Resolve(DefaultStyle())
+	if style.FontFamily != "Montserrat-Bold" {
+		t.Fatalf("FontFamily = %q, want Montserrat-Bold", style.FontFamily)
+	}
+}
+
+func TestParseFontFamilyEmptyEntriesWarn(t *testing.T) {
+	doc, warnings, err := Parse([]byte(`<svg width="100" height="20"><text font-family="'Missing', , Minimal">Hi</text></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 1 {
+		t.Fatalf("warnings = %+v, want one empty-family warning", warnings)
+	}
+	if warnings[0].Attribute != "font-family" {
+		t.Fatalf("warning attribute = %q, want font-family", warnings[0].Attribute)
+	}
+	text := doc.Children[0].(*Text)
+	style := text.Style.Resolve(DefaultStyle())
+	want := []string{"Missing", "Minimal"}
+	if len(style.FontFamilies) != len(want) {
+		t.Fatalf("FontFamilies = %#v, want %#v", style.FontFamilies, want)
+	}
+	for i := range want {
+		if style.FontFamilies[i] != want[i] {
+			t.Fatalf("FontFamilies = %#v, want %#v", style.FontFamilies, want)
+		}
+	}
+}
+
+func TestParseFontFamilyMalformedQuoteWarns(t *testing.T) {
+	_, warnings, err := Parse([]byte(`<svg width="100" height="20"><text font-family="'Missing, Minimal">Hi</text></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 1 {
+		t.Fatalf("warnings = %+v, want one malformed-family warning", warnings)
+	}
+	if warnings[0].Attribute != "font-family" || !strings.Contains(warnings[0].Message, "unterminated quote") {
+		t.Fatalf("warning = %+v, want unterminated font-family warning", warnings[0])
 	}
 }
 

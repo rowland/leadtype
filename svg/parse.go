@@ -377,6 +377,9 @@ func parseCommon(doc *Document, attrs map[string]string, viewport ViewBox, eleme
 		common.Transform = transform
 	}
 	common.Style = parseStyleSpecFromProperties(props, viewport)
+	if warnings := fontFamilyWarnings(element, props["font-family"], common.Style.FontFamilies); len(warnings) > 0 {
+		doc.Warnings = append(doc.Warnings, warnings...)
+	}
 	if clipPath := props["clip-path"]; clipPath != "" {
 		common.ClipPathRef = parseURLReference(clipPath)
 	}
@@ -387,10 +390,6 @@ func parseCommon(doc *Document, attrs map[string]string, viewport ViewBox, eleme
 		common.FilterRef = parseURLReference(filter)
 	}
 	return common, nil
-}
-
-func parseStyleSpec(attrs map[string]string, viewport ViewBox) StyleSpec {
-	return parseStyleSpecFromProperties(parseStyleProperties(nil, attrs), viewport)
 }
 
 func parseStyleSpecFromProperties(merged map[string]string, viewport ViewBox) StyleSpec {
@@ -450,7 +449,11 @@ func parseStyleSpecFromProperties(merged map[string]string, viewport ViewBox) St
 		spec.FillRule = &value
 	}
 	if value := merged["font-family"]; value != "" {
-		spec.FontFamily = &value
+		families := parseFontFamilies(value)
+		if len(families) > 0 {
+			spec.FontFamilies = families
+			spec.FontFamily = &families[0]
+		}
 	}
 	if value := merged["font-size"]; value != "" {
 		if f, err := parseLength(value, viewport.Height); err == nil {
@@ -475,66 +478,102 @@ func parseStyleSpecFromProperties(merged map[string]string, viewport ViewBox) St
 	return spec
 }
 
-func mergeStyleSpec(base, extra StyleSpec) StyleSpec {
-	out := base
-	if extra.Fill != nil {
-		out.Fill = extra.Fill
+func parseFontFamilies(value string) []string {
+	var families []string
+	for _, entry := range splitFontFamilyList(value) {
+		family := normalizeFontFamily(entry)
+		if family == "" {
+			continue
+		}
+		families = append(families, family)
 	}
-	if extra.Stroke != nil {
-		out.Stroke = extra.Stroke
+	return families
+}
+
+func splitFontFamilyList(value string) []string {
+	var entries []string
+	var b strings.Builder
+	var quote rune
+	escaped := false
+	for _, r := range value {
+		switch {
+		case escaped:
+			b.WriteRune(r)
+			escaped = false
+		case r == '\\' && quote != 0:
+			escaped = true
+		case quote != 0:
+			b.WriteRune(r)
+			if r == quote {
+				quote = 0
+			}
+		case r == '\'' || r == '"':
+			quote = r
+			b.WriteRune(r)
+		case r == ',':
+			entries = append(entries, b.String())
+			b.Reset()
+		default:
+			b.WriteRune(r)
+		}
 	}
-	if extra.StrokeWidth != nil {
-		out.StrokeWidth = extra.StrokeWidth
+	entries = append(entries, b.String())
+	return entries
+}
+
+func normalizeFontFamily(value string) string {
+	value = strings.TrimSpace(value)
+	for {
+		if len(value) < 2 {
+			return value
+		}
+		first := value[0]
+		last := value[len(value)-1]
+		if (first != '\'' && first != '"') || first != last {
+			return value
+		}
+		value = strings.TrimSpace(value[1 : len(value)-1])
 	}
-	if extra.FillOpacity != nil {
-		out.FillOpacity = extra.FillOpacity
+}
+
+func fontFamilyWarnings(element, raw string, families []string) []Warning {
+	if strings.TrimSpace(raw) == "" {
+		return nil
 	}
-	if extra.StrokeOpacity != nil {
-		out.StrokeOpacity = extra.StrokeOpacity
+	entries := splitFontFamilyList(raw)
+	warnings := []Warning{}
+	if hasUnterminatedFontFamilyQuote(raw) {
+		warnings = append(warnings, Warning{Element: element, Attribute: "font-family", Message: fmt.Sprintf("malformed family list %q: unterminated quote", raw)})
 	}
-	if extra.Opacity != nil {
-		out.Opacity = extra.Opacity
+	for _, entry := range entries {
+		if strings.TrimSpace(entry) == "" || normalizeFontFamily(entry) == "" {
+			warnings = append(warnings, Warning{Element: element, Attribute: "font-family", Message: fmt.Sprintf("ignored empty family in %q", raw)})
+		}
 	}
-	if extra.LineCap != nil {
-		out.LineCap = extra.LineCap
+	if len(families) == 0 {
+		warnings = append(warnings, Warning{Element: element, Attribute: "font-family", Message: fmt.Sprintf("no usable families in %q", raw)})
 	}
-	if extra.LineJoin != nil {
-		out.LineJoin = extra.LineJoin
+	return warnings
+}
+
+func hasUnterminatedFontFamilyQuote(value string) bool {
+	var quote rune
+	escaped := false
+	for _, r := range value {
+		switch {
+		case escaped:
+			escaped = false
+		case r == '\\' && quote != 0:
+			escaped = true
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			}
+		case r == '\'' || r == '"':
+			quote = r
+		}
 	}
-	if extra.MiterLimit != nil {
-		out.MiterLimit = extra.MiterLimit
-	}
-	if extra.DashArray != nil {
-		out.DashArray = extra.DashArray
-	}
-	if extra.DashOffset != nil {
-		out.DashOffset = extra.DashOffset
-	}
-	if extra.FillRule != nil {
-		out.FillRule = extra.FillRule
-	}
-	if extra.FontFamily != nil {
-		out.FontFamily = extra.FontFamily
-	}
-	if extra.FontSize != nil {
-		out.FontSize = extra.FontSize
-	}
-	if extra.FontStyle != nil {
-		out.FontStyle = extra.FontStyle
-	}
-	if extra.FontWeight != nil {
-		out.FontWeight = extra.FontWeight
-	}
-	if extra.TextAnchor != nil {
-		out.TextAnchor = extra.TextAnchor
-	}
-	if extra.BlendMode != nil {
-		out.BlendMode = extra.BlendMode
-	}
-	if extra.Display != nil {
-		out.Display = extra.Display
-	}
-	return out
+	return quote != 0
 }
 
 var cssRuleRE = regexp.MustCompile(`(?s)\.([A-Za-z0-9_-]+)\s*\{([^}]*)\}`)

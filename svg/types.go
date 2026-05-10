@@ -286,6 +286,7 @@ type StyleSpec struct {
 	DashOffset    *float64
 	FillRule      *string
 	FontFamily    *string
+	FontFamilies  []string
 	FontSize      *float64
 	FontStyle     *string
 	FontWeight    *string
@@ -308,6 +309,7 @@ type Style struct {
 	DashOffset    float64
 	FillRule      string
 	FontFamily    string
+	FontFamilies  []string
 	FontSize      float64
 	FontStyle     string
 	FontWeight    string
@@ -384,6 +386,9 @@ func (spec StyleSpec) Resolve(parent Style) Style {
 	}
 	if spec.FontFamily != nil {
 		out.FontFamily = *spec.FontFamily
+	}
+	if spec.FontFamilies != nil {
+		out.FontFamilies = append([]string(nil), spec.FontFamilies...)
 	}
 	if spec.FontSize != nil {
 		out.FontSize = *spec.FontSize
