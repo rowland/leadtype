@@ -46,10 +46,18 @@ type Widget interface {
 	SetWidthRel(value float64)
 	ResolveWidth(value float64)
 	ClearResolvedWidth()
+	SetMaxHeight(value float64)
+	SetMaxWidth(value float64)
+	ClearMaxHeight()
+	ClearMaxWidth()
 
 	Height() float64
 	HeightIsSet() bool
 	HeightMode() DimensionMode
+	MaxHeight() float64
+	MaxHeightIsSet() bool
+	MaxWidth() float64
+	MaxWidthIsSet() bool
 	Width() float64
 	WidthMode() DimensionMode
 	WidthPctIsSet() bool

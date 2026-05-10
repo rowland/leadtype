@@ -212,6 +212,7 @@ like an image-style placement widget.
 |-----------|-------------|
 | `key` | Required canvas key to place. |
 | `width`, `height` | Optional explicit placement dimensions. If both are omitted, LTML uses the canvas natural size. If only one is supplied, LTML preserves aspect ratio. If both are supplied, LTML stretches to the exact box. |
+| `max-width`, `max-height` | Optional maximum widget dimensions. For image-style widgets, caps preserve aspect ratio and choose whichever dimension dominates. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Optional enclosing widget border, separate from the captured canvas content. |
@@ -548,6 +549,7 @@ Places an image file into the document using the PDF image API.
 |-----------|-------------|
 | `src` | Path to the source image file. |
 | `width`, `height` | Optional explicit dimensions. If only one is supplied, the other is inferred from the image aspect ratio. |
+| `max-width`, `max-height` | Optional maximum widget dimensions. Caps preserve aspect ratio and choose whichever dimension dominates. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Reference to a named `<pen>` style. |
@@ -603,6 +605,7 @@ optional network loading.
 |-----------|-------------|
 | `src` | Optional path or URL to an external SVG document. When both `src` and inline SVG body are present, `src` wins. |
 | `width`, `height` | Optional explicit dimensions. If only one is supplied, the other is inferred from the SVG aspect ratio. |
+| `max-width`, `max-height` | Optional maximum widget dimensions. Caps preserve aspect ratio and choose whichever dimension dominates. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Reference to a named `<pen>` style. |
@@ -1387,6 +1390,10 @@ Measurements can be expressed in several forms:
 | Percentage    | `50%`       | Percentage of the container's content width or height. |
 | Relative      | `+10`, `-5` | Offset from the container's content dimension. |
 | Auto          | `auto`      | Automatic layout-managed size. Supported by `hbox` width, `vbox` height, table column width, and table row height; elsewhere it behaves like omitting the dimension. |
+
+`max-width` and `max-height` accept bare numbers, unit-suffixed measurements,
+percentages, and relative values. `auto` or an omitted max attribute means
+there is no cap.
 
 **Supported units:** `pt` (points), `in` (inches, 72pt), `cm` (centimeters, 28.35pt).
 

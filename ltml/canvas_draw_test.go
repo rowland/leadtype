@@ -88,6 +88,62 @@ func captureTexts(w *labelTestWriter) string {
 	return b.String()
 }
 
+func TestStdDraw_MaxHeightFitsAspectRatio(t *testing.T) {
+	doc := parseCanvasDoc(t, `
+<ltml>
+  <canvas key="sliver" width="38" height="1080" />
+  <page>
+    <draw key="sliver" max-height="100" />
+  </page>
+</ltml>`)
+	page := doc.Root().Page(0)
+	draw, ok := page.children[0].(*StdDraw)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdDraw", page.children[0])
+	}
+	w := &canvasTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if got := draw.PreferredHeight(w); got != 100 {
+		t.Fatalf("PreferredHeight() = %v, want 100", got)
+	}
+	if got := draw.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
+	}
+}
+
+func TestStdDraw_DrawContent_FitsResolvedCellWithoutStretching(t *testing.T) {
+	doc := parseCanvasDoc(t, `
+<ltml>
+  <canvas key="sliver" width="38" height="1080" />
+  <page>
+    <draw key="sliver" />
+  </page>
+</ltml>`)
+	page := doc.Root().Page(0)
+	draw, ok := page.children[0].(*StdDraw)
+	if !ok {
+		t.Fatalf("child type = %T, want *StdDraw", page.children[0])
+	}
+	draw.ResolveWidth(200)
+	draw.ResolveHeight(100)
+	w := &canvasTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := draw.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.drawCalls) != 1 {
+		t.Fatalf("draw call count = %d, want 1", len(w.drawCalls))
+	}
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if got := w.drawCalls[0].width; got < wantWidth-0.001 || got > wantWidth+0.001 {
+		t.Fatalf("width = %v, want approx %v", got, wantWidth)
+	}
+	if got := w.drawCalls[0].height; got != 100 {
+		t.Fatalf("height = %v, want 100", got)
+	}
+}
+
 func TestParse_CanvasMustBeDirectChildOfDocument(t *testing.T) {
 	_, err := Parse([]byte(`
 <ltml>

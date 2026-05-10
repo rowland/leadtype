@@ -102,6 +102,44 @@ func TestStdSVG_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
 	}
 }
 
+func TestStdSVG_MaxHeightFitsAspectRatio(t *testing.T) {
+	svg := &StdSVG{}
+	svg.body = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="1080"></svg>`
+	svg.SetMaxHeight(100)
+	w := &svgTestWriter{inlineDimensions: [2]int{38, 1080}}
+
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if got := svg.PreferredHeight(w); got != 100 {
+		t.Fatalf("PreferredHeight() = %v, want 100", got)
+	}
+	if got := svg.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
+	}
+}
+
+func TestStdSVG_DrawContent_FitsResolvedCellWithoutStretching(t *testing.T) {
+	svg := &StdSVG{}
+	svg.body = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="1080"></svg>`
+	svg.ResolveWidth(200)
+	svg.ResolveHeight(100)
+	w := &svgTestWriter{inlineDimensions: [2]int{38, 1080}}
+
+	if err := svg.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.inlineCalls) != 1 {
+		t.Fatalf("inline call count = %d, want 1", len(w.inlineCalls))
+	}
+	call := w.inlineCalls[0]
+	wantWidth := 100.0 * 38.0 / 1080.0
+	if call.width == nil || *call.width < wantWidth-0.001 || *call.width > wantWidth+0.001 {
+		t.Fatalf("width = %v, want approx %v", call.width, wantWidth)
+	}
+	if call.height == nil || *call.height != 100 {
+		t.Fatalf("height = %v, want 100", call.height)
+	}
+}
+
 func TestStdSVG_DrawContent_UsesContentBoxDimensionsForInlineSVG(t *testing.T) {
 	svg := &StdSVG{}
 	svg.body = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"></svg>`
