@@ -75,6 +75,16 @@ func (i limitedFileInfo) ModTime() time.Time { return time.Time{} }
 func (i limitedFileInfo) IsDir() bool        { return false }
 func (i limitedFileInfo) Sys() any           { return nil }
 
+type countingFS struct {
+	fsys  fs.FS
+	opens int
+}
+
+func (c *countingFS) Open(name string) (fs.File, error) {
+	c.opens++
+	return c.fsys.Open(name)
+}
+
 func TestNewDocWriter(t *testing.T) {
 	dw := NewDocWriter()
 	check(t, dw.nextSeq != nil, "DocWriter should have nextSeq func")
@@ -393,6 +403,99 @@ func TestDocWriter_ImageDimensionsFromFile_UsesAssetFS(t *testing.T) {
 	}
 	if width != 4 || height != 3 {
 		t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+	}
+}
+
+func TestDocWriter_ImageDimensionsFromFile_CachesAssetFSDimensions(t *testing.T) {
+	img := image.NewGray(image.Rect(0, 0, 4, 3))
+	data := mustEncodePNG(t, img)
+	assetFS := &countingFS{fsys: fstest.MapFS{
+		"logo.png": &fstest.MapFile{Data: data},
+	}}
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(assetFS)
+
+	for i := 0; i < 2; i++ {
+		width, height, err := dw.ImageDimensionsFromFile("logo.png")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if width != 4 || height != 3 {
+			t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+		}
+	}
+	if assetFS.opens != 1 {
+		t.Fatalf("opened asset %d times, want 1", assetFS.opens)
+	}
+}
+
+func TestDocWriter_SVGDimensionsFromFile_CachesAssetFSDimensions(t *testing.T) {
+	assetFS := &countingFS{fsys: fstest.MapFS{
+		"icon.svg": &fstest.MapFile{Data: []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="7" height="5"></svg>`)},
+	}}
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(assetFS)
+
+	for i := 0; i < 2; i++ {
+		width, height, err := dw.SVGDimensionsFromFile("icon.svg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if width != 7 || height != 5 {
+			t.Fatalf("expected dimensions 7x5, got %dx%d", width, height)
+		}
+	}
+	if assetFS.opens != 1 {
+		t.Fatalf("opened asset %d times, want 1", assetFS.opens)
+	}
+}
+
+func TestDocWriter_DimensionsFromFile_CachesErrors(t *testing.T) {
+	assetFS := &countingFS{fsys: fstest.MapFS{}}
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(assetFS)
+
+	for i := 0; i < 2; i++ {
+		width, height, err := dw.ImageDimensionsFromFile("missing.png")
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if width != 0 || height != 0 {
+			t.Fatalf("expected zero dimensions for error, got %dx%d", width, height)
+		}
+	}
+	if assetFS.opens != 1 {
+		t.Fatalf("opened asset %d times, want 1", assetFS.opens)
+	}
+}
+
+func TestDocWriter_SetAssetFS_ClearsDimensionCache(t *testing.T) {
+	dw := NewDocWriter()
+	dw.SetAssetFS(fstest.MapFS{
+		"logo.png": &fstest.MapFile{Data: mustEncodePNG(t, image.NewGray(image.Rect(0, 0, 4, 3)))},
+	})
+
+	width, height, err := dw.ImageDimensionsFromFile("logo.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 4 || height != 3 {
+		t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+	}
+
+	dw.SetAssetFS(fstest.MapFS{
+		"logo.png": &fstest.MapFile{Data: mustEncodePNG(t, image.NewGray(image.Rect(0, 0, 6, 2)))},
+	})
+
+	width, height, err = dw.ImageDimensionsFromFile("logo.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 6 || height != 2 {
+		t.Fatalf("expected dimensions 6x2 after SetAssetFS, got %dx%d", width, height)
 	}
 }
 

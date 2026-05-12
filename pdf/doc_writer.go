@@ -43,6 +43,7 @@ type DocWriter struct {
 	fontDescriptors       map[string]*fontDescriptor // PostScript name → descriptor, for FontFile2 at Close
 	images                map[string]*cachedImage
 	svgForms              map[string]*cachedSVGForm
+	dimensionCache        map[string]dimensionCacheEntry
 	memoForms             map[string]*cachedForm
 	gradientShadings      map[string]string // gradient key → shading resource name
 	gradientPatterns      map[string]string // gradient key → pattern resource name
@@ -66,6 +67,12 @@ type cachedSVGForm struct {
 	name   string
 	width  float64
 	height float64
+}
+
+type dimensionCacheEntry struct {
+	width  int
+	height int
+	err    error
 }
 
 type namedDestination struct {
@@ -104,6 +111,7 @@ func NewDocWriter() *DocWriter {
 		fontDescriptors:  make(map[string]*fontDescriptor),
 		images:           make(map[string]*cachedImage),
 		svgForms:         make(map[string]*cachedSVGForm),
+		dimensionCache:   make(map[string]dimensionCacheEntry),
 		memoForms:        make(map[string]*cachedForm),
 		gradientShadings: make(map[string]string),
 		gradientPatterns: make(map[string]string),
@@ -191,6 +199,7 @@ func (dw *DocWriter) FontColor() colors.Color {
 
 func (dw *DocWriter) SetAssetFS(assetFS fs.FS) {
 	dw.assetFS = assetFS
+	dw.dimensionCache = make(map[string]dimensionCacheEntry)
 }
 
 func (dw *DocWriter) AssetFS() fs.FS {
@@ -788,25 +797,37 @@ func (dw *DocWriter) SVGDimensions(data []byte) (width, height int, err error) {
 }
 
 func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
+	if cached, ok := dw.dimensionCache[filename]; ok {
+		return cached.width, cached.height, cached.err
+	}
 	file, err := dw.openImageFile(filename)
 	if err != nil {
+		dw.dimensionCache[filename] = dimensionCacheEntry{err: err}
 		return 0, 0, err
 	}
 	defer file.Close()
 	info, err := imageInfoFromReader(file)
 	if err != nil {
+		dw.dimensionCache[filename] = dimensionCacheEntry{err: err}
 		return 0, 0, err
 	}
+	dw.dimensionCache[filename] = dimensionCacheEntry{width: info.width, height: info.height}
 	return info.width, info.height, nil
 }
 
 func (dw *DocWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
+	if cached, ok := dw.dimensionCache[filename]; ok {
+		return cached.width, cached.height, cached.err
+	}
 	file, err := dw.openImageFile(filename)
 	if err != nil {
+		dw.dimensionCache[filename] = dimensionCacheEntry{err: err}
 		return 0, 0, err
 	}
 	defer file.Close()
-	return svgDimensionsFromReader(file)
+	width, height, err = svgDimensionsFromReader(file)
+	dw.dimensionCache[filename] = dimensionCacheEntry{width: width, height: height, err: err}
+	return width, height, err
 }
 
 func (dw *DocWriter) Path(fn func()) error {
