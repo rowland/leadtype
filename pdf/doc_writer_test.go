@@ -6,10 +6,12 @@ package pdf
 import (
 	"bytes"
 	"image"
+	"io"
 	"io/fs"
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/codepage"
@@ -18,6 +20,60 @@ import (
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
+
+type limitedReadFS struct {
+	name     string
+	data     []byte
+	maxChunk int
+	limit    int
+	reads    int
+}
+
+func (l *limitedReadFS) Open(name string) (fs.File, error) {
+	if name != l.name {
+		return nil, fs.ErrNotExist
+	}
+	return &limitedReadFile{fsys: l, reader: bytes.NewReader(l.data)}, nil
+}
+
+type limitedReadFile struct {
+	fsys   *limitedReadFS
+	reader *bytes.Reader
+}
+
+func (f *limitedReadFile) Stat() (fs.FileInfo, error) {
+	return limitedFileInfo{name: f.fsys.name, size: int64(len(f.fsys.data))}, nil
+}
+
+func (f *limitedReadFile) Read(p []byte) (int, error) {
+	remaining := f.fsys.limit - f.fsys.reads
+	if remaining <= 0 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	if len(p) > f.fsys.maxChunk {
+		p = p[:f.fsys.maxChunk]
+	}
+	if len(p) > remaining {
+		p = p[:remaining]
+	}
+	n, err := f.reader.Read(p)
+	f.fsys.reads += n
+	return n, err
+}
+
+func (f *limitedReadFile) Close() error { return nil }
+
+type limitedFileInfo struct {
+	name string
+	size int64
+}
+
+func (i limitedFileInfo) Name() string       { return i.name }
+func (i limitedFileInfo) Size() int64        { return i.size }
+func (i limitedFileInfo) Mode() fs.FileMode  { return 0o444 }
+func (i limitedFileInfo) ModTime() time.Time { return time.Time{} }
+func (i limitedFileInfo) IsDir() bool        { return false }
+func (i limitedFileInfo) Sys() any           { return nil }
 
 func TestNewDocWriter(t *testing.T) {
 	dw := NewDocWriter()
@@ -337,6 +393,49 @@ func TestDocWriter_ImageDimensionsFromFile_UsesAssetFS(t *testing.T) {
 	}
 	if width != 4 || height != 3 {
 		t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+	}
+}
+
+func TestDocWriter_ImageDimensionsFromFile_PNGReadsOnlyMetadata(t *testing.T) {
+	img := image.NewGray(image.Rect(0, 0, 4, 3))
+	data := append(mustEncodePNG(t, img), bytes.Repeat([]byte{0xAA}, 4096)...)
+	assetFS := &limitedReadFS{name: "logo.png", data: data, maxChunk: 5, limit: 40}
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(assetFS)
+
+	width, height, err := dw.ImageDimensionsFromFile("logo.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 4 || height != 3 {
+		t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+	}
+	if assetFS.reads > 40 {
+		t.Fatalf("read %d bytes, want metadata-only read", assetFS.reads)
+	}
+}
+
+func TestDocWriter_ImageDimensionsFromFile_JPEGReadsOnlyMetadata(t *testing.T) {
+	data := append([]byte{
+		0xFF, 0xD8,
+		0xFF, 0xE0, 0x00, 0x04, 0x00, 0x00,
+		0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x03, 0x00, 0x04, 0x03,
+	}, bytes.Repeat([]byte{0xBB}, 4096)...)
+	assetFS := &limitedReadFS{name: "photo.jpg", data: data, maxChunk: 3, limit: 24}
+
+	dw := NewDocWriter()
+	dw.SetAssetFS(assetFS)
+
+	width, height, err := dw.ImageDimensionsFromFile("photo.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 4 || height != 3 {
+		t.Fatalf("expected dimensions 4x3, got %dx%d", width, height)
+	}
+	if assetFS.reads > 24 {
+		t.Fatalf("read %d bytes, want metadata-only read", assetFS.reads)
 	}
 }
 

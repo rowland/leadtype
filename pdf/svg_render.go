@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strings"
@@ -28,12 +29,19 @@ func logSVGWarnings(warnings []svg.Warning) {
 }
 
 func svgDimensions(data []byte) (width, height int, err error) {
-	doc, warnings, err := svg.Parse(data)
+	w, h, err := svg.Dimensions(data)
 	if err != nil {
 		return 0, 0, err
 	}
-	logSVGWarnings(warnings)
-	return int(doc.Width + 0.5), int(doc.Height + 0.5), nil
+	return int(w + 0.5), int(h + 0.5), nil
+}
+
+func svgDimensionsFromReader(r io.Reader) (width, height int, err error) {
+	w, h, err := svg.DimensionsFromReader(r)
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(w + 0.5), int(h + 0.5), nil
 }
 
 func (dw *DocWriter) newSVGForm(doc *svg.Document, renderOptions options.Options) (*renderedForm, error) {

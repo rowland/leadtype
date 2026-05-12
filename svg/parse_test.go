@@ -44,6 +44,36 @@ func TestParseRootUsesDefaultSizeWhenPercentSizingHasNoViewport(t *testing.T) {
 	}
 }
 
+func TestDimensionsUsesRootAttributesOnly(t *testing.T) {
+	width, height, err := Dimensions([]byte(`<svg width="120" height="80"><g><broken></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 120 || height != 80 {
+		t.Fatalf("dimensions = %.0fx%.0f, want 120x80", width, height)
+	}
+}
+
+func TestDimensionsUsesViewBoxWhenSizeMissing(t *testing.T) {
+	width, height, err := Dimensions([]byte(`<svg viewBox="0 0 200 100"><g><broken></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 200 || height != 100 {
+		t.Fatalf("dimensions = %.0fx%.0f, want 200x100", width, height)
+	}
+}
+
+func TestDimensionsUsesDefaultSizeWhenSizingMissing(t *testing.T) {
+	width, height, err := Dimensions([]byte(`<svg><g><broken></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != defaultSVGWidth || height != defaultSVGHeight {
+		t.Fatalf("dimensions = %.0fx%.0f, want %.0fx%.0f", width, height, defaultSVGWidth, defaultSVGHeight)
+	}
+}
+
 func TestParseColorFormats(t *testing.T) {
 	tests := []struct {
 		in   string

@@ -230,6 +230,35 @@ func (dw *DocWriter) readImageFile(filename string) ([]byte, error) {
 	return fs.ReadFile(dw.assetFS, filename)
 }
 
+func (dw *DocWriter) openImageFile(filename string) (fs.File, error) {
+	var (
+		file fs.File
+		err  error
+	)
+	if filepath.IsAbs(filename) || dw.assetFS == nil {
+		file, err = os.Open(filename)
+	} else {
+		if !validAssetPath(filename) {
+			return nil, fmt.Errorf("invalid asset path %q", filename)
+		}
+		file, err = dw.assetFS.Open(filename)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
+	if info.IsDir() {
+		file.Close()
+		return nil, fmt.Errorf("asset path %q is a directory", filename)
+	}
+	return file, nil
+}
+
 func useStandardEncoding(family string) bool {
 	switch family {
 	case "Symbol", "ZapfDingbats":
@@ -759,19 +788,25 @@ func (dw *DocWriter) SVGDimensions(data []byte) (width, height int, err error) {
 }
 
 func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
-	data, err := dw.readImageFile(filename)
+	file, err := dw.openImageFile(filename)
 	if err != nil {
 		return 0, 0, err
 	}
-	return imageDimensions(data)
+	defer file.Close()
+	info, err := imageInfoFromReader(file)
+	if err != nil {
+		return 0, 0, err
+	}
+	return info.width, info.height, nil
 }
 
 func (dw *DocWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
-	data, err := dw.readImageFile(filename)
+	file, err := dw.openImageFile(filename)
 	if err != nil {
 		return 0, 0, err
 	}
-	return svgDimensions(data)
+	defer file.Close()
+	return svgDimensionsFromReader(file)
 }
 
 func (dw *DocWriter) Path(fn func()) error {

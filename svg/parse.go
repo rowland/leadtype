@@ -61,6 +61,37 @@ func Parse(data []byte) (*Document, []Warning, error) {
 	return doc, doc.Warnings, nil
 }
 
+func Dimensions(data []byte) (width, height float64, err error) {
+	return DimensionsFromReader(bytes.NewReader(data))
+}
+
+func DimensionsFromReader(r io.Reader) (width, height float64, err error) {
+	decoder := xml.NewDecoder(r)
+	decoder.CharsetReader = svgCharsetReader
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			return 0, 0, fmt.Errorf("root element must be <svg>")
+		}
+		if err != nil {
+			return 0, 0, err
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if start.Name.Local != "svg" {
+			return 0, 0, fmt.Errorf("root element must be <svg>")
+		}
+		doc := &Document{}
+		if err := parseRootDimensions(doc, start); err != nil {
+			return 0, 0, err
+		}
+		finalizeRootDimensions(doc)
+		return doc.Width, doc.Height, nil
+	}
+}
+
 func LooksLikeSVG(data []byte) bool {
 	trimmed := strings.TrimSpace(string(data))
 	if trimmed == "" {
@@ -84,6 +115,21 @@ func svgCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 }
 
 func parseRoot(doc *Document, decoder *xml.Decoder, start xml.StartElement) error {
+	if err := parseRootDimensions(doc, start); err != nil {
+		return err
+	}
+	if !hasRootViewBox(start.Attr) {
+		doc.ViewBox = ViewBox{Width: doc.Width, Height: doc.Height}
+	}
+	children, err := parseChildren(decoder, start.Name.Local, doc, viewportFromDoc(doc))
+	if err != nil {
+		return err
+	}
+	doc.Children = children
+	return nil
+}
+
+func parseRootDimensions(doc *Document, start xml.StartElement) error {
 	attrs := attrMap(start.Attr)
 	viewBox, hasViewBox, err := parseViewBox(attrs["viewBox"])
 	if err != nil {
@@ -110,12 +156,28 @@ func parseRoot(doc *Document, decoder *xml.Decoder, start xml.StartElement) erro
 	if !hasViewBox {
 		doc.ViewBox = ViewBox{Width: doc.Width, Height: doc.Height}
 	}
-	children, err := parseChildren(decoder, start.Name.Local, doc, viewportFromDoc(doc))
-	if err != nil {
-		return err
-	}
-	doc.Children = children
 	return nil
+}
+
+func hasRootViewBox(attrs []xml.Attr) bool {
+	for _, attr := range attrs {
+		if attr.Name.Local == "viewBox" && strings.TrimSpace(attr.Value) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func finalizeRootDimensions(doc *Document) {
+	if doc.Width <= 0 {
+		doc.Width = defaultSVGWidth
+	}
+	if doc.Height <= 0 {
+		doc.Height = defaultSVGHeight
+	}
+	if doc.ViewBox.Width <= 0 || doc.ViewBox.Height <= 0 {
+		doc.ViewBox = ViewBox{Width: doc.Width, Height: doc.Height}
+	}
 }
 
 func viewportFromDoc(doc *Document) ViewBox {

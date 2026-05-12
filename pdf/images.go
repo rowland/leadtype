@@ -4,6 +4,7 @@
 package pdf
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
@@ -11,6 +12,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
+	"io"
 	"io/fs"
 
 	"github.com/rowland/leadtype/svg"
@@ -142,28 +144,40 @@ func jpegInfo(image []byte) (imageInfo, error) {
 	if !isJPEG(image) {
 		return imageInfo{}, errNotJPEG
 	}
-	i := 2
-	for i+3 < len(image) {
-		if image[i] != 0xFF {
+	return jpegInfoFromReader(bytes.NewReader(image))
+}
+
+func jpegInfoFromReader(r io.Reader) (imageInfo, error) {
+	var soi [2]byte
+	if _, err := io.ReadFull(r, soi[:]); err != nil {
+		return imageInfo{}, errBadJPEG
+	}
+	if soi[0] != 0xFF || soi[1] != 0xD8 {
+		return imageInfo{}, errNotJPEG
+	}
+	for {
+		var b [1]byte
+		if _, err := io.ReadFull(r, b[:]); err != nil {
 			return imageInfo{}, errBadJPEG
 		}
-		for i < len(image) && image[i] == 0xFF {
-			i++
-		}
-		if i >= len(image) {
+		if b[0] != 0xFF {
 			return imageInfo{}, errBadJPEG
 		}
-		marker := image[i]
-		i++
+		for b[0] == 0xFF {
+			if _, err := io.ReadFull(r, b[:]); err != nil {
+				return imageInfo{}, errBadJPEG
+			}
+		}
+		marker := b[0]
 		if marker == 0xD8 || marker == 0xD9 || (marker >= 0xD0 && marker <= 0xD7) || marker == 0x01 {
 			continue
 		}
-		if i+1 >= len(image) {
+		var lengthBytes [2]byte
+		if _, err := io.ReadFull(r, lengthBytes[:]); err != nil {
 			return imageInfo{}, errBadJPEG
 		}
-		segmentLength := int(image[i])<<8 | int(image[i+1])
-		i += 2
-		if segmentLength < 2 || i+segmentLength-2 > len(image) {
+		segmentLength := int(lengthBytes[0])<<8 | int(lengthBytes[1])
+		if segmentLength < 2 {
 			return imageInfo{}, errBadJPEG
 		}
 		switch marker {
@@ -171,16 +185,22 @@ func jpegInfo(image []byte) (imageInfo, error) {
 			if segmentLength < 8 {
 				return imageInfo{}, errBadJPEG
 			}
+			var sof [6]byte
+			if _, err := io.ReadFull(r, sof[:]); err != nil {
+				return imageInfo{}, errBadJPEG
+			}
 			return imageInfo{
-				bitsPerComponent: int(image[i]),
-				height:           int(image[i+1])<<8 | int(image[i+2]),
-				width:            int(image[i+3])<<8 | int(image[i+4]),
-				components:       int(image[i+5]),
+				bitsPerComponent: int(sof[0]),
+				height:           int(sof[1])<<8 | int(sof[2]),
+				width:            int(sof[3])<<8 | int(sof[4]),
+				components:       int(sof[5]),
 			}, nil
+		default:
+			if _, err := io.CopyN(io.Discard, r, int64(segmentLength-2)); err != nil {
+				return imageInfo{}, errBadJPEG
+			}
 		}
-		i += segmentLength - 2
 	}
-	return imageInfo{}, errBadJPEG
 }
 
 func pngInfo(data []byte) (imageInfo, error) {
@@ -250,6 +270,14 @@ func pngInfo(data []byte) (imageInfo, error) {
 	}, nil
 }
 
+func pngInfoFromReader(r io.Reader) (imageInfo, error) {
+	header := make([]byte, 33)
+	if _, err := io.ReadFull(r, header); err != nil {
+		return imageInfo{}, errBadPNG
+	}
+	return pngInfo(header)
+}
+
 func imageInfoForData(data []byte) (imageInfo, error) {
 	if svg.LooksLikeSVG(data) {
 		width, height, err := svgDimensions(data)
@@ -263,6 +291,26 @@ func imageInfoForData(data []byte) (imageInfo, error) {
 	}
 	if isPNG(data) {
 		return pngInfo(data)
+	}
+	return imageInfo{}, errUnsupportedImageFormat
+}
+
+func imageInfoFromReader(r io.Reader) (imageInfo, error) {
+	br := bufio.NewReader(r)
+	header, _ := br.Peek(8)
+	if len(header) >= 2 && header[0] == 0xFF && header[1] == 0xD8 {
+		return jpegInfoFromReader(br)
+	}
+	if isPNG(header) {
+		return pngInfoFromReader(br)
+	}
+	header, _ = br.Peek(512)
+	if svg.LooksLikeSVG(header) {
+		width, height, err := svgDimensionsFromReader(br)
+		if err != nil {
+			return imageInfo{}, err
+		}
+		return imageInfo{width: width, height: height}, nil
 	}
 	return imageInfo{}, errUnsupportedImageFormat
 }
