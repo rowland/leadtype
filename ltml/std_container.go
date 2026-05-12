@@ -677,6 +677,7 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 	var splitTail Widget
 	bodyIncluded := 0
 	for i, child := range metrics.body {
+		c.measureVBoxSplitChild(metrics, child, w)
 		candidate := append([]Widget(nil), metrics.body[:i+1]...)
 		if c.vboxFragmentHeight(metrics, candidate) <= avail {
 			headWhole[child] = true
@@ -757,37 +758,27 @@ func (c *StdContainer) vboxSplitMetrics(w Writer) *vboxSplitMetrics {
 	for _, child := range relative {
 		metrics.positioned[child] = true
 	}
-	rtl := IsRTL(c)
 	for _, child := range static {
-		if widgetAutoWidth(child) || !widgetWidthSpecified(child) {
-			cw := ContentWidth(c)
-			pw := 0.0
-			if _, ok := child.(*StdParagraph); ok {
-				pw = cw
-			} else {
-				pw = child.PreferredWidth(w)
-			}
-			if pw == 0 {
-				pw = cw
-			}
-			child.ResolveWidth(min(pw, cw))
-		}
-		child.SetLeft(vboxCrossAxisLeft(c, child, rtl))
-		height := child.Height()
-		if !widgetHeightSpecified(child) {
-			height = child.PreferredHeight(w)
-		}
-		metrics.heights[child] = height
 		switch child.Align() {
 		case AlignTop:
+			c.measureVBoxSplitChild(metrics, child, w)
 			metrics.headers = append(metrics.headers, child)
 		case AlignBottom:
+			c.measureVBoxSplitChild(metrics, child, w)
 			metrics.footers = append(metrics.footers, child)
 		default:
 			metrics.body = append(metrics.body, child)
 		}
 	}
 	return metrics
+}
+
+func (c *StdContainer) measureVBoxSplitChild(metrics *vboxSplitMetrics, child Widget, w Writer) {
+	if _, ok := metrics.heights[child]; ok {
+		return
+	}
+	entry := measureVBoxChild(c, w, child)
+	metrics.heights[child] = entry.height
 }
 
 func (c *StdContainer) vboxFragmentHeight(metrics *vboxSplitMetrics, body []Widget) float64 {

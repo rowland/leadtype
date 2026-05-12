@@ -1,5 +1,7 @@
 package ltml
 
+import "math"
+
 const layoutFitEpsilon = 0.001
 
 // LayoutHBox performs a single-pass horizontal box layout with a few important
@@ -267,8 +269,6 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 // As in hbox, the function first resolves the child sizes it needs, then
 // performs placement with explicit overflow checks.
 func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
-	containerFull := false
-
 	// Only static children are part of the vertical flow. Positioned children are
 	// laid out afterward in their own coordinate system.
 	static, remaining := printableWidgets(container, Static)
@@ -290,146 +290,211 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 			unaligned = append(unaligned, widget)
 		}
 	}
-	rtl := IsRTL(container)
 
-	// Width resolution in vbox is simpler than hbox: children are stacked, so
-	// each child can independently take its preferred width up to the content
-	// width. Paragraphs are a deliberate special case because their natural width
-	// is effectively the full available measure rather than the unwrapped line
-	// width of their text.
-	for _, widget := range static {
-		if widgetAutoWidth(widget) || !widgetWidthSpecified(widget) {
-			cw := ContentWidth(container)
-			pw := 0.0
-			if _, ok := widget.(*StdParagraph); ok {
-				pw = cw
-			} else {
-				pw = widget.PreferredWidth(writer)
-			}
-			if pw == 0 {
-				pw = cw
-			}
-			w := min(pw, cw)
-			widget.ResolveWidth(w)
-		}
-		widget.SetLeft(vboxCrossAxisLeft(container, widget, rtl))
-	}
-
-	// Before we place any child, compute the baseline vertical stack that this
-	// fragment would occupy with no surplus distribution. We keep the per-widget
-	// resolved height in a side map so we can later add auto-height surplus
-	// without losing track of the original preferred/specifed result.
-	resolvedHeights := make(map[Widget]float64, len(static))
-	autoWidgets := make([]Widget, 0, len(static))
-	baselineHeight := 0.0
-	seen := 0
-	for _, group := range [][]Widget{headers, unaligned, footers} {
-		for _, widget := range group {
-			height := widget.Height()
-			if !widgetHeightSpecified(widget) {
-				height = widget.PreferredHeight(writer)
-				if widgetAutoHeight(widget) && !widgetZeroFootprint(widget) {
-					autoWidgets = append(autoWidgets, widget)
-				}
-			}
-			resolvedHeights[widget] = height
-			if widgetZeroFootprint(widget) {
-				continue
-			}
-			if seen > 0 {
-				baselineHeight += style.VPadding()
-			}
-			baselineHeight += height
-			seen++
-		}
-	}
-
-	// For a natural-height vbox, the baseline stack determines the container's
-	// own resolved height.
-	//
-	// For a constrained vbox, the baseline is instead used to decide whether
-	// there is true surplus height that auto children should absorb. Omitted
-	// heights never absorb this slack; they stay at preferred height.
-	if !container.HeightIsSet() {
-		container.ResolveHeight(baselineHeight + NonContentHeight(container))
-	} else if len(autoWidgets) > 0 {
-		if surplus := ContentHeight(container) - baselineHeight; surplus > 0 {
-			extra := surplus / float64(len(autoWidgets))
-			for _, widget := range autoWidgets {
-				resolvedHeights[widget] += extra
-			}
-		}
-	}
-
-	// Commit the resolved heights for any child that was not already height-
-	// specified by the author. This keeps the later placement and nested layout
-	// passes working from a stable page-local height.
-	for _, widget := range static {
-		if !widgetHeightSpecified(widget) {
-			widget.ResolveHeight(resolvedHeights[widget])
-		}
-	}
-
-	// top advances downward through the content band. bottom is the maximum
-	// usable bottom edge for this fragment, which matters both for overflow and
-	// for footer placement.
-	top := ContentTop(container)
-	bottom := ContentTop(container) + MaxContentHeight(container)
-
-	// Headers consume space from the top in source order.
-	for _, widget := range headers {
-		widget.SetTop(top)
-		widget.LayoutWidget(writer)
-		if widgetZeroFootprint(widget) {
-			widget.SetVisible(widget.Top() <= bottom)
-			continue
-		}
-		top += widget.Height() + style.VPadding()
-		widget.SetVisible(widget.Bottom() <= bottom)
-	}
-
-	// Footers are placed from the bottom upward so they reserve their space
-	// before the body run is checked for overflow.
-	if len(footers) > 0 {
-		footerBottom := bottom
-		for i := len(footers) - 1; i >= 0; i-- {
-			widget := footers[i]
-			widget.SetBottom(footerBottom)
-			widget.LayoutWidget(writer)
-			if widgetZeroFootprint(widget) {
-				widget.SetVisible(widget.Top() >= top)
-				continue
-			}
-			footerBottom = widget.Top() - style.VPadding()
-			widget.SetVisible(widget.Top() >= top)
-		}
-	}
-
-	// The unaligned body run consumes whatever vertical band remains between the
-	// headers and footers. Once a non-zero-footprint child would cross the bottom
-	// edge, that child is hidden and later siblings are skipped for this fragment.
-	for _, widget := range unaligned {
-		widget.SetVisible(!containerFull)
-		if containerFull {
-			continue
-		}
-		widget.SetTop(top)
-		widget.LayoutWidget(writer)
-		if widgetZeroFootprint(widget) {
-			widget.SetVisible(widget.Top() <= bottom)
-			continue
-		}
-		top += widget.Height()
-		if top > bottom+layoutFitEpsilon {
-			containerFull = true
-			widget.SetVisible(false)
-		}
-		top += style.VPadding()
-	}
+	fragment := measureVBoxFragment(container, style, writer, headers, unaligned, footers)
+	layoutVBoxFragment(container, style, writer, fragment)
 
 	// Positioned children are intentionally outside the static stacking
 	// algorithm, so they are laid out after the vbox flow has settled.
 	layoutPositionedChildren(container, writer)
+}
+
+type vboxMeasuredWidget struct {
+	widget Widget
+	height float64
+}
+
+type vboxFragment struct {
+	headers []vboxMeasuredWidget
+	body    []vboxMeasuredWidget
+	footers []vboxMeasuredWidget
+}
+
+func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer, headers, body, footers []Widget) vboxFragment {
+	constrained := container.Height() != 0
+	bottom := math.Inf(1)
+	if constrained {
+		bottom = ContentTop(container) + MaxContentHeight(container)
+	}
+
+	fragment := vboxFragment{}
+	top := ContentTop(container)
+	for _, widget := range headers {
+		entry := measureVBoxChild(container, writer, widget)
+		widget.SetTop(top)
+		if widgetZeroFootprint(widget) {
+			widget.SetVisible(widget.Top() <= bottom)
+			if widget.Visible() {
+				fragment.headers = append(fragment.headers, entry)
+			}
+			continue
+		}
+		top += entry.height + style.VPadding()
+		widget.SetVisible(widget.Bottom() <= bottom)
+		if widget.Visible() {
+			fragment.headers = append(fragment.headers, entry)
+		}
+	}
+
+	footerTop := bottom
+	if len(footers) > 0 {
+		footerBottom := bottom
+		for i := len(footers) - 1; i >= 0; i-- {
+			widget := footers[i]
+			entry := measureVBoxChild(container, writer, widget)
+			widget.SetBottom(footerBottom)
+			if widgetZeroFootprint(widget) {
+				widget.SetVisible(widget.Top() >= top)
+			} else {
+				footerBottom = widget.Top() - style.VPadding()
+				widget.SetVisible(widget.Top() >= top)
+			}
+			if widget.Visible() {
+				fragment.footers = append([]vboxMeasuredWidget{entry}, fragment.footers...)
+				footerTop = min(footerTop, widget.Top())
+			}
+		}
+	}
+
+	bodyBottom := bottom
+	if len(fragment.footers) > 0 {
+		bodyBottom = footerTop - style.VPadding()
+	}
+	containerFull := false
+	for _, widget := range body {
+		widget.SetVisible(!containerFull)
+		if containerFull {
+			continue
+		}
+		entry := measureVBoxChild(container, writer, widget)
+		widget.SetTop(top)
+		if widgetZeroFootprint(widget) {
+			widget.SetVisible(widget.Top() <= bodyBottom)
+			if widget.Visible() {
+				fragment.body = append(fragment.body, entry)
+			}
+			continue
+		}
+		if constrained && top+entry.height > bodyBottom+layoutFitEpsilon {
+			containerFull = true
+			widget.SetVisible(false)
+			continue
+		}
+		fragment.body = append(fragment.body, entry)
+		top += entry.height + style.VPadding()
+	}
+
+	if !constrained {
+		container.ResolveHeight(vboxFragmentStackHeight(style, fragment.headers, fragment.body, fragment.footers) + NonContentHeight(container))
+		return fragment
+	}
+	distributeVBoxAutoHeight(container, style, &fragment)
+	return fragment
+}
+
+func measureVBoxChild(container Container, writer Writer, widget Widget) vboxMeasuredWidget {
+	resolveVBoxChildWidth(container, writer, widget)
+	height := widget.Height()
+	if !widgetHeightSpecified(widget) {
+		height = widget.PreferredHeight(writer)
+	}
+	if !widgetHeightSpecified(widget) {
+		widget.ResolveHeight(height)
+		height = widget.Height()
+	}
+	return vboxMeasuredWidget{widget: widget, height: height}
+}
+
+func resolveVBoxChildWidth(container Container, writer Writer, widget Widget) {
+	if widgetAutoWidth(widget) || !widgetWidthSpecified(widget) {
+		cw := ContentWidth(container)
+		pw := 0.0
+		if _, ok := widget.(*StdParagraph); ok {
+			pw = cw
+		} else {
+			pw = widget.PreferredWidth(writer)
+		}
+		if pw == 0 {
+			pw = cw
+		}
+		widget.ResolveWidth(min(pw, cw))
+	}
+	widget.SetLeft(vboxCrossAxisLeft(container, widget, IsRTL(container)))
+}
+
+func distributeVBoxAutoHeight(container Container, style *LayoutStyle, fragment *vboxFragment) {
+	var auto []*vboxMeasuredWidget
+	for _, group := range []*[]vboxMeasuredWidget{&fragment.headers, &fragment.body, &fragment.footers} {
+		for i := range *group {
+			entry := &(*group)[i]
+			if widgetAutoHeight(entry.widget) && !widgetZeroFootprint(entry.widget) {
+				auto = append(auto, entry)
+			}
+		}
+	}
+	if len(auto) == 0 {
+		return
+	}
+	baseline := vboxFragmentStackHeight(style, fragment.headers, fragment.body, fragment.footers)
+	if surplus := ContentHeight(container) - baseline; surplus > 0 {
+		extra := surplus / float64(len(auto))
+		for _, entry := range auto {
+			entry.height += extra
+			entry.widget.ResolveHeight(entry.height)
+		}
+	}
+}
+
+func layoutVBoxFragment(container Container, style *LayoutStyle, writer Writer, fragment vboxFragment) {
+	top := ContentTop(container)
+	bottom := ContentTop(container) + MaxContentHeight(container)
+	for _, entry := range fragment.headers {
+		widget := entry.widget
+		widget.SetTop(top)
+		widget.SetVisible(true)
+		if !widgetZeroFootprint(widget) {
+			top += entry.height + style.VPadding()
+		}
+		widget.LayoutWidget(writer)
+	}
+	footerBottom := bottom
+	for i := len(fragment.footers) - 1; i >= 0; i-- {
+		entry := fragment.footers[i]
+		widget := entry.widget
+		widget.SetBottom(footerBottom)
+		widget.SetVisible(true)
+		if !widgetZeroFootprint(widget) {
+			footerBottom = widget.Top() - style.VPadding()
+		}
+		widget.LayoutWidget(writer)
+	}
+	for _, entry := range fragment.body {
+		widget := entry.widget
+		widget.SetTop(top)
+		widget.SetVisible(true)
+		if !widgetZeroFootprint(widget) {
+			top += entry.height + style.VPadding()
+		}
+		widget.LayoutWidget(writer)
+	}
+}
+
+func vboxFragmentStackHeight(style *LayoutStyle, groups ...[]vboxMeasuredWidget) float64 {
+	height := 0.0
+	seen := 0
+	for _, group := range groups {
+		for _, entry := range group {
+			if widgetZeroFootprint(entry.widget) {
+				continue
+			}
+			if seen > 0 {
+				height += style.VPadding()
+			}
+			height += entry.height
+			seen++
+		}
+	}
+	return height
 }
 
 func hboxCrossAxisTop(container Container, widget Widget) float64 {

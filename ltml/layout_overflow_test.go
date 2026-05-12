@@ -11,15 +11,18 @@ import (
 
 type flowTestWidget struct {
 	StdWidget
-	name            string
-	preferredWidth  float64
-	preferredHeight float64
-	printedOn       *[]int
-	printedHeights  *[]float64
-	layoutCalls     int
+	name             string
+	preferredWidth   float64
+	preferredHeight  float64
+	printedOn        *[]int
+	printedHeights   *[]float64
+	layoutCalls      int
+	preferredWidths  int
+	preferredHeights int
 }
 
 func (w *flowTestWidget) PreferredWidth(Writer) float64 {
+	w.preferredWidths++
 	if w.preferredWidth != 0 {
 		return w.preferredWidth
 	}
@@ -27,6 +30,7 @@ func (w *flowTestWidget) PreferredWidth(Writer) float64 {
 }
 
 func (w *flowTestWidget) PreferredHeight(Writer) float64 {
+	w.preferredHeights++
 	return w.preferredHeight
 }
 
@@ -171,6 +175,74 @@ func TestLayoutVBox_DirectChildSplitTableUsesOuterOverflowInsteadOfSelfClipping(
 
 	if table.Visible() {
 		t.Fatalf("expected direct child split table to be hidden for outer-page splitting, got visible with top=%v height=%v bottom=%v", table.Top(), table.Height(), table.Bottom())
+	}
+}
+
+func TestLayoutVBox_SkipsBodyChildrenAfterFirstOverflow(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = &LayoutStyle{manager: "vbox"}
+
+	first := &flowTestWidget{name: "first", preferredHeight: 40}
+	_ = first.SetContainer(page)
+	page.AddChild(first)
+
+	overflow := &flowTestWidget{name: "overflow", preferredHeight: 70}
+	_ = overflow.SetContainer(page)
+	page.AddChild(overflow)
+
+	tail := &flowTestWidget{name: "tail", preferredHeight: 10}
+	_ = tail.SetContainer(page)
+	page.AddChild(tail)
+
+	LayoutVBox(page, page.layout, &labelTestWriter{t: t})
+
+	if !first.Visible() || first.layoutCalls != 1 {
+		t.Fatalf("first visible/layoutCalls = %v/%d, want visible with one layout", first.Visible(), first.layoutCalls)
+	}
+	if overflow.Visible() || overflow.layoutCalls != 0 {
+		t.Fatalf("overflow visible/layoutCalls = %v/%d, want hidden with no layout", overflow.Visible(), overflow.layoutCalls)
+	}
+	if tail.Visible() || tail.layoutCalls != 0 {
+		t.Fatalf("tail visible/layoutCalls = %v/%d, want hidden with no layout", tail.Visible(), tail.layoutCalls)
+	}
+	if tail.preferredWidths != 0 || tail.preferredHeights != 0 {
+		t.Fatalf("tail preferred calls = width:%d height:%d, want none", tail.preferredWidths, tail.preferredHeights)
+	}
+}
+
+func TestLayoutVBox_AutoHeightDistributionUsesVisibleFragmentOnly(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = &LayoutStyle{manager: "vbox"}
+
+	fixed := &flowTestWidget{name: "fixed", preferredHeight: 40}
+	_ = fixed.SetContainer(page)
+	page.AddChild(fixed)
+
+	visibleAuto := &flowTestWidget{name: "visibleAuto", preferredHeight: 10}
+	visibleAuto.SetHeightAuto()
+	_ = visibleAuto.SetContainer(page)
+	page.AddChild(visibleAuto)
+
+	overflow := &flowTestWidget{name: "overflow", preferredHeight: 60}
+	overflow.SetHeightAuto()
+	_ = overflow.SetContainer(page)
+	page.AddChild(overflow)
+
+	tailAuto := &flowTestWidget{name: "tailAuto", preferredHeight: 10}
+	tailAuto.SetHeightAuto()
+	_ = tailAuto.SetContainer(page)
+	page.AddChild(tailAuto)
+
+	LayoutVBox(page, page.layout, &labelTestWriter{t: t})
+
+	if !visibleAuto.Visible() || visibleAuto.Height() != 60 {
+		t.Fatalf("visible auto visible/height = %v/%v, want visible height 60", visibleAuto.Visible(), visibleAuto.Height())
+	}
+	if overflow.Visible() || overflow.Height() != 60 {
+		t.Fatalf("overflow visible/height = %v/%v, want hidden at preferred height 60", overflow.Visible(), overflow.Height())
+	}
+	if tailAuto.Visible() || tailAuto.preferredHeights != 0 || tailAuto.Height() != 0 {
+		t.Fatalf("tail auto visible/preferredHeights/height = %v/%d/%v, want hidden, unmeasured, zero height", tailAuto.Visible(), tailAuto.preferredHeights, tailAuto.Height())
 	}
 }
 
@@ -792,6 +864,48 @@ func TestStdContainer_SplitForHeight_VBoxRepeatsHeadersAndFooters(t *testing.T) 
 	}
 	if got, want := strings.Join(tailNames, ","), "header,body-2,footer"; got != want {
 		t.Fatalf("tail widgets = %q, want %q", got, want)
+	}
+}
+
+func TestStdContainer_SplitForHeight_VBoxSkipsTailMeasurements(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = &LayoutStyle{manager: "vbox"}
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = &LayoutStyle{manager: "vbox"}
+	box.SetWidth(180)
+	page.AddChild(box)
+
+	first := &flowTestWidget{name: "first", preferredHeight: 40}
+	_ = first.SetContainer(box)
+	box.AddChild(first)
+
+	overflow := &flowTestWidget{name: "overflow", preferredHeight: 70}
+	_ = overflow.SetContainer(box)
+	box.AddChild(overflow)
+
+	tail := &flowTestWidget{name: "tail", preferredHeight: 10}
+	_ = tail.SetContainer(box)
+	box.AddChild(tail)
+
+	result, err := box.SplitForHeight(100, &labelTestWriter{t: t})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil || result.Head == nil || result.Tail == nil {
+		t.Fatalf("split result = %#v, want head and tail", result)
+	}
+	if tail.preferredWidths != 0 || tail.preferredHeights != 0 {
+		t.Fatalf("tail preferred calls = width:%d height:%d, want none", tail.preferredWidths, tail.preferredHeights)
+	}
+	head := result.Head.(*StdContainer)
+	tailFragment := result.Tail.(*StdContainer)
+	if got, want := len(head.Widgets()), 1; got != want {
+		t.Fatalf("head child count = %d, want %d", got, want)
+	}
+	if got, want := len(tailFragment.Widgets()), 2; got != want {
+		t.Fatalf("tail child count = %d, want %d", got, want)
 	}
 }
 
