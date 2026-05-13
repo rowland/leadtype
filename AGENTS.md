@@ -44,6 +44,11 @@ go test ./...
 
 These are the default safety checks for almost any change. Keep the tree buildable.
 
+## Commit messages
+
+- Do **not** add `Co-authored-by:` lines, AI attribution, or similar trailers to commit messages unless the author explicitly requests them.
+- Use a clear summary line and an optional short body; match the project’s normal style (see `docs/development-process.md`).
+
 ## Testing Conventions
 
 - Prefer package-level unit tests close to the code you changed.
