@@ -8,6 +8,9 @@ import (
 	"strconv"
 )
 
+// ptsPerMM is PDF points per millimeter (72 pt/in ÷ 25.4 mm/in).
+const ptsPerMM = 72.0 / 25.4
+
 type Units string
 
 func (u *Units) SetAttrs(attrs map[string]string) {
@@ -16,11 +19,15 @@ func (u *Units) SetAttrs(attrs map[string]string) {
 	}
 }
 
-// UnitConversions map custom units to points.
+// UnitConversions maps unit names (suffixes and units= defaults) to points
+// per unit (multiply the measurement by this value to get points).
 var UnitConversions = map[Units]float64{
 	"pt": 1,
 	"in": 72,
-	"cm": 28.35,
+	"cm": 10 * ptsPerMM,
+	"mm": ptsPerMM,
+	// Thousandths of an inch (1000 dp = 1 in).
+	"dp": 72.0 / 1000,
 }
 
 func FromUnits(measurement float64, units Units) float64 {

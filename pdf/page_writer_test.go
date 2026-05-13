@@ -1947,9 +1947,7 @@ func TestPageWriter_PageHeight(t *testing.T) {
 	pw.SetUnits("in")
 	expectF(t, 11, pw.PageHeight())
 	pw.SetUnits("cm")
-	expectFdelta(t, 27.93, pw.PageHeight(), 0.01)
-	// custom: "Dave points"
-	UnitConversions.Add("dp", 0.072)
+	expectFdelta(t, 792*25.4/720, pw.PageHeight(), 1e-9)
 	pw.SetUnits("dp")
 	expectF(t, 11000, pw.PageHeight())
 }
@@ -1962,9 +1960,7 @@ func TestPageWriter_PageWidth(t *testing.T) {
 	pw.SetUnits("in")
 	expectF(t, 8.5, pw.PageWidth())
 	pw.SetUnits("cm")
-	expectFdelta(t, 21.58, pw.PageWidth(), 0.01)
-	// custom: "Dave points"
-	UnitConversions.Add("dp", 0.072)
+	expectFdelta(t, 612*25.4/720, pw.PageWidth(), 1e-9)
 	pw.SetUnits("dp")
 	expectF(t, 8500, pw.PageWidth())
 }
@@ -2025,8 +2021,10 @@ func TestPageWriter_SetUnits(t *testing.T) {
 	// centimeters
 	pw.SetUnits("cm")
 	expectS(t, "cm", pw.Units())
-	// custom: "Dave points"
-	UnitConversions.Add("dp", 0.072)
+	// millimeters
+	pw.SetUnits("mm")
+	expectS(t, "mm", pw.Units())
+	// "Dave points"
 	pw.SetUnits("dp")
 	expectS(t, "dp", pw.Units())
 }
@@ -2076,9 +2074,7 @@ func TestPageWriter_units(t *testing.T) {
 	// centimeters
 	pw3 := newPageWriter(dw, options.Options{"units": "cm"})
 	expectS(t, "cm", pw3.units.name)
-	expectF(t, 28.35, pw3.units.ratio)
-	// custom: "Dave points"
-	UnitConversions.Add("dp", 0.072)
+	expectFdelta(t, 10*ptsPerMM, pw3.units.ratio, 1e-12)
 	pw4 := newPageWriter(dw, options.Options{"units": "dp"})
 	expectS(t, "dp", pw4.units.name)
 	expectF(t, 0.072, pw4.units.ratio)

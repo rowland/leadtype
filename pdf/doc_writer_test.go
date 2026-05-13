@@ -282,9 +282,8 @@ func TestDocWriter_PageHeight(t *testing.T) {
 	dw.SetUnits("in")
 	expectF(t, 11, dw.PageHeight())
 	dw.SetUnits("cm")
-	expectFdelta(t, 27.93, dw.PageHeight(), 0.01)
-	// custom: "Dave points"
-	UnitConversions.Add("dp", 0.072)
+	expectFdelta(t, 792*25.4/720, dw.PageHeight(), 1e-9)
+	// dp = thousandths of an inch (792 / 0.072)
 	dw.SetUnits("dp")
 	expectF(t, 11000, dw.PageHeight())
 }
@@ -296,9 +295,7 @@ func TestDocWriter_PageWidth(t *testing.T) {
 	dw.SetUnits("in")
 	expectF(t, 8.5, dw.PageWidth())
 	dw.SetUnits("cm")
-	expectFdelta(t, 21.58, dw.PageWidth(), 0.01)
-	// custom: "Dave points"
-	UnitConversions.Add("dp", 0.072)
+	expectFdelta(t, 612*25.4/720, dw.PageWidth(), 1e-9)
 	dw.SetUnits("dp")
 	expectF(t, 8500, dw.PageWidth())
 }

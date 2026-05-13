@@ -442,6 +442,20 @@ The production implementation is `ltpdf.DocWriter` in `ltml/ltpdf/doc_writer.go`
 
 ---
 
+## Length units (LTML and PDF)
+
+Attribute measurements in LTML are converted to PDF points via
+`ltml.ParseMeasurement` / `ltml.FromUnits` and the `ltml.UnitConversions` table
+in `units.go`. Supported suffixes and `units=` values are **`pt`**, **`in`**,
+**`cm`**, **`mm`**, and **`dp`** (see `SYNTAX.md` for factors).
+
+The lower-level `pdf` package mirrors the same names in `pdf.UnitConversions`
+(`pdf/units.go`). For unusual cases, `pdf.UnitConversionMap.Add` can still
+register extra names at runtime, but built-in units should cover normal markup
+and API use.
+
+---
+
 ## Capability Interfaces Checklist
 
 When implementing a new element, implement only the interfaces it needs:

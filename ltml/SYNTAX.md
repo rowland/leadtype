@@ -60,7 +60,7 @@ elements.
 
 | Attribute | Description |
 |-----------|-------------|
-| `units`   | Default unit for measurements (`pt`, `in`, `cm`). Default: `pt`. |
+| `units`   | Default unit for measurements (`pt`, `in`, `cm`, `mm`, `dp`). Default: `pt`. |
 | `margin`  | Page margin applied to all pages unless overridden. |
 | `compress-pages` | If `true`, compress page content streams with `FlateDecode`. Default: `false`. |
 | `compress-to-unicode` | If `true`, compress generated `ToUnicode` streams. Default: `false`. |
@@ -935,7 +935,7 @@ not yet been opened (typically at the top of the document):
 | `id`          | Name used in the `style` attribute of `<page>`. Required. |
 | `width`       | Page width. |
 | `height`      | Page height. |
-| `units`       | Unit for `width` and `height`: `pt` (default), `in`, `cm`, `mm`. |
+| `units`       | Unit for `width` and `height`: `pt` (default), `in`, `cm`, `mm`, `dp`. |
 | `orientation` | `portrait` (default) or `landscape`. |
 
 Once defined, the name is available to all subsequent `<page>` elements in the
@@ -1386,7 +1386,7 @@ Measurements can be expressed in several forms:
 | Form          | Example     | Description |
 |---------------|-------------|-------------|
 | Bare number   | `72`        | In the current `units` of the element or container. |
-| With unit     | `1in`, `2.5cm`, `14pt` | Explicit unit overrides the current `units`. |
+| With unit     | `1in`, `2.5cm`, `210mm`, `200dp`, `14pt` | Explicit unit overrides the current `units`. |
 | Percentage    | `50%`       | Percentage of the container's content width or height. |
 | Relative      | `+10`, `-5` | Offset from the container's content dimension. |
 | Auto          | `auto`      | Automatic layout-managed size. Supported by `hbox` width, `vbox` height, table column width, and table row height; elsewhere it behaves like omitting the dimension. |
@@ -1395,7 +1395,9 @@ Measurements can be expressed in several forms:
 percentages, and relative values. `auto` or an omitted max attribute means
 there is no cap.
 
-**Supported units:** `pt` (points), `in` (inches, 72pt), `cm` (centimeters, 28.35pt).
+**Supported units:** `pt` (points, 1/72 inch), `in` (72 pt per inch), `mm`
+(72/25.4 pt per millimeter), `cm` (10 mm, so 720/25.4 pt per centimeter), `dp`
+(thousandths of an inch: 1000 `dp` = 1 `in`, i.e. 0.072 pt per `dp`).
 
 Implementation note: LTML stores and computes measurements internally in
 points. Alternate units are only used in markup attributes. `ParseMeasurement`

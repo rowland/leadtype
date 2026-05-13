@@ -88,7 +88,7 @@ func inchesToPoints(inches float64) float64 {
 }
 
 func mmToPoints(mm float64) float64 {
-	return mm * 72.0 / 25.4
+	return mm * ptsPerMM
 }
 
 func initBuiltInPageSizes() map[string]BuiltInPageSize {
