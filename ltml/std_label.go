@@ -21,6 +21,7 @@ type StdLabel struct {
 	angle        float64
 	textAlign    HAlign
 	textAlignSet bool
+	textVAlign   VAlign
 }
 
 func (l *StdLabel) AddText(text string) {
@@ -169,6 +170,10 @@ func (l *StdLabel) SetAttrs(attrs map[string]string) {
 			l.textAlign = HAlignRight
 		}
 	}
+	l.textVAlign = VAlignTop
+	if textVAlign, ok := attrs["text-valign"]; ok {
+		l.textVAlign = parseLabelTextVAlign(textVAlign)
+	}
 }
 
 func (l *StdLabel) fittedRichText(w Writer) *rich_text.RichText {
@@ -220,7 +225,20 @@ func (l *StdLabel) textAnchorX() float64 {
 }
 
 func (l *StdLabel) textAnchor(rt *rich_text.RichText) (x, y float64) {
-	return l.textAnchorX(), ContentTop(l) + rt.Ascent()
+	ascent := rt.Ascent()
+	descent := rt.Descent()
+	textHeight := ascent - descent
+	contentTop := ContentTop(l)
+	contentHeight := ContentHeight(l)
+	switch l.textVAlign {
+	case VAlignMiddle:
+		y = contentTop + max((contentHeight-textHeight)/2, 0) + ascent
+	case VAlignBottom:
+		y = ContentBottom(l) + descent
+	default:
+		y = contentTop + ascent
+	}
+	return l.textAnchorX(), y
 }
 
 func (l *StdLabel) textAnchorOffset(rt *rich_text.RichText) float64 {
@@ -231,6 +249,19 @@ func (l *StdLabel) textAnchorOffset(rt *rich_text.RichText) float64 {
 		return rt.Width()
 	default:
 		return 0
+	}
+}
+
+func parseLabelTextVAlign(value string) VAlign {
+	switch strings.TrimSpace(value) {
+	case "middle":
+		return VAlignMiddle
+	case "bottom":
+		return VAlignBottom
+	case "baseline":
+		return VAlignBaseline
+	default:
+		return VAlignTop
 	}
 }
 

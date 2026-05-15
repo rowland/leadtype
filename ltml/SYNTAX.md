@@ -391,7 +391,7 @@ Draws a rectangle with optional border and fill.
 | `width`, `height` | Dimensions of the rectangle. |
 | `border`   | Reference to a named `<pen>` style. |
 | `fill`     | Reference to a named `<brush>` style. |
-| `corners`  | Corner radius for rounded corners, in current units. |
+| `corners`  | Corner radius for rounded corners, in current units. Percentages such as `50%` resolve against the smaller box dimension. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the rectangle widget. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the rectangle widget. |
 
@@ -450,6 +450,7 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | `font` / `font.*` | Same font attributes supported by `<p>`. |
 | `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the label text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
 | `text-align` | Label text alignment: `left`, `center`, `right`. Affects the text anchor inside the label box. |
+| `text-valign` | Label vertical text alignment: `top` (default), `middle`, or `bottom`. |
 | `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |
 | `width`, `height` | Optional explicit dimensions. |

@@ -631,6 +631,34 @@ func TestStdLabel_DrawContent_TextAlignAffectsAnchor(t *testing.T) {
 	}
 }
 
+func TestStdLabel_DrawContent_TextVAlignMiddleAffectsAnchor(t *testing.T) {
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.textAlign = HAlignCenter
+	l.textAlignSet = true
+	l.textVAlign = VAlignMiddle
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.SetWidth(120)
+	l.SetHeight(60)
+	l.AddText("Hello")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	rt := l.fittedRichText(w)
+
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.moves) != 1 {
+		t.Fatalf("move count = %d, want 1", len(w.moves))
+	}
+	textHeight := rt.Ascent() - rt.Descent()
+	wantY := ContentTop(l) + (ContentHeight(l)-textHeight)/2 + rt.Ascent()
+	if math.Abs(w.moves[0][1]-wantY) > 0.001 {
+		t.Fatalf("move y = %v, want %v", w.moves[0][1], wantY)
+	}
+}
+
 func TestStdLabel_DrawContent_DefaultsToRightAlignInRTLContainer(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 100)
 	container.dirExplicit = true

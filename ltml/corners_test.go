@@ -9,63 +9,53 @@ import (
 
 func TestCorners_SetAll_default(t *testing.T) {
 	var corners Corners
-	if len(corners) != 0 {
-		t.Errorf("Expected 0, got %d", len(corners))
+	if corners.Len() != 0 {
+		t.Errorf("Expected 0, got %d", corners.Len())
 	}
 }
 
 func TestCorners_SetAll_1(t *testing.T) {
 	var corners Corners
-	var expected = []float32{3.0}
+	var expected = []float64{3.0}
 	corners.SetAll("3", "")
-	if len(corners) != len(expected) {
-		t.Errorf("Expected %d, got %d", len(expected), len(corners))
-	}
-	for i := range corners {
-		if corners[i] != expected[i] {
-			t.Errorf("Expected %f, got %f", expected[i], corners[i])
-		}
-	}
+	assertCorners(t, corners.Float64s(), expected)
 }
 
 func TestCorners_SetAll_2(t *testing.T) {
 	var corners Corners
-	var expected = []float32{4.0, 5.0}
+	var expected = []float64{4.0, 5.0}
 	corners.SetAll("4 5", "")
-	if len(corners) != len(expected) {
-		t.Errorf("Expected %d, got %d", len(expected), len(corners))
-	}
-	for i := range corners {
-		if corners[i] != expected[i] {
-			t.Errorf("Expected %f, got %f", expected[i], corners[i])
-		}
-	}
+	assertCorners(t, corners.Float64s(), expected)
 }
 
 func TestCorners_SetAll_4(t *testing.T) {
 	var corners Corners
-	var expected = []float32{4.0, 5.0, 6.0, 7.0}
+	var expected = []float64{4.0, 5.0, 6.0, 7.0}
 	corners.SetAll("4 5 6 7", "")
-	if len(corners) != len(expected) {
-		t.Errorf("Expected %d, got %d", len(expected), len(corners))
-	}
-	for i := range corners {
-		if corners[i] != expected[i] {
-			t.Errorf("Expected %f, got %f", expected[i], corners[i])
-		}
-	}
+	assertCorners(t, corners.Float64s(), expected)
 }
 
 func TestCorners_SetAll_8(t *testing.T) {
 	var corners Corners
-	var expected = []float32{6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0}
+	var expected = []float64{6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0}
 	corners.SetAll("6 7 8 9 10 11 12 13", "")
-	if len(corners) != len(expected) {
-		t.Errorf("Expected %d, got %d", len(expected), len(corners))
+	assertCorners(t, corners.Float64s(), expected)
+}
+
+func TestCorners_SetAll_PercentageResolvesAgainstMinDimension(t *testing.T) {
+	var corners Corners
+	corners.SetAll("50%", "")
+	assertCorners(t, corners.Float64sFor(200, 80), []float64{40})
+}
+
+func assertCorners(t *testing.T, got, expected []float64) {
+	t.Helper()
+	if len(got) != len(expected) {
+		t.Errorf("Expected %d, got %d", len(expected), len(got))
 	}
-	for i := range corners {
-		if corners[i] != expected[i] {
-			t.Errorf("Expected %f, got %f", expected[i], corners[i])
+	for i := range got {
+		if got[i] != expected[i] {
+			t.Errorf("Expected %f, got %f", expected[i], got[i])
 		}
 	}
 }

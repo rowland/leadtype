@@ -7,9 +7,10 @@
        stops="0:Gold,1:MediumVioletRed" />
   <brush id="soft-panel" color="#fbfbfb" />
   <page margin="0.55in">
-    <label left="0.5in" top="0.55in" width="6.6in" height="0.9in"
-           border="pill-border" fill="soft-panel" corners="0.45in"
-           padding="12pt" text-align="center" font.size="28pt" font.weight="Bold">Headline Wanted</label>
+    <label left="0.5in" top="0.55in" width="6.6in"
+           border="pill-border" fill="soft-panel" corners="50%"
+           padding="12pt" text-align="center" text-valign="middle"
+           font.size="28pt" font.weight="Bold">Headline Wanted</label>
     <line left="0.65in" top="1.85in" width="6.3in" height="0.25in"
           style="pill-border" style.width="6pt" />
     <hbox left="0.65in" top="2.45in" width="6.1in" height="1.25in" layout.hpadding="0.35in">

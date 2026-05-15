@@ -102,15 +102,15 @@ func (widget *StdWidget) DrawBorder(w Writer) error {
 	x2 := widget.Right() - widget.MarginRight()
 	y2 := widget.Bottom() - widget.MarginBottom()
 	if widget.border != nil {
+		width := widget.Width() - widget.MarginLeft() - widget.MarginRight()
+		height := widget.Height() - widget.MarginTop() - widget.MarginBottom()
 		if err := widget.border.ApplyInRect(w, x1, y1,
-			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
-			widget.Height()-widget.MarginTop()-widget.MarginBottom()); err != nil {
+			width, height); err != nil {
 			return err
 		}
 		w.Rectangle2(x1, y1,
-			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
-			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
-			true, false, widget.corners.Float64s(), false, false)
+			width, height,
+			true, false, widget.corners.Float64sFor(width, height), false, false)
 	}
 	if widget.borders[topSide] != nil {
 		if err := widget.borders[topSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
@@ -397,7 +397,7 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		return widget.paintImageBrushInRect(w, brush.image, x, y, width, height)
 	default:
 		brush.Apply(w)
-		w.Rectangle2(x, y, width, height, false, true, widget.corners.Float64s(), false, false)
+		w.Rectangle2(x, y, width, height, false, true, widget.corners.Float64sFor(width, height), false, false)
 		return nil
 	}
 }
@@ -405,7 +405,7 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 func (widget *StdWidget) paintClippedRect(w Writer, x, y, width, height float64, paint func() error) error {
 	var paintErr error
 	if err := w.Path(func() {
-		w.Rectangle2(x, y, width, height, false, false, widget.corners.Float64s(), true, false)
+		w.Rectangle2(x, y, width, height, false, false, widget.corners.Float64sFor(width, height), true, false)
 		if err := w.Clip(func() {
 			paintErr = paint()
 		}); err != nil && paintErr == nil {
