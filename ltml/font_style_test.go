@@ -319,6 +319,20 @@ func TestFontStyle_SetAttrs_RemSize(t *testing.T) {
 	}
 }
 
+func TestFontStyle_SetAttrs_PointSizeSuffix(t *testing.T) {
+	var fs FontStyle
+	fs.SetAttrs(map[string]string{"size": "14pt"})
+	if fs.sizeSpec.kind != fontSizeAbsolute {
+		t.Fatalf("expected absolute size spec, got %#v", fs.sizeSpec)
+	}
+	if fs.size != 14 {
+		t.Fatalf("size = %v, want 14", fs.size)
+	}
+	if got := fs.ResolveAgainstBase(20); got != 14 {
+		t.Fatalf("ResolveAgainstBase(20) = %v, want 14", got)
+	}
+}
+
 func TestFontStyle_SetAttrs_InvalidRemFallsBackToDefault(t *testing.T) {
 	var fs FontStyle
 	fs.SetAttrs(map[string]string{"size": "bogusrem"})

@@ -48,6 +48,43 @@ func TestFontRem_RuleUsesPageRoot(t *testing.T) {
 	assertAllLeafFontSizesEqual(t, p.RichText(w), 20)
 }
 
+func TestFontSize_PointSuffixStaysAbsolute(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml font.name="Helvetica" font.size="16">
+			<page font.name="Helvetica" font.size="20">
+				<p font.size="14pt">hello</p>
+			</page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	w := &labelTestWriter{t: t, lineSpacing: 1.0}
+	assertAllLeafFontSizesEqual(t, p.RichText(w), 14)
+}
+
+func TestFontSize_PointSuffixInNamedFontStyle(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml font.name="Helvetica" font.size="16">
+			<font id="body" name="Helvetica" size="15pt" />
+			<page font.name="Helvetica" font.size="20"><p font="body">hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	w := &labelTestWriter{t: t, lineSpacing: 1.0}
+	assertAllLeafFontSizesEqual(t, p.RichText(w), 15)
+}
+
+func TestFontSize_PointSuffixInRule(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml font.name="Helvetica" font.size="16">
+			<style>p { font.size: 13pt; }</style>
+			<page font.name="Helvetica" font.size="20"><p>hello</p></page>
+		</ltml>`)
+
+	p := firstParagraph(t, doc)
+	w := &labelTestWriter{t: t, lineSpacing: 1.0}
+	assertAllLeafFontSizesEqual(t, p.RichText(w), 13)
+}
+
 func TestFontRem_FallsBackToBuiltInDefaultWithoutDocumentOrPageFont(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>

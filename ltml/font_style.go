@@ -192,12 +192,21 @@ type fontSizeSpec struct {
 	value float64
 }
 
-var reFontSizeRem = regexp.MustCompile(`^\s*([+-]?\d+(\.\d+)?)rem\s*$`)
+var (
+	reFontSizeRem = regexp.MustCompile(`^\s*([+-]?\d+(\.\d+)?)rem\s*$`)
+	reFontSizePt  = regexp.MustCompile(`^\s*([+-]?\d+(\.\d+)?)pt\s*$`)
+)
 
 func parseFontSizeSpec(value string) (fontSizeSpec, bool) {
 	if matches := reFontSizeRem.FindStringSubmatch(value); len(matches) >= 2 {
 		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
 			return fontSizeSpec{kind: fontSizeRem, value: v}, true
+		}
+		return fontSizeSpec{}, false
+	}
+	if matches := reFontSizePt.FindStringSubmatch(value); len(matches) >= 2 {
+		if v, err := strconv.ParseFloat(matches[1], 64); err == nil {
+			return fontSizeSpec{kind: fontSizeAbsolute, value: v}, true
 		}
 		return fontSizeSpec{}, false
 	}
