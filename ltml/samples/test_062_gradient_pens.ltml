@@ -6,16 +6,23 @@
        x0="50%" y0="50%" r0="0%" x1="50%" y1="50%" r1="60%"
        stops="0:Gold,1:MediumVioletRed" />
   <brush id="soft-panel" color="#fbfbfb" />
-  <page margin="0.55in">
-    <label left="0.5in" top="0.55in" width="6.6in"
+  <page margin="0.55in" layout.vpadding="0.55in">
+    <label width="100%"
            border="pill-border" fill="soft-panel" corners="50%"
            padding="12pt" text-align="center" text-valign="middle"
            font.size="28pt" font.weight="Bold">Headline Wanted</label>
-    <line left="0.65in" top="1.85in" width="6.3in" height="0.25in"
+    <line width="6.3in" height="0.25in" align-self="center"
           style="pill-border" style.width="6pt" />
-    <hbox left="0.65in" top="2.45in" width="6.1in" height="1.25in" layout.hpadding="0.35in">
+    <hbox height="1.25in" layout.hpadding="0.35in">
       <circle width="1.0in" height="1.0in" border="radial-outline" />
       <star width="1.0in" height="1.0in" points="5" r0="0.32in" border="pill-border" fill="Gold" />
     </hbox>
+    <label width="5.6in" height="0.95in"
+           border="pill-border" fill="soft-panel"
+           corners="50% 14pt 0.18in 35% 8pt 8pt 25% 0.12in"
+           padding="10pt" text-align="center" text-valign="middle"
+           font.size="16pt" font.weight="Bold">
+      8-value corners: mixed units and percentages
+    </label>
   </page>
 </ltml>

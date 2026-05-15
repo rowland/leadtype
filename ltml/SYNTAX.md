@@ -391,9 +391,21 @@ Draws a rectangle with optional border and fill.
 | `width`, `height` | Dimensions of the rectangle. |
 | `border`   | Reference to a named `<pen>` style. |
 | `fill`     | Reference to a named `<brush>` style. |
-| `corners`  | Corner radius for rounded corners, in current units. Percentages such as `50%` resolve against the smaller box dimension. |
+| `corners`  | Corner radius for rounded corners, in current units. Accepts 1, 2, 4, or 8 space-separated values; percentages such as `50%` resolve against the smaller box dimension. See corner value order below. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the rectangle widget. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the rectangle widget. |
+
+Corner values are interpreted as:
+
+| Count | Meaning |
+|-------|---------|
+| 1 | Same x/y radius for all four corners. |
+| 2 | First value applies to both top corners; second value applies to both bottom corners. |
+| 4 | Top-left, top-right, bottom-right, bottom-left, each with the same x/y radius. |
+| 8 | Top-left x, top-left y, top-right x, top-right y, bottom-right x, bottom-right y, bottom-left x, bottom-left y. |
+
+For example, `corners="50%"` makes pill-shaped ends for a short rounded
+rectangle, while `corners="8 8 0 0"` rounds only the top corners.
 
 ---
 

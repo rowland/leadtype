@@ -48,6 +48,26 @@ func TestCorners_SetAll_PercentageResolvesAgainstMinDimension(t *testing.T) {
 	assertCorners(t, corners.Float64sFor(200, 80), []float64{40})
 }
 
+func TestCorners_SetAll_MixedPercentagesPreserveSupportedArity(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  []float64
+	}{
+		{name: "two", input: "50% 12", want: []float64{40, 12}},
+		{name: "four", input: "50% 12 25% 6", want: []float64{40, 12, 20, 6}},
+		{name: "eight", input: "50% 12 25% 6 10% 4 5% 2", want: []float64{40, 12, 20, 6, 8, 4, 4, 2}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var corners Corners
+			corners.SetAll(tc.input, "")
+			assertCorners(t, corners.Float64sFor(200, 80), tc.want)
+		})
+	}
+}
+
 func assertCorners(t *testing.T, got, expected []float64) {
 	t.Helper()
 	if len(got) != len(expected) {
