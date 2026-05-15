@@ -102,29 +102,41 @@ func (widget *StdWidget) DrawBorder(w Writer) error {
 	x2 := widget.Right() - widget.MarginRight()
 	y2 := widget.Bottom() - widget.MarginBottom()
 	if widget.border != nil {
-		widget.border.Apply(w)
+		if err := widget.border.ApplyInRect(w, x1, y1,
+			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
+			widget.Height()-widget.MarginTop()-widget.MarginBottom()); err != nil {
+			return err
+		}
 		w.Rectangle2(x1, y1,
 			widget.Width()-widget.MarginLeft()-widget.MarginRight(),
 			widget.Height()-widget.MarginTop()-widget.MarginBottom(),
 			true, false, widget.corners.Float64s(), false, false)
 	}
 	if widget.borders[topSide] != nil {
-		widget.borders[topSide].Apply(w)
+		if err := widget.borders[topSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+			return err
+		}
 		w.MoveTo(x1, y1)
 		w.LineTo(x2, y1)
 	}
 	if widget.borders[rightSide] != nil {
-		widget.borders[rightSide].Apply(w)
+		if err := widget.borders[rightSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+			return err
+		}
 		w.MoveTo(x2, y1)
 		w.LineTo(x2, y2)
 	}
 	if widget.borders[bottomSide] != nil {
-		widget.borders[bottomSide].Apply(w)
+		if err := widget.borders[bottomSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+			return err
+		}
 		w.MoveTo(x2, y2)
 		w.LineTo(x1, y2)
 	}
 	if widget.borders[leftSide] != nil {
-		widget.borders[leftSide].Apply(w)
+		if err := widget.borders[leftSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+			return err
+		}
 		w.MoveTo(x1, y2)
 		w.LineTo(x1, y1)
 	}

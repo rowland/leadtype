@@ -253,6 +253,7 @@ func TestSamples(t *testing.T) {
 		"test_059_table_auto_width",
 		"test_060_table_auto_height",
 		"test_061_table_auto_split",
+		"test_062_gradient_pens",
 	}
 
 	for _, sample := range samples {

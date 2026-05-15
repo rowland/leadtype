@@ -191,6 +191,9 @@ func (m *mockWriter) SetFillColor(v any) colors.Color                           
 func (m *mockWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error               { return nil }
 func (m *mockWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error               { return nil }
 func (m *mockWriter) ClearFillGradient()                                               {}
+func (m *mockWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error               { return nil }
+func (m *mockWriter) SetLineRadialGradient(rg *pdf.RadialGradient) error               { return nil }
+func (m *mockWriter) ClearLineGradient()                                               {}
 func (m *mockWriter) SetLineColor(v colors.Color) colors.Color                         { return 0 }
 func (m *mockWriter) SetLineDashPattern(p string) string                               { return "" }
 func (m *mockWriter) SetLineSpacing(ls float64) float64                                { return 0 }

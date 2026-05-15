@@ -1,6 +1,10 @@
 package ltml
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
 
 type lineTestWriter struct {
 	labelTestWriter
@@ -138,6 +142,36 @@ func TestPenStyle_Apply_UsesCap(t *testing.T) {
 
 	if len(w.caps) != 1 || w.caps[0] != "round_cap" {
 		t.Fatalf("caps = %v, want [round_cap]", w.caps)
+	}
+}
+
+func TestStdLine_DrawContent_AppliesGradientPenInLineBox(t *testing.T) {
+	line := &StdLine{angle: 0}
+	line.SetLeft(10)
+	line.SetTop(20)
+	line.SetWidth(120)
+	line.SetHeight(40)
+	line.style = &PenStyle{
+		kind: PenKindLinearGradient,
+		linearGradient: &pdf.LinearGradient{
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("SteelBlue")},
+			},
+		},
+		linearPct: &linearGradientPct{X0: float64Ptr(0), Y0: float64Ptr(50), X1: float64Ptr(100), Y1: float64Ptr(50)},
+	}
+	w := &lineTestWriter{}
+
+	if err := line.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.lineLinear) != 1 {
+		t.Fatalf("line linear gradient count = %d, want 1", len(w.lineLinear))
+	}
+	got := w.lineLinear[0]
+	if got.X0 != 10 || got.Y0 != 40 || got.X1 != 130 || got.Y1 != 40 {
+		t.Fatalf("gradient coords = %#v, want line-box coords", got)
 	}
 }
 

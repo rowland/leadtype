@@ -736,14 +736,22 @@ styles) before the content that uses them.
 
 ```xml
 <pen id="rule" color="black" width="1pt" pattern="solid" />
+<pen id="pill-border" kind="linear-gradient" width="5pt"
+     x0="0%" y0="50%" x1="100%" y1="50%"
+     stops="0:#ef5148,1:#4f93ad" cap="round_cap" />
 ```
 
 | Attribute  | Description |
 |------------|-------------|
 | `id`       | Name used to reference this style. |
-| `color`    | Line color. |
+| `kind`     | Pen type: `solid` (default), `linear-gradient`, or `radial-gradient`. |
+| `color`    | Line color for solid pens. |
 | `width`    | Line width (with optional unit suffix, e.g. `2pt`, `0.5mm`). |
 | `pattern`  | Line pattern: `solid`, `dashed`, `dotted`. |
+| `cap`      | Line cap: `butt_cap`, `round_cap`, or `projecting_square_cap`. |
+| `stops`    | Comma-separated gradient stops like `0:#112233,0.5:Gold,1:#445566`. |
+| `x0`, `y0`, `x1`, `y1` | Gradient coordinates. Accept LTML measurements, and also accept percentages like `50%` resolved against the stroked box width or height. Used by linear gradients and the center points of radial gradients. |
+| `r0`, `r1` | Radial gradient start and end radii. Accept LTML measurements, and also accept percentages resolved against the stroked box's smaller dimension. |
 
 **Built-in pen styles:** `solid`, `dashed`, `dotted` — all black, hairline width.
 

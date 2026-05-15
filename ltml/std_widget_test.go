@@ -3,7 +3,11 @@
 
 package ltml
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
 
 func TestStdWidget_SetAttrs_ParsesSideSpecificBorders(t *testing.T) {
 	scope := &Scope{}
@@ -130,6 +134,66 @@ func TestStdWidget_SetAttrs_FontDecorationOverridesCloneAndApplyFontOverrides(t 
 	}
 	if widget.font.underlinePos == nil || *widget.font.underlinePos != FromUnits(1, "cm") {
 		t.Fatalf("underlinePos = %v, want 1cm in points", widget.font.underlinePos)
+	}
+}
+
+func TestStdWidget_DrawBorder_AppliesGradientPenInWidgetBox(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(10)
+	widget.SetTop(20)
+	widget.SetWidth(120)
+	widget.SetHeight(40)
+	widget.border = &PenStyle{
+		kind: PenKindLinearGradient,
+		linearGradient: &pdf.LinearGradient{
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("SteelBlue")},
+			},
+		},
+		linearPct: &linearGradientPct{X0: float64Ptr(0), Y0: float64Ptr(50), X1: float64Ptr(100), Y1: float64Ptr(50)},
+	}
+	writer := &labelTestWriter{}
+
+	if err := widget.DrawBorder(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.lineLinear) != 1 {
+		t.Fatalf("line linear gradient count = %d, want 1", len(writer.lineLinear))
+	}
+	got := writer.lineLinear[0]
+	if got.X0 != 10 || got.Y0 != 40 || got.X1 != 130 || got.Y1 != 40 {
+		t.Fatalf("gradient coords = %#v, want widget-local coords", got)
+	}
+}
+
+func TestStdWidget_DrawBorder_AppliesGradientSidePenInWidgetBox(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(10)
+	widget.SetTop(20)
+	widget.SetWidth(120)
+	widget.SetHeight(40)
+	widget.borders[rightSide] = &PenStyle{
+		kind: PenKindLinearGradient,
+		linearGradient: &pdf.LinearGradient{
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("SteelBlue")},
+			},
+		},
+		linearPct: &linearGradientPct{X0: float64Ptr(0), Y0: float64Ptr(0), X1: float64Ptr(0), Y1: float64Ptr(100)},
+	}
+	writer := &labelTestWriter{}
+
+	if err := widget.DrawBorder(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.lineLinear) != 1 {
+		t.Fatalf("line linear gradient count = %d, want 1", len(writer.lineLinear))
+	}
+	got := writer.lineLinear[0]
+	if got.X0 != 10 || got.Y0 != 20 || got.X1 != 10 || got.Y1 != 60 {
+		t.Fatalf("gradient coords = %#v, want side border coords resolved against widget box", got)
 	}
 }
 

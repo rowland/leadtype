@@ -72,7 +72,9 @@ func (p *StdParagraph) drawShapeBullet(w Writer, bullet *BulletStyle, layout par
 		}
 	} else {
 		if pen != nil {
-			pen.Apply(w)
+			if err := pen.ApplyInRect(w, layout.shapeBounds.MinX, layout.shapeBounds.MinY, layout.shapeBounds.Width(), layout.shapeBounds.Height()); err != nil {
+				return err
+			}
 		}
 		if brush != nil {
 			brush.Apply(w)
@@ -83,7 +85,9 @@ func (p *StdParagraph) drawShapeBullet(w Writer, bullet *BulletStyle, layout par
 	}
 
 	if pen != nil && brush != nil && brush.Kind() != BrushKindSolid {
-		pen.Apply(w)
+		if err := pen.ApplyInRect(w, layout.shapeBounds.MinX, layout.shapeBounds.MinY, layout.shapeBounds.Width(), layout.shapeBounds.Height()); err != nil {
+			return err
+		}
 		if err := p.drawBulletShape(w, layout, true, false); err != nil {
 			return err
 		}

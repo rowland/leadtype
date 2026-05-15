@@ -32,13 +32,16 @@ func (s *StdShape) drawChildren(w Writer) error {
 	return s.StdContainer.drawChildren(w)
 }
 
-func (s *StdShape) applyBorderAndFill(w Writer) {
+func (s *StdShape) applyBorderAndFill(w Writer) error {
 	if s.border != nil {
-		s.border.Apply(w)
+		if err := s.border.ApplyInRect(w, s.shapeLeft(), s.shapeTop(), s.shapeWidth(), s.shapeHeight()); err != nil {
+			return err
+		}
 	}
 	if s.fill != nil {
 		s.fill.Apply(w)
 	}
+	return nil
 }
 
 func (s *StdShape) center() (float64, float64) {
@@ -86,7 +89,9 @@ type StdCircle struct {
 
 func (c *StdCircle) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &c.StdWidget, "Figure", func() error {
-		c.applyBorderAndFill(w)
+		if err := c.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := c.center()
 		return w.Circle(x, y, c.radius(), c.border != nil, c.fill != nil, c.reverse)
 	}); err != nil {
@@ -143,7 +148,9 @@ type StdEllipse struct {
 
 func (e *StdEllipse) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &e.StdWidget, "Figure", func() error {
-		e.applyBorderAndFill(w)
+		if err := e.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := e.center()
 		return w.Ellipse(x, y, e.radiusX(), e.radiusY(), e.border != nil, e.fill != nil, e.reverse)
 	}); err != nil {
@@ -185,7 +192,9 @@ type StdPolygon struct {
 
 func (p *StdPolygon) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &p.StdWidget, "Figure", func() error {
-		p.applyBorderAndFill(w)
+		if err := p.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := p.center()
 		return w.Polygon(x, y, p.radius(), p.Sides(), p.border != nil, p.fill != nil, p.reverse, p.rotation)
 	}); err != nil {
@@ -251,7 +260,9 @@ type StdStar struct {
 
 func (s *StdStar) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &s.StdWidget, "Figure", func() error {
-		s.applyBorderAndFill(w)
+		if err := s.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := s.center()
 		return w.Star(x, y, s.outerRadius(), s.innerRadius(), s.Points(), s.border != nil, s.fill != nil, s.reverse, s.rotation)
 	}); err != nil {
@@ -329,7 +340,9 @@ type StdArc struct {
 
 func (a *StdArc) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &a.StdWidget, "Figure", func() error {
-		a.applyBorderAndFill(w)
+		if err := a.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := a.center()
 		var err error
 		if err = w.Path(func() {
@@ -396,7 +409,9 @@ type StdPie struct {
 
 func (p *StdPie) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &p.StdWidget, "Figure", func() error {
-		p.applyBorderAndFill(w)
+		if err := p.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := p.center()
 		return w.Pie(x, y, p.radius(), p.startAngle, p.endAngle, p.border != nil, p.fill != nil, p.reverse)
 	}); err != nil {
@@ -415,7 +430,9 @@ type StdArch struct {
 
 func (a *StdArch) DrawContent(w Writer) error {
 	if err := withGraphicAccessibility(w, &a.StdWidget, "Figure", func() error {
-		a.applyBorderAndFill(w)
+		if err := a.applyBorderAndFill(w); err != nil {
+			return err
+		}
 		x, y := a.center()
 		return w.Arch(x, y, a.outerRadius(), a.innerRadius(), a.startAngle, a.endAngle, a.border != nil, a.fill != nil, a.reverse)
 	}); err != nil {

@@ -424,7 +424,13 @@ type Writer interface {
     LineTo(x, y float64)
     Rectangle2(x, y, w, h float64, stroke, fill bool, corners Corners, ...) error
     SetFillColor(colors.Color)
+    SetFillLinearGradient(*pdf.LinearGradient) error
+    SetFillRadialGradient(*pdf.RadialGradient) error
+    ClearFillGradient()
     SetLineColor(colors.Color)
+    SetLineLinearGradient(*pdf.LinearGradient) error
+    SetLineRadialGradient(*pdf.RadialGradient) error
+    ClearLineGradient()
     SetLineWidth(float64)
     SetLineDashPattern(string)
 

@@ -628,6 +628,40 @@ func TestStdParagraph_DrawContent_ShapeBulletWithGradientUsesClipPath(t *testing
 	}
 }
 
+func TestStdParagraph_DrawContent_ShapeBulletWithGradientPenUsesShapeBox(t *testing.T) {
+	p := &StdParagraph{}
+	shape := pdf.ClosedShape{Kind: pdf.ClosedShapeCircle, Center: pdf.Location{X: 20, Y: 30}, Radius: 10}
+	bullet := &BulletStyle{
+		shape: "circle",
+		pen: &PenStyle{
+			kind: PenKindLinearGradient,
+			linearGradient: &pdf.LinearGradient{
+				Stops: []pdf.GradientStop{
+					{Position: 0, Color: NamedColor("Tomato")},
+					{Position: 1, Color: NamedColor("SteelBlue")},
+				},
+			},
+			linearPct: &linearGradientPct{X0: float64Ptr(0), Y0: float64Ptr(50), X1: float64Ptr(100), Y1: float64Ptr(50)},
+		},
+	}
+	layout := paragraphBulletLayout{
+		shape:       &shape,
+		shapeBounds: pdf.Bounds{MinX: 10, MinY: 20, MaxX: 30, MaxY: 40},
+	}
+	w := &bulletTestWriter{}
+
+	if err := p.drawShapeBullet(w, bullet, layout); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.lineLinear) != 1 {
+		t.Fatalf("line linear gradient count = %d, want 1", len(w.lineLinear))
+	}
+	got := w.lineLinear[0]
+	if got.X0 != 10 || got.Y0 != 30 || got.X1 != 30 || got.Y1 != 30 {
+		t.Fatalf("gradient coords = %#v, want bullet shape-box coords", got)
+	}
+}
+
 func TestStdParagraph_DrawContent_FourPointStarBulletRenders(t *testing.T) {
 	p := &StdParagraph{}
 	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}

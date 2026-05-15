@@ -53,6 +53,11 @@ type labelTestWriter struct {
 	fillRectPages  []int
 	linearPaints   []*pdf.LinearGradient
 	radialPaints   []*pdf.RadialGradient
+	lineColors     []colors.Color
+	lineWidths     []float64
+	lineLinear     []*pdf.LinearGradient
+	lineRadial     []*pdf.RadialGradient
+	lineClears     int
 	imagePaints    []paintedImageCall
 	fileDimensions map[string][2]int
 	t              testing.TB
@@ -271,13 +276,25 @@ func (w *labelTestWriter) SetFillColor(value any) (prev colors.Color) {
 	}
 	return prev
 }
-func (w *labelTestWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error  { return nil }
-func (w *labelTestWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error  { return nil }
-func (w *labelTestWriter) ClearFillGradient()                                  {}
-func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) { return 0 }
-func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
-func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return w.lineSpacing }
-func (w *labelTestWriter) SetLineWidth(width float64)                          {}
+func (w *labelTestWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error { return nil }
+func (w *labelTestWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error { return nil }
+func (w *labelTestWriter) ClearFillGradient()                                 {}
+func (w *labelTestWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error {
+	w.lineLinear = append(w.lineLinear, lg)
+	return nil
+}
+func (w *labelTestWriter) SetLineRadialGradient(rg *pdf.RadialGradient) error {
+	w.lineRadial = append(w.lineRadial, rg)
+	return nil
+}
+func (w *labelTestWriter) ClearLineGradient() { w.lineClears++ }
+func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) {
+	w.lineColors = append(w.lineColors, value)
+	return 0
+}
+func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)   { return "" }
+func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64) { return w.lineSpacing }
+func (w *labelTestWriter) SetLineWidth(width float64)                        { w.lineWidths = append(w.lineWidths, width) }
 func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool) {
 	prev = w.strikeout
 	w.strikeout = strikeout

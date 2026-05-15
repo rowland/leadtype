@@ -20,7 +20,13 @@ func (l *StdLine) DrawContent(w Writer) error {
 	return withGraphicAccessibility(w, &l.StdWidget, "Figure", func() error {
 		style := l.Style()
 		if style != nil {
-			style.Apply(w)
+			x := l.Left() + l.MarginLeft()
+			y := l.Top() + l.MarginTop()
+			width := l.Width() - l.MarginLeft() - l.MarginRight()
+			height := l.Height() - l.MarginTop() - l.MarginBottom()
+			if err := style.ApplyInRect(w, x, y, width, height); err != nil {
+				return err
+			}
 		}
 		x, y := l.originForQuadrant()
 		w.Line(x, y, l.Angle(), l.Length())

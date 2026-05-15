@@ -1,0 +1,20 @@
+<ltml page-size="letter">
+  <pen id="pill-border" kind="linear-gradient" width="5pt"
+       x0="0%" y0="50%" x1="100%" y1="50%"
+       stops="0:#ef5148,1:#4f93ad" cap="round_cap" />
+  <pen id="radial-outline" kind="radial-gradient" width="3pt"
+       x0="50%" y0="50%" r0="0%" x1="50%" y1="50%" r1="60%"
+       stops="0:Gold,1:MediumVioletRed" />
+  <brush id="soft-panel" color="#fbfbfb" />
+  <page margin="0.55in">
+    <label left="0.5in" top="0.55in" width="6.6in" height="0.9in"
+           border="pill-border" fill="soft-panel" corners="0.45in"
+           padding="12pt" text-align="center" font.size="28pt" font.weight="Bold">Headline Wanted</label>
+    <line left="0.65in" top="1.85in" width="6.3in" height="0.25in"
+          style="pill-border" style.width="6pt" />
+    <hbox left="0.65in" top="2.45in" width="6.1in" height="1.25in" layout.hpadding="0.35in">
+      <circle width="1.0in" height="1.0in" border="radial-outline" />
+      <star width="1.0in" height="1.0in" points="5" r0="0.32in" border="pill-border" fill="Gold" />
+    </hbox>
+  </page>
+</ltml>

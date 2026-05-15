@@ -67,7 +67,11 @@ func (s *StdSector) DrawBorder(w Writer) error {
 	if s.border == nil {
 		return nil
 	}
-	s.border.Apply(w)
+	x := s.geometry.CenterX - s.geometry.OuterRadius
+	y := s.geometry.CenterY - s.geometry.OuterRadius
+	if err := s.border.ApplyInRect(w, x, y, s.geometry.OuterRadius*2, s.geometry.OuterRadius*2); err != nil {
+		return err
+	}
 	if s.geometry.InnerRadius > 0 {
 		return w.Arch(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.InnerRadius, s.geometry.StartAngle, s.geometry.EndAngle, true, false, false)
 	}

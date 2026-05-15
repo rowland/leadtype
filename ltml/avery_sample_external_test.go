@@ -187,6 +187,9 @@ func (w *sampleTestWriter) SetFillColor(value any) (prev colors.Color)          
 func (w *sampleTestWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error  { return nil }
 func (w *sampleTestWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error  { return nil }
 func (w *sampleTestWriter) ClearFillGradient()                                  {}
+func (w *sampleTestWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error  { return nil }
+func (w *sampleTestWriter) SetLineRadialGradient(rg *pdf.RadialGradient) error  { return nil }
+func (w *sampleTestWriter) ClearLineGradient()                                  {}
 func (w *sampleTestWriter) SetLineColor(value colors.Color) (prev colors.Color) { return colors.Black }
 func (w *sampleTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
 func (w *sampleTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return 1.0 }

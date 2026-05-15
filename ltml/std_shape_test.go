@@ -148,6 +148,36 @@ func TestStdCircle_DrawContent_UsesContentBoxCenterAndRadius(t *testing.T) {
 	}
 }
 
+func TestStdCircle_DrawContent_AppliesGradientBorderInShapeBox(t *testing.T) {
+	circle := &StdCircle{}
+	circle.SetLeft(10)
+	circle.SetTop(20)
+	circle.SetWidth(100)
+	circle.SetHeight(80)
+	circle.border = &PenStyle{
+		kind: PenKindLinearGradient,
+		linearGradient: &pdf.LinearGradient{
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("SteelBlue")},
+			},
+		},
+		linearPct: &linearGradientPct{X0: float64Ptr(0), Y0: float64Ptr(50), X1: float64Ptr(100), Y1: float64Ptr(50)},
+	}
+	w := &shapeTestWriter{}
+
+	if err := circle.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.lineLinear) != 1 {
+		t.Fatalf("line linear gradient count = %d, want 1", len(w.lineLinear))
+	}
+	got := w.lineLinear[0]
+	if got.X0 != 10 || got.Y0 != 60 || got.X1 != 110 || got.Y1 != 60 {
+		t.Fatalf("gradient coords = %#v, want shape-box coords", got)
+	}
+}
+
 func TestStdPolygon_DrawContent_UsesAttrs(t *testing.T) {
 	polygon := &StdPolygon{}
 	polygon.SetLeft(0)

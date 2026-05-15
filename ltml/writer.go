@@ -64,6 +64,9 @@ type Writer interface {
 	SetFillLinearGradient(lg *pdf.LinearGradient) error
 	SetFillRadialGradient(rg *pdf.RadialGradient) error
 	ClearFillGradient()
+	SetLineLinearGradient(lg *pdf.LinearGradient) error
+	SetLineRadialGradient(rg *pdf.RadialGradient) error
+	ClearLineGradient()
 	SetLineColor(value colors.Color) (prev colors.Color)
 	SetLineDashPattern(pattern string) (prev string)
 	SetLineSpacing(lineSpacing float64) (prev float64)

@@ -139,6 +139,9 @@ func (w *layoutProbeWriter) SetFillColor(value any) (prev colors.Color) {
 func (w *layoutProbeWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error { return nil }
 func (w *layoutProbeWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error { return nil }
 func (w *layoutProbeWriter) ClearFillGradient()                                 {}
+func (w *layoutProbeWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error { return nil }
+func (w *layoutProbeWriter) SetLineRadialGradient(rg *pdf.RadialGradient) error { return nil }
+func (w *layoutProbeWriter) ClearLineGradient()                                 {}
 func (w *layoutProbeWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	return w.base.SetFont(name, size, opts)
 }
