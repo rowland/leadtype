@@ -93,6 +93,9 @@ func (w *sampleTestWriter) ClipText(text string, fn func()) error {
 func (w *sampleTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
 	return shape.Bounds()
 }
+func (w *sampleTestWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return nil }
+func (w *sampleTestWriter) CompressPages(bool) *pdf.DocWriter         { return nil }
+func (w *sampleTestWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
 func (w *sampleTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
@@ -194,8 +197,14 @@ func (w *sampleTestWriter) SetLineColor(value colors.Color) (prev colors.Color) 
 func (w *sampleTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
 func (w *sampleTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return 1.0 }
 func (w *sampleTestWriter) SetLineWidth(width float64)                          {}
-func (w *sampleTestWriter) SetStrikeout(strikeout bool) (prev bool)             { return false }
-func (w *sampleTestWriter) SetUnderline(underline bool) (prev bool)             { return false }
+func (w *sampleTestWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
+	return pdf.SVGBlendModeRespect
+}
+func (w *sampleTestWriter) SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
+	return pdf.SVGGradientStopOpacityModeSoftMask
+}
+func (w *sampleTestWriter) SetStrikeout(strikeout bool) (prev bool) { return false }
+func (w *sampleTestWriter) SetUnderline(underline bool) (prev bool) { return false }
 func (w *sampleTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }

@@ -13,19 +13,22 @@ import (
 
 type StdDocument struct {
 	StdPage
-	documentPageNo             int
-	physicalPageNo             int
-	pendingStart               *int
-	ua                         bool
-	networkAssets              bool
-	compressPages              bool
-	compressToUnicode          bool
-	compressEmbeddedFonts      bool
-	svgGradientStopOpacityMode string
-	renderContext              *documentRenderContext
-	canvases                   map[string]*StdCanvas
-	canvasCaptureStack         []string
-	visualCaptureDepth         int
+	documentPageNo                int
+	physicalPageNo                int
+	pendingStart                  *int
+	ua                            bool
+	networkAssets                 bool
+	compressPages                 bool
+	compressToUnicode             bool
+	compressEmbeddedFonts         bool
+	svgGradientStopOpacityMode    pdf.SVGGradientStopOpacityMode
+	svgGradientStopOpacityModeSet bool
+	svgBlendMode                  pdf.SVGBlendMode
+	svgBlendModeSet               bool
+	renderContext                 *documentRenderContext
+	canvases                      map[string]*StdCanvas
+	canvasCaptureStack            []string
+	visualCaptureDepth            int
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -181,28 +184,31 @@ func (d *StdDocument) SetAttrs(attrs map[string]string) {
 		d.networkAssets = value == "true"
 	}
 	if value, ok := attrs["svg-gradient-stop-opacity-mode"]; ok {
-		d.svgGradientStopOpacityMode = value
+		if mode, ok := pdf.ParseSVGGradientStopOpacityMode(value); ok {
+			d.svgGradientStopOpacityMode = mode
+			d.svgGradientStopOpacityModeSet = true
+		}
+	}
+	if value, ok := attrs["svg-blend-mode"]; ok {
+		if mode, ok := pdf.ParseSVGBlendMode(value); ok {
+			d.svgBlendMode = mode
+			d.svgBlendModeSet = true
+		}
 	}
 }
 
 func (d *StdDocument) applyWriterCompression(w Writer) {
-	if cw, ok := w.(interface{ CompressPages(bool) *pdf.DocWriter }); ok {
-		cw.CompressPages(d.compressPages)
-	}
-	if cw, ok := w.(interface{ CompressToUnicode(bool) *pdf.DocWriter }); ok {
-		cw.CompressToUnicode(d.compressToUnicode)
-	}
-	if cw, ok := w.(interface{ CompressEmbeddedFonts(bool) *pdf.DocWriter }); ok {
-		cw.CompressEmbeddedFonts(d.compressEmbeddedFonts)
-	}
+	w.CompressPages(d.compressPages)
+	w.CompressToUnicode(d.compressToUnicode)
+	w.CompressEmbeddedFonts(d.compressEmbeddedFonts)
 }
 
 func (d *StdDocument) applyWriterSVGCompatibility(w Writer) {
-	if d.svgGradientStopOpacityMode == "" {
-		return
+	if d.svgGradientStopOpacityModeSet {
+		w.SetSVGGradientStopOpacityMode(d.svgGradientStopOpacityMode)
 	}
-	if sw, ok := w.(interface{ SetSVGGradientStopOpacityMode(string) string }); ok {
-		sw.SetSVGGradientStopOpacityMode(d.svgGradientStopOpacityMode)
+	if d.svgBlendModeSet {
+		w.SetSVGBlendMode(d.svgBlendMode)
 	}
 }
 

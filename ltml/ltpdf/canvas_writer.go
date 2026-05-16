@@ -18,6 +18,12 @@ func (w *canvasWriter) TaggedPDFEnabled() bool {
 	return false
 }
 
+func (w *canvasWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return w.docWriter }
+
+func (w *canvasWriter) CompressPages(bool) *pdf.DocWriter { return w.docWriter }
+
+func (w *canvasWriter) CompressToUnicode(bool) *pdf.DocWriter { return w.docWriter }
+
 func (w *canvasWriter) ImageDimensions(data []byte) (width, height int, err error) {
 	return w.docWriter.ImageDimensions(data)
 }
@@ -56,6 +62,14 @@ func (w *canvasWriter) SetLineCapStyle(style string) (prev string) {
 
 func (w *canvasWriter) SetLineWidth(width float64) {
 	w.PageWriter.SetLineWidth(width, "pt")
+}
+
+func (w *canvasWriter) SetSVGBlendMode(mode pdf.SVGBlendMode) pdf.SVGBlendMode {
+	return w.PageWriter.SetSVGBlendMode(mode)
+}
+
+func (w *canvasWriter) SetSVGGradientStopOpacityMode(mode pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
+	return w.PageWriter.SetSVGGradientStopOpacityMode(mode)
 }
 
 func (w *canvasWriter) DrawCanvas(key string, x, y, width, height, canvasWidth, canvasHeight float64, draw func(any) error) error {

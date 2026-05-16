@@ -207,7 +207,7 @@ func (r *svgRenderer) renderNodeBody(node svg.Node, style svg.Style, transform s
 	case *svg.Group:
 		blendMode := ""
 		if n.Style.BlendMode != nil {
-			blendMode = mapSVGBlendMode(*n.Style.BlendMode)
+			blendMode = r.resolveBlendMode(*n.Style.BlendMode)
 		}
 		return r.withBlendMode(blendMode, func() error {
 			for _, child := range n.Children {
@@ -657,7 +657,7 @@ func (r *svgRenderer) paintSegments(segments []svg.Segment, style svg.Style, sty
 func (r *svgRenderer) paintColorPath(segments []svg.Segment, style svg.Style, styleSpec svg.StyleSpec, transform svg.Transform, fill bool) error {
 	blendMode := ""
 	if styleSpec.BlendMode != nil {
-		blendMode = mapSVGBlendMode(*styleSpec.BlendMode)
+		blendMode = r.resolveBlendMode(*styleSpec.BlendMode)
 	}
 	alpha := clamp01(style.Opacity)
 	if fill {
@@ -669,7 +669,7 @@ func (r *svgRenderer) paintColorPath(segments []svg.Segment, style svg.Style, st
 				return r.fillSolidPath(style.Fill.Color, alpha, style.FillRule, blendMode)
 			}
 			if resolved.varyingAlpha {
-				if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+				if svgGradientStopOpacityMode(r.pw.options) == SVGGradientStopOpacityModeCompatibility {
 					return r.withScopedGraphicsState(resolved.flatAlpha, 1, blendMode, nil, "", nil, func() error {
 						return r.fillGradientPath(style, resolved)
 					})
@@ -697,7 +697,7 @@ func (r *svgRenderer) paintColorPath(segments []svg.Segment, style svg.Style, st
 			return r.strokeSolidPath(style, style.Stroke.Color, alpha, blendMode)
 		}
 		if resolved.varyingAlpha {
-			if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+			if svgGradientStopOpacityMode(r.pw.options) == SVGGradientStopOpacityModeCompatibility {
 				alpha = resolved.flatAlpha
 			} else {
 				logSVGWarnings([]svg.Warning{{Element: "style", Message: "gradient stroke stop-opacity falls back to constant stroke opacity"}})
@@ -1267,6 +1267,16 @@ func mapSVGBlendMode(value string) string {
 	}
 }
 
+// resolveBlendMode wraps mapSVGBlendMode with the renderer's compatibility
+// settings. When `svg-blend-mode` is set to `ignore`, all SVG blend modes are
+// dropped (matching legacy PDFlib output).
+func (r *svgRenderer) resolveBlendMode(value string) string {
+	if svgBlendMode(r.pw.options) == SVGBlendModeIgnore {
+		return ""
+	}
+	return mapSVGBlendMode(value)
+}
+
 func normalizeFontStyle(style svg.Style) string {
 	if strings.EqualFold(style.FontStyle, "italic") || strings.EqualFold(style.FontStyle, "oblique") {
 		return "italic"
@@ -1286,7 +1296,7 @@ func (r *svgRenderer) drawText(text *svg.Text, style svg.Style, transform svg.Tr
 	if err != nil || layout == nil {
 		return err
 	}
-	blendMode := mapSVGBlendMode(style.BlendMode)
+	blendMode := r.resolveBlendMode(style.BlendMode)
 	alpha := clamp01(style.Opacity * style.FillOpacity)
 	if style.Stroke.IsGradient() {
 		logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "stroke", Message: "gradient stroke on text is not yet implemented"}})
@@ -1307,7 +1317,7 @@ func (r *svgRenderer) drawText(text *svg.Text, style svg.Style, transform svg.Tr
 			})
 		}
 		if resolved.varyingAlpha {
-			if svgGradientStopOpacityMode(r.pw.options) == svgGradientStopOpacityModeFlat {
+			if svgGradientStopOpacityMode(r.pw.options) == SVGGradientStopOpacityModeCompatibility {
 				alpha = resolved.flatAlpha
 			} else {
 				logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "fill", Message: "gradient text stop-opacity falls back to constant text opacity"}})

@@ -19,6 +19,9 @@ type Writer interface {
 	ClipRichText(text *rich_text.RichText, fn func()) error
 	ClipText(text string, fn func()) error
 	ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error)
+	CompressEmbeddedFonts(bool) *pdf.DocWriter
+	CompressPages(bool) *pdf.DocWriter
+	CompressToUnicode(bool) *pdf.DocWriter
 	DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error
@@ -71,6 +74,8 @@ type Writer interface {
 	SetLineDashPattern(pattern string) (prev string)
 	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
+	SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode
+	SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode
 	SetStrikeout(strikeout bool) (prev bool)
 	SetUnderline(underline bool) (prev bool)
 	Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error

@@ -1287,15 +1287,26 @@ func (dw *DocWriter) SetOptions(options options.Options) {
 	dw.options = options
 }
 
-func (dw *DocWriter) SetSVGGradientStopOpacityMode(mode string) (prev string) {
+func (dw *DocWriter) SetSVGGradientStopOpacityMode(mode SVGGradientStopOpacityMode) (prev SVGGradientStopOpacityMode) {
 	prev = svgGradientStopOpacityMode(dw.options)
 	if dw.options == nil {
 		dw.options = options.Options{}
 	}
-	normalized := normalizeSVGGradientStopOpacityMode(mode)
-	dw.options[svgGradientStopOpacityModeOption] = normalized
+	dw.options[svgGradientStopOpacityModeOption] = svgGradientStopOpacityMode(options.Options{svgGradientStopOpacityModeOption: mode})
 	if dw.curPage != nil {
-		dw.curPage.SetSVGGradientStopOpacityMode(normalized)
+		dw.curPage.SetSVGGradientStopOpacityMode(svgGradientStopOpacityMode(dw.options))
+	}
+	return prev
+}
+
+func (dw *DocWriter) SetSVGBlendMode(mode SVGBlendMode) (prev SVGBlendMode) {
+	prev = svgBlendMode(dw.options)
+	if dw.options == nil {
+		dw.options = options.Options{}
+	}
+	dw.options[svgBlendModeOption] = svgBlendMode(options.Options{svgBlendModeOption: mode})
+	if dw.curPage != nil {
+		dw.curPage.SetSVGBlendMode(svgBlendMode(dw.options))
 	}
 	return prev
 }

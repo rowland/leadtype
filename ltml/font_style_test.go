@@ -76,6 +76,9 @@ func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
 func (m *mockWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
 	return shape.Bounds()
 }
+func (m *mockWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return nil }
+func (m *mockWriter) CompressPages(bool) *pdf.DocWriter         { return nil }
+func (m *mockWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
 
 func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
@@ -198,8 +201,14 @@ func (m *mockWriter) SetLineColor(v colors.Color) colors.Color                  
 func (m *mockWriter) SetLineDashPattern(p string) string                               { return "" }
 func (m *mockWriter) SetLineSpacing(ls float64) float64                                { return 0 }
 func (m *mockWriter) SetLineWidth(w float64)                                           {}
-func (m *mockWriter) SetStrikeout(s bool) bool                                         { return false }
-func (m *mockWriter) SetUnderline(u bool) bool                                         { return false }
+func (m *mockWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
+	return pdf.SVGBlendModeRespect
+}
+func (m *mockWriter) SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
+	return pdf.SVGGradientStopOpacityModeSoftMask
+}
+func (m *mockWriter) SetStrikeout(s bool) bool { return false }
+func (m *mockWriter) SetUnderline(u bool) bool { return false }
 
 func (m *mockWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
 	return nil

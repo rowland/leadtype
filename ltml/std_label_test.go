@@ -106,6 +106,9 @@ func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) er
 func (w *labelTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
 	return shape.Bounds()
 }
+func (w *labelTestWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return nil }
+func (w *labelTestWriter) CompressPages(bool) *pdf.DocWriter         { return nil }
+func (w *labelTestWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++
 	w.curvedStarts = append(w.curvedStarts, startAngle)
@@ -295,6 +298,12 @@ func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) {
 func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)   { return "" }
 func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64) { return w.lineSpacing }
 func (w *labelTestWriter) SetLineWidth(width float64)                        { w.lineWidths = append(w.lineWidths, width) }
+func (w *labelTestWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
+	return pdf.SVGBlendModeRespect
+}
+func (w *labelTestWriter) SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
+	return pdf.SVGGradientStopOpacityModeSoftMask
+}
 func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool) {
 	prev = w.strikeout
 	w.strikeout = strikeout

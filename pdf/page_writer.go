@@ -2303,8 +2303,7 @@ func (pw *PageWriter) PrintImageFile(filename string, x, y float64, width, heigh
 }
 
 func (pw *PageWriter) paintSVG(data []byte, x, y, width, height, opacity float64) error {
-	key := imageKey(data)
-	key += ";stop-opacity=" + svgGradientStopOpacityMode(pw.options)
+	key := pw.svgFormCacheKey(data)
 	form, err := pw.dw.loadSVGForm(data, key, pw.options)
 	if err != nil {
 		return err
@@ -2322,8 +2321,7 @@ func (pw *PageWriter) paintSVG(data []byte, x, y, width, height, opacity float64
 }
 
 func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	key := imageKey(data)
-	key += ";stop-opacity=" + svgGradientStopOpacityMode(pw.options)
+	key := pw.svgFormCacheKey(data)
 	form, err := pw.dw.loadSVGForm(data, key, pw.options)
 	if err != nil {
 		return 0, 0, err
@@ -2336,6 +2334,13 @@ func (pw *PageWriter) PrintSVG(data []byte, x, y float64, width, height *float64
 		return 0, 0, err
 	}
 	return pw.units.fromPts(wpts), pw.units.fromPts(hpts), nil
+}
+
+func (pw *PageWriter) svgFormCacheKey(data []byte) string {
+	key := imageKey(data)
+	key += ";stop-opacity=" + svgGradientStopOpacityMode(pw.options).String()
+	key += ";blend-mode=" + svgBlendMode(pw.options).String()
+	return key
 }
 
 func (pw *PageWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
@@ -2869,12 +2874,21 @@ func (pw *PageWriter) SetUnderline(underline bool) (prev bool) {
 	return
 }
 
-func (pw *PageWriter) SetSVGGradientStopOpacityMode(mode string) (prev string) {
+func (pw *PageWriter) SetSVGGradientStopOpacityMode(mode SVGGradientStopOpacityMode) (prev SVGGradientStopOpacityMode) {
 	prev = svgGradientStopOpacityMode(pw.options)
 	if pw.options == nil {
 		pw.options = options.Options{}
 	}
-	pw.options[svgGradientStopOpacityModeOption] = normalizeSVGGradientStopOpacityMode(mode)
+	pw.options[svgGradientStopOpacityModeOption] = svgGradientStopOpacityMode(options.Options{svgGradientStopOpacityModeOption: mode})
+	return prev
+}
+
+func (pw *PageWriter) SetSVGBlendMode(mode SVGBlendMode) (prev SVGBlendMode) {
+	prev = svgBlendMode(pw.options)
+	if pw.options == nil {
+		pw.options = options.Options{}
+	}
+	pw.options[svgBlendModeOption] = svgBlendMode(options.Options{svgBlendModeOption: mode})
 	return prev
 }
 

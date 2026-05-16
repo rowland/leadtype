@@ -54,6 +54,15 @@ func (w *layoutProbeWriter) ClipText(text string, fn func()) error {
 	}
 	return nil
 }
+func (w *layoutProbeWriter) CompressEmbeddedFonts(value bool) *pdf.DocWriter {
+	return w.base.CompressEmbeddedFonts(value)
+}
+func (w *layoutProbeWriter) CompressPages(value bool) *pdf.DocWriter {
+	return w.base.CompressPages(value)
+}
+func (w *layoutProbeWriter) CompressToUnicode(value bool) *pdf.DocWriter {
+	return w.base.CompressToUnicode(value)
+}
 func (w *layoutProbeWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }
@@ -154,6 +163,12 @@ func (w *layoutProbeWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
 	return w.base.SetLineSpacing(lineSpacing)
 }
 func (w *layoutProbeWriter) SetLineWidth(width float64) {}
+func (w *layoutProbeWriter) SetSVGBlendMode(mode pdf.SVGBlendMode) pdf.SVGBlendMode {
+	return w.base.SetSVGBlendMode(mode)
+}
+func (w *layoutProbeWriter) SetSVGGradientStopOpacityMode(mode pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
+	return w.base.SetSVGGradientStopOpacityMode(mode)
+}
 func (w *layoutProbeWriter) SetStrikeout(strikeout bool) (prev bool) {
 	return w.base.SetStrikeout(strikeout)
 }

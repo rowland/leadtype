@@ -615,21 +615,83 @@ func TestDocWriter_SetOptions(t *testing.T) {
 
 func TestDocWriter_SetSVGGradientStopOpacityMode(t *testing.T) {
 	dw := NewDocWriter()
-	if prev := dw.SetSVGGradientStopOpacityMode("compatibility"); prev != svgGradientStopOpacityModeSoftMask {
-		t.Fatalf("expected previous mode %q, got %q", svgGradientStopOpacityModeSoftMask, prev)
+	if prev := dw.SetSVGGradientStopOpacityMode(SVGGradientStopOpacityModeCompatibility); prev != SVGGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected previous mode %q, got %q", SVGGradientStopOpacityModeSoftMask, prev)
 	}
-	if got := svgGradientStopOpacityMode(dw.options); got != svgGradientStopOpacityModeFlat {
-		t.Fatalf("expected doc mode %q, got %q", svgGradientStopOpacityModeFlat, got)
+	if got := svgGradientStopOpacityMode(dw.options); got != SVGGradientStopOpacityModeCompatibility {
+		t.Fatalf("expected doc mode %q, got %q", SVGGradientStopOpacityModeCompatibility, got)
 	}
 	pw := dw.NewPage()
-	if got := svgGradientStopOpacityMode(pw.options); got != svgGradientStopOpacityModeFlat {
-		t.Fatalf("expected page to inherit mode %q, got %q", svgGradientStopOpacityModeFlat, got)
+	if got := svgGradientStopOpacityMode(pw.options); got != SVGGradientStopOpacityModeCompatibility {
+		t.Fatalf("expected page to inherit mode %q, got %q", SVGGradientStopOpacityModeCompatibility, got)
 	}
-	if prev := dw.SetSVGGradientStopOpacityMode("soft-mask"); prev != svgGradientStopOpacityModeFlat {
-		t.Fatalf("expected previous mode %q, got %q", svgGradientStopOpacityModeFlat, prev)
+	if prev := dw.SetSVGGradientStopOpacityMode(SVGGradientStopOpacityModeSoftMask); prev != SVGGradientStopOpacityModeCompatibility {
+		t.Fatalf("expected previous mode %q, got %q", SVGGradientStopOpacityModeCompatibility, prev)
 	}
-	if got := svgGradientStopOpacityMode(pw.options); got != svgGradientStopOpacityModeSoftMask {
-		t.Fatalf("expected current page mode %q after doc update, got %q", svgGradientStopOpacityModeSoftMask, got)
+	if got := svgGradientStopOpacityMode(pw.options); got != SVGGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected current page mode %q after doc update, got %q", SVGGradientStopOpacityModeSoftMask, got)
+	}
+}
+
+func TestParseSVGGradientStopOpacityMode(t *testing.T) {
+	valid := []struct {
+		value string
+		want  SVGGradientStopOpacityMode
+	}{
+		{"soft-mask", SVGGradientStopOpacityModeSoftMask},
+		{"compatibility", SVGGradientStopOpacityModeCompatibility},
+	}
+	for _, tt := range valid {
+		got, ok := ParseSVGGradientStopOpacityMode(tt.value)
+		if !ok || got != tt.want {
+			t.Fatalf("ParseSVGGradientStopOpacityMode(%q) = %q, want %q", tt.value, got, tt.want)
+		}
+	}
+	for _, value := range []string{"", "default", "softmask", "flat", "compatible", "Compatibility", " compatibility "} {
+		if got, ok := ParseSVGGradientStopOpacityMode(value); ok {
+			t.Fatalf("ParseSVGGradientStopOpacityMode(%q) = %q, want invalid", value, got)
+		}
+	}
+}
+
+func TestDocWriter_SetSVGBlendMode(t *testing.T) {
+	dw := NewDocWriter()
+	if prev := dw.SetSVGBlendMode(SVGBlendModeIgnore); prev != SVGBlendModeRespect {
+		t.Fatalf("expected previous mode %q, got %q", SVGBlendModeRespect, prev)
+	}
+	if got := svgBlendMode(dw.options); got != SVGBlendModeIgnore {
+		t.Fatalf("expected doc mode %q, got %q", SVGBlendModeIgnore, got)
+	}
+	pw := dw.NewPage()
+	if got := svgBlendMode(pw.options); got != SVGBlendModeIgnore {
+		t.Fatalf("expected page to inherit mode %q, got %q", SVGBlendModeIgnore, got)
+	}
+	if prev := dw.SetSVGBlendMode(SVGBlendModeRespect); prev != SVGBlendModeIgnore {
+		t.Fatalf("expected previous mode %q, got %q", SVGBlendModeIgnore, prev)
+	}
+	if got := svgBlendMode(pw.options); got != SVGBlendModeRespect {
+		t.Fatalf("expected current page mode %q after doc update, got %q", SVGBlendModeRespect, got)
+	}
+}
+
+func TestParseSVGBlendMode(t *testing.T) {
+	valid := []struct {
+		value string
+		want  SVGBlendMode
+	}{
+		{"respect", SVGBlendModeRespect},
+		{"ignore", SVGBlendModeIgnore},
+	}
+	for _, tt := range valid {
+		got, ok := ParseSVGBlendMode(tt.value)
+		if !ok || got != tt.want {
+			t.Fatalf("ParseSVGBlendMode(%q) = %q, want %q", tt.value, got, tt.want)
+		}
+	}
+	for _, value := range []string{"", "default", "honor", "keep", "drop", "off", "none", "compatibility", "Ignore", " ignore "} {
+		if got, ok := ParseSVGBlendMode(value); ok {
+			t.Fatalf("ParseSVGBlendMode(%q) = %q, want invalid", value, got)
+		}
 	}
 }
 

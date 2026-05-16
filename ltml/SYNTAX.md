@@ -67,6 +67,7 @@ elements.
 | `compress-embedded-fonts` | If `true`, compress embedded font subset streams. Default: `false`. |
 | `ua` | If `true`, opt the whole document into tagged PDF output and accessibility structure generation. Default: `false`. |
 | `svg-gradient-stop-opacity-mode` | SVG gradient stop-opacity rendering mode. Use `compatibility` to collapse varying stop alpha to flat object opacity for broader PDF viewer compatibility. Default: `soft-mask`. |
+| `svg-blend-mode` | SVG `mix-blend-mode` handling. Use `ignore` to drop blend modes (matches legacy PDFlib output). Default: `respect` (matches WebKit/Chrome). |
 
 #### Tagged PDF Accessibility
 
@@ -130,6 +131,30 @@ Use `compatibility` when a document needs more consistent rendering in Preview
 or PDF.js and the slight loss of intra-gradient transparency is acceptable. See
 [docs/svg-rendering-compatibility.md](../docs/svg-rendering-compatibility.md)
 for the PDF and Go API versions of the same setting.
+
+#### SVG Blend Mode Compatibility
+
+SVG `mix-blend-mode` declarations (e.g. `hard-light`) are honored by default.
+Some legacy SVG→PDF pipelines silently drop blend modes; when artwork was
+tuned against that flatter output, honoring the blend mode can produce
+unexpectedly bright or saturated regions. Set `svg-blend-mode="ignore"` on the
+root document to drop SVG blend modes entirely:
+
+```xml
+<ltml svg-blend-mode="ignore">
+  <page>
+    <image src="hero.svg" width="4in" />
+  </page>
+</ltml>
+```
+
+Accepted values:
+
+- `respect` — default; emit PDF blend-mode entries (matches WebKit/Chrome)
+- `ignore` — silently drop blend modes (matches legacy PDFlib output)
+
+The setting is independent of `svg-gradient-stop-opacity-mode` and they can be
+combined.
 
 ---
 

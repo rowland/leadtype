@@ -131,6 +131,14 @@ func testSVGUseMaskBlendFixture() []byte {
 </svg>`)
 }
 
+func testSVGBlendModeFixture() []byte {
+	return []byte(`
+<svg width="80" height="40" viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+  <rect width="80" height="40" fill="#cccccc"/>
+  <rect x="10" y="5" width="60" height="30" fill="#5290ae" style="mix-blend-mode:hard-light"/>
+</svg>`)
+}
+
 func testSVGClippedUseGradientFixture() []byte {
 	return []byte(`
 <svg width="240" height="160" viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -844,7 +852,7 @@ func TestDocWriter_PrintSVG_CacheSeparatesStopOpacityModes(t *testing.T) {
 	if _, _, err := dw.PrintSVG(testSVGGradientOpacityFixture(), 0, 0, &width, nil); err != nil {
 		t.Fatal(err)
 	}
-	dw.SetSVGGradientStopOpacityMode("compatibility")
+	dw.SetSVGGradientStopOpacityMode(SVGGradientStopOpacityModeCompatibility)
 	dw.NewPage()
 	if _, _, err := dw.PrintSVG(testSVGGradientOpacityFixture(), 0, 0, &width, nil); err != nil {
 		t.Fatal(err)
@@ -900,8 +908,8 @@ func TestPageWriter_PrintSVG_GradientOpacityUsesSoftMask(t *testing.T) {
 func TestPageWriter_PrintSVG_GradientOpacityCompatibilityModeUsesFlatAlpha(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{"units": "pt"})
-	if prev := pw.SetSVGGradientStopOpacityMode("compatibility"); prev != svgGradientStopOpacityModeSoftMask {
-		t.Fatalf("expected default mode %q, got %q", svgGradientStopOpacityModeSoftMask, prev)
+	if prev := pw.SetSVGGradientStopOpacityMode(SVGGradientStopOpacityModeCompatibility); prev != SVGGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected default mode %q, got %q", SVGGradientStopOpacityModeSoftMask, prev)
 	}
 	width := 120.0
 	if _, _, err := pw.PrintSVG(testSVGGradientOpacityFixture(), 0, 0, &width, nil); err != nil {
@@ -942,6 +950,35 @@ func TestPageWriter_PrintSVG_UseMaskAndBlendMode(t *testing.T) {
 		if !strings.Contains(got, fragment) {
 			t.Fatalf("expected SVG use/mask/blend output to contain %q, got:\n%s", fragment, got)
 		}
+	}
+}
+
+func TestPageWriter_PrintSVG_BlendModeCacheKeySeparatesModes(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{"units": "pt"})
+	width := 80.0
+	svgData := testSVGBlendModeFixture()
+
+	pw.SetSVGBlendMode(SVGBlendModeIgnore)
+	if _, _, err := pw.PrintSVG(svgData, 0, 0, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	pw.SetSVGBlendMode(SVGBlendModeRespect)
+	if _, _, err := pw.PrintSVG(svgData, 0, 50, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	pw.close()
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if strings.Count(got, "/Subtype /Form") != 2 {
+		t.Fatalf("expected separate cached SVG forms for blend modes, got:\n%s", got)
+	}
+	if count := strings.Count(got, "/HardLight"); count != 1 {
+		t.Fatalf("expected only respected SVG form to emit /HardLight, got %d occurrences in:\n%s", count, got)
 	}
 }
 

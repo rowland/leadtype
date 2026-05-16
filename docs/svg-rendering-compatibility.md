@@ -32,22 +32,20 @@ Document-wide:
 
 ```go
 doc := pdf.NewDocWriter()
-doc.SetSVGGradientStopOpacityMode("compatibility")
+doc.SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityModeCompatibility)
 ```
 
 Page-specific:
 
 ```go
 page := doc.NewPage()
-page.SetSVGGradientStopOpacityMode("compatibility")
+page.SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityModeCompatibility)
 ```
 
-Accepted values:
+Accepted LTML values:
 
-- `soft-mask`
+- `soft-mask` (default)
 - `compatibility`
-
-Default: `soft-mask`
 
 ## LTML
 
@@ -73,3 +71,70 @@ Leave the default `soft-mask` mode when:
 
 - Chrome/PDFium-style rendering is the priority
 - preserving the original SVG transparency ramp matters more than cross-viewer consistency
+
+## Blend Mode Compatibility
+
+By default, LeadType honors SVG `mix-blend-mode` declarations (e.g.
+`mix-blend-mode: hard-light`) and emits the corresponding PDF blend-mode entry.
+This produces output that matches WebKit/Chrome rendering.
+
+Some legacy SVG→PDF pipelines (notably older PDFlib releases) silently drop
+`mix-blend-mode`. Designer artwork that was tuned against that flatter output
+can look surprisingly bright or saturated when blend modes are honored,
+because operators like `hard-light` typically amplify contrast against the
+backdrop instead of muting it.
+
+When matching legacy PDFlib-style output matters more than spec-faithful
+blending, switch SVG blend-mode handling to `ignore`.
+
+What it does:
+
+- maps every SVG `mix-blend-mode` to "normal" (no blend mode is emitted)
+- treats blended elements as plain alpha-composited overlays
+
+Tradeoff:
+
+- artwork that *relied* on `hard-light`, `multiply`, etc. to brighten or
+  darken the backdrop will lose that effect
+
+### Go API
+
+Document-wide:
+
+```go
+doc := pdf.NewDocWriter()
+doc.SetSVGBlendMode(pdf.SVGBlendModeIgnore)
+```
+
+Page-specific:
+
+```go
+page := doc.NewPage()
+page.SetSVGBlendMode(pdf.SVGBlendModeIgnore)
+```
+
+Accepted LTML values:
+
+- `respect` (default)
+- `ignore`
+
+### LTML
+
+Use the root document attribute:
+
+```xml
+<ltml svg-blend-mode="ignore">
+  <page>
+    <image src="hero.svg" width="4in" />
+  </page>
+</ltml>
+```
+
+`svg-blend-mode` is independent of `svg-gradient-stop-opacity-mode` and the
+two can be combined when reproducing legacy PDFlib output:
+
+```xml
+<ltml svg-gradient-stop-opacity-mode="compatibility" svg-blend-mode="ignore">
+  ...
+</ltml>
+```

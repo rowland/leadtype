@@ -441,6 +441,11 @@ type Writer interface {
 
     // Page control
     NewPage()
+    CompressPages(bool) *pdf.DocWriter
+    CompressToUnicode(bool) *pdf.DocWriter
+    CompressEmbeddedFonts(bool) *pdf.DocWriter
+    SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode
+    SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode
 }
 ```
 

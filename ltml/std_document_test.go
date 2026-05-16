@@ -11,7 +11,8 @@ type compressionTestWriter struct {
 	compressPages              bool
 	compressToUnicode          bool
 	compressEmbeddedFonts      bool
-	svgGradientStopOpacityMode string
+	svgGradientStopOpacityMode pdf.SVGGradientStopOpacityMode
+	svgBlendMode               pdf.SVGBlendMode
 }
 
 func (w *compressionTestWriter) CompressPages(value bool) *pdf.DocWriter {
@@ -29,9 +30,15 @@ func (w *compressionTestWriter) CompressEmbeddedFonts(value bool) *pdf.DocWriter
 	return nil
 }
 
-func (w *compressionTestWriter) SetSVGGradientStopOpacityMode(value string) string {
+func (w *compressionTestWriter) SetSVGGradientStopOpacityMode(value pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
 	prev := w.svgGradientStopOpacityMode
 	w.svgGradientStopOpacityMode = value
+	return prev
+}
+
+func (w *compressionTestWriter) SetSVGBlendMode(value pdf.SVGBlendMode) pdf.SVGBlendMode {
+	prev := w.svgBlendMode
+	w.svgBlendMode = value
 	return prev
 }
 
@@ -86,7 +93,25 @@ func TestStdDocument_Print_AppliesSVGGradientStopOpacityMode(t *testing.T) {
 	if err := doc.Print(w); err != nil {
 		t.Fatal(err)
 	}
-	if w.svgGradientStopOpacityMode != "compatibility" {
+	if w.svgGradientStopOpacityMode != pdf.SVGGradientStopOpacityModeCompatibility {
 		t.Fatalf("svgGradientStopOpacityMode = %q, want compatibility", w.svgGradientStopOpacityMode)
+	}
+}
+
+func TestStdDocument_Print_AppliesSVGBlendMode(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml svg-blend-mode="ignore">
+  <page><label>Hello</label></page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &compressionTestWriter{labelTestWriter: labelTestWriter{t: t}}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.svgBlendMode != pdf.SVGBlendModeIgnore {
+		t.Fatalf("svgBlendMode = %q, want ignore", w.svgBlendMode)
 	}
 }
