@@ -1,0 +1,25 @@
+<svg width="240" height="150" viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .blend { mix-blend-mode: hard-light; }
+    </style>
+    <linearGradient id="base" x1="0" y1="0" x2="240" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#123a63"/>
+      <stop offset="0.5" stop-color="#4b225e"/>
+      <stop offset="1" stop-color="#1d583f"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0" y1="150" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe500"/>
+      <stop offset="0.48" stop-color="#ff2a8a"/>
+      <stop offset="1" stop-color="#19d8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="150" fill="#f5efe4"/>
+  <rect x="18" y="20" width="204" height="110" rx="20" fill="url(#base)"/>
+  <g class="blend">
+    <circle cx="76" cy="72" r="54" fill="#ffe500"/>
+    <circle cx="148" cy="72" r="58" fill="#ff2a8a"/>
+    <path fill="url(#overlay)" d="M28 108 C76 20 142 142 212 36 L212 130 L28 130 Z"/>
+  </g>
+  <rect x="18" y="20" width="204" height="110" rx="20" fill="none" stroke="#111820" stroke-width="4"/>
+</svg>

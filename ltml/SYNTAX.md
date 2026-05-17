@@ -66,8 +66,8 @@ elements.
 | `compress-to-unicode` | If `true`, compress generated `ToUnicode` streams. Default: `false`. |
 | `compress-embedded-fonts` | If `true`, compress embedded font subset streams. Default: `false`. |
 | `ua` | If `true`, opt the whole document into tagged PDF output and accessibility structure generation. Default: `false`. |
-| `svg-gradient-stop-opacity-mode` | SVG gradient stop-opacity rendering mode. Use `compatibility` to collapse varying stop alpha to flat object opacity for broader PDF viewer compatibility. Default: `soft-mask`. |
-| `svg-blend-mode` | SVG `mix-blend-mode` handling. Use `ignore` to drop blend modes (matches legacy PDFlib output). Default: `respect` (matches WebKit/Chrome). |
+| `svg-gradient-stop-opacity-mode` | Default SVG gradient stop-opacity rendering mode for pages. Use `compatibility` to collapse varying stop alpha to flat object opacity for broader PDF viewer compatibility. Default: `soft-mask`. |
+| `svg-blend-mode` | Default SVG `mix-blend-mode` handling for pages. Use `ignore` to drop blend modes (matches legacy PDFlib output). Default: `respect` (matches WebKit/Chrome). |
 
 #### Tagged PDF Accessibility
 
@@ -112,12 +112,16 @@ helper explicitly forces tagged output on its writer.
 
 SVG fills that use varying `stop-opacity` can require PDF soft masks, and some
 renderers handle those less reliably than Chrome/PDFium. LTML exposes the PDF
-writer compatibility switch directly on the root document:
+writer compatibility switch on the root document as a default and on individual
+pages as an override:
 
 ```xml
 <ltml svg-gradient-stop-opacity-mode="compatibility">
   <page>
     <image src="hero.svg" width="4in" />
+  </page>
+  <page svg-gradient-stop-opacity-mode="soft-mask">
+    <image src="detailed-art.svg" width="4in" />
   </page>
 </ltml>
 ```
@@ -138,12 +142,16 @@ SVG `mix-blend-mode` declarations (e.g. `hard-light`) are honored by default.
 Some legacy SVG→PDF pipelines silently drop blend modes; when artwork was
 tuned against that flatter output, honoring the blend mode can produce
 unexpectedly bright or saturated regions. Set `svg-blend-mode="ignore"` on the
-root document to drop SVG blend modes entirely:
+root document to drop SVG blend modes by default, or on a single page to keep
+the compatibility concern local:
 
 ```xml
 <ltml svg-blend-mode="ignore">
   <page>
     <image src="hero.svg" width="4in" />
+  </page>
+  <page svg-blend-mode="respect">
+    <image src="artwork.svg" width="4in" />
   </page>
 </ltml>
 ```
@@ -218,6 +226,8 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
+| `svg-gradient-stop-opacity-mode` | Page-local SVG gradient stop-opacity rendering mode. Overrides the document default for SVG assets rendered on this page. |
+| `svg-blend-mode` | Page-local SVG `mix-blend-mode` handling. Overrides the document default for SVG assets rendered on this page. |
 | `font`        | Reference to a named `<font>` style. |
 | `fill`        | Reference to a named `<brush>` style for the background. |
 | `border`      | Reference to a named `<pen>` style for all borders. |

@@ -1,0 +1,41 @@
+<ltml units="in" margin="0.55">
+  <font id="title" name="Helvetica" size="18" weight="Bold" />
+  <font id="body" name="Helvetica" size="9" />
+  <font id="caption" name="Helvetica" size="8" color="#555555" />
+
+  <page layout="vbox" layout.vpadding="0.18">
+    <label font="title">SVG page render options: defaults</label>
+    <p font="body">This page renders the shared SVG fixtures with default PDF SVG behavior.</p>
+    <hbox layout.hpadding="0.28" height="3.0">
+      <vbox width="3.2" layout.vpadding="0.08">
+        <label font.weight="Bold">Gradient stop opacity</label>
+        <svg src="test_063_stop_opacity.svg" width="3.0" border="dotted" padding="4pt" />
+        <label font="caption">Default: soft-mask</label>
+      </vbox>
+      <vbox width="3.2" layout.vpadding="0.08">
+        <label font.weight="Bold">Blend mode</label>
+        <svg src="test_063_blend_mode.svg" width="3.0" border="dotted" padding="4pt" />
+        <label font="caption">Default: respect</label>
+      </vbox>
+    </hbox>
+  </page>
+
+  <page layout="vbox" layout.vpadding="0.18"
+        svg-gradient-stop-opacity-mode="compatibility"
+        svg-blend-mode="ignore">
+    <label font="title">SVG page render options: compatibility</label>
+    <p font="body">This page renders the same SVG fixtures with page-local compatibility overrides.</p>
+    <hbox layout.hpadding="0.28" height="3.0">
+      <vbox width="3.2" layout.vpadding="0.08">
+        <label font.weight="Bold">Gradient stop opacity</label>
+        <svg src="test_063_stop_opacity.svg" width="3.0" border="dotted" padding="4pt" />
+        <label font="caption">Page override: compatibility</label>
+      </vbox>
+      <vbox width="3.2" layout.vpadding="0.08">
+        <label font.weight="Bold">Blend mode</label>
+        <svg src="test_063_blend_mode.svg" width="3.0" border="dotted" padding="4pt" />
+        <label font="caption">Page override: ignore</label>
+      </vbox>
+    </hbox>
+  </page>
+</ltml>

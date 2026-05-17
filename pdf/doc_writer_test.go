@@ -674,6 +674,30 @@ func TestDocWriter_SetSVGBlendMode(t *testing.T) {
 	}
 }
 
+func TestDocWriter_NewPageWithOptionsOverridesSVGDefaults(t *testing.T) {
+	dw := NewDocWriter()
+	dw.SetSVGGradientStopOpacityMode(SVGGradientStopOpacityModeCompatibility)
+	dw.SetSVGBlendMode(SVGBlendModeIgnore)
+
+	pw := dw.NewPageWithOptions(options.Options{
+		SVGGradientStopOpacityModeOption: SVGGradientStopOpacityModeSoftMask,
+		SVGBlendModeOption:               SVGBlendModeRespect,
+	})
+
+	if got := svgGradientStopOpacityMode(pw.options); got != SVGGradientStopOpacityModeSoftMask {
+		t.Fatalf("expected page stop opacity mode %q, got %q", SVGGradientStopOpacityModeSoftMask, got)
+	}
+	if got := svgBlendMode(pw.options); got != SVGBlendModeRespect {
+		t.Fatalf("expected page blend mode %q, got %q", SVGBlendModeRespect, got)
+	}
+	if got := svgGradientStopOpacityMode(dw.options); got != SVGGradientStopOpacityModeCompatibility {
+		t.Fatalf("expected doc stop opacity default %q, got %q", SVGGradientStopOpacityModeCompatibility, got)
+	}
+	if got := svgBlendMode(dw.options); got != SVGBlendModeIgnore {
+		t.Fatalf("expected doc blend mode default %q, got %q", SVGBlendModeIgnore, got)
+	}
+}
+
 func TestParseSVGBlendMode(t *testing.T) {
 	valid := []struct {
 		value string

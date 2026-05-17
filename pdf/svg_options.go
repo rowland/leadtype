@@ -8,6 +8,9 @@ type SVGGradientStopOpacityMode string
 
 const (
 	svgGradientStopOpacityModeOption = "svg_gradient_stop_opacity_mode"
+	// SVGGradientStopOpacityModeOption is the page/document option key for
+	// SVG gradient stop-opacity rendering behavior.
+	SVGGradientStopOpacityModeOption = svgGradientStopOpacityModeOption
 
 	// SVGGradientStopOpacityModeSoftMask preserves varying stop opacity with a
 	// PDF soft mask.
@@ -22,6 +25,9 @@ type SVGBlendMode string
 
 const (
 	svgBlendModeOption = "svg_blend_mode"
+	// SVGBlendModeOption is the page/document option key for SVG mix-blend-mode
+	// rendering behavior.
+	SVGBlendModeOption = svgBlendModeOption
 
 	// SVGBlendModeRespect emits supported PDF blend modes for SVG
 	// mix-blend-mode declarations.

@@ -1,0 +1,17 @@
+<svg width="240" height="150" viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="checker" width="24" height="24" patternUnits="userSpaceOnUse">
+      <rect width="24" height="24" fill="#f4f0e8"/>
+      <rect width="12" height="12" fill="#263746"/>
+      <rect x="12" y="12" width="12" height="12" fill="#263746"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ed1c24" stop-opacity="0"/>
+      <stop offset="0.48" stop-color="#ed1c24" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ed1c24" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="150" fill="url(#checker)"/>
+  <rect x="18" y="22" width="204" height="106" rx="18" fill="url(#fade)"/>
+  <rect x="18" y="22" width="204" height="106" rx="18" fill="none" stroke="#111820" stroke-width="4"/>
+</svg>

@@ -11,20 +11,25 @@ import (
 
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/pdf"
 )
 
 type StdPage struct {
 	StdContainer
 	Scope
-	pageStyle      *PageStyle
-	marginChanged  bool
-	grid           bool
-	gridStep       float64
-	overflow       bool
-	overflowSet    bool
-	flowPageIndex  int
-	flowItems      []*pageItem
-	activeChildren []Widget
+	pageStyle                     *PageStyle
+	marginChanged                 bool
+	grid                          bool
+	gridStep                      float64
+	overflow                      bool
+	overflowSet                   bool
+	svgGradientStopOpacityMode    pdf.SVGGradientStopOpacityMode
+	svgGradientStopOpacityModeSet bool
+	svgBlendMode                  pdf.SVGBlendMode
+	svgBlendModeSet               bool
+	flowPageIndex                 int
+	flowItems                     []*pageItem
+	activeChildren                []Widget
 }
 
 type pageItem struct {
@@ -193,6 +198,18 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 	if overflow, ok := attrs["overflow"]; ok {
 		p.overflowSet = true
 		p.overflow = overflow == "true"
+	}
+	if value, ok := attrs["svg-gradient-stop-opacity-mode"]; ok {
+		if mode, ok := pdf.ParseSVGGradientStopOpacityMode(value); ok {
+			p.svgGradientStopOpacityMode = mode
+			p.svgGradientStopOpacityModeSet = true
+		}
+	}
+	if value, ok := attrs["svg-blend-mode"]; ok {
+		if mode, ok := pdf.ParseSVGBlendMode(value); ok {
+			p.svgBlendMode = mode
+			p.svgBlendModeSet = true
+		}
 	}
 	for k := range attrs {
 		if reMargin.MatchString(k) {
@@ -416,10 +433,17 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 
 func (p *StdPage) newPhysicalPage(w Writer) {
 	if pageWriter, ok := any(w).(PageOptionWriter); ok {
-		pageWriter.NewPageWithOptions(options.Options{
+		opts := options.Options{
 			"page_width":  p.Width(),
 			"page_height": p.Height(),
-		})
+		}
+		if p.svgGradientStopOpacityModeSet {
+			opts[pdf.SVGGradientStopOpacityModeOption] = p.svgGradientStopOpacityMode
+		}
+		if p.svgBlendModeSet {
+			opts[pdf.SVGBlendModeOption] = p.svgBlendMode
+		}
+		pageWriter.NewPageWithOptions(opts)
 		return
 	}
 	w.NewPage()
