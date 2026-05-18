@@ -230,8 +230,13 @@ func ttfFontInfoMatches(f *ttf.FontInfo, family, weightStyle string) bool {
 	if f == nil {
 		return false
 	}
-	if strings.EqualFold(f.Family(), family) && strings.EqualFold(f.Style(), weightStyle) {
+	if strings.EqualFold(f.Family(), family) && fontStyleNameEqual(f.Style(), weightStyle) {
 		return true
+	}
+	if weightStyle != "" && !strings.EqualFold(weightStyle, "Regular") {
+		if strings.EqualFold(f.FullName(), strings.TrimSpace(family+" "+weightStyle)) || strings.EqualFold(f.PostScriptName(), strings.TrimSpace(family+"-"+strings.ReplaceAll(weightStyle, " ", ""))) {
+			return true
+		}
 	}
 	_, _, embedsStyle := splitPostScriptStyleName(family)
 	if (strings.EqualFold(f.PostScriptName(), family) || strings.EqualFold(f.FullName(), family)) && (styleCompatible(f.Style(), weightStyle) || embedsStyle) {
@@ -241,11 +246,15 @@ func ttfFontInfoMatches(f *ttf.FontInfo, family, weightStyle string) bool {
 	if !ok {
 		return false
 	}
-	return normalizedFontName(f.Family()) == normalizedFontName(base) && strings.EqualFold(f.Style(), inferredStyle)
+	return normalizedFontName(f.Family()) == normalizedFontName(base) && fontStyleNameEqual(f.Style(), inferredStyle)
 }
 
 func styleCompatible(fontStyle, requestedStyle string) bool {
-	return requestedStyle == "" || strings.EqualFold(requestedStyle, "Regular") || strings.EqualFold(fontStyle, requestedStyle)
+	return requestedStyle == "" || strings.EqualFold(requestedStyle, "Regular") || fontStyleNameEqual(fontStyle, requestedStyle)
+}
+
+func fontStyleNameEqual(a, b string) bool {
+	return normalizedFontName(a) == normalizedFontName(b)
 }
 
 func splitPostScriptStyleName(name string) (base, style string, ok bool) {
@@ -255,6 +264,28 @@ func splitPostScriptStyleName(name string) (base, style string, ok bool) {
 			text  string
 			style string
 		}{
+			{"ExtraBlackItalic", "Extra Black Italic"},
+			{"ExtraBlack", "Extra Black"},
+			{"ExtraBoldItalic", "Extra Bold Italic"},
+			{"ExtraBold", "Extra Bold"},
+			{"SemiBoldItalic", "Semi Bold Italic"},
+			{"SemiBold", "Semi Bold"},
+			{"DemiBoldItalic", "Demi Bold Italic"},
+			{"DemiBold", "Demi Bold"},
+			{"UltraLightItalic", "Ultra Light Italic"},
+			{"UltraLight", "Ultra Light"},
+			{"ExtraLightItalic", "Extra Light Italic"},
+			{"ExtraLight", "Extra Light"},
+			{"ThinItalic", "Thin Italic"},
+			{"Thin", "Thin"},
+			{"LightItalic", "Light Italic"},
+			{"Light", "Light"},
+			{"MediumItalic", "Medium Italic"},
+			{"Medium", "Medium"},
+			{"BlackItalic", "Black Italic"},
+			{"Black", "Black"},
+			{"HeavyItalic", "Heavy Italic"},
+			{"Heavy", "Heavy"},
 			{"BoldItalic", "Bold Italic"},
 			{"BoldOblique", "Bold Oblique"},
 			{"Regular", "Regular"},

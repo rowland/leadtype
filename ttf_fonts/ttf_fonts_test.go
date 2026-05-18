@@ -110,6 +110,60 @@ func TestTtfFonts_SelectFixtureByPostScriptAndFullNames(t *testing.T) {
 	}
 }
 
+func TestSplitPostScriptStyleName_RecognizesExtendedWeights(t *testing.T) {
+	tests := []struct {
+		name  string
+		base  string
+		style string
+	}{
+		{"Montserrat-Black", "Montserrat", "Black"},
+		{"Montserrat Black", "Montserrat", "Black"},
+		{"Montserrat-ExtraBoldItalic", "Montserrat", "Extra Bold Italic"},
+		{"OpenSans-SemiBold", "OpenSans", "Semi Bold"},
+		{"Avenir-Heavy", "Avenir", "Heavy"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			base, style, ok := splitPostScriptStyleName(test.name)
+			if !ok {
+				t.Fatal("expected style suffix match")
+			}
+			if base != test.base || style != test.style {
+				t.Fatalf("split = (%q, %q), want (%q, %q)", base, style, test.base, test.style)
+			}
+		})
+	}
+}
+
+func TestTtfFontInfoMatches_FullNameFromFamilyAndWeight(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal.ttc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var bold *ttf.FontInfo
+	for _, info := range fc.FontInfos {
+		if info.PostScriptName() == "Minimal-Bold" {
+			bold = info
+			break
+		}
+	}
+	if bold == nil {
+		t.Fatal("Minimal-Bold fixture not found")
+	}
+	if !ttfFontInfoMatches(bold, "Minimal", "Bold") {
+		t.Fatal("expected family + weight to match full name")
+	}
+}
+
+func TestStyleCompatible_NormalizesWeightStyleSpacing(t *testing.T) {
+	if !styleCompatible("SemiBold", "Semi Bold") {
+		t.Fatal("expected SemiBold to match Semi Bold")
+	}
+	if !styleCompatible("UltraLight", "Ultra Light") {
+		t.Fatal("expected UltraLight to match Ultra Light")
+	}
+}
+
 func TestTtfFonts_AddDirLoadsOpenTypeFonts(t *testing.T) {
 	dir := t.TempDir()
 	fontBytes, err := os.ReadFile("../ttf/testdata/minimal.ttf")
@@ -160,6 +214,7 @@ func TestTtfFonts_SelectCFFOpenTypeFonts(t *testing.T) {
 		t.Fatalf("PostScriptName = %q, want MinimalCFF", f.PostScriptName())
 	}
 }
+
 // 81,980,000 ns
 // 45,763,220 ns
 // 44,562,080 ns
