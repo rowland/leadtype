@@ -97,28 +97,32 @@ type cidFont struct {
 }
 
 func (f *cidFont) init(seq, gen int,
+	subType string,
 	baseFont string,
 	fontDescriptor *fontDescriptor,
 	defaultWidth int,
 	widths writer) *cidFont {
 	f.dictionaryObject.init(seq, gen)
 	f.dict["Type"] = name("Font")
-	f.dict["Subtype"] = name("CIDFontType2")
+	f.dict["Subtype"] = name(subType)
 	f.dict["BaseFont"] = name(baseFont)
 	f.dict["CIDSystemInfo"] = &cidSystemInfo{}
 	f.dict["FontDescriptor"] = &indirectObjectRef{fontDescriptor}
 	f.dict["DW"] = integer(defaultWidth)
 	f.dict["W"] = widths
-	f.dict["CIDToGIDMap"] = name("Identity")
+	if subType == "CIDFontType2" {
+		f.dict["CIDToGIDMap"] = name("Identity")
+	}
 	return f
 }
 
 func newCIDFont(seq, gen int,
+	subType string,
 	baseFont string,
 	fontDescriptor *fontDescriptor,
 	defaultWidth int,
 	widths writer) *cidFont {
-	return new(cidFont).init(seq, gen, baseFont, fontDescriptor, defaultWidth, widths)
+	return new(cidFont).init(seq, gen, subType, baseFont, fontDescriptor, defaultWidth, widths)
 }
 
 // setWidths replaces the /W entry after initial construction, used when

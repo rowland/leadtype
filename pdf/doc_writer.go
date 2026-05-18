@@ -363,8 +363,8 @@ func (dw *DocWriter) fontKey(f *font.Font, cpi codepage.CodepageIndex) string {
 	return key
 }
 
-// fontKeyUnicode registers a Type0/CIDFontType2 composite font for the given
-// TrueType font and returns the PDF resource key (e.g. "F0"). The /W and
+// fontKeyUnicode registers a Type0 composite font for the given TrueType or
+// CFF-backed OpenType font and returns the PDF resource key (e.g. "F0"). The /W and
 // ToUnicode entries are left empty and filled in by flushUnicodeFonts at
 // document close, once all glyph usages have been recorded.
 func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
@@ -393,14 +393,18 @@ func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
 	key := fmt.Sprintf("F%d", len(dw.fontKeys))
 	dw.fontKeys[cacheName] = key
 
-	cid := newCIDFont(dw.nextSeq(), 0, psName, descriptor, 1000, array{})
+	cidSubtype := "CIDFontType2"
+	if f.OutlineKind() == "CFF" {
+		cidSubtype = "CIDFontType0"
+	}
+	cid := newCIDFont(dw.nextSeq(), 0, cidSubtype, psName, descriptor, 1000, array{})
 	dw.file.body.add(cid)
 
 	t0 := newType0Font(dw.nextSeq(), 0, psName, cid)
 	dw.file.body.add(t0)
 
 	dw.resources.fonts[key] = &indirectObjectRef{t0}
-	dw.glyphRecorders[psName] = newGlyphRecorder()
+	dw.glyphRecorders[psName] = newGlyphRecorder(f.OutlineKind() == "CFF")
 	dw.unicodeFonts[psName] = f
 	dw.cidFonts[psName] = cid
 	dw.type0Fonts[psName] = t0
@@ -478,21 +482,30 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
 
-		cidMapStream := newStream(dw.nextSeq(), 0, cidToGIDMapData(cidToGID))
-		dw.file.body.add(cidMapStream)
-		dw.cidFonts[psName].setCIDToGIDMap(&indirectObjectRef{cidMapStream})
+		if f.OutlineKind() != "CFF" {
+			cidMapStream := newStream(dw.nextSeq(), 0, cidToGIDMapData(cidToGID))
+			dw.file.body.add(cidMapStream)
+			dw.cidFonts[psName].setCIDToGIDMap(&indirectObjectRef{cidMapStream})
+		}
 
-		// Embed a font subset as /FontFile2 in the descriptor.
+		// Embed a font subset in the descriptor.
 		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
 			fontStream := newStream(dw.nextSeq(), 0, subsetData)
 			fontStream.setLength1(len(subsetData))
+			if f.OutlineKind() == "CFF" {
+				fontStream.setSubtype("OpenType")
+			}
 			if dw.compressEmbeddedFonts {
 				if err := fontStream.compress(); err != nil {
 					panic(err)
 				}
 			}
 			dw.file.body.add(fontStream)
-			dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
+			if f.OutlineKind() == "CFF" {
+				dw.fontDescriptors[psName].setFontFile3(&indirectObjectRef{fontStream})
+			} else {
+				dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
+			}
 
 			// Apply the 6-char subset tag to all three name occurrences:
 			// FontDescriptor/FontName, CIDFont/BaseFont, Type0/BaseFont.

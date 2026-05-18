@@ -34,7 +34,7 @@ var loadSystemFontInfos = func() ([]*ttf.FontInfo, error) {
 	var fc TtfFonts
 	var err error
 	for _, dir := range SystemFontDirs() {
-		for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC"} {
+		for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC", "*.otf", "*.OTF"} {
 			// Ignore errors from individual patterns (directory may not exist).
 			if err2 := fc.Add(filepath.Join(dir, ext)); err2 != nil {
 				err = err2
@@ -109,7 +109,7 @@ func NewFromSystemFonts() (*TtfFonts, error) {
 	return &fc, nil
 }
 
-// AddDir adds all TTF and TTC fonts found in dir. It returns an error if dir
+// AddDir adds all TTF, TTC, and OTF fonts found in dir. It returns an error if dir
 // does not exist or is not a directory; errors loading individual font files
 // are silently ignored, matching the behaviour of AddSystemFonts.
 func (fc *TtfFonts) AddDir(dir string) error {
@@ -120,14 +120,14 @@ func (fc *TtfFonts) AddDir(dir string) error {
 	if !info.IsDir() {
 		return fmt.Errorf("font directory %q is not a directory", dir)
 	}
-	for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC"} {
+	for _, ext := range []string{"*.ttf", "*.TTF", "*.ttc", "*.TTC", "*.otf", "*.OTF"} {
 		fc.Add(filepath.Join(dir, ext)) // errors loading individual fonts are non-fatal
 	}
 	return nil
 }
 
-// AddSystemFonts adds all TTF and TTC fonts found in the platform's standard
-// font directories.
+// AddSystemFonts adds all TTF, TTC, and OTF fonts found in the platform's
+// standard font directories.
 func (fc *TtfFonts) AddSystemFonts() error {
 	infos, err := cachedSystemFontInfos()
 	fc.FontInfos = append(fc.FontInfos, infos...)
@@ -165,11 +165,18 @@ func (fc *TtfFonts) Add(pattern string) (err error) {
 				err = fmt.Errorf("Error loading %s: %s", pathname, err2)
 				continue
 			}
-			fc.FontInfos = append(fc.FontInfos, infos...)
+			for _, fi := range infos {
+				if fi.HasSupportedOutlines() {
+					fc.FontInfos = append(fc.FontInfos, fi)
+				}
+			}
 		} else {
 			fi, err2 := ttf.LoadFontInfo(pathname)
 			if err2 != nil {
 				err = fmt.Errorf("Error loading %s: %s", pathname, err2)
+				continue
+			}
+			if !fi.HasSupportedOutlines() {
 				continue
 			}
 			fc.FontInfos = append(fc.FontInfos, fi)

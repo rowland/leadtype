@@ -6,10 +6,53 @@ package ttf
 import (
 	"encoding/binary"
 	"os"
+	"strings"
 	"testing"
+
+	"github.com/rowland/leadtype/font"
 )
 
 const minimalTTF = "testdata/minimal.ttf"
+
+const minimalCFF = "testdata/minimal-cff.otf"
+
+func TestSubset_CFFOpenType(t *testing.T) {
+	orig, err := LoadFont(minimalCFF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := orig.OutlineKind(); got != font.OutlineCFF {
+		t.Fatalf("OutlineKind = %q, want %q", got, font.OutlineCFF)
+	}
+	glyphs := []uint16{
+		orig.GlyphIndex('M'),
+		orig.GlyphIndex('o'),
+		orig.GlyphIndex('n'),
+		orig.GlyphIndex('t'),
+	}
+	subset, err := orig.Subset(glyphs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	subsetFont, err := LoadFontFromBytes(subset)
+	if err != nil {
+		t.Fatalf("LoadFontFromBytes(subset) = %v", err)
+	}
+	if got := subsetFont.OutlineKind(); got != font.OutlineCFF {
+		t.Fatalf("subset OutlineKind = %q, want %q", got, font.OutlineCFF)
+	}
+	for _, r := range "Mont" {
+		if subsetFont.GlyphIndex(r) == 0 {
+			t.Fatalf("subset missing glyph for %q", r)
+		}
+	}
+	if subsetFont.NumGlyphs() >= orig.NumGlyphs() {
+		t.Fatalf("subset NumGlyphs = %d, want less than original %d", subsetFont.NumGlyphs(), orig.NumGlyphs())
+	}
+	if !strings.Contains(string(subset), "CFF ") {
+		t.Fatal("subset sfnt missing CFF table tag")
+	}
+}
 
 // TestSubset_ReducesSize checks that a subset is strictly smaller than the original.
 func TestSubset_ReducesSize(t *testing.T) {

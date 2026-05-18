@@ -3,6 +3,12 @@
 
 package font
 
+const (
+	OutlineType1    = "Type1"
+	OutlineTrueType = "TrueType"
+	OutlineCFF      = "CFF"
+)
+
 type FontMetrics interface {
 	AdvanceWidth(codepoint rune) (width int, err bool)
 	// AdvanceWidthForGlyph returns the advance width for the given glyph ID in
@@ -31,6 +37,7 @@ type FontMetrics interface {
 	// Manufacturer() string
 	// MaxWidth() int
 	NumGlyphs() int
+	OutlineKind() string
 	PostScriptName() string
 	// Serif() bool TODO
 	StemV() int

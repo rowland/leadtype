@@ -161,6 +161,10 @@ func (font *Font) NumGlyphs() int {
 	return font.numGlyphs
 }
 
+func (font *Font) OutlineKind() string {
+	return "Type1"
+}
+
 func (font *Font) Serif() bool {
 	return font.serif
 }

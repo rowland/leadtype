@@ -35,6 +35,10 @@ func (table *maxpTable) init(file io.ReadSeeker, entry *tableDirEntry) (err erro
 	if err = table.version.Read(file); err != nil {
 		return
 	}
+	if entry.length == 6 || table.version.Tof64() == 0.5 {
+		err = readValues(file, &table.numGlyphs)
+		return
+	}
 	err = readValues(file,
 		&table.numGlyphs,
 		&table.maxPoints,

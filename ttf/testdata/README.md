@@ -6,14 +6,15 @@ from fonts with permissive licences.
 
 ---
 
-## `minimal.ttf` and `minimal.ttc`
+## `minimal.ttf`, `minimal-cff.otf`, and `minimal.ttc`
 
 **Source:** generated
 **Licence:** public domain (programmatically constructed)
 **Generator:** `ttf/testdata/generate/main.go`
 
-Minimal valid TrueType fonts with a square glyph for every mapped codepoint.
-Designed to be small and stable — metrics are what matter, not outlines.
+Minimal valid TrueType and OpenType/CFF fonts with a square glyph for every
+mapped codepoint. Designed to be small and stable — metrics and embedding
+behavior are what matter, not outline design.
 
 ### Codepoint coverage
 
@@ -40,9 +41,17 @@ Designed to be small and stable — metrics are what matter, not outlines.
 go run ttf/testdata/generate/main.go
 ```
 
-Run from the module root.  The generator writes both `minimal.ttf` and
-`minimal.ttc` into this directory.  Regenerate only when the fixture
-specification changes, then re-run `go test ./ttf/...` to verify.
+Run from the module root.  The generator writes `minimal.ttf`,
+`minimal-cff.otf`, and `minimal.ttc` into this directory. Regenerate only when
+the fixture specification changes, then re-run `go test ./ttf/...` to verify.
+
+### `minimal-cff.otf`
+
+`minimal-cff.otf` uses an OpenType `OTTO` sfnt wrapper with a CFF table, a CFF
+`maxp` version 0.5 table, and the same cmap/metrics coverage as `minimal.ttf`.
+It exists to exercise CFF-backed OpenType loading, subsetting, and PDF
+embedding without depending on workstation fonts or redistributing third-party
+font files.
 
 ### `minimal.ttc` layout
 

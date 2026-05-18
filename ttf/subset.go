@@ -27,6 +27,13 @@ const (
 // glyf/loca so the embedded subset is materially smaller while preserving
 // glyph IDs up to the highest included glyph.
 func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
+	if font.HasCFFOutlines() {
+		return font.subsetCFFOpenType(glyphIDs)
+	}
+	return font.subsetTrueType(glyphIDs)
+}
+
+func (font *Font) subsetTrueType(glyphIDs []uint16) ([]byte, error) {
 	raw, err := os.ReadFile(font.filename)
 	if err != nil {
 		return nil, fmt.Errorf("subset: reading %s: %w", font.filename, err)

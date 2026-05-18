@@ -60,6 +60,71 @@ func TestLoadFontInfo(t *testing.T) {
 	expectUI32(t, "CharRanges[3]", 0, cr[3])
 }
 
+func TestFontInfo_CFFOutlines(t *testing.T) {
+	fi, err := LoadFontInfo("testdata/minimal-cff.otf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fi.HasCFFOutlines() {
+		t.Fatal("HasCFFOutlines = false, want true")
+	}
+	if fi.HasTrueTypeOutlines() {
+		t.Fatal("HasTrueTypeOutlines = true, want false")
+	}
+	if !fi.HasSupportedOutlines() {
+		t.Fatal("HasSupportedOutlines = false, want true")
+	}
+	cidKeyed, err := fi.HasCIDKeyedCFFOutlines()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cidKeyed {
+		t.Fatal("HasCIDKeyedCFFOutlines = true, want false")
+	}
+}
+
+func TestCFFDataIsCIDKeyed(t *testing.T) {
+	cidKeyed, err := cffDataIsCIDKeyed(testCFFData([]byte{12, 30}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cidKeyed {
+		t.Fatal("cid-keyed CFF was not detected")
+	}
+	cidKeyed, err = cffDataIsCIDKeyed(testCFFData([]byte{15}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cidKeyed {
+		t.Fatal("non-CID CFF detected as CID-keyed")
+	}
+}
+
+func testCFFData(topDict []byte) []byte {
+	data := []byte{1, 0, 4, 4}
+	data = append(data, testCFFIndex([][]byte{[]byte("Test")})...)
+	data = append(data, testCFFIndex([][]byte{topDict})...)
+	return data
+}
+
+func testCFFIndex(items [][]byte) []byte {
+	out := []byte{byte(len(items) >> 8), byte(len(items))}
+	if len(items) == 0 {
+		return out
+	}
+	out = append(out, 1) // offSize
+	offset := byte(1)
+	for _, item := range items {
+		out = append(out, offset)
+		offset += byte(len(item))
+	}
+	out = append(out, offset)
+	for _, item := range items {
+		out = append(out, item...)
+	}
+	return out
+}
+
 var arialTableNames = []string{
 	"DSIG",
 	"GDEF",

@@ -233,14 +233,18 @@ func (font *Font) Bytes() []byte {
 	return nil
 }
 
+func (font *Font) OutlineKind() string {
+	return font.metrics.OutlineKind()
+}
+
 // Subsetter is an optional interface implemented by FontMetrics backends that
-// support font subsetting (currently only TTF). When implemented, SubsetBytes
-// returns a self-consistent TTF binary containing only the requested glyphs.
+// support font subsetting. When implemented, SubsetBytes returns a
+// self-consistent font binary containing only the requested glyphs.
 type Subsetter interface {
 	Subset(glyphIDs []uint16) ([]byte, error)
 }
 
-// SubsetBytes returns a TTF binary containing only the supplied glyph IDs, or
+// SubsetBytes returns a font binary containing only the supplied glyph IDs, or
 // an error if the underlying font type does not support subsetting.
 func (font *Font) SubsetBytes(glyphIDs []uint16) ([]byte, error) {
 	if s, ok := font.metrics.(Subsetter); ok {

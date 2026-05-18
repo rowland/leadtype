@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 )
 
 func main() {
@@ -25,12 +26,19 @@ func main() {
 
 	ttfData := buildFont("Minimal", "Regular", 400)
 	ttfBold := buildFont("Minimal", "Bold", 700)
+	otfData := buildCFFFont("MinimalCFF", "Regular", 400)
 
 	if err := os.WriteFile(filepath.Join(outDir, "minimal.ttf"), ttfData, 0644); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	fmt.Println("wrote minimal.ttf")
+
+	if err := os.WriteFile(filepath.Join(outDir, "minimal-cff.otf"), otfData, 0644); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	fmt.Println("wrote minimal-cff.otf")
 
 	ttcData := buildTTC(ttfData, ttfBold)
 	if err := os.WriteFile(filepath.Join(outDir, "minimal.ttc"), ttcData, 0644); err != nil {
@@ -96,6 +104,25 @@ func buildFont(family, subfamily string, weight uint16) []byte {
 	}
 
 	return assembleTTF(tables)
+}
+
+func buildCFFFont(family, subfamily string, weight uint16) []byte {
+	cp := codepoints()
+	numGlyphs := uint16(len(cp) + 1) // +1 for .notdef (glyph 0)
+
+	tables := map[string][]byte{
+		"CFF ": buildCFF(family, numGlyphs),
+		"cmap": buildCmap(cp),
+		"head": buildHead(),
+		"hhea": buildHhea(numGlyphs),
+		"hmtx": buildHmtx(numGlyphs),
+		"maxp": buildCFFMaxp(numGlyphs),
+		"name": buildName(family, subfamily),
+		"OS/2": buildOS2(weight, cp),
+		"post": buildPost(),
+	}
+
+	return assembleSFNT(0x4F54544F, tables)
 }
 
 // ── table builders ────────────────────────────────────────────────────────────
@@ -376,6 +403,88 @@ func buildMaxp(numGlyphs uint16) []byte {
 	return b.Bytes()
 }
 
+func buildCFFMaxp(numGlyphs uint16) []byte {
+	var b bytes.Buffer
+	putU32(&b, 0x00005000) // version 0.5 for CFF OpenType fonts
+	putU16(&b, numGlyphs)
+	return b.Bytes()
+}
+
+func buildCFF(family string, numGlyphs uint16) []byte {
+	nameIndex := buildCFFIndex([][]byte{[]byte(strings.ReplaceAll(family, " ", ""))})
+	stringIndex := buildCFFIndex(nil)
+	globalSubrs := buildCFFIndex(nil)
+	charsets := buildCFFCharset(numGlyphs)
+
+	charstrings := make([][]byte, numGlyphs)
+	for i := range charstrings {
+		charstrings[i] = cffBoxCharstring()
+	}
+	charStringsIndex := buildCFFIndex(charstrings)
+
+	var out []byte
+	var lastTop []byte
+	for i := 0; i < 8; i++ {
+		topIndex := buildCFFIndex([][]byte{lastTop})
+		charsetOffset := 4 + len(nameIndex) + len(topIndex) + len(stringIndex) + len(globalSubrs)
+		charStringsOffset := charsetOffset + len(charsets)
+		var top []byte
+		top = appendCFFInt(top, 0)
+		top = appendCFFInt(top, descent)
+		top = appendCFFInt(top, glyphWidth)
+		top = appendCFFInt(top, ascent)
+		top = append(top, 5) // FontBBox
+		top = appendCFFInt(top, charsetOffset)
+		top = append(top, 15) // charset
+		top = appendCFFInt(top, charStringsOffset)
+		top = append(top, 17) // CharStrings
+		if bytes.Equal(top, lastTop) {
+			var b bytes.Buffer
+			b.Write([]byte{1, 0, 4, 4})
+			b.Write(nameIndex)
+			b.Write(buildCFFIndex([][]byte{top}))
+			b.Write(stringIndex)
+			b.Write(globalSubrs)
+			b.Write(charsets)
+			b.Write(charStringsIndex)
+			out = b.Bytes()
+			break
+		}
+		lastTop = top
+	}
+	if out == nil {
+		panic("CFF top dict offsets did not converge")
+	}
+	return out
+}
+
+func buildCFFCharset(numGlyphs uint16) []byte {
+	var b bytes.Buffer
+	b.WriteByte(0) // format 0
+	for gid := uint16(1); gid < numGlyphs; gid++ {
+		putU16(&b, 1) // standard SID "space"; glyph names are irrelevant here
+	}
+	return b.Bytes()
+}
+
+func cffBoxCharstring() []byte {
+	var b bytes.Buffer
+	appendCFFIntTo(&b, 50)
+	appendCFFIntTo(&b, 0)
+	b.WriteByte(21) // rmoveto
+	appendCFFIntTo(&b, glyphWidth)
+	appendCFFIntTo(&b, 0)
+	appendCFFIntTo(&b, 0)
+	appendCFFIntTo(&b, glyphHeight)
+	appendCFFIntTo(&b, -glyphWidth)
+	appendCFFIntTo(&b, 0)
+	appendCFFIntTo(&b, 0)
+	appendCFFIntTo(&b, -glyphHeight)
+	b.WriteByte(5)  // rlineto
+	b.WriteByte(14) // endchar
+	return b.Bytes()
+}
+
 func buildName(family, subfamily string) []byte {
 	postscript := family + "-" + subfamily
 	if subfamily == "Regular" {
@@ -507,6 +616,10 @@ func buildPost() []byte {
 var tableOrder = []string{"OS/2", "cmap", "glyf", "head", "hhea", "hmtx", "loca", "maxp", "name", "post"}
 
 func assembleTTF(tables map[string][]byte) []byte {
+	return assembleSFNT(0x00010000, tables)
+}
+
+func assembleSFNT(scalar uint32, tables map[string][]byte) []byte {
 	// Sort tables by tag (required order for some readers; spec recommends specific order).
 	var tags []string
 	for t := range tables {
@@ -556,7 +669,7 @@ func assembleTTF(tables map[string][]byte) []byte {
 	var b bytes.Buffer
 
 	// Offset table
-	putU32(&b, 0x00010000) // sfVersion: TrueType
+	putU32(&b, scalar)
 	putU16(&b, nTables)
 	putU16(&b, searchRange)
 	putU16(&b, entrySelector)
@@ -591,6 +704,77 @@ func assembleTTF(tables map[string][]byte) []byte {
 		}
 	}
 	return result
+}
+
+func buildCFFIndex(items [][]byte) []byte {
+	var b bytes.Buffer
+	putU16(&b, uint16(len(items)))
+	if len(items) == 0 {
+		return b.Bytes()
+	}
+	total := 1
+	for _, item := range items {
+		total += len(item)
+	}
+	offSize := cffOffsetSize(total)
+	b.WriteByte(byte(offSize))
+	offset := 1
+	for _, item := range items {
+		writeCFFOffset(&b, offset, offSize)
+		offset += len(item)
+	}
+	writeCFFOffset(&b, offset, offSize)
+	for _, item := range items {
+		b.Write(item)
+	}
+	return b.Bytes()
+}
+
+func cffOffsetSize(maxOffset int) int {
+	switch {
+	case maxOffset <= 0xff:
+		return 1
+	case maxOffset <= 0xffff:
+		return 2
+	case maxOffset <= 0xffffff:
+		return 3
+	default:
+		return 4
+	}
+}
+
+func writeCFFOffset(b *bytes.Buffer, value, size int) {
+	for shift := (size - 1) * 8; shift >= 0; shift -= 8 {
+		b.WriteByte(byte(value >> shift))
+	}
+}
+
+func appendCFFInt(out []byte, v int) []byte {
+	var b bytes.Buffer
+	b.Write(out)
+	appendCFFIntTo(&b, v)
+	return b.Bytes()
+}
+
+func appendCFFIntTo(b *bytes.Buffer, v int) {
+	switch {
+	case v >= -107 && v <= 107:
+		b.WriteByte(byte(v + 139))
+	case v >= 108 && v <= 1131:
+		v -= 108
+		b.WriteByte(byte(v/256 + 247))
+		b.WriteByte(byte(v % 256))
+	case v <= -108 && v >= -1131:
+		v = -v - 108
+		b.WriteByte(byte(v/256 + 251))
+		b.WriteByte(byte(v % 256))
+	case v >= -32768 && v <= 32767:
+		b.WriteByte(28)
+		putU16(b, uint16(int16(v)))
+	default:
+		b.WriteByte(29)
+		putU32(b, uint32(int32(v)))
+	}
 }
 
 // ── TTC builder ───────────────────────────────────────────────────────────────

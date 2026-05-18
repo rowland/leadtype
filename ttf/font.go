@@ -26,6 +26,20 @@ type Font struct {
 	supportsArabic bool
 }
 
+func (font *Font) OutlineKind() string {
+	if font.HasCFFOutlines() {
+		cidKeyed, err := font.HasCIDKeyedCFFOutlines()
+		if err == nil && cidKeyed {
+			// CID-keyed CFF system fonts are loadable through the legacy
+			// composite path, but the new CFF subset/embed path handles
+			// non-CID CFF1 fonts only.
+			return "TrueType"
+		}
+		return "CFF"
+	}
+	return "TrueType"
+}
+
 // FontKey returns a stable string identifying this font, used as a cache key
 // by the shaper. No I/O is performed.
 func (font *Font) FontKey() string {

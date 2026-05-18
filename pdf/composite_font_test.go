@@ -329,6 +329,56 @@ func TestUnicodeMode_FontFile2_Compressed(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_CFFOpenTypeFontFile3(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal-cff.otf")
+
+	render := func() string {
+		dw := NewDocWriter()
+		dw.AddFontSource(fc)
+
+		pw := dw.NewPage()
+		pw.SetFont("MinimalCFF", 12, options.Options{})
+		pw.MoveTo(72, 720)
+		pw.Print("MinimalCFF")
+
+		var buf bytes.Buffer
+		dw.WriteTo(&buf)
+		return buf.String()
+	}
+
+	pdf := render()
+	if !strings.Contains(pdf, "/Type0") {
+		t.Fatal("expected /Type0 in CFF OTF output")
+	}
+	if !strings.Contains(pdf, "/CIDFontType0") {
+		t.Fatalf("expected /CIDFontType0 in CFF OTF output, got excerpt:\n%s", extractSection(pdf, "/FontDescriptor", 800))
+	}
+	if strings.Contains(pdf, "/CIDFontType2") {
+		t.Fatal("did not expect /CIDFontType2 for CFF OTF output")
+	}
+	if !strings.Contains(pdf, "/FontFile3") {
+		t.Fatalf("expected /FontFile3 in CFF OTF output, got excerpt:\n%s", extractSection(pdf, "/FontDescriptor", 800))
+	}
+	if !strings.Contains(pdf, "/Subtype /OpenType") {
+		t.Fatalf("expected FontFile3 /Subtype /OpenType, got excerpt:\n%s", extractSection(pdf, "/FontFile3", 800))
+	}
+	if strings.Contains(pdf, "/FontFile2") {
+		t.Fatal("did not expect /FontFile2 for CFF OTF output")
+	}
+	if strings.Contains(pdf, "/CIDToGIDMap") {
+		t.Fatal("did not expect /CIDToGIDMap for CFF OTF output")
+	}
+	if !strings.Contains(pdf, "/ToUnicode") {
+		t.Fatal("expected /ToUnicode in CFF OTF output")
+	}
+	if !strings.Contains(pdf, "/W [") {
+		t.Fatal("expected non-empty /W in CFF OTF output")
+	}
+	if second := render(); second != pdf {
+		t.Fatal("expected deterministic CFF OTF PDF output")
+	}
+}
+
 // TestUnicodeMode_SubsetTag verifies that the embedded font uses the
 // "XXXXXX+FontName" subset tag format in all three name locations:
 // FontDescriptor/FontName, CIDFont/BaseFont, and Type0/BaseFont.

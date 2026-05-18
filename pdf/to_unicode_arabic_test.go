@@ -34,7 +34,7 @@ func TestGlyphRecorder_AssignsDistinctCIDsForGlyphReuse(t *testing.T) {
 	}
 
 	seen := map[uint16]map[string]struct{}{}
-	recorder := newGlyphRecorder()
+	recorder := newGlyphRecorder(false)
 	var collisionGlyph uint16
 	var collisionSeqs []string
 	for _, word := range words {
@@ -85,7 +85,7 @@ func TestGlyphRecorder_AssignsDistinctCIDsForGlyphReuse(t *testing.T) {
 }
 
 func TestGlyphRecorder_MappingIncludesEmptyDestinations(t *testing.T) {
-	recorder := newGlyphRecorder()
+	recorder := newGlyphRecorder(false)
 	textCID := recorder.recordRunes(10, []rune("خ"))
 	emptyCID := recorder.recordEmpty(11)
 

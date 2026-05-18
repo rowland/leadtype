@@ -5,6 +5,7 @@ package ttf
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -112,6 +113,34 @@ func (fi *FontInfo) HasTable(tag string) bool {
 	return fi.tableDir.table(tag) != nil
 }
 
+func (fi *FontInfo) HasTrueTypeOutlines() bool {
+	return fi.HasTable("glyf") && fi.HasTable("loca")
+}
+
+func (fi *FontInfo) HasCFFOutlines() bool {
+	return fi.HasTable("CFF ")
+}
+
+func (fi *FontInfo) HasSupportedCFFOutlines() bool {
+	return fi.HasCFFOutlines()
+}
+
+func (fi *FontInfo) HasCIDKeyedCFFOutlines() (bool, error) {
+	entry := fi.tableDir.table("CFF ")
+	if entry == nil {
+		return false, nil
+	}
+	data, err := fi.readTable(entry)
+	if err != nil {
+		return false, err
+	}
+	return cffDataIsCIDKeyed(data)
+}
+
+func (fi *FontInfo) HasSupportedOutlines() bool {
+	return fi.HasTrueTypeOutlines() || fi.HasSupportedCFFOutlines()
+}
+
 func (fi *FontInfo) HasOpenTypeShaping() bool {
 	return fi.HasTable("GSUB") || fi.HasTable("GPOS")
 }
@@ -161,6 +190,165 @@ func (fi *FontInfo) XHeight() int {
 		return int(fi.os2Table.sxHeight)
 	}
 	return 0
+}
+
+func (fi *FontInfo) readTable(entry *tableDirEntry) ([]byte, error) {
+	file, err := os.Open(fi.filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	data := make([]byte, entry.length)
+	if _, err := file.ReadAt(data, int64(entry.offset)); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func cffDataIsCIDKeyed(data []byte) (bool, error) {
+	if len(data) < 4 {
+		return false, fmt.Errorf("cff: truncated header")
+	}
+	if data[0] != 1 || data[1] != 0 {
+		return false, fmt.Errorf("cff: unsupported version %d.%d", data[0], data[1])
+	}
+	offset := int(data[2])
+	if offset > len(data) {
+		return false, fmt.Errorf("cff: invalid header size")
+	}
+	_, next, err := cffIndexItems(data, offset)
+	if err != nil {
+		return false, err
+	}
+	topDicts, _, err := cffIndexItems(data, next)
+	if err != nil {
+		return false, err
+	}
+	if len(topDicts) != 1 {
+		return false, fmt.Errorf("cff: expected one top dict, got %d", len(topDicts))
+	}
+	return cffDictHasOperator(topDicts[0], []byte{12, 30})
+}
+
+func cffIndexItems(data []byte, offset int) ([][]byte, int, error) {
+	if offset < 0 || offset+2 > len(data) {
+		return nil, offset, fmt.Errorf("cff: invalid index offset")
+	}
+	count := int(binary.BigEndian.Uint16(data[offset:]))
+	offset += 2
+	if count == 0 {
+		return nil, offset, nil
+	}
+	if offset >= len(data) {
+		return nil, offset, fmt.Errorf("cff: truncated index")
+	}
+	offSize := int(data[offset])
+	offset++
+	if offSize < 1 || offSize > 4 {
+		return nil, offset, fmt.Errorf("cff: invalid index offset size")
+	}
+	if offset+(count+1)*offSize > len(data) {
+		return nil, offset, fmt.Errorf("cff: truncated index offsets")
+	}
+	offsets := make([]int, count+1)
+	for i := range offsets {
+		offsets[i] = cffOffset(data[offset+i*offSize:offset+(i+1)*offSize], offSize)
+		if offsets[i] <= 0 {
+			return nil, offset, fmt.Errorf("cff: invalid index object offset")
+		}
+	}
+	objectStart := offset + (count+1)*offSize
+	end := objectStart + offsets[count] - 1
+	if end > len(data) {
+		return nil, offset, fmt.Errorf("cff: index data out of bounds")
+	}
+	items := make([][]byte, count)
+	for i := range items {
+		start := objectStart + offsets[i] - 1
+		stop := objectStart + offsets[i+1] - 1
+		if start > stop || stop > len(data) {
+			return nil, offset, fmt.Errorf("cff: invalid index object bounds")
+		}
+		items[i] = data[start:stop]
+	}
+	return items, end, nil
+}
+
+func cffOffset(data []byte, size int) int {
+	n := 0
+	for i := 0; i < size; i++ {
+		n = n<<8 | int(data[i])
+	}
+	return n
+}
+
+func cffDictHasOperator(data []byte, target []byte) (bool, error) {
+	for pos := 0; pos < len(data); {
+		b := data[pos]
+		if b <= 21 {
+			if b == 12 {
+				if pos+1 >= len(data) {
+					return false, fmt.Errorf("cff: truncated escaped operator")
+				}
+				if bytes.Equal(data[pos:pos+2], target) {
+					return true, nil
+				}
+				pos += 2
+				continue
+			}
+			if bytes.Equal(data[pos:pos+1], target) {
+				return true, nil
+			}
+			pos++
+			continue
+		}
+		n, err := cffDictNumberLen(data[pos:])
+		if err != nil {
+			return false, err
+		}
+		pos += n
+	}
+	return false, nil
+}
+
+func cffDictNumberLen(data []byte) (int, error) {
+	if len(data) == 0 {
+		return 0, fmt.Errorf("cff: empty number")
+	}
+	b := data[0]
+	switch {
+	case b == 28:
+		if len(data) < 3 {
+			return 0, fmt.Errorf("cff: truncated int16")
+		}
+		return 3, nil
+	case b == 29:
+		if len(data) < 5 {
+			return 0, fmt.Errorf("cff: truncated int32")
+		}
+		return 5, nil
+	case b == 30:
+		for i := 1; i < len(data); i++ {
+			if data[i]>>4 == 0x0f || data[i]&0x0f == 0x0f {
+				return i + 1, nil
+			}
+		}
+		return 0, fmt.Errorf("cff: unterminated real")
+	case b == 255:
+		if len(data) < 5 {
+			return 0, fmt.Errorf("cff: truncated fixed")
+		}
+		return 5, nil
+	case b >= 32 && b <= 246:
+		return 1, nil
+	case b >= 247 && b <= 254:
+		if len(data) < 2 {
+			return 0, fmt.Errorf("cff: truncated two-byte number")
+		}
+		return 2, nil
+	default:
+		return 0, fmt.Errorf("cff: invalid number byte %d", b)
+	}
 }
 
 type tableDir struct {

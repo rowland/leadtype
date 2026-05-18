@@ -95,7 +95,7 @@ type dictionary map[string]writer
 func (d dictionary) keys() []string {
 	sa := make([]string, len(d))
 	i := 0
-	for k, _ := range d {
+	for k := range d {
 		sa[i] = k
 		i++
 	}
@@ -211,6 +211,10 @@ func (fd *fontDescriptor) init(seq, gen int,
 // Used for embedding TrueType (sfnt) font data per PDF spec §9.8.
 func (fd *fontDescriptor) setFontFile2(ref *indirectObjectRef) {
 	fd.dict["FontFile2"] = ref
+}
+
+func (fd *fontDescriptor) setFontFile3(ref *indirectObjectRef) {
+	fd.dict["FontFile3"] = ref
 }
 
 type fontEncoding struct {
@@ -723,6 +727,10 @@ func (s *stream) len() int {
 
 func (s *stream) setFilter(filter string) {
 	s.dict["Filter"] = name(filter)
+}
+
+func (s *stream) setSubtype(subtype string) {
+	s.dict["Subtype"] = name(subtype)
 }
 
 func (s *stream) compress() error {

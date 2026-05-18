@@ -11,6 +11,7 @@ type glyphRecorder struct {
 	keyToCID map[glyphUseKey]uint16
 	cidUses  map[uint16]glyphUse
 	nextCID  uint16
+	identity bool
 }
 
 type glyphUseKey struct {
@@ -23,11 +24,12 @@ type glyphUse struct {
 	runes   []rune
 }
 
-func newGlyphRecorder() *glyphRecorder {
+func newGlyphRecorder(identity bool) *glyphRecorder {
 	return &glyphRecorder{
 		keyToCID: make(map[glyphUseKey]uint16),
 		cidUses:  make(map[uint16]glyphUse),
 		nextCID:  1, // reserve CID 0 for .notdef
+		identity: identity,
 	}
 }
 
@@ -50,6 +52,21 @@ func (gr *glyphRecorder) recordEmpty(glyphID uint16) uint16 {
 }
 
 func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
+	if gr.identity {
+		cid := glyphID
+		if use, ok := gr.cidUses[cid]; ok {
+			if len(use.runes) == 0 && len(runes) > 0 {
+				use.runes = append([]rune(nil), runes...)
+				gr.cidUses[cid] = use
+			}
+			return cid
+		}
+		gr.cidUses[cid] = glyphUse{
+			glyphID: glyphID,
+			runes:   append([]rune(nil), runes...),
+		}
+		return cid
+	}
 	key := glyphUseKey{
 		glyphID: glyphID,
 		text:    string(runes),

@@ -4,6 +4,8 @@
 package ttf_fonts
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/rowland/leadtype/font"
@@ -108,6 +110,56 @@ func TestTtfFonts_SelectFixtureByPostScriptAndFullNames(t *testing.T) {
 	}
 }
 
+func TestTtfFonts_AddDirLoadsOpenTypeFonts(t *testing.T) {
+	dir := t.TempDir()
+	fontBytes, err := os.ReadFile("../ttf/testdata/minimal.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "minimal.otf"), fontBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var fc TtfFonts
+	if err := fc.AddDir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	f, err := fc.Select("Minimal", "", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.PostScriptName() != "Minimal" {
+		t.Fatalf("PostScriptName = %q, want Minimal", f.PostScriptName())
+	}
+}
+
+func TestTtfFonts_AddLoadsCFFOpenTypeFonts(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal-cff.otf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fc.FontInfos) != 1 {
+		t.Fatalf("len(FontInfos) = %d, want 1", len(fc.FontInfos))
+	}
+	if got := fc.FontInfos[0].PostScriptName(); got != "MinimalCFF" {
+		t.Fatalf("PostScriptName = %q, want MinimalCFF", got)
+	}
+}
+
+func TestTtfFonts_SelectCFFOpenTypeFonts(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal-cff.otf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := fc.Select("MinimalCFF", "", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.PostScriptName() != "MinimalCFF" {
+		t.Fatalf("PostScriptName = %q, want MinimalCFF", f.PostScriptName())
+	}
+}
 // 81,980,000 ns
 // 45,763,220 ns
 // 44,562,080 ns
