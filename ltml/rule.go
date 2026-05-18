@@ -198,9 +198,20 @@ func attrsMapFromString(s string) map[string]string {
 	attrs := make(map[string]string)
 	pairs := reAttrs.FindAllStringSubmatch(s, -1)
 	for _, pair := range pairs {
-		attrs[pair[1]] = strings.TrimSpace(pair[2])
+		attrs[pair[1]] = unquoteRuleValue(strings.TrimSpace(pair[2]))
 	}
 	return attrs
+}
+
+func unquoteRuleValue(value string) string {
+	if len(value) < 2 {
+		return value
+	}
+	first, last := value[0], value[len(value)-1]
+	if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
+		return value[1 : len(value)-1]
+	}
+	return value
 }
 
 func stripCSSComments(s string) string {

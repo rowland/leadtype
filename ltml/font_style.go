@@ -90,7 +90,11 @@ func (fs *FontStyle) applyWithSize(w Writer, size float64) {
 	}
 	if primaryIndex < 0 {
 		// Keep LTML renderable on machines that lack requested system fonts.
-		w.SetFont(defaultFontName, size, baseOpts)
+		if fonts, err := w.SetFont(defaultFontName, size, baseOpts); err != nil || len(fonts) == 0 {
+			if relaxed, ok := relaxedEntryOptions(fontEntry{name: defaultFontName}, baseOpts); ok {
+				w.SetFont(defaultFontName, size, relaxed)
+			}
+		}
 	}
 	if fs.lineHeight == 0 {
 		fs.lineHeight = 1.0

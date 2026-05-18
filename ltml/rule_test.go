@@ -47,6 +47,16 @@ func TestAttrsMapFromString_trailing_semicolon_optional(t *testing.T) {
 	}
 }
 
+func TestAttrsMapFromString_unquotes_string_values(t *testing.T) {
+	attrs := attrsMapFromString(`font.name: "Montserrat Black"; alt.name: 'Open Sans';`)
+	if attrs["font.name"] != "Montserrat Black" {
+		t.Errorf("expected unquoted font.name, got %q", attrs["font.name"])
+	}
+	if attrs["alt.name"] != "Open Sans" {
+		t.Errorf("expected unquoted alt.name, got %q", attrs["alt.name"])
+	}
+}
+
 // ----------------------------------------------------------------------------
 // NewRule
 // ----------------------------------------------------------------------------

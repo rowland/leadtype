@@ -16,15 +16,17 @@ import (
 
 // mockWriter records SetFont and AddFont calls for inspection.
 type mockWriter struct {
-	setFontName  string
-	setFontSize  float64
-	addFontNames []string
-	fonts        []*font.Font
-	setFontCalls []string
-	addFontCalls []string
-	setFontErrs  map[string]error
-	addFontErrs  map[string]error
-	t            testing.TB
+	setFontName   string
+	setFontSize   float64
+	addFontNames  []string
+	fonts         []*font.Font
+	setFontCalls  []string
+	setFontOpts   []options.Options
+	addFontCalls  []string
+	setFontErrs   map[string]error
+	setFontErrSeq map[string][]error
+	addFontErrs   map[string]error
+	t             testing.TB
 }
 
 func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
@@ -98,9 +100,18 @@ func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) e
 
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontCalls = append(m.setFontCalls, name)
+	m.setFontOpts = append(m.setFontOpts, opts)
 	m.setFontName = name
 	m.setFontSize = size
 	m.addFontNames = nil
+	if errs := m.setFontErrSeq[name]; len(errs) > 0 {
+		err := errs[0]
+		m.setFontErrSeq[name] = errs[1:]
+		if err != nil {
+			m.fonts = nil
+			return nil, err
+		}
+	}
 	if err := m.setFontErrs[name]; err != nil {
 		m.fonts = nil
 		return nil, err
@@ -571,5 +582,38 @@ func TestFontStyle_Apply_FallsBackToDefaultFontWhenChainMissing(t *testing.T) {
 	}
 	if len(w.setFontCalls) != 3 || w.setFontCalls[2] != defaultFontName {
 		t.Fatalf("SetFont calls = %v, want fallback to %q", w.setFontCalls, defaultFontName)
+	}
+}
+
+func TestFontStyle_Apply_RelaxesDefaultFallbackWhenRequestedWeightMissing(t *testing.T) {
+	fs := &FontStyle{
+		entries: []fontEntry{
+			{name: "Missing One"},
+			{name: "Missing Two"},
+		},
+		size:   12,
+		weight: "Black",
+	}
+	w := &mockWriter{
+		t: t,
+		setFontErrs: map[string]error{
+			"Missing One": errors.New("not found"),
+			"Missing Two": errors.New("not found"),
+		},
+		setFontErrSeq: map[string][]error{
+			defaultFontName: {errors.New("black not found"), nil},
+		},
+	}
+
+	fs.Apply(w)
+
+	if len(w.setFontCalls) != 4 || w.setFontCalls[2] != defaultFontName || w.setFontCalls[3] != defaultFontName {
+		t.Fatalf("SetFont calls = %v, want final default retry", w.setFontCalls)
+	}
+	if got := w.setFontOpts[2].StringDefault("weight", ""); got != "Black" {
+		t.Fatalf("first default fallback weight = %q, want Black", got)
+	}
+	if got := w.setFontOpts[3].StringDefault("weight", ""); got != "" {
+		t.Fatalf("relaxed default fallback weight = %q, want empty", got)
 	}
 }
