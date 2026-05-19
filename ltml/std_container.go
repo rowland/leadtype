@@ -147,6 +147,9 @@ func (c *StdContainer) Order() TableOrder {
 
 func (c *StdContainer) ParagraphStyle() *ParagraphStyle {
 	if c.paragraphStyle == nil {
+		if c.container == nil {
+			return defaultParagraphStyle
+		}
 		return c.container.ParagraphStyle()
 	}
 	return c.paragraphStyle

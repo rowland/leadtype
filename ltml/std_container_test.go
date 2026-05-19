@@ -48,6 +48,34 @@ func TestStdContainer_SetAttrs_ClonesLayoutForLayoutPrefixOverrides(t *testing.T
 	}
 }
 
+func TestStdContainer_SetAttrs_ParagraphStyleOverridesWithoutParent(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{
+		"paragraph-style.text-align": "center",
+	})
+
+	if container.paragraphStyle == nil {
+		t.Fatal("paragraphStyle is nil, want cloned default style")
+	}
+	if got := container.ParagraphStyle().ResolvedTextAlign(container); got != HAlignCenter {
+		t.Fatalf("paragraph text-align = %s, want center", got)
+	}
+}
+
+func TestStdParagraph_SetAttrs_StyleOverridesWithoutParent(t *testing.T) {
+	paragraph := &StdParagraph{}
+	paragraph.SetAttrs(map[string]string{
+		"style.text-align": "right",
+	})
+
+	if paragraph.paragraphStyle == nil {
+		t.Fatal("paragraphStyle is nil, want cloned default style")
+	}
+	if got := paragraph.ParagraphStyle().ResolvedTextAlign(paragraph); got != HAlignRight {
+		t.Fatalf("paragraph text-align = %s, want right", got)
+	}
+}
+
 func TestStdContainer_PrepareListBullets_ULAssignsDirectChildParagraphsOnly(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
