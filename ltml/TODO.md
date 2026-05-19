@@ -74,7 +74,7 @@ This checklist tracks the `ltml`-layer parity work approved from the legacy
   - [x] `rotate`
   - [x] `origin-x`
   - [x] `origin-y`
-  - [x] `shift`
+  - [x] `shift-x`, `shift-y`
   - [x] `z-index`
 - [x] define how transforms interact with layout bounds and printing order
 - [x] implement graphics-state handling through the PDF writer

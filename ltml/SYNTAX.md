@@ -252,7 +252,7 @@ like an image-style placement widget.
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the widget box. |
 | `border` | Optional enclosing widget border, separate from the captured canvas content. |
 | `fill` | Optional enclosing widget background, separate from the captured canvas content. |
-| `rotate`, `origin-x`, `origin-y`, `shift`, `align`, `display` | Same placement and transform attributes supported by other widgets. |
+| `rotate`, `origin-x`, `origin-y`, `shift-x`, `shift-y`, `align`, `display` | Same placement and transform attributes supported by other widgets. |
 | `alt` | When `ua="true"`, opt the draw placement into tagged output and use this text as `/ActualText`. |
 | `role` | Override the default tagged role when `ua="true"`. Draws with `alt` default to `Figure`. |
 
@@ -298,7 +298,8 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `rotate`           | Rotate the widget around its origin by the given degrees. |
 | `origin-x`         | Rotation origin on the x axis: `start`, `center`, `end`, or a measurement. |
 | `origin-y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
-| `shift`            | Offset the widget after layout using `x,y` measurements. |
+| `shift-x`          | Offset the widget horizontally after layout. |
+| `shift-y`          | Offset the widget vertically after layout. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
 | `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`. |
 | `split`            | Whether a direct page-child paragraph may split across pages. Defaults to `true`. |
@@ -1353,8 +1354,8 @@ Example:
 - For text widgets such as `<label>` and `<p>`, `top` anchors the widget box.
   Visible glyphs begin lower at the text ascent/baseline, so text can look
   lower than boxes or shapes with the same `top` value.
-- `shift="x,y"` applies after layout and is especially useful for nudging
-  layout-managed widgets.
+- `shift-x` and `shift-y` apply after layout and are especially useful for
+  nudging layout-managed widgets.
 - `rotate` wraps the widget's normal background/content/border rendering.
 - `origin-x` defaults to the widget's left edge; `origin-y` defaults to the
   widget's top edge.

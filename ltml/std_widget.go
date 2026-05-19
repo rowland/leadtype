@@ -342,10 +342,11 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if originY, ok := attrs["origin-y"]; ok {
 		widget.originY, widget.originYValue = parseOriginY(strings.TrimSpace(originY), widget.Units())
 	}
-	if shift, ok := attrs["shift"]; ok {
-		x, y := split2(shift, ",")
-		widget.shiftX = float32(ParseMeasurement(strings.TrimSpace(x), widget.Units()))
-		widget.shiftY = float32(ParseMeasurement(strings.TrimSpace(y), widget.Units()))
+	if shiftX, ok := attrs["shift-x"]; ok {
+		widget.shiftX = float32(ParseMeasurement(strings.TrimSpace(shiftX), widget.Units()))
+	}
+	if shiftY, ok := attrs["shift-y"]; ok {
+		widget.shiftY = float32(ParseMeasurement(strings.TrimSpace(shiftY), widget.Units()))
 	}
 	if zIndex, ok := attrs["z-index"]; ok {
 		widget.zIndex, _ = strconv.Atoi(strings.TrimSpace(zIndex))

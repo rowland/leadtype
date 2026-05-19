@@ -53,17 +53,6 @@ func addUnits(attrs map[string]string, units Units) map[string]string {
 	return attrs
 }
 
-func split2(s, sep string) (s1, s2 string) {
-	a := strings.SplitN(s, sep, 2)
-	if len(a) > 0 {
-		s1 = a[0]
-	}
-	if len(a) > 1 {
-		s2 = a[1]
-	}
-	return
-}
-
 func validAssetPath(name string) bool {
 	return name != "." && fs.ValidPath(name)
 }

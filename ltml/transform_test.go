@@ -35,7 +35,8 @@ func TestStdWidget_ShiftOffsetsResolvedCoordinates(t *testing.T) {
 		"top":      "15",
 		"right":    "-20",
 		"bottom":   "-25",
-		"shift":    "5,-3",
+		"shift-x":  "5",
+		"shift-y":  "-3",
 	})
 
 	if got := w.Left(); got != 87 {

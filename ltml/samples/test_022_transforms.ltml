@@ -2,13 +2,13 @@
   <page layout="absolute" grid="0.25in">
     <label font.size="20" font.weight="Bold" left="0.75" top="0.6">Transforms</label>
 
-    <label left="0.75" top="1.1">Shift offsets a widget from its laid-out position.</label>
+    <label left="0.75" top="1.1">shift-x and shift-y offset widgets after layout.</label>
     <div left="0.75" top="1.45" width="3.2" height="2.1" border="dotted">
-      <p width="2.7">A base box, then a second copy with the same starting position plus shift.</p>
+      <p width="2.7">Base box plus an x/y offset copy.</p>
       <rect left="1.05" top="1.05" width="0.9" height="0.6" fill="PaleGreen" border="thin" />
-      <rect left="1.05" top="1.05" width="0.9" height="0.6" fill="Gold" border="thin" shift="0.2,0.15" />
+      <rect left="1.05" top="1.05" width="0.9" height="0.6" fill="Gold" border="thin" shift-x="0.2" shift-y="0.15" />
       <label left="1.05" top="1.9">base</label>
-      <label left="1.05" top="2.12" shift="0.2,0.15">shift="0.2,0.15"</label>
+      <label left="1.05" top="2.12" shift-x="0.2" shift-y="0.15">shift-x=.2 shift-y=.15</label>
     </div>
 
     <label left="4.4" top="1.1">Rotate uses widget origin coordinates.</label>
