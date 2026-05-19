@@ -831,7 +831,7 @@ auto-generated solid pen for that color:
 | `fit` | Image brush sizing mode: `stretch`, `contain`, `cover`, or `tile`. |
 | `anchor` | Image brush alignment inside the painted box: `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`. |
 | `repeat` | Image repetition mode: `no-repeat` (default), `repeat`, `repeat-x`, or `repeat-y`. |
-| `opacity` | Uniform image opacity from `0` to `1`. Default: `1`. |
+| `opacity` | Uniform opacity for gradient and image brushes. Accepts `0` to `1` values or percentages like `60%`. Default: `1`. |
 | `tile-width`, `tile-height` | Explicit rendered tile size for `fit="tile"`. Accept LTML measurements, and also accept percentages like `50%` or `100%` resolved against the painted box. If only one side is specified, LTML preserves the source aspect ratio. |
 
 Image brushes default to the source asset's intrinsic size when `fit="tile"` and

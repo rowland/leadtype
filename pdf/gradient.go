@@ -20,9 +20,10 @@ type GradientStop struct {
 // LinearGradient describes an axial (Type 2) gradient between two points
 // in user-space coordinates.
 type LinearGradient struct {
-	X0, Y0 float64        // start point
-	X1, Y1 float64        // end point
-	Stops  []GradientStop // must start at 0, end at 1, and be strictly increasing
+	X0, Y0  float64        // start point
+	X1, Y1  float64        // end point
+	Stops   []GradientStop // must start at 0, end at 1, and be strictly increasing
+	Opacity float64        // optional uniform paint opacity; zero means opaque
 }
 
 func (lg *LinearGradient) validate() error {
@@ -38,6 +39,7 @@ type RadialGradient struct {
 	X0, Y0, R0 float64        // start circle centre and radius
 	X1, Y1, R1 float64        // end circle centre and radius
 	Stops      []GradientStop // must start at 0, end at 1, and be strictly increasing
+	Opacity    float64        // optional uniform paint opacity; zero means opaque
 }
 
 func (rg *RadialGradient) validate() error {

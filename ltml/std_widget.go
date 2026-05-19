@@ -382,7 +382,12 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		if brush.linearGradient == nil {
 			return nil
 		}
+		opacity := normalizeBrushOpacityValue(brush.opacity)
+		if opacity <= 0 {
+			return nil
+		}
 		gradient := resolveLinearGradient(brush.linearGradient, brush.linearPct, x, y, width, height)
+		gradient.Opacity = opacity
 		return widget.paintClippedRect(w, x, y, width, height, func() error {
 			return w.PaintLinearGradient(gradient)
 		})
@@ -390,7 +395,12 @@ func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		if brush.radialGradient == nil {
 			return nil
 		}
+		opacity := normalizeBrushOpacityValue(brush.opacity)
+		if opacity <= 0 {
+			return nil
+		}
 		gradient := resolveRadialGradient(brush.radialGradient, brush.radialPct, x, y, width, height)
+		gradient.Opacity = opacity
 		return widget.paintClippedRect(w, x, y, width, height, func() error {
 			return w.PaintRadialGradient(gradient)
 		})
@@ -497,13 +507,20 @@ func normalizeBrushOpacity(image *BrushImageStyle) float64 {
 	if image == nil {
 		return 1
 	}
+	return normalizeBrushOpacityValue(&image.Opacity)
+}
+
+func normalizeBrushOpacityValue(opacity *float64) float64 {
+	if opacity == nil {
+		return 1
+	}
 	switch {
-	case image.Opacity <= 0:
+	case *opacity <= 0:
 		return 0
-	case image.Opacity >= 1:
+	case *opacity >= 1:
 		return 1
 	default:
-		return image.Opacity
+		return *opacity
 	}
 }
 

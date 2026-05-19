@@ -58,6 +58,7 @@ type BrushStyle struct {
 	radialGradient *pdf.RadialGradient
 	radialPct      *radialGradientPct
 	image          *BrushImageStyle
+	opacity        *float64
 }
 
 func (bs *BrushStyle) Apply(w Writer) {
@@ -101,6 +102,7 @@ func (bs *BrushStyle) Clone() *BrushStyle {
 		imageClone := *bs.image
 		clone.image = &imageClone
 	}
+	clone.opacity = cloneFloat64Ptr(bs.opacity)
 	return &clone
 }
 
@@ -189,15 +191,18 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 			bs.kind = BrushKindRadialGradient
 		}
 	}
+	if value, ok := attrs["opacity"]; ok && (bs.Kind() == BrushKindLinearGradient || bs.Kind() == BrushKindRadialGradient) {
+		opacity := parseOpacityValue(value, 1)
+		bs.opacity = &opacity
+	}
 	if hasAnyAttr(attrs,
 		"src",
 		"fit",
 		"anchor",
 		"repeat",
-		"opacity",
 		"tile-width",
 		"tile-height",
-	) {
+	) || hasImageOpacityAttr(attrs, bs) {
 		image := bs.ensureImage()
 		if value, ok := attrs["src"]; ok {
 			image.Src = strings.TrimSpace(value)
@@ -211,7 +216,7 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 		if value, ok := attrs["repeat"]; ok {
 			image.Repeat = strings.TrimSpace(value)
 		}
-		image.Opacity = parseFloatAttr(attrs, "opacity", image.Opacity)
+		image.Opacity = parseOpacityAttr(attrs, "opacity", image.Opacity)
 		if value, ok := attrs["tile-width"]; ok {
 			image.TileWidth, image.TileWidthPct = parseMeasurementOrPct(strings.TrimSpace(value), units)
 		}
@@ -222,6 +227,11 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 			bs.kind = BrushKindImage
 		}
 	}
+}
+
+func hasImageOpacityAttr(attrs map[string]string, bs *BrushStyle) bool {
+	_, ok := attrs["opacity"]
+	return ok && bs.Kind() == BrushKindImage
 }
 
 func (bs *BrushStyle) String() string {
@@ -346,24 +356,28 @@ func parseGradientStops(value string) []pdf.GradientStop {
 	return stops
 }
 
-func parseFloatAttr(attrs map[string]string, key string, defaultValue float64) float64 {
+func parseOpacityAttr(attrs map[string]string, key string, defaultValue float64) float64 {
 	value, ok := attrs[key]
 	if !ok {
 		return defaultValue
 	}
-	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	return parseOpacityValue(value, defaultValue)
+}
+
+func parseOpacityValue(value string, defaultValue float64) float64 {
+	value = strings.TrimSpace(value)
+	if before, ok := strings.CutSuffix(value, "%"); ok {
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(before), 64)
+		if err != nil {
+			return defaultValue
+		}
+		return parsed / 100.0
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return defaultValue
 	}
 	return parsed
-}
-
-func parseMeasurementAttr(attrs map[string]string, key string, units Units, defaultValue float64) float64 {
-	value, ok := attrs[key]
-	if !ok {
-		return defaultValue
-	}
-	return ParseMeasurement(strings.TrimSpace(value), units)
 }
 
 func hasAnyAttr(attrs map[string]string, keys ...string) bool {

@@ -181,6 +181,57 @@ func TestBrushStyleSetAttrsImage(t *testing.T) {
 	}
 }
 
+func TestBrushStyleSetAttrsImageOpacityPercent(t *testing.T) {
+	var bs BrushStyle
+	bs.SetAttrs(map[string]string{
+		"kind":    "image",
+		"src":     "fixture.png",
+		"opacity": "60%",
+	})
+
+	if bs.image == nil {
+		t.Fatal("expected image brush config to be parsed")
+	}
+	if bs.image.Opacity != 0.6 {
+		t.Fatalf("opacity = %v, want 0.6", bs.image.Opacity)
+	}
+}
+
+func TestBrushStyleSetAttrsGradientOpacity(t *testing.T) {
+	var bs BrushStyle
+	bs.SetAttrs(map[string]string{
+		"kind":    "linear-gradient",
+		"stops":   "0:#000000,1:#ffffff",
+		"opacity": "0.6",
+	})
+
+	if bs.Kind() != BrushKindLinearGradient {
+		t.Fatalf("kind = %q, want linear-gradient", bs.Kind())
+	}
+	if bs.opacity == nil || *bs.opacity != 0.6 {
+		t.Fatalf("opacity = %v, want 0.6", bs.opacity)
+	}
+	if bs.image != nil {
+		t.Fatalf("image config = %#v, want nil for gradient opacity", bs.image)
+	}
+}
+
+func TestBrushStyleSetAttrsGradientOpacityPercent(t *testing.T) {
+	var bs BrushStyle
+	bs.SetAttrs(map[string]string{
+		"kind":    "linear-gradient",
+		"stops":   "0:#000000,1:#ffffff",
+		"opacity": "60%",
+	})
+
+	if bs.opacity == nil || *bs.opacity != 0.6 {
+		t.Fatalf("opacity = %v, want 0.6", bs.opacity)
+	}
+	if bs.image != nil {
+		t.Fatalf("image config = %#v, want nil for gradient opacity", bs.image)
+	}
+}
+
 func TestBrushStyleCloneDeepCopiesNestedBrushData(t *testing.T) {
 	original := &BrushStyle{}
 	original.SetAttrs(map[string]string{
@@ -208,6 +259,7 @@ func TestBrushStyleCloneDeepCopiesNestedBrushData(t *testing.T) {
 
 	clone := original.Clone()
 	clone.radialGradient.Stops[0].Position = 0.25
+	*clone.opacity = 0.2
 	clone.image.Opacity = 0.1
 	clone.image.TileWidth = 4
 	clone.image.TileHeightPct = 50
@@ -217,6 +269,9 @@ func TestBrushStyleCloneDeepCopiesNestedBrushData(t *testing.T) {
 	}
 	if original.image.Opacity != 0.8 {
 		t.Fatalf("original image opacity mutated to %v", original.image.Opacity)
+	}
+	if original.opacity == nil || *original.opacity != 0.8 {
+		t.Fatalf("original gradient opacity = %v, want 0.8", original.opacity)
 	}
 	if original.image.TileWidth != 18 {
 		t.Fatalf("original image tile width mutated to %v", original.image.TileWidth)

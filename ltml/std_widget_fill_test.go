@@ -131,6 +131,66 @@ func TestStdWidgetPaintBackground_LinearGradientUsesClipPath(t *testing.T) {
 	}
 }
 
+func TestStdWidgetPaintBackground_LinearGradientForwardsOpacity(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(10)
+	widget.SetTop(20)
+	widget.SetWidth(120)
+	widget.SetHeight(50)
+	widget.fill = &BrushStyle{
+		kind:    BrushKindLinearGradient,
+		opacity: float64Ptr(0.6),
+		linearGradient: &pdf.LinearGradient{
+			X0: 10, Y0: 20, X1: 130, Y1: 20,
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("Gold")},
+			},
+		},
+	}
+	writer := &backgroundFillTestWriter{}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.linearPaints) != 1 {
+		t.Fatalf("linear paint count = %d, want 1", len(writer.linearPaints))
+	}
+	if got := writer.linearPaints[0].Opacity; got != 0.6 {
+		t.Fatalf("linear opacity = %v, want 0.6", got)
+	}
+}
+
+func TestStdWidgetPaintBackground_GradientOpacityZeroSkipsPainting(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(10)
+	widget.SetTop(20)
+	widget.SetWidth(120)
+	widget.SetHeight(50)
+	widget.fill = &BrushStyle{
+		kind:    BrushKindLinearGradient,
+		opacity: float64Ptr(0),
+		linearGradient: &pdf.LinearGradient{
+			X0: 10, Y0: 20, X1: 130, Y1: 20,
+			Stops: []pdf.GradientStop{
+				{Position: 0, Color: NamedColor("Tomato")},
+				{Position: 1, Color: NamedColor("Gold")},
+			},
+		},
+	}
+	writer := &backgroundFillTestWriter{}
+
+	if err := widget.PaintBackground(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.linearPaints) != 0 {
+		t.Fatalf("linear paint count = %d, want 0", len(writer.linearPaints))
+	}
+	if writer.pathCount != 0 || writer.clipCount != 0 {
+		t.Fatalf("path/clip counts = %d/%d, want 0/0", writer.pathCount, writer.clipCount)
+	}
+}
+
 func TestStdWidgetPaintBackground_RadialGradientUsesBoxLocalCoordinates(t *testing.T) {
 	widget := &StdWidget{}
 	widget.SetLeft(100)

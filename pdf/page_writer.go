@@ -2742,11 +2742,26 @@ func (pw *PageWriter) PaintLinearGradient(lg *LinearGradient) error {
 	if err := lg.validate(); err != nil {
 		return err
 	}
+	opacity := pw.normalizedGradientOpacity(lg.Opacity)
+	if opacity <= 0 {
+		return nil
+	}
 	shName, err := pw.dw.registerLinearShading(lg, pw.units, pw.pageHeight)
 	if err != nil {
 		return err
 	}
 	pw.startGraph()
+	if opacity < 1 {
+		gsName, err := pw.dw.registerExtGState(opacity, 1, "", nil, "", nil)
+		if err != nil {
+			return err
+		}
+		pw.gw.saveGraphicsState()
+		pw.mw.setExtGState(gsName)
+		pw.gw.paintShading(shName)
+		pw.gw.restoreGraphicsState()
+		return nil
+	}
 	pw.gw.paintShading(shName)
 	return nil
 }
@@ -2757,13 +2772,43 @@ func (pw *PageWriter) PaintRadialGradient(rg *RadialGradient) error {
 	if err := rg.validate(); err != nil {
 		return err
 	}
+	opacity := pw.normalizedGradientOpacity(rg.Opacity)
+	if opacity <= 0 {
+		return nil
+	}
 	shName, err := pw.dw.registerRadialShading(rg, pw.units, pw.pageHeight)
 	if err != nil {
 		return err
 	}
 	pw.startGraph()
+	if opacity < 1 {
+		gsName, err := pw.dw.registerExtGState(opacity, 1, "", nil, "", nil)
+		if err != nil {
+			return err
+		}
+		pw.gw.saveGraphicsState()
+		pw.mw.setExtGState(gsName)
+		pw.gw.paintShading(shName)
+		pw.gw.restoreGraphicsState()
+		return nil
+	}
 	pw.gw.paintShading(shName)
 	return nil
+}
+
+func (pw *PageWriter) normalizedGradientOpacity(opacity float64) float64 {
+	switch {
+	case math.IsNaN(opacity):
+		return 1
+	case opacity < 0:
+		return 0
+	case opacity == 0:
+		return 1
+	case opacity > 1:
+		return 1
+	default:
+		return opacity
+	}
 }
 
 func (pw *PageWriter) SetFontColor(value any) (prev colors.Color) {

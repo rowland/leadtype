@@ -2211,6 +2211,19 @@ func TestPageWriter_PaintLinearGradient(t *testing.T) {
 	check(t, strings.Contains(s, "sh"), "should contain sh operator")
 }
 
+func TestPageWriter_PaintLinearGradientOpacity(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+	lg := testLinearGradient()
+	lg.Opacity = 0.6
+
+	err := pw.PaintLinearGradient(lg)
+	check(t, err == nil, "PaintLinearGradient should not return error")
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "q\n/GS0 gs\n/Sh0 sh\nQ\n"), "should paint shading inside opacity graphics state")
+	check(t, len(dw.extGStates) == 1, "should register one ExtGState")
+}
+
 func TestPageWriter_GradientCaching(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})
