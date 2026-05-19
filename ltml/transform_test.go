@@ -53,6 +53,43 @@ func TestStdWidget_ShiftOffsetsResolvedCoordinates(t *testing.T) {
 	}
 }
 
+func TestStdWidget_PercentShiftOffsetsResolvedCoordinatesByOwnSize(t *testing.T) {
+	parent := positionedContainer(72, 144, 200, 200)
+
+	w := &StdWidget{}
+	if err := w.SetContainer(parent); err != nil {
+		t.Fatal(err)
+	}
+	w.SetAttrs(map[string]string{
+		"position": "relative",
+		"left":     "10",
+		"top":      "15",
+		"right":    "-20",
+		"bottom":   "-25",
+		"shift-x":  "10%",
+		"shift-y":  "-25%",
+	})
+
+	if got := w.Width(); got != 170 {
+		t.Fatalf("Width() = %v, want 170", got)
+	}
+	if got := w.Height(); got != 160 {
+		t.Fatalf("Height() = %v, want 160", got)
+	}
+	if got := w.Left(); got != 99 {
+		t.Fatalf("Left() = %v, want 99", got)
+	}
+	if got := w.Top(); got != 119 {
+		t.Fatalf("Top() = %v, want 119", got)
+	}
+	if got := w.Right(); got != 269 {
+		t.Fatalf("Right() = %v, want 269", got)
+	}
+	if got := w.Bottom(); got != 279 {
+		t.Fatalf("Bottom() = %v, want 279", got)
+	}
+}
+
 func TestStdWidget_OriginHelpers(t *testing.T) {
 	w := &StdWidget{}
 	w.SetLeft(10)

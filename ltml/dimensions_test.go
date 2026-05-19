@@ -4,37 +4,46 @@
 package ltml
 
 import (
+	"math"
 	"testing"
 )
 
 func TestDimensions_SetAttrs(t *testing.T) {
 	tests := []struct {
-		name             string
-		attrs            map[string]string
-		wantWidth        float64
-		wantWidthValue   float64
-		wantWidthMode    DimensionMode
-		wantHeight       float64
-		wantHeightValue  float64
-		wantHeightMode   DimensionMode
-		wantWidthSet     bool
-		wantHeightSet    bool
-		wantMaxWidthSet  bool
-		wantMaxHeightSet bool
+		name               string
+		attrs              map[string]string
+		wantWidth          float64
+		wantWidthValue     float64
+		wantWidthMode      DimensionMode
+		wantHeight         float64
+		wantHeightValue    float64
+		wantHeightMode     DimensionMode
+		wantMaxWidthValue  float64
+		wantMaxWidthMode   DimensionMode
+		wantMaxHeightValue float64
+		wantMaxHeightMode  DimensionMode
+		wantWidthSet       bool
+		wantHeightSet      bool
+		wantMaxWidthSet    bool
+		wantMaxHeightSet   bool
 	}{
 		{name: "Width", attrs: map[string]string{"width": "30"}, wantWidth: 30, wantWidthValue: 30, wantWidthMode: DimLiteral, wantWidthSet: true},
 		{name: "WidthPct", attrs: map[string]string{"width": "40%"}, wantWidthValue: 40, wantWidthMode: DimPct, wantWidthSet: true},
 		{name: "WidthRelPlus", attrs: map[string]string{"width": "+50"}, wantWidthValue: 50, wantWidthMode: DimRel, wantWidthSet: true},
+		{name: "WidthRelWithUnits", attrs: map[string]string{"width": "+180pt"}, wantWidthValue: 180, wantWidthMode: DimRel, wantWidthSet: true},
 		{name: "WidthRelMinus", attrs: map[string]string{"width": "-60"}, wantWidthValue: -60, wantWidthMode: DimRel, wantWidthSet: true},
 		{name: "WidthAuto", attrs: map[string]string{"width": "auto"}, wantWidthMode: DimAuto},
 		{name: "Height", attrs: map[string]string{"height": "30"}, wantHeight: 30, wantHeightValue: 30, wantHeightMode: DimLiteral, wantHeightSet: true},
 		{name: "HeightPct", attrs: map[string]string{"height": "40%"}, wantHeightValue: 40, wantHeightMode: DimPct, wantHeightSet: true},
 		{name: "HeightRelPlus", attrs: map[string]string{"height": "+50"}, wantHeightValue: 50, wantHeightMode: DimRel, wantHeightSet: true},
 		{name: "HeightRelMinus", attrs: map[string]string{"height": "-60"}, wantHeightValue: -60, wantHeightMode: DimRel, wantHeightSet: true},
+		{name: "HeightRelWithUnits", attrs: map[string]string{"height": "-0.25in"}, wantHeightValue: -18, wantHeightMode: DimRel, wantHeightSet: true},
 		{name: "HeightAuto", attrs: map[string]string{"height": "auto"}, wantHeightMode: DimAuto},
-		{name: "MaxWidth", attrs: map[string]string{"max-width": "30"}, wantMaxWidthSet: true},
+		{name: "MaxWidth", attrs: map[string]string{"max-width": "30"}, wantMaxWidthValue: 30, wantMaxWidthMode: DimLiteral, wantMaxWidthSet: true},
+		{name: "MaxWidthRelWithUnits", attrs: map[string]string{"max-width": "+10mm"}, wantMaxWidthValue: 10 * ptsPerMM, wantMaxWidthMode: DimRel, wantMaxWidthSet: true},
 		{name: "MaxWidthAutoClears", attrs: map[string]string{"max-width": "auto"}},
-		{name: "MaxHeight", attrs: map[string]string{"max-height": "40%"}, wantMaxHeightSet: true},
+		{name: "MaxHeight", attrs: map[string]string{"max-height": "40%"}, wantMaxHeightValue: 40, wantMaxHeightMode: DimPct, wantMaxHeightSet: true},
+		{name: "MaxHeightRelBare", attrs: map[string]string{"max-height": "-12"}, wantMaxHeightValue: -12, wantMaxHeightMode: DimRel, wantMaxHeightSet: true},
 	}
 
 	for _, tc := range tests {
@@ -43,19 +52,19 @@ func TestDimensions_SetAttrs(t *testing.T) {
 			var d Dimensions
 			d.SetAttrs(tc.attrs, "")
 
-			if got := float64(d.width); got != tc.wantWidth {
+			if got := float64(d.width); !closeEnough(got, tc.wantWidth) {
 				t.Errorf("width: expected %v, got %v", tc.wantWidth, got)
 			}
-			if got := float64(d.widthValue); got != tc.wantWidthValue {
+			if got := float64(d.widthValue); !closeEnough(got, tc.wantWidthValue) {
 				t.Errorf("widthValue: expected %v, got %v", tc.wantWidthValue, got)
 			}
 			if got := d.WidthMode(); got != tc.wantWidthMode {
 				t.Errorf("WidthMode: expected %v, got %v", tc.wantWidthMode, got)
 			}
-			if got := float64(d.height); got != tc.wantHeight {
+			if got := float64(d.height); !closeEnough(got, tc.wantHeight) {
 				t.Errorf("height: expected %v, got %v", tc.wantHeight, got)
 			}
-			if got := float64(d.heightValue); got != tc.wantHeightValue {
+			if got := float64(d.heightValue); !closeEnough(got, tc.wantHeightValue) {
 				t.Errorf("heightValue: expected %v, got %v", tc.wantHeightValue, got)
 			}
 			if got := d.HeightMode(); got != tc.wantHeightMode {
@@ -73,8 +82,24 @@ func TestDimensions_SetAttrs(t *testing.T) {
 			if got := d.MaxHeightIsSet(); got != tc.wantMaxHeightSet {
 				t.Errorf("MaxHeightIsSet: expected %v, got %v", tc.wantMaxHeightSet, got)
 			}
+			if got := float64(d.max.widthValue); !closeEnough(got, tc.wantMaxWidthValue) {
+				t.Errorf("maxWidthValue: expected %v, got %v", tc.wantMaxWidthValue, got)
+			}
+			if got := d.max.widthMode; got != tc.wantMaxWidthMode {
+				t.Errorf("maxWidthMode: expected %v, got %v", tc.wantMaxWidthMode, got)
+			}
+			if got := float64(d.max.heightValue); !closeEnough(got, tc.wantMaxHeightValue) {
+				t.Errorf("maxHeightValue: expected %v, got %v", tc.wantMaxHeightValue, got)
+			}
+			if got := d.max.heightMode; got != tc.wantMaxHeightMode {
+				t.Errorf("maxHeightMode: expected %v, got %v", tc.wantMaxHeightMode, got)
+			}
 		})
 	}
+}
+
+func closeEnough(got, want float64) bool {
+	return math.Abs(got-want) < 0.0001
 }
 
 func TestDimensions_SetAttrs_AutoIsCaseSensitive(t *testing.T) {
@@ -112,6 +137,16 @@ func TestStdWidget_DimensionResolution(t *testing.T) {
 	}
 	if got := rel.Height(); got != 135 {
 		t.Fatalf("rel.Height() = %v, want 135", got)
+	}
+
+	relUnits := &StdWidget{}
+	_ = relUnits.SetContainer(page)
+	relUnits.SetAttrs(map[string]string{"width": "+0.25in", "height": "-10pt"})
+	if got := relUnits.Width(); got != 218 {
+		t.Fatalf("relUnits.Width() = %v, want 218", got)
+	}
+	if got := relUnits.Height(); got != 110 {
+		t.Fatalf("relUnits.Height() = %v, want 110", got)
 	}
 
 	auto := &StdWidget{}

@@ -298,8 +298,8 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `rotate`           | Rotate the widget around its origin by the given degrees. |
 | `origin-x`         | Rotation origin on the x axis: `start`, `center`, `end`, or a measurement. |
 | `origin-y`         | Rotation origin on the y axis: `top`, `middle`, `bottom`, or a measurement. |
-| `shift-x`          | Offset the widget horizontally after layout. |
-| `shift-y`          | Offset the widget vertically after layout. |
+| `shift-x`          | Offset the widget horizontally after layout. Measurements use normal LTML units; percentages use the widget's resolved width. |
+| `shift-y`          | Offset the widget vertically after layout. Measurements use normal LTML units; percentages use the widget's resolved height. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
 | `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`. |
 | `split`            | Whether a direct page-child paragraph may split across pages. Defaults to `true`. |
@@ -1355,7 +1355,8 @@ Example:
   Visible glyphs begin lower at the text ascent/baseline, so text can look
   lower than boxes or shapes with the same `top` value.
 - `shift-x` and `shift-y` apply after layout and are especially useful for
-  nudging layout-managed widgets.
+  nudging layout-managed widgets. Percent shifts are relative to the shifted
+  widget's own resolved width or height.
 - `rotate` wraps the widget's normal background/content/border rendering.
 - `origin-x` defaults to the widget's left edge; `origin-y` defaults to the
   widget's top edge.
@@ -1445,7 +1446,7 @@ Measurements can be expressed in several forms:
 | Bare number   | `72`        | In the current `units` of the element or container. |
 | With unit     | `1in`, `2.5cm`, `210mm`, `200dp`, `14pt` | Explicit unit overrides the current `units`. |
 | Percentage    | `50%`       | Percentage of the container's content width or height. |
-| Relative      | `+10`, `-5` | Offset from the container's content dimension. |
+| Relative      | `+10`, `-5pt`, `+0.25in` | Offset from the container's content dimension. |
 | Auto          | `auto`      | Automatic layout-managed size. Supported by `hbox` width, `vbox` height, table column width, and table row height; elsewhere it behaves like omitting the dimension. |
 
 `max-width` and `max-height` accept bare numbers, unit-suffixed measurements,

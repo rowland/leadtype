@@ -58,8 +58,23 @@ type dimensionsState struct {
 
 var (
 	rePct = regexp.MustCompile(`^(\d+(\.\d+)?)%$`)
-	reRel = regexp.MustCompile(`^[+-](\d+(\.\d+)?)`)
+	reRel = regexp.MustCompile(`^[+-](\d+(\.\d+)?)([a-z]+)?$`)
 )
+
+func parseDimensionAttr(value string, units Units) (DimensionMode, float64) {
+	value = strings.TrimSpace(value)
+	if value == "auto" {
+		return DimAuto, 0
+	}
+	if rePct.MatchString(value) {
+		pct, _ := strconv.ParseFloat(value[:len(value)-1], 64)
+		return DimPct, pct
+	}
+	if reRel.MatchString(value) {
+		return DimRel, ParseMeasurement(value, units)
+	}
+	return DimLiteral, ParseMeasurement(value, units)
+}
 
 func (d *Dimensions) MarginTop() float64 {
 	return d.margin[topSide].Float64()
@@ -115,33 +130,27 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 	}
 
 	if width, ok := attrs["width"]; ok {
-		width = strings.TrimSpace(width)
-		if width == "auto" {
+		switch mode, value := parseDimensionAttr(width, units); mode {
+		case DimAuto:
 			d.SetWidthAuto()
-		} else if rePct.MatchString(width) {
-			widthPct, _ := strconv.ParseFloat(width[:len(width)-1], 64)
-			d.SetWidthPct(widthPct)
-		} else if reRel.MatchString(width) {
-			widthRel, _ := strconv.ParseFloat(width, 64)
-			d.SetWidthRel(widthRel)
-		} else {
-			width := ParseMeasurement(width, units)
-			d.SetWidth(width)
+		case DimPct:
+			d.SetWidthPct(value)
+		case DimRel:
+			d.SetWidthRel(value)
+		default:
+			d.SetWidth(value)
 		}
 	}
 	if height, ok := attrs["height"]; ok {
-		height = strings.TrimSpace(height)
-		if height == "auto" {
+		switch mode, value := parseDimensionAttr(height, units); mode {
+		case DimAuto:
 			d.SetHeightAuto()
-		} else if rePct.MatchString(height) {
-			heightPct, _ := strconv.ParseFloat(height[:len(height)-1], 64)
-			d.SetHeightPct(heightPct)
-		} else if reRel.MatchString(height) {
-			heightRel, _ := strconv.ParseFloat(height, 64)
-			d.SetHeightRel(heightRel)
-		} else {
-			height := ParseMeasurement(height, units)
-			d.SetHeight(height)
+		case DimPct:
+			d.SetHeightPct(value)
+		case DimRel:
+			d.SetHeightRel(value)
+		default:
+			d.SetHeight(value)
 		}
 	}
 	if width, ok := attrs["max-width"]; ok {
@@ -153,30 +162,36 @@ func (d *Dimensions) SetAttrs(attrs map[string]string, units Units) {
 }
 
 func (d *Dimensions) setMaxWidthAttr(width string, units Units) {
-	if width == "" || width == "auto" {
+	if width = strings.TrimSpace(width); width == "" {
 		d.ClearMaxWidth()
-	} else if rePct.MatchString(width) {
-		widthPct, _ := strconv.ParseFloat(width[:len(width)-1], 64)
-		d.SetMaxWidthPct(widthPct)
-	} else if reRel.MatchString(width) {
-		widthRel, _ := strconv.ParseFloat(width, 64)
-		d.SetMaxWidthRel(widthRel)
-	} else {
-		d.SetMaxWidth(ParseMeasurement(width, units))
+		return
+	}
+	switch mode, value := parseDimensionAttr(width, units); mode {
+	case DimAuto:
+		d.ClearMaxWidth()
+	case DimPct:
+		d.SetMaxWidthPct(value)
+	case DimRel:
+		d.SetMaxWidthRel(value)
+	default:
+		d.SetMaxWidth(value)
 	}
 }
 
 func (d *Dimensions) setMaxHeightAttr(height string, units Units) {
-	if height == "" || height == "auto" {
+	if height = strings.TrimSpace(height); height == "" {
 		d.ClearMaxHeight()
-	} else if rePct.MatchString(height) {
-		heightPct, _ := strconv.ParseFloat(height[:len(height)-1], 64)
-		d.SetMaxHeightPct(heightPct)
-	} else if reRel.MatchString(height) {
-		heightRel, _ := strconv.ParseFloat(height, 64)
-		d.SetMaxHeightRel(heightRel)
-	} else {
-		d.SetMaxHeight(ParseMeasurement(height, units))
+		return
+	}
+	switch mode, value := parseDimensionAttr(height, units); mode {
+	case DimAuto:
+		d.ClearMaxHeight()
+	case DimPct:
+		d.SetMaxHeightPct(value)
+	case DimRel:
+		d.SetMaxHeightRel(value)
+	default:
+		d.SetMaxHeight(value)
 	}
 }
 
