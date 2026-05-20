@@ -21,6 +21,7 @@ render-ltml -b [flags] <file1> <file2> ...
 | `-submit <url>` |  | Submit a multipart render request to this URL instead of rendering locally |
 | `-watch` | `-w` | Watch inputs and assets for changes and rerender continuously |
 | `-batch` | `-b` | Render multiple input files |
+| `-ua` |  | Default to tagged PDF output |
 
 ### Output paths
 
@@ -57,6 +58,13 @@ When `-watch` is set, `render-ltml` performs one render pass immediately and the
 - In local mode, changes anywhere under `-assets` rerender all inputs using that asset directory.
 - In submit mode, `-watch` works for both single and batch operation.
 - Render failures are reported, but watch mode keeps running for later changes.
+
+### Tagged PDF output
+
+`render-ltml -ua` enables tagged PDF output without changing the LTML source.
+Setting `LTML_UA=true` has the same effect, which is useful for watch targets
+that regenerate committed sample PDFs. Documents can still opt into tagged
+output in source with `ua="true"` on the root `ltml` element.
 
 ### Remote submission mode
 

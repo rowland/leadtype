@@ -89,6 +89,42 @@ func TestLTML_WithoutUAAccessibilityAttrsAreIgnored(t *testing.T) {
 	}
 }
 
+func TestLTML_WriterTaggedPDFDefaultIsPreserved(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <p>Hello world</p>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	baseWriter := pdf.NewDocWriter()
+	fonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseWriter.AddFontSource(fonts)
+	baseWriter.EnableTaggedPDF(true)
+	writer := &ltpdf.DocWriter{DocWriter: baseWriter}
+
+	if err := doc.Print(writer); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	if _, err := baseWriter.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdfText := buf.String()
+	for _, fragment := range []string{"/StructTreeRoot", "/S /P", "/ActualText (Hello world)"} {
+		if !strings.Contains(pdfText, fragment) {
+			t.Fatalf("expected tagged fragment %q in output:\n%s", fragment, pdfText)
+		}
+	}
+}
+
 func TestLTML_LegacyPDFAttrsDoNotAffectOutput(t *testing.T) {
 	pdfText := renderLTMLPDF(t, `
 <ltml ua="true">

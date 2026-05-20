@@ -133,7 +133,7 @@ func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, assetsDir, "", nil, &out); err != nil {
+	if err := renderLocal(inputFile, assetsDir, "", false, nil, &out); err != nil {
 		t.Fatal(err)
 	}
 	if out.Len() == 0 {
@@ -144,6 +144,84 @@ func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
 	defer renderLocalComponentMu.Unlock()
 	if got, want := renderLocalComponentBody, "<p>from render local</p>"; got != want {
 		t.Fatalf("component body = %q, want %q", got, want)
+	}
+}
+
+func TestRenderLocal_UADefaultEnablesTaggedPDF(t *testing.T) {
+	inputFile := filepath.Join(t.TempDir(), "report.ltml")
+	if err := os.WriteFile(inputFile, []byte(`
+<ltml>
+  <page>
+    <p>Hello world</p>
+  </page>
+</ltml>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := renderLocal(inputFile, "", "", true, nil, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	pdfText := out.String()
+	for _, fragment := range []string{"/StructTreeRoot", "/S /P", "/ActualText (Hello world)"} {
+		if !strings.Contains(pdfText, fragment) {
+			t.Fatalf("expected tagged PDF fragment %q in output:\n%s", fragment, pdfText)
+		}
+	}
+}
+
+func TestMain_UAFlagEnablesTaggedPDF(t *testing.T) {
+	inputFile := filepath.Join(t.TempDir(), "report.ltml")
+	outputFile := filepath.Join(t.TempDir(), "report.pdf")
+	if err := os.WriteFile(inputFile, []byte(`
+<ltml>
+  <page>
+    <p>Hello world</p>
+  </page>
+</ltml>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var stderr bytes.Buffer
+	code := Main(context.Background(), []string{"-ua", "-o", outputFile, inputFile}, &stderr, nil)
+	if code != 0 {
+		t.Fatalf("exit code = %d, stderr = %s", code, stderr.String())
+	}
+
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "/StructTreeRoot") {
+		t.Fatalf("expected tagged PDF output, stderr = %s\n%s", stderr.String(), data)
+	}
+}
+
+func TestLTMLUADefaultFromEnv(t *testing.T) {
+	t.Setenv("LTML_UA", "true")
+	got, err := ltmlUADefaultFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got {
+		t.Fatal("LTML_UA=true parsed as false")
+	}
+
+	t.Setenv("LTML_UA", "0")
+	got, err = ltmlUADefaultFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got {
+		t.Fatal("LTML_UA=0 parsed as true")
+	}
+}
+
+func TestLTMLUADefaultFromEnvRejectsInvalidValue(t *testing.T) {
+	t.Setenv("LTML_UA", "sure")
+	if _, err := ltmlUADefaultFromEnv(); err == nil {
+		t.Fatal("expected invalid LTML_UA value to fail")
 	}
 }
 

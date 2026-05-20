@@ -27,6 +27,9 @@ ltml-samples:
 	LTML_UA=true go test ./ltml -count=1 -run TestSamples -write-sample-pdfs
 	# go test ./ltml -count=1 -run TestSamples -write-sample-pdfs
 
+ltml-samples-watch:
+	LTML_UA=true bin/render-ltml -b ltml/samples/*.ltml -w
+
 ltml-samples-open:
 	go test ./ltml -count=1 -run TestSamples -args -open-sample-pdfs
 

@@ -23,6 +23,7 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,6 +56,7 @@ type runConfig struct {
 	extraFiles   []string
 	watch        bool
 	batch        bool
+	ua           bool
 	pollInterval time.Duration
 	stderr       io.Writer
 	onRender     func(renderJob, error)
@@ -117,6 +119,11 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	}
 	cfg.stderr = stderr
 	cfg.pollInterval = defaultPollInterval
+	var err error
+	if cfg.ua, err = ltmlUADefaultFromEnv(); err != nil {
+		fmt.Fprintf(stderr, "render-ltml: %v\n", err)
+		return 2
+	}
 
 	fs := flag.NewFlagSet("render-ltml", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -130,6 +137,7 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	fs.BoolVar(&cfg.watch, "w", false, "watch inputs and assets for changes and rerender continuously (shorthand)")
 	fs.BoolVar(&cfg.batch, "batch", false, "render multiple input files")
 	fs.BoolVar(&cfg.batch, "b", false, "render multiple input files (shorthand)")
+	fs.BoolVar(&cfg.ua, "ua", cfg.ua, "default to tagged PDF output")
 	fs.Var(&extraFiles, "extra", "additional asset `file` (may be repeated)")
 	fs.Var(&extraFiles, "e", "additional asset `file` (shorthand)")
 	fs.Usage = func() {
@@ -168,6 +176,18 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 		return 1
 	}
 	return 0
+}
+
+func ltmlUADefaultFromEnv() (bool, error) {
+	value, ok := os.LookupEnv("LTML_UA")
+	if !ok || strings.TrimSpace(value) == "" {
+		return false, nil
+	}
+	enabled, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("LTML_UA must be a boolean value: %w", err)
+	}
+	return enabled, nil
 }
 
 func validateArgs(cfg runConfig, inputFiles []string) error {
@@ -402,7 +422,7 @@ func renderJobToFile(cfg runConfig, job renderJob) (err error) {
 	if cfg.submitURL != "" {
 		err = submitRemote(job.inputPath, cfg.assetsDir, cfg.submitURL, cfg.extraFiles, out)
 	} else {
-		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.extraFiles, out)
+		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.ua, cfg.extraFiles, out)
 	}
 	if err != nil {
 		return err
@@ -637,7 +657,7 @@ func dirToken(root string) (string, error) {
 	return b.String(), nil
 }
 
-func renderLocal(absInput, assetsDir, fontDir string, extraFiles []string, out io.Writer) error {
+func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []string, out io.Writer) error {
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
@@ -662,6 +682,9 @@ func renderLocal(absInput, assetsDir, fontDir string, extraFiles []string, out i
 	w, err := ltpdf.NewDocWriterWithFontDirs(fontDirs)
 	if err != nil {
 		return fmt.Errorf("initializing font sources: %w", err)
+	}
+	if ua {
+		w.EnableTaggedPDF(true)
 	}
 	if assetFS != nil {
 		w.SetAssetFS(assetFS)

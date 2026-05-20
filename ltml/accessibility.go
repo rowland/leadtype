@@ -8,10 +8,10 @@ import (
 )
 
 func applyWriterAccessibility(w Writer, root *StdDocument) {
-	if root == nil {
+	if root == nil || !root.ua {
 		return
 	}
-	w.EnableTaggedPDF(root.taggedPDFEnabled())
+	w.EnableTaggedPDF(true)
 }
 
 func withAccessibilityTag(w Writer, tag string, opts pdf.AccessibilityOptions, fn func() error) error {
@@ -48,13 +48,6 @@ func withAccessibilityArtifact(w Writer, fn func() error) error {
 
 func writerTaggedPDFEnabled(w Writer) bool {
 	return w.TaggedPDFEnabled()
-}
-
-func (d *StdDocument) taggedPDFEnabled() bool {
-	if d == nil {
-		return false
-	}
-	return d.ua
 }
 
 var accessibilityRoleRe = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
