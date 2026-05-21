@@ -83,7 +83,7 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	// disabled so they do not participate in placement or rendering.
 	for _, widget := range specified {
 		widthAvail -= widget.Width()
-		containerFull = widthAvail < 0
+		containerFull = widthAvail+layoutFitEpsilon < 0
 		widget.SetDisabled(containerFull)
 		widthAvail -= style.HPadding()
 	}
@@ -113,6 +113,15 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 	widthAvail -= style.HPadding()
 
+	// Edge-aligned flexible panels are placed outside the ordinary center run,
+	// so reserve their preferred widths before omitted/auto center children are
+	// sized. Otherwise a wide center child can consume the space that a
+	// right-aligned image or panel will later claim during placement.
+	widthAvail = reserveHBoxEdgeFlexibleWidths(omitted, style, writer, widthAvail, &containerFull)
+	widthAvail = reserveHBoxEdgeFlexibleWidths(auto, style, writer, widthAvail, &containerFull)
+	omitted = filterHBoxCenterFlexible(omitted)
+	auto = filterHBoxCenterFlexible(auto)
+
 	// The final allocation step handles children whose width was omitted or set
 	// to auto.
 	//
@@ -125,26 +134,48 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 		remaining = append(remaining, omitted...)
 		remaining = append(remaining, auto...)
 		paddingCost := float64(len(remaining)-1) * style.HPadding()
-		preferredTotal := 0.0
-		for _, widget := range remaining {
-			preferredTotal += widget.PreferredWidth(writer)
+		omittedPreferredTotal := 0.0
+		for _, widget := range omitted {
+			omittedPreferredTotal += widget.PreferredWidth(writer)
 		}
-		if widthAvail > preferredTotal+paddingCost {
+		autoPreferredTotal := 0.0
+		for _, widget := range auto {
+			autoPreferredTotal += widget.PreferredWidth(writer)
+		}
+		preferredTotal := omittedPreferredTotal + autoPreferredTotal
+		if widthAvail+layoutFitEpsilon >= preferredTotal+paddingCost {
 			widthAvail -= paddingCost
 			for _, widget := range omitted {
 				pw := widget.PreferredWidth(writer)
 				widget.ResolveWidth(pw)
 				widthAvail -= pw
 			}
-			autoWidth := widthAvail / float64(len(auto))
+			surplus := widthAvail - autoPreferredTotal
+			autoExtra := surplus / float64(len(auto))
 			for _, widget := range auto {
-				widget.ResolveWidth(autoWidth)
+				widget.ResolveWidth(widget.PreferredWidth(writer) + autoExtra)
 			}
-		} else if widthAvail-float64(len(remaining)-1)*style.HPadding() >= float64(len(remaining)) {
-			widthAvail -= float64(len(remaining)-1) * style.HPadding()
-			remainingWidth := widthAvail / float64(len(remaining))
-			for _, widget := range remaining {
-				widget.ResolveWidth(remainingWidth)
+		} else if widthAvail+layoutFitEpsilon >= paddingCost {
+			widthAvail -= paddingCost
+			if preferredTotal <= 0 {
+				autoWidth := 0.0
+				if len(auto) > 0 {
+					autoWidth = widthAvail / float64(len(auto))
+				}
+				for _, widget := range omitted {
+					widget.ResolveWidth(0)
+				}
+				for _, widget := range auto {
+					widget.ResolveWidth(autoWidth)
+				}
+			} else {
+				ratio := min(widthAvail/preferredTotal, 1)
+				for _, widget := range omitted {
+					widget.ResolveWidth(widget.PreferredWidth(writer) * ratio)
+				}
+				for _, widget := range auto {
+					widget.ResolveWidth(widget.PreferredWidth(writer) * ratio)
+				}
 			}
 		} else {
 			containerFull = true
@@ -419,7 +450,7 @@ func resolveVBoxChildWidth(container Container, writer Writer, widget Widget) {
 		}
 		widget.ResolveWidth(min(pw, cw))
 	}
-	widget.SetLeft(vboxCrossAxisLeft(container, widget, IsRTL(container)))
+	widget.SetLeft(vboxCrossAxisLeft(container, widget, vboxChildCrossAxisRTL(container, widget)))
 }
 
 func distributeVBoxAutoHeight(container Container, style *LayoutStyle, fragment *vboxFragment) {
@@ -543,6 +574,35 @@ func widgetAutoHeight(widget Widget) bool {
 	return widget.HeightMode() == DimAuto && !(widget.TopIsSet() && widget.BottomIsSet())
 }
 
+func reserveHBoxEdgeFlexibleWidths(widgets []Widget, style *LayoutStyle, writer Writer, widthAvail float64, containerFull *bool) float64 {
+	for _, widget := range widgets {
+		if widget.Align() != AlignLeft && widget.Align() != AlignRight {
+			continue
+		}
+		width := widget.PreferredWidth(writer)
+		widget.ResolveWidth(width)
+		widthAvail -= width
+		*containerFull = widthAvail+layoutFitEpsilon < 0
+		widget.SetDisabled(*containerFull)
+		widthAvail -= style.HPadding()
+	}
+	return widthAvail
+}
+
+func filterHBoxCenterFlexible(widgets []Widget) []Widget {
+	if len(widgets) == 0 {
+		return widgets
+	}
+	center := widgets[:0]
+	for _, widget := range widgets {
+		if widget.Align() == AlignLeft || widget.Align() == AlignRight {
+			continue
+		}
+		center = append(center, widget)
+	}
+	return center
+}
+
 func vboxCrossAxisLeft(container Container, widget Widget, rtl bool) float64 {
 	switch widget.SelfAlign() {
 	case SelfAlignCenter:
@@ -558,4 +618,11 @@ func vboxCrossAxisLeft(container Container, widget Widget, rtl bool) float64 {
 		}
 		return ContentLeft(container)
 	}
+}
+
+func vboxChildCrossAxisRTL(container Container, widget Widget) bool {
+	if child, ok := widget.(Container); ok {
+		return IsRTL(child)
+	}
+	return IsRTL(container)
 }

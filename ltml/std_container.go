@@ -138,7 +138,33 @@ func (c *StdContainer) PreferredWidth(w Writer) float64 {
 			return width
 		}
 	}
-	return c.StdWidget.PreferredWidth(w)
+	c.prepareForLayout(w)
+	static, _ := printableWidgets(c, Static)
+	switch c.LayoutStyle().manager {
+	case "hbox", "flow":
+		width := NonContentWidth(c)
+		first := true
+		for _, widget := range static {
+			if widgetZeroFootprint(widget) {
+				continue
+			}
+			if !first {
+				width += c.LayoutStyle().HPadding()
+			}
+			width += widget.PreferredWidth(w)
+			first = false
+		}
+		return width
+	default:
+		width := 0.0
+		for _, widget := range static {
+			if widgetZeroFootprint(widget) {
+				continue
+			}
+			width = max(width, widget.PreferredWidth(w))
+		}
+		return width + NonContentWidth(c)
+	}
 }
 
 func (c *StdContainer) Order() TableOrder {

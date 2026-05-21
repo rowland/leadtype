@@ -55,6 +55,149 @@ func TestLayoutVBox_ParagraphDefaultsToFullWidth(t *testing.T) {
 	}
 }
 
+func TestStdContainer_PreferredWidthForVBoxUsesChildren(t *testing.T) {
+	c := &StdContainer{}
+	c.layout = &LayoutStyle{manager: "vbox"}
+
+	label := testHBoxLabel(t, "Natural Heading")
+	label.SetWidth(180)
+	if err := label.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(label)
+
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.AddText("This paragraph is deliberately long enough that it wants more than the heading.")
+	if err := p.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(p)
+
+	if got := c.PreferredWidth(&labelTestWriter{t: t}); got <= 180 {
+		t.Fatalf("vbox PreferredWidth() = %v, want greater than heading width 180", got)
+	}
+}
+
+func TestLayoutHBox_SpecifiedWidthsFitWhenContainerMatchesPreferredSum(t *testing.T) {
+	const childW = 72.0
+	const hpad = 25.2
+
+	hbox := &StdContainer{}
+	hbox.layout = &LayoutStyle{manager: "hbox", hpadding: hpad}
+
+	left := &positionedTestWidget{preferredWidth: childW, preferredHeight: childW}
+	left.SetWidth(childW)
+	if err := left.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(left)
+
+	right := &positionedTestWidget{preferredWidth: childW, preferredHeight: childW}
+	right.SetWidth(childW)
+	if err := right.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(right)
+
+	writer := &labelTestWriter{t: t}
+	wantWidth := childW + hpad + childW
+	if got := hbox.PreferredWidth(writer); math.Abs(got-wantWidth) > layoutFitEpsilon {
+		t.Fatalf("PreferredWidth() = %v, want %v", got, wantWidth)
+	}
+	hbox.SetWidth(wantWidth)
+	hbox.SetHeight(100)
+
+	LayoutHBox(hbox, hbox.layout, writer)
+
+	if left.Disabled() || right.Disabled() {
+		t.Fatalf("specified children disabled with exact-fit width: left=%v right=%v", left.Disabled(), right.Disabled())
+	}
+}
+
+func TestLayoutHBox_AutoWidthCanCollapseWhenOmittedPreferredWidthsConsumeSpace(t *testing.T) {
+	c := positionedContainer(0, 0, 300, 100)
+	style := &LayoutStyle{}
+
+	vbox := &StdContainer{}
+	vbox.layout = &LayoutStyle{manager: "vbox"}
+	if err := vbox.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(vbox)
+
+	label := testHBoxLabel(t, "Natural Heading")
+	label.SetWidth(180)
+	if err := label.SetContainer(vbox); err != nil {
+		t.Fatal(err)
+	}
+	vbox.AddChild(label)
+
+	p := &StdParagraph{}
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.AddText("This paragraph is deliberately long enough that its max-content width would be too large for a natural heading column.")
+	if err := p.SetContainer(vbox); err != nil {
+		t.Fatal(err)
+	}
+	vbox.AddChild(p)
+
+	auto := &positionedTestWidget{preferredWidth: 0, preferredHeight: 20}
+	auto.SetWidthAuto()
+	if err := auto.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(auto)
+
+	LayoutHBox(c, style, &labelTestWriter{t: t})
+
+	if got := auto.Width(); got != 0 {
+		t.Fatalf("auto Width() = %v, want 0", got)
+	}
+	if got := vbox.Width(); got <= 0 {
+		t.Fatalf("vbox Width() = %v, want positive width", got)
+	}
+}
+
+func TestLayoutHBox_RightAlignedOmittedWidthReservesSpaceBeforeCenterRun(t *testing.T) {
+	c := positionedContainer(0, 0, 300, 100)
+	style := &LayoutStyle{}
+
+	center := &positionedTestWidget{preferredWidth: 300, preferredHeight: 20}
+	if err := center.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(center)
+
+	spacer := &positionedTestWidget{preferredWidth: 0, preferredHeight: 20}
+	spacer.SetWidthAuto()
+	if err := spacer.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(spacer)
+
+	right := &positionedTestWidget{preferredWidth: 40, preferredHeight: 20}
+	right.align = AlignRight
+	if err := right.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(right)
+
+	LayoutHBox(c, style, nil)
+
+	if got := right.Width(); got != 40 {
+		t.Fatalf("right.Width() = %v, want 40", got)
+	}
+	if got := right.Left(); got != 260 {
+		t.Fatalf("right.Left() = %v, want 260", got)
+	}
+	if got := center.Width(); got > 260 {
+		t.Fatalf("center.Width() = %v, want no more than 260", got)
+	}
+	if center.Left()+center.Width() > right.Left()+layoutFitEpsilon {
+		t.Fatalf("center overlaps right panel: center right %v, right left %v", center.Left()+center.Width(), right.Left())
+	}
+}
+
 func TestLayoutHBox_AutoWidthAbsorbsOnlySurplusSpace(t *testing.T) {
 	c := positionedContainer(0, 0, 400, 100)
 	style := &LayoutStyle{hpadding: 10}
@@ -104,15 +247,15 @@ func TestLayoutHBox_AutoWidthAbsorbsOnlySurplusSpace(t *testing.T) {
 	if got := omitted.Width(); got != 80 {
 		t.Fatalf("omitted.Width() = %v, want 80", got)
 	}
-	if got := auto1.Width(); got != 70 {
-		t.Fatalf("auto1.Width() = %v, want 70", got)
+	if got := auto1.Width(); got != 80 {
+		t.Fatalf("auto1.Width() = %v, want 80", got)
 	}
-	if got := auto2.Width(); got != 70 {
-		t.Fatalf("auto2.Width() = %v, want 70", got)
+	if got := auto2.Width(); got != 60 {
+		t.Fatalf("auto2.Width() = %v, want 60", got)
 	}
 }
 
-func TestLayoutHBox_AutoWidthHasNoEffectWhenConstrained(t *testing.T) {
+func TestLayoutHBox_AutoWidthScalesPreferredWidthsWhenConstrained(t *testing.T) {
 	c := positionedContainer(0, 0, 340, 100)
 	style := &LayoutStyle{hpadding: 10}
 
@@ -152,10 +295,41 @@ func TestLayoutHBox_AutoWidthHasNoEffectWhenConstrained(t *testing.T) {
 
 	LayoutHBox(c, style, nil)
 
-	for _, widget := range []*positionedTestWidget{omitted, auto1, auto2} {
-		if got := widget.Width(); math.Abs(got-(175.0/3.0)) > 0.001 {
-			t.Fatalf("widget.Width() = %v, want %v", got, 175.0/3.0)
-		}
+	if got := omitted.Width(); math.Abs(got-(80*175.0/180.0)) > 0.001 {
+		t.Fatalf("omitted.Width() = %v, want scaled preferred width", got)
+	}
+	if got := auto1.Width(); math.Abs(got-(60*175.0/180.0)) > 0.001 {
+		t.Fatalf("auto1.Width() = %v, want scaled preferred width", got)
+	}
+	if got := auto2.Width(); math.Abs(got-(40*175.0/180.0)) > 0.001 {
+		t.Fatalf("auto2.Width() = %v, want scaled preferred width", got)
+	}
+}
+
+func TestLayoutHBox_AutoWidthReceivesSpaceWhenOmittedPreferredWidthIsZero(t *testing.T) {
+	c := positionedContainer(0, 0, 300, 100)
+	style := &LayoutStyle{}
+
+	omitted := &positionedTestWidget{preferredWidth: 0, preferredHeight: 20}
+	if err := omitted.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(omitted)
+
+	auto := &positionedTestWidget{preferredWidth: 0, preferredHeight: 20}
+	auto.SetWidthAuto()
+	if err := auto.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(auto)
+
+	LayoutHBox(c, style, nil)
+
+	if got := omitted.Width(); got != 0 {
+		t.Fatalf("omitted.Width() = %v, want 0", got)
+	}
+	if got := auto.Width(); math.Abs(got-300) > 0.001 {
+		t.Fatalf("auto.Width() = %v, want remaining width 300", got)
 	}
 }
 

@@ -212,6 +212,27 @@ func TestLayoutVBox_AlignSelfEndMirrorsInRTL(t *testing.T) {
 	}
 }
 
+func TestLayoutVBox_RTLChildContainerInLTRParentFlushesRight(t *testing.T) {
+	parent := positionedContainer(0, 0, 300, 200)
+	style := &LayoutStyle{}
+
+	child := &StdContainer{}
+	child.dirExplicit = true
+	child.dir = DirRTL
+	child.SetWidth(100)
+	child.SetHeight(30)
+	if err := child.SetContainer(parent); err != nil {
+		t.Fatal(err)
+	}
+	parent.AddChild(child)
+
+	LayoutVBox(parent, style, nil)
+
+	if got := child.Left(); got != 200 {
+		t.Errorf("RTL child vbox left = %v, want 200", got)
+	}
+}
+
 func TestLayoutHBox_RTL(t *testing.T) {
 	c := rtlContainer(0, 0, 300, 100)
 	style := &LayoutStyle{}
