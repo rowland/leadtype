@@ -22,7 +22,7 @@
       The page content uses margins, padding, and layout managers rather than hand-positioned coordinates.
     </p>
 
-    <div layout="hbox" layout.hpadding="18">
+    <div layout="hbox" layout.hpadding="18" width="100%">
       <div width="268" layout="vbox" layout.vpadding="12" padding="14" border.color="#d7e3f0" border.width="1" corners="14">
         <label font="panel-title">Natural Size Placement</label>
         <p font="body">
@@ -41,7 +41,7 @@
           The same stored geometry can be placed smaller with width-only sizing, or stretched when both dimensions are explicit.
         </p>
 
-        <div layout="hbox" layout.hpadding="10">
+        <div layout="hbox" layout.hpadding="10" width="100%">
           <div width="108" layout="vbox" layout.vpadding="8" padding="8" border.color="#e6edf5" border.width="1" corners="10">
             <draw key="target-board" width="90" align-self="center" alt="Medium target board diagram" />
             <label font="caption" width="90" align-self="center" text-align="center">90pt wide</label>
@@ -57,7 +57,7 @@
           Width-only draws preserve aspect ratio automatically.
         </p>
 
-        <div layout="vbox" layout.vpadding="8" padding="10" border.color="#e6edf5" border.width="1" corners="10">
+        <div layout="vbox" layout.vpadding="8" padding="10" border.color="#e6edf5" border.width="1" corners="10" width="100%">
           <draw key="target-board" width="96" height="72" align-self="center" alt="Stretched target board diagram" />
           <label font="caption" text-align="center">96pt by 72pt</label>
         </div>
@@ -75,7 +75,7 @@
       The detailed geometry lives in the canvas definition. Every placement below reuses the stored form while choosing a different destination size.
     </p>
 
-    <div layout="vbox" layout.vpadding="12" padding="14" border.color="#d7e3f0" border.width="1" corners="14">
+    <div layout="vbox" layout.vpadding="12" padding="14" border.color="#d7e3f0" border.width="1" corners="14" width="100%">
       <label font="panel-title">Postage-Stamp Placements</label>
       <p font="body">
         A flow container lays out several small placements as ordinary widgets with consistent spacing and padding.
@@ -105,7 +105,7 @@
       </div>
     </div>
 
-    <div layout="hbox" layout.hpadding="18">
+    <div layout="hbox" layout.hpadding="18" width="100%">
       <div width="210" layout="vbox" layout.vpadding="10" padding="14" border.color="#d7e3f0" border.width="1" corners="14">
         <label font="panel-title">Reference Size</label>
         <p font="body">

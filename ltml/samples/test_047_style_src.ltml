@@ -1,7 +1,7 @@
 <ltml>
   <style src="test_047_style_src.ltml.css" />
   <page margin="28">
-    <div class="hero" border="dotted" padding="14" margin-bottom="12">
+    <div class="hero" border="dotted" padding="14" margin-bottom="12" width="100%">
       <p id="title">External Style Sheets</p>
       <p class="lede">This sample loads selector rules from a sibling stylesheet file using &lt;style src="..." /&gt;.</p>
     </div>

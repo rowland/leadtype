@@ -658,7 +658,7 @@ EMC
 0.001 w
 [4 2] 0 d
 0 J
-36 720 540 36 re
+36 732 540 24 re
 S
 EMC
 /Artifact BMC
@@ -678,14 +678,14 @@ EMC
 /Artifact BMC
 ET
 1 0.6275 0.4784 rg
-36 489.6 540 230.4 re
+36 501.6 540 230.4 re
 f
 EMC
 /Artifact BMC
 0 w
 [] 0 d
 0 J
-36 489.6 540 230.4 re
+36 501.6 540 230.4 re
 S
 EMC
 /Artifact BMC

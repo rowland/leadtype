@@ -2,7 +2,7 @@
   <font id="bullet_font" name="Helvetica" size="12" />
   <bullet id="bstar" font="bullet_font" text="*" width="18pt" />
   <page layout="vbox" grid="0.25in">
-    <div display="always" align="top" border="dashed" padding="6pt">
+    <div display="always" align="top" border="dashed" padding="6pt" width="100%">
       <label display="always" font.weight="Bold">Paragraph split</label>
     </div>
 
@@ -33,7 +33,7 @@
       Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
     </p>
 
-    <div display="always" align="bottom" border="dotted" padding="4pt">
+    <div display="always" align="bottom" border="dotted" padding="4pt" width="100%">
       <label display="odd">Odd paragraph footer</label>
       <label display="even">Even paragraph footer</label>
     </div>

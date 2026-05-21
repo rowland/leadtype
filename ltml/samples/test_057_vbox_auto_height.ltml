@@ -58,7 +58,7 @@
     </p>
 
     <h6>Roomy fixed-height container</h6>
-    <div class="demo-column roomy">
+    <div class="demo-column roomy" width="100%">
       <label class="fixed">fixed height</label>
       <label class="preferred">preferred height</label>
       <label class="auto auto-a">auto A grows</label>
@@ -66,7 +66,7 @@
     </div>
 
     <h6>Constrained fixed-height container</h6>
-    <div class="demo-column tight">
+    <div class="demo-column tight" width="100%">
       <label class="fixed">fixed height</label>
       <label class="preferred">preferred height</label>
       <label class="auto auto-a">auto A stays preferred</label>

@@ -4,12 +4,12 @@
   <bullet id="brand-star" shape="star" width="24pt" r="5pt" brush="Gold" pen="solid" points="5" r0="2.5pt" />
   <bullet id="ordered-mark" font="body" />
   <page style="compact" font="body" layout="vbox" layout.vpadding="8pt">
-    <div display="always" align="top" border="dashed" padding="5pt">
+    <div display="always" align="top" border="dashed" padding="5pt" width="100%">
       <label display="always" font.weight="Bold">List splitting</label>
       <label display="always">Ordered lists should continue numbering across pages.</label>
     </div>
 
-    <vbox border="dotted" padding="5pt" layout.vpadding="4pt">
+    <vbox border="dotted" padding="5pt" layout.vpadding="4pt" width="100%">
       <label font.weight="Bold">Default unordered list</label>
       <ul>
         <p>Default unordered list items use a built-in disc marker.</p>
@@ -67,7 +67,7 @@
       <p>Twentieth ordered item finishes the ordered sequence.</p>
     </ol>
 
-    <div display="always" align="bottom" border="dotted" padding="3pt" margin-top="4pt">
+    <div display="always" align="bottom" border="dotted" padding="3pt" margin-top="4pt" width="100%">
       <label display="odd">Odd list footer</label>
       <label display="even">Even list footer</label>
     </div>
