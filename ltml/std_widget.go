@@ -43,6 +43,7 @@ type StdWidget struct {
 	shiftYMode      DimensionMode
 	zIndex          int
 	display         DisplayMode
+	displaySet      bool
 	printed         bool
 	invisible       bool
 	disabled        bool
@@ -355,6 +356,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	}
 	if display, ok := attrs["display"]; ok {
 		widget.display = ParseDisplayMode(display)
+		widget.displaySet = true
 	}
 	if value, ok := attrs["alt"]; ok {
 		widget.alt = value
@@ -923,6 +925,10 @@ func (widget *StdWidget) ZIndex() int {
 
 func (widget *StdWidget) Display() DisplayMode {
 	return widget.display
+}
+
+func (widget *StdWidget) DisplayExplicit() bool {
+	return widget.displaySet
 }
 
 func (widget *StdWidget) AccessibilityLogicalID() string {

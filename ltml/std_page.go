@@ -496,7 +496,7 @@ func (p *StdPage) walkDisplayWidgets(root Container, fn func(Widget) bool) bool 
 		physicalPageNo = doc.CurrentPhysicalPageNo()
 	}
 	for _, child := range root.Widgets() {
-		parentRepeats := root == p || root.Display() != DisplayOnce
+		parentRepeats := containerRepeatsForRender(root, p)
 		if !widgetDisplayForRender(child, parentRepeats, p.flowPageIndex, physicalPageNo) {
 			continue
 		}
@@ -561,6 +561,7 @@ func (p *StdPage) rebuildActiveChildren() {
 	active := make([]Widget, 0, len(p.children))
 	for _, child := range p.children {
 		if child.Display() != DisplayOnce {
+			p.resetWidgetLayoutState(child)
 			active = append(active, child)
 			continue
 		}
@@ -578,7 +579,11 @@ func (p *StdPage) rebuildActiveChildren() {
 }
 
 func (p *StdPage) resetWidgetRenderState(widget Widget) {
+	p.resetWidgetLayoutState(widget)
 	widget.SetPrinted(false)
+}
+
+func (p *StdPage) resetWidgetLayoutState(widget Widget) {
 	widget.SetVisible(true)
 	widget.SetDisabled(false)
 	widget.ClearResolvedWidth()
@@ -588,7 +593,7 @@ func (p *StdPage) resetWidgetRenderState(widget Widget) {
 		return
 	}
 	for _, child := range container.Widgets() {
-		p.resetWidgetRenderState(child)
+		p.resetWidgetLayoutState(child)
 	}
 }
 

@@ -56,12 +56,11 @@ func printableWidgets(c Container, p Position) (widgets, remaining []Widget) {
 			physicalPageNo = doc.CurrentPhysicalPageNo()
 		}
 	}
-	parentRepeats := c.Display() != DisplayOnce
 	flowPageIndex := 1
 	if root != nil {
-		parentRepeats = c == root || c.Display() != DisplayOnce
 		flowPageIndex = root.flowPageIndex
 	}
+	parentRepeats := containerRepeatsForRender(c, root)
 	for _, w := range c.Widgets() {
 		if w.Position() == p && widgetDisplayForRender(w, parentRepeats, flowPageIndex, physicalPageNo) {
 			widgets = append(widgets, w)
@@ -70,4 +69,19 @@ func printableWidgets(c Container, p Position) (widgets, remaining []Widget) {
 		}
 	}
 	return
+}
+
+func containerRepeatsForRender(c Container, root *StdPage) bool {
+	for current := c; current != nil; current = current.Container() {
+		if root != nil && current == root {
+			return false
+		}
+		if current.Display() != DisplayOnce {
+			return true
+		}
+		if root != nil && current.Container() == nil {
+			break
+		}
+	}
+	return false
 }

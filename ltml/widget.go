@@ -145,9 +145,6 @@ func (d DisplayMode) String() string {
 }
 
 func widgetDisplayForRender(widget Widget, parentRepeats bool, flowPageIndex int, physicalPageNo int) bool {
-	if !parentRepeats {
-		return !widget.Printed()
-	}
 	switch widget.Display() {
 	case DisplayAlways:
 		return true
@@ -160,10 +157,18 @@ func widgetDisplayForRender(widget Widget, parentRepeats bool, flowPageIndex int
 	case DisplayOdd:
 		return physicalPageNo%2 == 1
 	case DisplayOnce:
-		fallthrough
+		if parentRepeats && !widgetDisplayExplicit(widget) {
+			return true
+		}
+		return !widget.Printed()
 	default:
 		return !widget.Printed()
 	}
+}
+
+func widgetDisplayExplicit(widget Widget) bool {
+	explicit, ok := widget.(interface{ DisplayExplicit() bool })
+	return ok && explicit.DisplayExplicit()
 }
 
 func ContentHeight(widget Widget) float64 {

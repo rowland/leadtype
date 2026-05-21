@@ -362,14 +362,13 @@ func radialCellWidgets(c Container) []Widget {
 	root := rootPageForContainer(c)
 	physicalPageNo := 0
 	flowPageIndex := 1
-	parentRepeats := c.Display() != DisplayOnce
 	if root != nil {
-		parentRepeats = c == root || c.Display() != DisplayOnce
 		flowPageIndex = root.flowPageIndex
 		if doc := root.document(); doc != nil {
 			physicalPageNo = doc.CurrentPhysicalPageNo()
 		}
 	}
+	parentRepeats := containerRepeatsForRender(c, root)
 	var widgets []Widget
 	for _, child := range c.Widgets() {
 		if _, ok := child.(radialCell); !ok {

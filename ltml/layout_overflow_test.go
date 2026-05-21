@@ -318,6 +318,116 @@ func TestStdPage_OverflowRepeatsAlwaysAndAlternatesOddEven(t *testing.T) {
 	}
 }
 
+func TestStdPage_OverflowRepeatsNestedAlwaysChrome(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.overflow = true
+	doc := newFlowPageDoc(page)
+
+	var headerPages, footerPages, body1Pages, body2Pages []int
+
+	header := &StdContainer{}
+	_ = header.SetContainer(page)
+	header.SetAttrs(map[string]string{"align": "top", "display": "always"})
+	page.AddChild(header)
+	headerInner := &StdContainer{}
+	_ = headerInner.SetContainer(header)
+	header.AddChild(headerInner)
+	headerLeaf := &flowTestWidget{name: "header", preferredHeight: 10, printedOn: &headerPages}
+	_ = headerLeaf.SetContainer(headerInner)
+	headerInner.AddChild(headerLeaf)
+
+	body1 := &flowTestWidget{name: "body1", preferredHeight: 55, printedOn: &body1Pages}
+	_ = body1.SetContainer(page)
+	page.AddChild(body1)
+
+	body2 := &flowTestWidget{name: "body2", preferredHeight: 55, printedOn: &body2Pages}
+	_ = body2.SetContainer(page)
+	page.AddChild(body2)
+
+	footer := &StdContainer{}
+	_ = footer.SetContainer(page)
+	footer.SetAttrs(map[string]string{"align": "bottom", "display": "always"})
+	page.AddChild(footer)
+	footerInner := &StdContainer{}
+	_ = footerInner.SetContainer(footer)
+	footer.AddChild(footerInner)
+	footerLeaf := &flowTestWidget{name: "footer", preferredHeight: 10, printedOn: &footerPages}
+	_ = footerLeaf.SetContainer(footerInner)
+	footerInner.AddChild(footerLeaf)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(headerPages, []int{1, 2}) {
+		t.Fatalf("header pages = %v, want [1 2]", headerPages)
+	}
+	if !slices.Equal(footerPages, []int{1, 2}) {
+		t.Fatalf("footer pages = %v, want [1 2]", footerPages)
+	}
+	if len(body1Pages) != 1 || body1Pages[0] != 1 {
+		t.Fatalf("body1 pages = %v, want [1]", body1Pages)
+	}
+	if len(body2Pages) != 1 || body2Pages[0] != 2 {
+		t.Fatalf("body2 pages = %v, want [2]", body2Pages)
+	}
+}
+
+func TestStdPage_RepeatedChromeDoesNotReserveHiddenNestedFirstChild(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.overflow = true
+	doc := newFlowPageDoc(page)
+
+	var titlePages, introPages, body1Pages, body2Pages []int
+
+	header := &StdContainer{}
+	_ = header.SetContainer(page)
+	header.SetAttrs(map[string]string{"align": "top", "display": "always"})
+	page.AddChild(header)
+
+	title := &flowTestWidget{name: "title", preferredHeight: 10, printedOn: &titlePages}
+	_ = title.SetContainer(header)
+	header.AddChild(title)
+
+	intro := &flowTestWidget{name: "intro", preferredHeight: 30, printedOn: &introPages}
+	_ = intro.SetContainer(header)
+	intro.SetAttrs(map[string]string{"display": "first"})
+	header.AddChild(intro)
+
+	body1 := &flowTestWidget{name: "body1", preferredHeight: 45, printedOn: &body1Pages}
+	_ = body1.SetContainer(page)
+	page.AddChild(body1)
+
+	body2 := &flowTestWidget{name: "body2", preferredHeight: 45, printedOn: &body2Pages}
+	_ = body2.SetContainer(page)
+	page.AddChild(body2)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(titlePages, []int{1, 2}) {
+		t.Fatalf("title pages = %v, want [1 2]", titlePages)
+	}
+	if !slices.Equal(introPages, []int{1}) {
+		t.Fatalf("intro pages = %v, want [1]", introPages)
+	}
+	if !slices.Equal(body1Pages, []int{1}) || !slices.Equal(body2Pages, []int{2}) {
+		t.Fatalf("body pages = %v/%v, want [1]/[2]", body1Pages, body2Pages)
+	}
+	if body2 := page.flowItems[1].Source; body2.Top() != 10 {
+		t.Fatalf("body2 top = %v, want 10 after title-only repeated header", body2.Top())
+	}
+}
+
 func TestStdPage_TableOverflowDefersWholeRow(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["table"].Clone()
