@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
@@ -21,6 +23,7 @@ type StdPage struct {
 	marginChanged                 bool
 	grid                          bool
 	gridStep                      float64
+	gridMajorEvery                int
 	overflow                      bool
 	overflowSet                   bool
 	svgGradientStopOpacityMode    pdf.SVGGradientStopOpacityMode
@@ -184,15 +187,19 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if grid, ok := attrs["grid"]; ok {
-		switch grid {
+		step, majorEvery := parsePageGrid(grid)
+		switch step {
 		case "", "false":
 			p.grid = false
+			p.gridMajorEvery = 0
 		case "true":
 			p.grid = true
-			p.gridStep = 0.25
+			p.gridStep = 18
+			p.gridMajorEvery = majorEvery
 		default:
 			p.grid = true
-			p.gridStep = ParseMeasurement(grid, p.Units())
+			p.gridStep = ParseMeasurement(step, p.Units())
+			p.gridMajorEvery = majorEvery
 		}
 	}
 	if overflow, ok := attrs["overflow"]; ok {
@@ -267,17 +274,56 @@ func (p *StdPage) drawGrid(w Writer) error {
 		w.SetLineCapStyle(prevCap)
 	}()
 
+	if p.gridMajorEvery <= 0 {
+		return w.Path(func() {
+			p.drawGridLines(w, step, false)
+			_ = w.Stroke()
+		})
+	}
+	if err := w.Path(func() {
+		p.drawGridLines(w, step, false)
+		_ = w.Stroke()
+	}); err != nil {
+		return err
+	}
+	w.SetLineWidth(1)
 	return w.Path(func() {
-		for x := 0.0; x <= p.Width(); x += step {
-			w.MoveTo(x, 0)
-			w.LineTo(x, p.Height())
-		}
-		for y := 0.0; y <= p.Height(); y += step {
-			w.MoveTo(0, y)
-			w.LineTo(p.Width(), y)
-		}
+		p.drawGridLines(w, step, true)
 		_ = w.Stroke()
 	})
+}
+
+func (p *StdPage) drawGridLines(w Writer, step float64, major bool) {
+	for i, x := 0, 0.0; x <= p.Width(); i, x = i+1, x+step {
+		if p.isMajorGridLine(i) != major {
+			continue
+		}
+		w.MoveTo(x, 0)
+		w.LineTo(x, p.Height())
+	}
+	for i, y := 0, 0.0; y <= p.Height(); i, y = i+1, y+step {
+		if p.isMajorGridLine(i) != major {
+			continue
+		}
+		w.MoveTo(0, y)
+		w.LineTo(p.Width(), y)
+	}
+}
+
+func (p *StdPage) isMajorGridLine(index int) bool {
+	return p.gridMajorEvery > 0 && index%p.gridMajorEvery == 0
+}
+
+func parsePageGrid(grid string) (step string, majorEvery int) {
+	parts := strings.SplitN(grid, ",", 2)
+	step = strings.TrimSpace(parts[0])
+	if len(parts) < 2 {
+		return step, 0
+	}
+	if n, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil && n > 0 {
+		majorEvery = n
+	}
+	return step, majorEvery
 }
 
 type LayoutOverflowError struct {

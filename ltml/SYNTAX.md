@@ -224,7 +224,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `style`       | Reference to a named `<page>` style. |
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. Use `layout.*` for inline overrides such as `layout.vpadding="9pt"`. |
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
-| `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. |
+| `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. Add a comma-delimited count such as `0.25in,4` or `true,4` to draw every fourth line bolder. |
 | `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
 | `svg-gradient-stop-opacity-mode` | Page-local SVG gradient stop-opacity rendering mode. Overrides the document default for SVG assets rendered on this page. |
 | `svg-blend-mode` | Page-local SVG `mix-blend-mode` handling. Overrides the document default for SVG assets rendered on this page. |

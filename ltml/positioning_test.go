@@ -214,3 +214,49 @@ func TestStdPage_PaintBackground_DrawsDebugGrid(t *testing.T) {
 		}
 	}
 }
+
+func TestStdPage_PaintBackground_DrawsMajorDebugGridLines(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 72, height: 72}}
+	page.SetAttrs(map[string]string{"units": "in", "grid": "0.25in,2"})
+
+	w := &labelTestWriter{t: t}
+	if err := page.PaintBackground(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.lineWidths) != 2 {
+		t.Fatalf("line width count = %d, want 2", len(w.lineWidths))
+	}
+	if w.lineWidths[0] != 0.25 {
+		t.Fatalf("normal grid line width = %v, want 0.25", w.lineWidths[0])
+	}
+	if w.lineWidths[1] != 0.5 {
+		t.Fatalf("major grid line width = %v, want 0.5", w.lineWidths[1])
+	}
+	want := [][2]float64{
+		{18, 0}, {54, 0}, {0, 18}, {0, 54},
+		{0, 0}, {36, 0}, {72, 0}, {0, 0}, {0, 36}, {0, 72},
+	}
+	if len(w.moves) != len(want) {
+		t.Fatalf("grid move count = %d, want %d", len(w.moves), len(want))
+	}
+	for i, move := range want {
+		if w.moves[i] != move {
+			t.Fatalf("move %d = %v, want %v", i, w.moves[i], move)
+		}
+	}
+}
+
+func TestStdPage_SetAttrs_ParsesMajorIntervalWithDefaultGrid(t *testing.T) {
+	page := &StdPage{}
+	page.SetAttrs(map[string]string{"grid": "true,4"})
+
+	if !page.grid {
+		t.Fatal("grid = false, want true")
+	}
+	if page.gridStep != 18 {
+		t.Fatalf("grid step = %v, want 18", page.gridStep)
+	}
+	if page.gridMajorEvery != 4 {
+		t.Fatalf("major interval = %d, want 4", page.gridMajorEvery)
+	}
+}
