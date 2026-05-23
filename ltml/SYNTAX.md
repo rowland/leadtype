@@ -289,7 +289,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `style`            | Reference to a named `<para>` style. |
 | `style.text-align` | Text alignment: `left`, `center`, `right`, `justify`. |
 | `style.valign`     | Vertical alignment: `top`, `middle`, `bottom`, `baseline`. |
-| `bullet`           | Reference to a named `<bullet>` style. |
+| `bullet`           | Reference to one or more named `<bullet>` styles. Multiple names are whitespace-separated and each reserves its configured width before the paragraph text. |
 | `width`, `height`  | Explicit dimensions. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the element. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the element box. |
@@ -972,7 +972,7 @@ overridden inline with `fill.*` attributes on a widget.
 | `id`         | Name used to reference this style. |
 | `text-align` | `left`, `center`, `right`, `justify`. |
 | `valign`     | `top`, `middle`, `bottom`, `baseline`. |
-| `bullet`     | Reference to a named `<bullet>` style. |
+| `bullet`     | Reference to one or more named `<bullet>` styles. Multiple names are whitespace-separated and each reserves its configured width before the paragraph text. |
 
 ---
 

@@ -18,7 +18,7 @@ type StdParagraph struct {
 	textPieces         []textPiece
 	richText           *rich_text.RichText
 	textFill           *BrushStyle
-	bullet             *BulletStyle
+	bullets            []*BulletStyle
 	splitDisabled      bool
 	orphans            int
 	widows             int
@@ -68,20 +68,28 @@ func (p *StdParagraph) LayoutWidget(Writer) {
 }
 
 func (p *StdParagraph) Bullet() *BulletStyle {
-	if p.bullet != nil {
-		return p.bullet
+	if bullets := p.Bullets(); len(bullets) > 0 {
+		return bullets[0]
+	}
+	return nil
+}
+
+func (p *StdParagraph) Bullets() []*BulletStyle {
+	if len(p.bullets) > 0 {
+		return p.bullets
 	}
 	if ps := p.ParagraphStyle(); ps != nil {
-		return ps.Bullet()
+		return ps.Bullets()
 	}
 	return nil
 }
 
 func (p *StdParagraph) bulletWidth() float64 {
-	if b := p.Bullet(); b != nil {
-		return b.Width()
+	width := 0.0
+	for _, b := range p.Bullets() {
+		width += b.Width()
 	}
-	return 0
+	return width
 }
 
 func (p *StdParagraph) DrawContent(w Writer) error {
@@ -102,12 +110,10 @@ func (p *StdParagraph) DrawContent(w Writer) error {
 		textHeight := p.textContentHeightForLines(para, w)
 		baselineY := ContentTop(p) + para[0].Ascent()
 		w.MoveTo(textX, baselineY)
-		if b := p.Bullet(); b != nil && !p.suppressBullet {
-			x := p.bulletSlotX()
+		if bullets := p.Bullets(); len(bullets) > 0 && !p.suppressBullet {
 			y := baselineY
-			w.MoveTo(x, y)
 			if err := withAccessibilityArtifact(w, func() error {
-				return p.drawBullet(w, b, para[0], x, y, textHeight)
+				return p.drawBullets(w, bullets, para[0], y, textHeight)
 			}); err != nil {
 				return err
 			}
@@ -191,7 +197,7 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 		p.paragraphStyle.SetAttrs(filterMapAttrs("style.", attrs))
 	}
 	if bullet, ok := attrs["bullet"]; ok {
-		p.bullet = BulletStyleFor(bullet, p.scope)
+		p.bullets = bulletStylesFor(bullet, p.scope)
 	}
 	if split, ok := attrs["split"]; ok {
 		p.splitDisabled = split == "false"
@@ -287,13 +293,6 @@ func (p *StdParagraph) textIndent() float64 {
 		return p.continuationIndent
 	}
 	return p.bulletWidth()
-}
-
-func (p *StdParagraph) bulletSlotX() float64 {
-	if IsRTL(p) {
-		return ContentRight(p) - p.bulletWidth()
-	}
-	return ContentLeft(p)
 }
 
 func (p *StdParagraph) textStartX(indent float64) float64 {

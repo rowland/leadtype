@@ -35,6 +35,41 @@ func (p *StdParagraph) drawBullet(w Writer, bullet *BulletStyle, line *rich_text
 	}
 }
 
+func (p *StdParagraph) drawBullets(w Writer, bullets []*BulletStyle, line *rich_text.RichText, baselineY, textHeight float64) error {
+	bandStart, bandEnd := p.bulletBand()
+	return p.drawBulletsInBand(w, bullets, line, bandStart, bandEnd, baselineY, textHeight)
+}
+
+func (p *StdParagraph) drawBulletsInBand(w Writer, bullets []*BulletStyle, line *rich_text.RichText, bandStart, bandEnd, baselineY, textHeight float64) error {
+	if IsRTL(p) {
+		slotEnd := bandEnd
+		for _, bullet := range bullets {
+			slotX := slotEnd - bullet.Width()
+			if err := p.drawBullet(w, bullet, line, slotX, baselineY, textHeight); err != nil {
+				return err
+			}
+			slotEnd = slotX
+		}
+		return nil
+	}
+	slotX := bandStart
+	for _, bullet := range bullets {
+		if err := p.drawBullet(w, bullet, line, slotX, baselineY, textHeight); err != nil {
+			return err
+		}
+		slotX += bullet.Width()
+	}
+	return nil
+}
+
+func (p *StdParagraph) bulletBand() (float64, float64) {
+	width := p.bulletWidth()
+	if IsRTL(p) {
+		return ContentRight(p) - width, ContentRight(p)
+	}
+	return ContentLeft(p), ContentLeft(p) + width
+}
+
 func (p *StdParagraph) drawTextBullet(w Writer, bullet *BulletStyle, layout paragraphBulletLayout) error {
 	if bullet.font != nil {
 		applyExplicitFontForContainer(w, p, bullet.font)
@@ -236,11 +271,15 @@ func (p *StdParagraph) resolveImageBulletSize(w Writer, bullet *BulletStyle, slo
 }
 
 func (p *StdParagraph) bulletBoxHeightForLines(w Writer, lines []*rich_text.RichText, textHeight float64) float64 {
-	bullet := p.Bullet()
-	if bullet == nil || p.suppressBullet || len(lines) == 0 {
+	bullets := p.Bullets()
+	if len(bullets) == 0 || p.suppressBullet || len(lines) == 0 {
 		return 0
 	}
-	return p.bulletBoxHeight(w, bullet, lines[0], textHeight)
+	height := 0.0
+	for _, bullet := range bullets {
+		height = max(height, p.bulletBoxHeight(w, bullet, lines[0], textHeight))
+	}
+	return height
 }
 
 func (p *StdParagraph) bulletBoxHeight(w Writer, bullet *BulletStyle, line *rich_text.RichText, textHeight float64) float64 {

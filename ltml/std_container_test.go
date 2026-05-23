@@ -100,20 +100,20 @@ func TestStdContainer_PrepareListBullets_ULAssignsDirectChildParagraphsOnly(t *t
 	second := childParagraph(t, list, 2)
 	third := childParagraph(t, list, 3)
 
-	if first.bullet == nil || first.bullet.Shape() != "circle" {
-		t.Fatalf("first bullet = %#v, want default unordered circle bullet", first.bullet)
+	if first.Bullet() == nil || first.Bullet().Shape() != "circle" {
+		t.Fatalf("first bullet = %#v, want default unordered circle bullet", first.Bullet())
 	}
-	if first.bullet.AlignY() != "middle" {
-		t.Fatalf("first bullet align-y = %q, want middle", first.bullet.AlignY())
+	if first.Bullet().AlignY() != "middle" {
+		t.Fatalf("first bullet align-y = %q, want middle", first.Bullet().AlignY())
 	}
-	if second.bullet == nil || second.bullet.Text() != "*" {
-		t.Fatalf("second bullet = %#v, want preserved explicit bullet", second.bullet)
+	if second.Bullet() == nil || second.Bullet().Text() != "*" {
+		t.Fatalf("second bullet = %#v, want preserved explicit bullet", second.Bullet())
 	}
-	if third.bullet == nil || third.bullet.Shape() != "circle" {
-		t.Fatalf("third bullet = %#v, want default unordered circle bullet", third.bullet)
+	if third.Bullet() == nil || third.Bullet().Shape() != "circle" {
+		t.Fatalf("third bullet = %#v, want default unordered circle bullet", third.Bullet())
 	}
-	if third.bullet.AlignY() != "middle" {
-		t.Fatalf("third bullet align-y = %q, want middle", third.bullet.AlignY())
+	if third.Bullet().AlignY() != "middle" {
+		t.Fatalf("third bullet align-y = %q, want middle", third.Bullet().AlignY())
 	}
 }
 
@@ -148,20 +148,20 @@ func TestStdContainer_PrepareListBullets_OLNumbersParagraphsAndAutoSizesMarkers(
 	tenth := childParagraph(t, list, 9)
 	twelfth := childParagraph(t, list, 11)
 
-	if first.bullet == nil || first.bullet.Text() != "1." {
-		t.Fatalf("first bullet = %#v, want 1.", first.bullet)
+	if first.Bullet() == nil || first.Bullet().Text() != "1." {
+		t.Fatalf("first bullet = %#v, want 1.", first.Bullet())
 	}
-	if tenth.bullet == nil || tenth.bullet.Text() != "10." {
-		t.Fatalf("tenth bullet = %#v, want 10.", tenth.bullet)
+	if tenth.Bullet() == nil || tenth.Bullet().Text() != "10." {
+		t.Fatalf("tenth bullet = %#v, want 10.", tenth.Bullet())
 	}
-	if twelfth.bullet == nil || twelfth.bullet.Text() != "12." {
-		t.Fatalf("twelfth bullet = %#v, want 12.", twelfth.bullet)
+	if twelfth.Bullet() == nil || twelfth.Bullet().Text() != "12." {
+		t.Fatalf("twelfth bullet = %#v, want 12.", twelfth.Bullet())
 	}
-	if first.bullet.Width() != twelfth.bullet.Width() || tenth.bullet.Width() != twelfth.bullet.Width() {
-		t.Fatalf("ordered bullet widths = %v/%v/%v, want equal auto-sized widths", first.bullet.Width(), tenth.bullet.Width(), twelfth.bullet.Width())
+	if first.Bullet().Width() != twelfth.Bullet().Width() || tenth.Bullet().Width() != twelfth.Bullet().Width() {
+		t.Fatalf("ordered bullet widths = %v/%v/%v, want equal auto-sized widths", first.Bullet().Width(), tenth.Bullet().Width(), twelfth.Bullet().Width())
 	}
-	if first.bullet.Width() <= first.bulletTextWidth(w, first.bullet) {
-		t.Fatalf("ordered marker slot width = %v, want greater than rendered marker width %v", first.bullet.Width(), first.bulletTextWidth(w, first.bullet))
+	if first.Bullet().Width() <= first.bulletTextWidth(w, first.Bullet()) {
+		t.Fatalf("ordered marker slot width = %v, want greater than rendered marker width %v", first.Bullet().Width(), first.bulletTextWidth(w, first.Bullet()))
 	}
 }
 
@@ -188,14 +188,14 @@ func TestStdContainer_PrepareListBullets_OLPreservesExplicitBulletAndCountsItsOr
 	second := childParagraph(t, list, 1)
 	third := childParagraph(t, list, 2)
 
-	if first.bullet == nil || first.bullet.Text() != "1." {
-		t.Fatalf("first bullet = %#v, want 1.", first.bullet)
+	if first.Bullet() == nil || first.Bullet().Text() != "1." {
+		t.Fatalf("first bullet = %#v, want 1.", first.Bullet())
 	}
-	if second.bullet == nil || second.bullet.Text() != "*" {
-		t.Fatalf("second bullet = %#v, want preserved explicit bullet", second.bullet)
+	if second.Bullet() == nil || second.Bullet().Text() != "*" {
+		t.Fatalf("second bullet = %#v, want preserved explicit bullet", second.Bullet())
 	}
-	if third.bullet == nil || third.bullet.Text() != "3." {
-		t.Fatalf("third bullet = %#v, want 3.", third.bullet)
+	if third.Bullet() == nil || third.Bullet().Text() != "3." {
+		t.Fatalf("third bullet = %#v, want 3.", third.Bullet())
 	}
 }
 
@@ -229,7 +229,7 @@ func TestStdContainer_PrepareListBullets_OLKeepsExplicitTemplateWidth(t *testing
 	list := firstContainer(t, doc)
 	first := childParagraph(t, list, 0)
 	twelfth := childParagraph(t, list, 11)
-	if first.bullet == nil || first.bullet.Width() != 40 || twelfth.bullet == nil || twelfth.bullet.Width() != 40 {
-		t.Fatalf("ordered template widths = %#v / %#v, want 40pt for both", first.bullet, twelfth.bullet)
+	if first.Bullet() == nil || first.Bullet().Width() != 40 || twelfth.Bullet() == nil || twelfth.Bullet().Width() != 40 {
+		t.Fatalf("ordered template widths = %#v / %#v, want 40pt for both", first.Bullet(), twelfth.Bullet())
 	}
 }

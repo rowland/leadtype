@@ -5,12 +5,13 @@ package ltml
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ParagraphStyle struct {
 	scope HasScope
 	TextStyle
-	bullet *BulletStyle
+	bullets []*BulletStyle
 }
 
 func (ps *ParagraphStyle) Apply(w Writer) {
@@ -19,7 +20,14 @@ func (ps *ParagraphStyle) Apply(w Writer) {
 }
 
 func (ps *ParagraphStyle) Bullet() *BulletStyle {
-	return ps.bullet
+	if bullets := ps.Bullets(); len(bullets) > 0 {
+		return bullets[0]
+	}
+	return nil
+}
+
+func (ps *ParagraphStyle) Bullets() []*BulletStyle {
+	return ps.bullets
 }
 
 func (ps *ParagraphStyle) Clone() *ParagraphStyle {
@@ -30,7 +38,7 @@ func (ps *ParagraphStyle) Clone() *ParagraphStyle {
 func (ps *ParagraphStyle) SetAttrs(attrs map[string]string) {
 	ps.TextStyle.SetAttrs(attrs)
 	if bullet, ok := attrs["bullet"]; ok {
-		ps.bullet = BulletStyleFor(bullet, ps.scope)
+		ps.bullets = bulletStylesFor(bullet, ps.scope)
 	}
 }
 
@@ -39,7 +47,20 @@ func (ps *ParagraphStyle) SetScope(scope HasScope) {
 }
 
 func (ps *ParagraphStyle) String() string {
-	return fmt.Sprintf("ParagraphStyle %s bullet=%s", &ps.TextStyle, ps.bullet)
+	return fmt.Sprintf("ParagraphStyle %s bullet=%v", &ps.TextStyle, ps.bullets)
+}
+
+func bulletStylesFor(value string, scope HasScope) []*BulletStyle {
+	if scope == nil {
+		return nil
+	}
+	var bullets []*BulletStyle
+	for _, id := range strings.Fields(value) {
+		if bullet := BulletStyleFor(id, scope); bullet != nil {
+			bullets = append(bullets, bullet)
+		}
+	}
+	return bullets
 }
 
 func ParagraphStyleFor(id string, scope HasScope) *ParagraphStyle {

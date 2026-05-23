@@ -598,10 +598,10 @@ func (c *StdContainer) prepareListBullets(w Writer) {
 		bullet := c.unorderedListBulletTemplate()
 		for _, child := range c.children {
 			para, ok := child.(*StdParagraph)
-			if !ok || para.bullet != nil {
+			if !ok || len(para.Bullets()) > 0 {
 				continue
 			}
-			para.bullet = bullet
+			para.bullets = []*BulletStyle{bullet}
 		}
 	case listKindOrdered:
 		template := c.orderedListBulletTemplate()
@@ -625,7 +625,7 @@ func (c *StdContainer) prepareListBullets(w Writer) {
 				continue
 			}
 			itemNo++
-			if para.bullet != nil {
+			if len(para.Bullets()) > 0 {
 				continue
 			}
 			bullet := template.Clone()
@@ -636,7 +636,7 @@ func (c *StdContainer) prepareListBullets(w Writer) {
 				bullet.width = width
 				bullet.widthSet = true
 			}
-			para.bullet = bullet
+			para.bullets = []*BulletStyle{bullet}
 		}
 	}
 	c.listPrepared = true

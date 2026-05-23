@@ -491,12 +491,16 @@ func (s *StdSector) drawSectorParagraph(p *StdParagraph, w Writer, layout *secto
 	}
 	indent := p.textIndent()
 	y := ContentTop(p)
-	if b := p.Bullet(); b != nil && !p.suppressBullet && len(layout.intervals) > 0 {
-		x := s.geometry.AnchorX + layout.intervals[0].MinX
+	if bullets := p.Bullets(); len(bullets) > 0 && !p.suppressBullet && len(layout.intervals) > 0 {
+		interval := layout.intervals[0]
+		bandStart := s.geometry.AnchorX + interval.MinX
+		bandEnd := bandStart + indent
+		if IsRTL(p) {
+			bandEnd = s.geometry.AnchorX + interval.MaxX
+			bandStart = bandEnd - indent
+		}
 		if err := withAccessibilityArtifact(w, func() error {
-			b.Apply(w)
-			w.MoveTo(x, y+layout.lines[0].Ascent())
-			return w.Print(b.Text())
+			return p.drawBulletsInBand(w, bullets, layout.lines[0], bandStart, bandEnd, y+layout.lines[0].Ascent(), layout.total)
 		}); err != nil {
 			return err
 		}

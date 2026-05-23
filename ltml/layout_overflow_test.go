@@ -1038,7 +1038,7 @@ func TestStdContainer_SplitForHeight_VBoxSplitsBodyParagraph(t *testing.T) {
 	_ = para.SetContainer(box)
 	para.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 	para.splitDisabled = false
-	para.bullet = &BulletStyle{text: "*", width: 18, font: para.font}
+	para.bullets = []*BulletStyle{{text: "*", width: 18, font: para.font}}
 	para.AddText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
 	box.AddChild(para)
 
