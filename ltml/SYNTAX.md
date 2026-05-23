@@ -332,6 +332,34 @@ paragraph or label rather than on the span or link itself.
 
 ---
 
+### `<leader>` — Inline Leader Fill
+
+Fills the remaining space between the text before it and the text after it
+inside a paragraph or label. Leaders are useful for table-of-contents rows,
+menus, forms, and other line items with a left label and right-side value.
+
+```xml
+<p width="100%">Introduction<leader />1</p>
+<label width="3in">Subtotal<leader text="-" />$42.00</label>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `text` | Pattern to repeat across the available space. Defaults to `.`. |
+| `font` / `font.*` | Same inline font attributes supported by `<span>`. |
+
+`<leader>` is valid only inside inline text containers: `<p>`, `<label>`, and
+nested `<span>` content. A paragraph or label can contain at most one leader.
+For wrapped paragraphs, LTML places the leader on the final rendered line after
+wrapping the text before the leader. Labels remain single-line.
+
+The default dot leader adds breathing room before and after the dots and uses
+character spacing to fill the exact available gap. Custom `text` patterns are
+repeated as whole units and may leave a small remainder if the pattern width
+does not divide the available gap exactly.
+
+---
+
 ### `<div>` — Container
 
 A generic container for grouping and laying out child elements.
@@ -733,6 +761,70 @@ numbers only.
 
 ---
 
+### `<index>` — Generated Index Or Table Of Contents
+
+Renders collected `<index-entry>` rows after document layout resolves target
+page numbers. The common table-of-contents form uses inline placeholders inside
+one row template:
+
+```xml
+<index id="main_toc">
+  <p width="100%"><index-title /><index-leader /><index-page /></p>
+</index>
+
+<label id="intro">Introduction</label>
+<index-entry index="main_toc" target="intro">Introduction</index-entry>
+```
+
+`<index>` accepts zero or one block template child. The template may be a
+`<p>`, `<label>`, or container. If omitted, LTML uses a full-width paragraph
+template equivalent to:
+
+```xml
+<p width="100%"><index-title /><leader /><index-page /></p>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `id` | Index identifier matched by each `<index-entry index="...">`. |
+| `layout` / `layout.*` | Layout manager and inline layout overrides for the generated rows. |
+| `font` / `font.*` | Default font style for generated row content. |
+| `width`, `height`, margins, padding, border, fill, positioning attrs | Standard container/widget attributes. |
+
+Generated index rows link to their target destination when rendered through an
+LTML PDF writer that supports internal target links.
+
+Inline placeholders for index row templates:
+
+| Element | Description |
+|---------|-------------|
+| `<index-title />` | Entry label text from the matching `<index-entry>`. |
+| `<index-page />` | Resolved destination page number. |
+| `<index-leader />` | Built-in alias for `<leader />`, normally used between title and page. |
+
+`<index-title>` and `<index-page>` support the same inline `font.*` attributes
+as `<span>`. `<index-leader>` supports the same attributes as `<leader>`,
+including `text`.
+
+### `<index-entry>` — Hidden Index Entry
+
+Contributes one entry to a named `<index>` without rendering visible content.
+
+```xml
+<index-entry index="main_toc" target="intro">Introduction</index-entry>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `index` | Target index id. |
+| `target` | Destination id to resolve and link to. |
+
+The element body is the entry label text. Entries render in encounter order.
+Any printed page or widget with an `id` can be a destination, and `<target
+id="..."/>` can define an explicit zero-footprint destination.
+
+---
+
 ## Style Definitions
 
 Style definitions are placed inside `<ltml>` (or `<page>` for page-scoped
@@ -1095,6 +1187,7 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<i>`   | `<span>`   | `font.style="Italic"` |
 | `<u>`   | `<span>`   | `font.underline="true"` |
 | `<s>`   | `<span>`   | `font.strikeout="true"` |
+| `<index-leader>` | `<leader>` | *(empty; accepts the same inline attributes as `<leader>`)* |
 | `<hbox>` | `<div>`   | `layout="hbox"` |
 | `<vbox>` | `<div>`   | `layout="vbox"` |
 | `<ul>` | `<div>` | `layout="vbox"`, `list="unordered"` |
