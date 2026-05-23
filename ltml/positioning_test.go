@@ -229,8 +229,8 @@ func TestStdPage_PaintBackground_DrawsMajorDebugGridLines(t *testing.T) {
 	if w.lineWidths[0] != 0.25 {
 		t.Fatalf("normal grid line width = %v, want 0.25", w.lineWidths[0])
 	}
-	if w.lineWidths[1] != 0.5 {
-		t.Fatalf("major grid line width = %v, want 0.5", w.lineWidths[1])
+	if w.lineWidths[1] != 1 {
+		t.Fatalf("major grid line width = %v, want 1", w.lineWidths[1])
 	}
 	want := [][2]float64{
 		{18, 0}, {54, 0}, {0, 18}, {0, 54},
