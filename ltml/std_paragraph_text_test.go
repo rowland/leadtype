@@ -323,6 +323,53 @@ func TestStdParagraph_DrawContent_PlacesTextBulletInRTLSlot(t *testing.T) {
 	}
 }
 
+func TestStdParagraph_DrawContent_AlignsTextBulletWithinLTRSlot(t *testing.T) {
+	tests := []struct {
+		name   string
+		alignX string
+		wantX  func(*StdParagraph, *labelTestWriter, *BulletStyle) float64
+	}{
+		{
+			name:   "center",
+			alignX: "center",
+			wantX: func(p *StdParagraph, w *labelTestWriter, b *BulletStyle) float64 {
+				return ContentLeft(p) + max((b.Width()-p.bulletTextWidth(w, b))/2, 0)
+			},
+		},
+		{
+			name:   "end",
+			alignX: "end",
+			wantX: func(p *StdParagraph, w *labelTestWriter, b *BulletStyle) float64 {
+				return ContentLeft(p) + max(b.Width()-p.bulletTextWidth(w, b), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &StdParagraph{}
+			p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+			p.paragraphStyle = &ParagraphStyle{}
+			p.bullets = []*BulletStyle{{text: "1.", width: 40, font: p.font, alignX: tc.alignX}}
+			p.SetLeft(10)
+			p.SetTop(20)
+			p.SetWidth(140)
+			p.AddText("Hello world")
+
+			w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+			if err := p.DrawContent(w); err != nil {
+				t.Fatal(err)
+			}
+			if len(w.moves) < 3 {
+				t.Fatalf("move count = %d, want at least 3", len(w.moves))
+			}
+			if got, want := w.moves[1][0], tc.wantX(p, w, p.Bullet()); math.Abs(got-want) > 0.001 {
+				t.Fatalf("bullet x = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
 func TestStdParagraph_SetAttrs_ParsesMultipleBulletReferences(t *testing.T) {
 	scope := &Scope{}
 	first := &BulletStyle{id: "first", text: "*", width: 12}

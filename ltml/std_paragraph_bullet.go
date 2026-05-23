@@ -232,10 +232,7 @@ func (p *StdParagraph) bulletRenderSize(w Writer, bullet *BulletStyle, lineHeigh
 }
 
 func (p *StdParagraph) textBulletX(w Writer, bullet *BulletStyle, layout paragraphBulletLayout) float64 {
-	if !IsRTL(p) {
-		return layout.slotX
-	}
-	return layout.slotX + max(layout.slotWidth-p.bulletTextWidth(w, bullet), 0)
+	return p.bulletRenderX(bullet, layout.slotX, layout.slotWidth, p.bulletTextWidth(w, bullet))
 }
 
 func (p *StdParagraph) bulletTextWidth(w Writer, bullet *BulletStyle) float64 {
