@@ -2,7 +2,7 @@
   <font id="body" name="Helvetica" size="12" />
   <pagestyle id="compact" width="6in" height="5.5in" />
   <bullet id="brand-star" shape="star" width="24pt" r="5pt" brush="Gold" pen="solid" points="5" r0="2.5pt" />
-  <bullet id="ordered-mark" font="body" />
+  <bullet id="ordered-mark" font="body" format="%d." />
   <page style="compact" font="body" layout="vbox" layout.vpadding="8pt">
     <div display="always" align="top" border="dashed" padding="5pt" width="100%">
       <label display="always" font.weight="Bold">List splitting</label>

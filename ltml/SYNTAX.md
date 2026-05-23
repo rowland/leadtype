@@ -393,8 +393,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `r`              | Optional outer radius for radial layout. Otherwise LTML infers it from the smaller content dimension. |
 | `r0`             | Optional inner radius for radial layout. Preferred alias when paired with `r`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
-| `list`           | Optional list behavior for direct child paragraphs in `layout="vbox"` containers: `unordered` or `ordered`. |
-| `bullets`        | Optional bullet style/template used by `list`. `unordered` uses it as the shared bullet style; `ordered` clones it as a marker template and overwrites the text with `1.`, `2.`, `3.`, etc. |
+| `bullets`        | Optional whitespace-separated list of bullet styles applied to direct child paragraphs in `layout="vbox"` containers. The predefined `unordered` style renders the default circle; the predefined `ordered` style renders the child paragraph's ordinal number. |
 | `role` | Override the computed PDF structure type when `ua="true"`, for example `L` or `Table`. |
 
 ---
@@ -988,6 +987,7 @@ overridden inline with `fill.*` attributes on a widget.
 | `id`      | Name used to reference this style. |
 | `font`    | Reference to a named `<font>` style. |
 | `text`    | The bullet character(s) to render for text bullets. |
+| `format`  | Optional `fmt.Sprintf`-style integer format used when a container expands this bullet through `bullets`. For example, `format="%d."` renders `1.`, `2.`, etc. |
 | `src`     | Asset path for image bullets. Rendered through LTML's normal `PrintImageFile` path. |
 | `shape`   | Closed shape for shape bullets: `circle`, `ellipse`, `polygon`, `triangle`, `square`, or `star`. `triangle` and `square` are polygon aliases. |
 | `width`   | Space reserved for the bullet slot. This remains the paragraph indent reservation for every bullet kind. |
@@ -1193,8 +1193,8 @@ Now `<td>` is equivalent to `<p border="solid" padding="3pt">`.
 | `<index-leader>` | `<leader>` | *(empty; accepts the same inline attributes as `<leader>`)* |
 | `<hbox>` | `<div>`   | `layout="hbox"` |
 | `<vbox>` | `<div>`   | `layout="vbox"` |
-| `<ul>` | `<div>` | `layout="vbox"`, `list="unordered"` |
-| `<ol>` | `<div>` | `layout="vbox"`, `list="ordered"` |
+| `<ul>` | `<div>` | `layout="vbox"`, `bullets="unordered"` |
+| `<ol>` | `<div>` | `layout="vbox"`, `bullets="ordered"` |
 | `<table>` | `<div>` | `layout="table"` |
 | `<disc>` | `<div>` | `layout="radial"` |
 | `<th>`  | `<p>`      | `role="TH"`, `font.weight="Bold"` |
@@ -1646,7 +1646,8 @@ Hexadecimal color notation (e.g., `#ff0000`) is also accepted.
 ```xml
 <ltml units="in" margin="1">
   <bullet id="brand-star" shape="star" width="24pt" r="8pt" brush="Gold" pen="solid" points="5" r0="4pt" />
-  <bullet id="ordered-mark" width="24pt" />
+  <bullet id="ordered-mark" format="%d." width="24pt" />
+  <bullet id="badge" src="badge.svg" width="18pt" height="12pt" />
   <page>
     <ul>
       <p>First unordered item</p>
@@ -1658,7 +1659,7 @@ Hexadecimal color notation (e.g., `#ff0000`) is also accepted.
       <p>Reuses a named bullet style</p>
     </ul>
 
-    <ol bullets="ordered-mark">
+    <ol bullets="badge ordered-mark">
       <p>First ordered item</p>
       <p>Second ordered item</p>
       <p>Third ordered item</p>

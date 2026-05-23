@@ -1,0 +1,55 @@
+<ltml units="in" margin="0.45">
+  <font id="body" name="Helvetica" size="11" />
+  <font id="heading" name="Helvetica" size="14" weight="Bold" />
+  <pagestyle id="demo" width="7.25in" height="6.25in" />
+
+  <pen id="thin" color="#7D8590" width="0.4pt" />
+  <brush id="panel" color="#F5F7FA" />
+  <brush id="gold" color="#F2C94C" />
+
+  <bullet id="badge" src="test_064_list_bullet_templates.svg" width="24pt" height="16pt" />
+  <bullet id="section-num" font="body" format="%d)" width="26pt" />
+  <bullet id="gold-star" shape="star" width="18pt" r="6pt" brush="gold" pen="thin" points="5" r0="3pt" />
+
+  <page style="demo" font="body" layout="vbox" layout.vpadding="8pt">
+    <label font="heading">Generalized List Bullet Templates</label>
+
+    <vbox fill="panel" border="thin" padding="8pt" layout.vpadding="5pt" width="100%">
+      <label font.weight="Bold">Built-in list aliases</label>
+      <hbox layout.hpadding="16pt" width="100%">
+        <vbox width="50%" layout.vpadding="3pt">
+          <label font.weight="Bold">ul</label>
+          <ul>
+            <p>Uses the predefined unordered bullet style.</p>
+            <p>Only direct child paragraphs receive markers.</p>
+          </ul>
+        </vbox>
+        <vbox width="50%" layout.vpadding="3pt">
+          <label font.weight="Bold">ol</label>
+          <ol>
+            <p>Uses the predefined ordered bullet style.</p>
+            <p>Numbers are formatted at layout time.</p>
+          </ol>
+        </vbox>
+      </hbox>
+    </vbox>
+
+    <vbox border="thin" padding="8pt" layout.vpadding="5pt" width="100%">
+      <label font.weight="Bold">Image plus generated ordinal</label>
+      <ol bullets="badge ordered" layout.vpadding="4pt">
+        <p>The image bullet and the generated number each reserve their own slot.</p>
+        <p>Double markers are useful when matching a legacy report layout.</p>
+        <p>The paragraph text wraps after both bullet slots.</p>
+      </ol>
+    </vbox>
+
+    <vbox border="thin" padding="8pt" layout.vpadding="5pt" width="100%">
+      <label font.weight="Bold">Custom format on a div</label>
+      <div layout="vbox" bullets="gold-star section-num" layout.vpadding="4pt">
+        <p>A vbox can use the same bullets attribute as ol and ul aliases.</p>
+        <p>The second bullet uses format="%d)" for custom numbering.</p>
+        <p>Authors can combine shape, image, text, and formatted bullets.</p>
+      </div>
+    </vbox>
+  </page>
+</ltml>

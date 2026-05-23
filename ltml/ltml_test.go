@@ -255,6 +255,7 @@ func TestSamples(t *testing.T) {
 		"test_061_table_auto_split",
 		"test_062_gradient_pens",
 		"test_063_svg_page_render_options",
+		"test_064_list_bullet_templates",
 	}
 
 	for _, sample := range samples {

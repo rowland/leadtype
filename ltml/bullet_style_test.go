@@ -17,6 +17,7 @@ func TestBulletStyle_SetAttrs_ExtendedModes(t *testing.T) {
 		"id":       "brand",
 		"font":     "body",
 		"text":     "*",
+		"format":   "%d.",
 		"src":      "fixture.svg",
 		"shape":    "star",
 		"width":    "18",
@@ -42,6 +43,12 @@ func TestBulletStyle_SetAttrs_ExtendedModes(t *testing.T) {
 	}
 	if style.text != "*" {
 		t.Fatalf("text = %q, want *", style.text)
+	}
+	if style.format != "%d." {
+		t.Fatalf("format = %q, want %%d.", style.format)
+	}
+	if !style.IsFormatted() {
+		t.Fatal("IsFormatted() = false, want true")
 	}
 	if style.src != "fixture.svg" {
 		t.Fatalf("src = %q, want fixture.svg", style.src)
@@ -75,6 +82,17 @@ func TestBulletStyle_SetAttrs_ExtendedModes(t *testing.T) {
 	}
 	if style.r0 != 4 {
 		t.Fatalf("r0 = %v, want 4", style.r0)
+	}
+}
+
+func TestBulletStyleFor_BuiltInListMarkers(t *testing.T) {
+	ordered := BulletStyleFor("ordered", &defaultScope)
+	if ordered == nil || ordered.Format() != "%d." {
+		t.Fatalf("ordered = %#v, want formatted %%d. bullet", ordered)
+	}
+	unordered := BulletStyleFor("unordered", &defaultScope)
+	if unordered == nil || unordered.Shape() != "circle" || unordered.Width() != defaultListBulletSize || unordered.AlignY() != "middle" {
+		t.Fatalf("unordered = %#v, want default circle bullet", unordered)
 	}
 }
 

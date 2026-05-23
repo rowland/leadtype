@@ -200,6 +200,17 @@ var defaultStyles = map[string]Styler{
 	"dotted": &PenStyle{id: "dotted", color: NamedColor("black"), width: 0.001, pattern: "dotted"},
 	"dashed": &PenStyle{id: "dashed", color: NamedColor("black"), width: 0.001, pattern: "dashed"},
 	"fixed":  &FontStyle{id: "fixed", entries: []fontEntry{{name: "Courier New"}}, size: 12},
+	"ordered": &BulletStyle{
+		id:     "ordered",
+		format: "%d.",
+	},
+	"unordered": &BulletStyle{
+		id:     "unordered",
+		shape:  "circle",
+		width:  defaultListBulletSize,
+		alignY: "middle",
+		r:      3,
+	},
 }
 
 var defaultScope = Scope{

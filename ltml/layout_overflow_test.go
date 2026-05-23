@@ -1221,7 +1221,7 @@ func TestSample_ListSplit_FirstFragmentBottomTracksRepeatedFooter(t *testing.T) 
 	var list *StdContainer
 	for _, child := range page.children {
 		candidate, ok := child.(*StdContainer)
-		if ok && candidate.listKind == listKindOrdered {
+		if ok && candidate.listBulletIDs == "ordered" {
 			list = candidate
 			break
 		}

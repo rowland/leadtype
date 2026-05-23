@@ -199,10 +199,42 @@ func TestStdContainer_PrepareListBullets_OLPreservesExplicitBulletAndCountsItsOr
 	}
 }
 
-func TestStdContainer_PrepareListBullets_OLKeepsExplicitTemplateWidth(t *testing.T) {
+func TestStdContainer_PrepareListBullets_AssignsMultipleListBulletTemplates(t *testing.T) {
+	doc, err := Parse([]byte(`
+		<ltml>
+			<bullet id="logo" src="logo.svg" width="18pt" height="12pt" />
+			<page>
+				<ol bullets="logo ordered">
+					<p>One</p>
+					<p>Two</p>
+				</ol>
+			</page>
+		</ltml>`), WithAssetFS(testingMapFS("logo.svg", "<svg/>")))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	list := firstContainer(t, doc)
+	first := childParagraph(t, list, 0)
+	second := childParagraph(t, list, 1)
+
+	if got := first.Bullets(); len(got) != 2 || got[0].Source() != "logo.svg" || got[1].Text() != "1." {
+		t.Fatalf("first bullets = %#v, want logo and 1.", got)
+	}
+	if got := second.Bullets(); len(got) != 2 || got[0].Source() != "logo.svg" || got[1].Text() != "2." {
+		t.Fatalf("second bullets = %#v, want logo and 2.", got)
+	}
+}
+
+func TestStdContainer_PrepareListBullets_OLKeepsFormattedTemplateWidth(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>
-			<bullet id="num" width="40pt" />
+			<bullet id="num" format="%d." width="40pt" />
 			<page>
 				<ol bullets="num">
 					<p>One</p>
@@ -231,5 +263,71 @@ func TestStdContainer_PrepareListBullets_OLKeepsExplicitTemplateWidth(t *testing
 	twelfth := childParagraph(t, list, 11)
 	if first.Bullet() == nil || first.Bullet().Width() != 40 || twelfth.Bullet() == nil || twelfth.Bullet().Width() != 40 {
 		t.Fatalf("ordered template widths = %#v / %#v, want 40pt for both", first.Bullet(), twelfth.Bullet())
+	}
+	if first.Bullet().Text() != "1." || twelfth.Bullet().Text() != "12." {
+		t.Fatalf("ordered template texts = %q / %q, want 1. / 12.", first.Bullet().Text(), twelfth.Bullet().Text())
+	}
+}
+
+func TestStdContainer_PrepareListBullets_FormattedTemplateAutoWidthIgnoresDefaultBulletWidth(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<bullet id="num" format="%d." />
+			<page>
+				<ol bullets="num">
+					<p>One</p>
+					<p>Two</p>
+				</ol>
+			</page>
+		</ltml>`)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	list := firstContainer(t, doc)
+	first := childParagraph(t, list, 0)
+	if first.Bullet() == nil {
+		t.Fatal("first bullet is nil")
+	}
+	renderedWidth := first.bulletTextWidth(w, first.Bullet())
+	if first.Bullet().Width() >= 36 {
+		t.Fatalf("auto marker width = %v, want less than default 36pt slot", first.Bullet().Width())
+	}
+	if first.Bullet().Width() <= renderedWidth {
+		t.Fatalf("auto marker width = %v, want greater than rendered marker width %v", first.Bullet().Width(), renderedWidth)
+	}
+}
+
+func TestStdContainer_PrepareListBullets_DivCanUseBulletsAttribute(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<page>
+				<div layout="vbox" bullets="ordered">
+					<p>One</p>
+				</div>
+				<div layout="vbox" bullets="unordered">
+					<p>One</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t)}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	page := firstPage(t, doc)
+	ordered := page.children[0].(*StdContainer)
+	unordered := page.children[1].(*StdContainer)
+
+	orderedParagraph := childParagraph(t, ordered, 0)
+	if orderedParagraph.Bullet() == nil || orderedParagraph.Bullet().Text() != "1." {
+		t.Fatalf("bullets=ordered bullet = %#v, want 1.", orderedParagraph.Bullet())
+	}
+	unorderedParagraph := childParagraph(t, unordered, 0)
+	if unorderedParagraph.Bullet() == nil || unorderedParagraph.Bullet().Shape() != "circle" {
+		t.Fatalf("bullets=unordered bullet = %#v, want circle", unorderedParagraph.Bullet())
 	}
 }

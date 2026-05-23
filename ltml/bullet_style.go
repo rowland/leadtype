@@ -14,6 +14,7 @@ type BulletStyle struct {
 	id          string
 	font        *FontStyle
 	text        string
+	format      string
 	src         string
 	shape       string
 	width       float64
@@ -83,6 +84,9 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	if text, ok := attrs["text"]; ok {
 		bs.text = strings.TrimSpace(text)
 	}
+	if format, ok := attrs["format"]; ok {
+		bs.format = strings.TrimSpace(format)
+	}
 	if src, ok := attrs["src"]; ok {
 		bs.src = strings.TrimSpace(src)
 	}
@@ -121,12 +125,20 @@ func (bs *BulletStyle) SetScope(scope HasScope) {
 }
 
 func (bs *BulletStyle) String() string {
-	return fmt.Sprintf("BulletStyle id=%s text=%s src=%s shape=%s width=%f height=%f units=%s font=%s pen=%v brush=%v",
-		bs.id, bs.text, bs.src, bs.shape, bs.width, bs.height, bs.units, bs.font, bs.pen, bs.brush)
+	return fmt.Sprintf("BulletStyle id=%s text=%s format=%s src=%s shape=%s width=%f height=%f units=%s font=%s pen=%v brush=%v",
+		bs.id, bs.text, bs.format, bs.src, bs.shape, bs.width, bs.height, bs.units, bs.font, bs.pen, bs.brush)
 }
 
 func (bs *BulletStyle) Text() string {
 	return bs.text
+}
+
+func (bs *BulletStyle) Format() string {
+	return bs.format
+}
+
+func (bs *BulletStyle) IsFormatted() bool {
+	return strings.TrimSpace(bs.format) != ""
 }
 
 func (bs *BulletStyle) Width() float64 {

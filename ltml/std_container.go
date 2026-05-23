@@ -19,8 +19,7 @@ type StdContainer struct {
 	dir             Dir
 	dirExplicit     bool
 	layout          *LayoutStyle
-	listKind        string
-	listBulletID    string
+	listBulletIDs   string
 	listPrepared    bool
 	order           TableOrder
 	paragraphStyle  *ParagraphStyle
@@ -194,12 +193,8 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
 	}
-	if list, ok := attrs["list"]; ok {
-		c.listKind = strings.TrimSpace(list)
-		c.listPrepared = false
-	}
 	if bullets, ok := attrs["bullets"]; ok {
-		c.listBulletID = strings.TrimSpace(bullets)
+		c.listBulletIDs = strings.TrimSpace(bullets)
 		c.listPrepared = false
 	}
 	if MapHasKeyPrefix(attrs, "layout.") {
@@ -568,11 +563,15 @@ func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, pa
 }
 
 const (
-	listKindUnordered     = "unordered"
-	listKindOrdered       = "ordered"
 	defaultListBulletGap  = 6.0
 	defaultListBulletSize = 18.0
 )
+
+type listBulletTemplate struct {
+	bullet    *BulletStyle
+	autoWidth bool
+	width     float64
+}
 
 type vboxSplitMetrics struct {
 	headers    []Widget
@@ -590,84 +589,86 @@ func (c *StdContainer) prepareListBullets(w Writer) {
 	if c.listPrepared || c.LayoutStyle() == nil || c.LayoutStyle().manager != "vbox" {
 		return
 	}
-	if c.listKind != listKindUnordered && c.listKind != listKindOrdered {
+	templates := c.listBulletTemplates()
+	if len(templates) == 0 {
 		return
 	}
-	switch c.listKind {
-	case listKindUnordered:
-		bullet := c.unorderedListBulletTemplate()
-		for _, child := range c.children {
-			para, ok := child.(*StdParagraph)
-			if !ok || len(para.Bullets()) > 0 {
-				continue
-			}
-			para.bullets = []*BulletStyle{bullet}
+	c.measureFormattedListBulletWidths(w, templates)
+	itemNo := 0
+	for _, child := range c.children {
+		para, ok := child.(*StdParagraph)
+		if !ok {
+			continue
 		}
-	case listKindOrdered:
-		template := c.orderedListBulletTemplate()
-		width := template.Width()
-		autoWidth := !template.WidthIsSet()
-		itemNo := 0
-		for _, child := range c.children {
-			para, ok := child.(*StdParagraph)
-			if !ok {
-				continue
-			}
-			itemNo++
-			if autoWidth {
-				width = max(width, c.orderedListMarkerWidth(w, para, template, itemNo))
-			}
+		itemNo++
+		if len(para.Bullets()) > 0 {
+			continue
 		}
-		itemNo = 0
-		for _, child := range c.children {
-			para, ok := child.(*StdParagraph)
-			if !ok {
-				continue
-			}
-			itemNo++
-			if len(para.Bullets()) > 0 {
-				continue
-			}
-			bullet := template.Clone()
-			bullet.text = fmt.Sprintf("%d.", itemNo)
-			bullet.src = ""
-			bullet.shape = ""
-			if autoWidth {
-				bullet.width = width
-				bullet.widthSet = true
-			}
-			para.bullets = []*BulletStyle{bullet}
-		}
+		para.bullets = materializeListBullets(templates, itemNo)
 	}
 	c.listPrepared = true
 }
 
-func (c *StdContainer) unorderedListBulletTemplate() *BulletStyle {
-	if c.listBulletID != "" {
-		if bullet := BulletStyleFor(c.listBulletID, c.scope); bullet != nil {
-			return bullet
+func (c *StdContainer) listBulletTemplates() []listBulletTemplate {
+	var templates []listBulletTemplate
+	for _, id := range strings.Fields(c.listBulletIDs) {
+		bullet := BulletStyleFor(id, c.scope)
+		if bullet == nil {
+			continue
 		}
+		clone := bullet.Clone()
+		width := clone.Width()
+		autoWidth := clone.IsFormatted() && !clone.WidthIsSet()
+		if autoWidth {
+			width = 0
+		}
+		templates = append(templates, listBulletTemplate{
+			bullet:    clone,
+			autoWidth: autoWidth,
+			width:     width,
+		})
 	}
-	return &BulletStyle{
-		shape:  "circle",
-		width:  defaultListBulletSize,
-		alignY: "middle",
-		r:      3,
+	return templates
+}
+
+func (c *StdContainer) measureFormattedListBulletWidths(w Writer, templates []listBulletTemplate) {
+	itemNo := 0
+	for _, child := range c.children {
+		para, ok := child.(*StdParagraph)
+		if !ok {
+			continue
+		}
+		itemNo++
+		for i := range templates {
+			if !templates[i].autoWidth {
+				continue
+			}
+			templates[i].width = max(templates[i].width, c.formattedListMarkerWidth(w, para, templates[i].bullet, itemNo))
+		}
 	}
 }
 
-func (c *StdContainer) orderedListBulletTemplate() *BulletStyle {
-	if c.listBulletID != "" {
-		if bullet := BulletStyleFor(c.listBulletID, c.scope); bullet != nil {
-			return bullet.Clone()
+func materializeListBullets(templates []listBulletTemplate, itemNo int) []*BulletStyle {
+	bullets := make([]*BulletStyle, 0, len(templates))
+	for _, template := range templates {
+		bullet := template.bullet.Clone()
+		if bullet.IsFormatted() {
+			bullet.text = fmt.Sprintf(bullet.Format(), itemNo)
+			bullet.src = ""
+			bullet.shape = ""
+			if template.autoWidth {
+				bullet.width = template.width
+				bullet.widthSet = true
+			}
 		}
+		bullets = append(bullets, bullet)
 	}
-	return &BulletStyle{}
+	return bullets
 }
 
-func (c *StdContainer) orderedListMarkerWidth(w Writer, para *StdParagraph, template *BulletStyle, itemNo int) float64 {
+func (c *StdContainer) formattedListMarkerWidth(w Writer, para *StdParagraph, template *BulletStyle, itemNo int) float64 {
 	marker := template.Clone()
-	marker.text = fmt.Sprintf("%d.", itemNo)
+	marker.text = fmt.Sprintf(template.Format(), itemNo)
 	marker.src = ""
 	marker.shape = ""
 	width := para.bulletTextWidth(w, marker)
