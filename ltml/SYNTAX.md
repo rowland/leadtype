@@ -346,6 +346,7 @@ menus, forms, and other line items with a left label and right-side value.
 | Attribute | Description |
 |-----------|-------------|
 | `text` | Pattern to repeat across the available space. Defaults to `.`. |
+| `dot-spacing` | Preferred space between dots for the default `.` leader. Accepts LTML measurements and defaults to the current font's space width. LTML clamps the value to a usable range and may nudge the final character spacing so the leader still reaches the trailing text exactly. |
 | `font` / `font.*` | Same inline font attributes supported by `<span>`. |
 
 `<leader>` is valid only inside inline text containers: `<p>`, `<label>`, and
@@ -354,9 +355,11 @@ For wrapped paragraphs, LTML places the leader on the final rendered line after
 wrapping the text before the leader. Labels remain single-line.
 
 The default dot leader adds breathing room before and after the dots and uses
-character spacing to fill the exact available gap. Custom `text` patterns are
-repeated as whole units and may leave a small remainder if the pattern width
-does not divide the available gap exactly.
+character spacing to fill the exact available gap. The breathing room is based
+on the current leader font's `N` width, while default dot density is based on
+the current font's space width unless `dot-spacing` is set. Custom `text`
+patterns are repeated as whole units and may leave a small remainder if the
+pattern width does not divide the available gap exactly.
 
 ---
 

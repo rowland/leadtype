@@ -14,12 +14,14 @@ const defaultLeaderText = "."
 
 type StdLeader struct {
 	StdSpan
-	text string
+	text       string
+	dotSpacing *float64
 }
 
 type leaderInline interface {
 	inlineText
 	LeaderText() string
+	LeaderDotSpacing() *float64
 }
 
 type leaderPieceSpec struct {
@@ -48,9 +50,18 @@ func (l *StdLeader) LeaderText() string {
 	return l.text
 }
 
+func (l *StdLeader) LeaderDotSpacing() *float64 {
+	if l.dotSpacing == nil {
+		return nil
+	}
+	value := *l.dotSpacing
+	return &value
+}
+
 func (l *StdLeader) SetAttrs(attrs map[string]string) {
 	l.StdSpan.SetAttrs(attrs)
 	l.text = attrs["text"]
+	l.dotSpacing = ParseOptionalMeasurement(strings.TrimSpace(attrs["dot-spacing"]), l.Units())
 }
 
 func (l *StdLeader) SetContainer(container Container) error {
@@ -190,17 +201,62 @@ func isDefaultDotLeader(leader leaderInline) bool {
 	return strings.TrimSpace(leader.LeaderText()) == defaultLeaderText
 }
 
-func defaultDotLeaderMetrics(w Writer, container Container, piece textPiece) (dotWidth, preferredGap float64) {
+func defaultDotLeaderMetrics(w Writer, container Container, piece textPiece) (dotWidth, breathingGap float64) {
 	single := richTextForPieceText(w, container, piece, defaultLeaderText)
 	if single.Len() == 0 || single.Width() <= 0 {
 		return 0, 0
 	}
 	dotWidth = single.Width()
-	space := richTextForPieceText(w, container, piece, " ")
-	if space.Len() == 0 || space.Width() <= 0 {
+	en := richTextForPieceText(w, container, piece, "N")
+	if en.Len() == 0 || en.Width() <= 0 {
 		return dotWidth, 0
 	}
-	return dotWidth, space.Width()
+	return dotWidth, en.Width()
+}
+
+func preferredDotSpacing(leader leaderInline, fallback, maxSpacing float64) float64 {
+	spacing := fallback
+	if leader != nil {
+		if explicit := leader.LeaderDotSpacing(); explicit != nil {
+			spacing = *explicit
+		}
+	}
+	if spacing < 0 {
+		spacing = 0
+	}
+	if maxSpacing >= 0 {
+		spacing = min(spacing, maxSpacing)
+	}
+	return spacing
+}
+
+func defaultDotSpacing(w Writer, container Container, piece textPiece) float64 {
+	space := richTextForPieceText(w, container, piece, " ")
+	if space.Len() == 0 || space.Width() <= 0 {
+		return 0
+	}
+	return space.Width()
+}
+
+func leaderGapText(w Writer, container Container, piece textPiece, width float64) *rich_text.RichText {
+	if width <= 0 {
+		return nil
+	}
+	space := richTextForPieceText(w, container, piece, " ")
+	if space.Len() == 0 || space.Width() <= 0 {
+		return nil
+	}
+	charSpacing := width - space.Width()
+	if charSpacing <= 0 {
+		return space
+	}
+	return richTextForPieceTextWithOptions(
+		w,
+		container,
+		piece,
+		" ",
+		options.Options{"char_spacing": charSpacing},
+	)
 }
 
 func richTextForPieceTextWithOptions(w Writer, container Container, piece textPiece, text string, extra options.Options) *rich_text.RichText {
@@ -227,9 +283,9 @@ func richTextForPieceTextWithOptions(w Writer, container Container, piece textPi
 
 func leaderGapWidth(w Writer, container Container, piece textPiece, leader leaderInline) float64 {
 	if isDefaultDotLeader(leader) {
-		dotWidth, preferredGap := defaultDotLeaderMetrics(w, container, piece)
+		dotWidth, breathingGap := defaultDotLeaderMetrics(w, container, piece)
 		if dotWidth > 0 {
-			return (dotWidth * 2) + (preferredGap * 2)
+			return (dotWidth * 2) + (breathingGap * 2)
 		}
 		return 8
 	}
@@ -252,15 +308,16 @@ func buildLeaderFillText(w Writer, container Container, piece textPiece, leader 
 	}
 	gapWidth := width - leftWidth - tailWidth
 	if isDefaultDotLeader(leader) {
-		dotWidth, preferredGap := defaultDotLeaderMetrics(w, container, piece)
+		dotWidth, breathingGap := defaultDotLeaderMetrics(w, container, piece)
 		if dotWidth <= 0 {
 			return nil
 		}
+		preferredGap := preferredDotSpacing(leader, defaultDotSpacing(w, container, piece), max(gapWidth-dotWidth, 0))
 		startGap := 0.0
 		endGap := 0.0
-		if preferredGap > 0 && gapWidth >= dotWidth+(2*preferredGap) {
-			startGap = preferredGap
-			endGap = preferredGap
+		if breathingGap > 0 && gapWidth >= dotWidth+(2*breathingGap) {
+			startGap = breathingGap
+			endGap = breathingGap
 		}
 		usableGapWidth := gapWidth - startGap - endGap
 		if usableGapWidth <= 0 {
@@ -287,11 +344,11 @@ func buildLeaderFillText(w Writer, container Container, piece textPiece, leader 
 		)
 		var parts []*rich_text.RichText
 		if startGap > 0 {
-			parts = append(parts, richTextForPieceText(w, container, piece, " "))
+			parts = append(parts, leaderGapText(w, container, piece, startGap))
 		}
 		parts = append(parts, dots)
 		if endGap > 0 {
-			parts = append(parts, richTextForPieceText(w, container, piece, " "))
+			parts = append(parts, leaderGapText(w, container, piece, endGap))
 		}
 		return combineRichText(parts...)
 	}

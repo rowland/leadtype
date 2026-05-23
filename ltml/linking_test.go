@@ -177,6 +177,26 @@ func TestParse_LeaderTagInParagraph(t *testing.T) {
 	}
 }
 
+func TestParse_LeaderDotSpacing(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <p>Left<leader dot-spacing="2pt" />Right</p>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := doc.Root().Page(0)
+	paragraph := page.children[0].(*StdParagraph)
+	leader := paragraph.textPieces[1].content.(*StdLeader)
+	spacing := leader.LeaderDotSpacing()
+	if spacing == nil || *spacing != 2 {
+		t.Fatalf("leader dot spacing = %v, want 2pt", spacing)
+	}
+}
+
 func TestStdDocument_Print_RejectsInvalidLinkAttrs(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>
@@ -528,6 +548,76 @@ func TestStdDocument_DefaultLeaderUsesSpacedDots(t *testing.T) {
 	if got, want := page1[0].Width(), paragraph.lineWidth(); got < want-0.05 || got > want+0.05 {
 		t.Fatalf("default leader width = %v, want approx %v for edge-aligned tail", got, want)
 	}
+}
+
+func TestStdDocument_LeaderDotSpacingControlsDotDensity(t *testing.T) {
+	defaultLine := printSingleLeaderLine(t, `<p width="160">Alpha<leader />Omega</p>`)
+	tightLine := printSingleLeaderLine(t, `<p width="160">Alpha<leader dot-spacing="0" />Omega</p>`)
+
+	defaultDots := dotLeaderLeaf(t, defaultLine)
+	tightDots := dotLeaderLeaf(t, tightLine)
+	if len(tightDots.Text) <= len(defaultDots.Text) {
+		t.Fatalf("tight leader dot count = %d, want more than default %d", len(tightDots.Text), len(defaultDots.Text))
+	}
+	if tightDots.CharSpacing >= defaultDots.CharSpacing {
+		t.Fatalf("tight leader char spacing = %v, want less than default %v", tightDots.CharSpacing, defaultDots.CharSpacing)
+	}
+	if !strings.Contains(tightLine.String(), "Alpha .") {
+		t.Fatalf("tight leader line = %q, want breathing room before dots", tightLine.String())
+	}
+	if !strings.Contains(tightLine.String(), ". Omega") {
+		t.Fatalf("tight leader line = %q, want breathing room before tail text", tightLine.String())
+	}
+}
+
+func TestStdDocument_LeaderDotSpacingIsClampedToAvailableGap(t *testing.T) {
+	line := printSingleLeaderLine(t, `<p width="160">Alpha<leader dot-spacing="1000pt" />Omega</p>`)
+	dots := dotLeaderLeaf(t, line)
+	if dots.Text == "" {
+		t.Fatal("expected leader to retain at least one dot")
+	}
+	if dots.CharSpacing < 0 {
+		t.Fatalf("leader char spacing = %v, want non-negative", dots.CharSpacing)
+	}
+}
+
+func printSingleLeaderLine(t *testing.T, row string) *rich_text.RichText {
+	t.Helper()
+	doc, err := Parse([]byte(`
+<ltml units="pt" margin="36">
+  <page layout="vbox">
+    ` + row + `
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	page1 := printedRichTextByPage(w, 1)
+	if len(page1) != 1 {
+		t.Fatalf("printed line count = %d, want 1", len(page1))
+	}
+	return page1[0]
+}
+
+func dotLeaderLeaf(t *testing.T, rt *rich_text.RichText) *rich_text.RichText {
+	t.Helper()
+	var dots *rich_text.RichText
+	rt.VisitAll(func(p *rich_text.RichText) {
+		if p != nil && p.Text != "" && strings.Trim(p.Text, ".") == "" {
+			if dots == nil || len(p.Text) > len(dots.Text) {
+				dots = p
+			}
+		}
+	})
+	if dots == nil {
+		t.Fatalf("rich text = %#v, want dot leader leaf", rt)
+	}
+	return dots
 }
 
 func TestStdDocument_IndexHonorsLayoutVPaddingAndReservesHeight(t *testing.T) {

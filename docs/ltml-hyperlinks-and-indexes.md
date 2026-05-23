@@ -84,7 +84,8 @@ placeholders are available inside the row template:
 
 `<index-leader />` is the index-facing alias for the general inline
 `<leader />` widget. It accepts the same attributes, including
-`text="..."` for a custom repeated pattern, and may be styled with inline
+`text="..."` for a custom repeated pattern and `dot-spacing="..."` for the
+preferred spacing between default dot leaders. It may be styled with inline
 `font.*` attributes like the other index placeholders.
 
 Entries are still rendered in encounter order. By default, an empty
