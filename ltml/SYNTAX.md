@@ -423,7 +423,7 @@ implicit sector and to the original child widget.
 | `colspan`, `rowspan` | Span multiple radial slots, just like table cells. |
 | `facing` | Curved-text/content facing: `auto` (default), `upright`, or `upside-down`. |
 | `angle` | Absolute angle in degrees for sector content. Overrides the default tangent-based orientation. |
-| `text-align` | For inline sector text, anchor to the sector `left`/start, `center`, or `right`/end. |
+| `text-align` | For inline sector text, anchor to the sector `left`/`start`, `center`, or `right`/`end`. |
 | `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` anchor to the sector start angle, midpoint angle, and end angle. |
 | `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` anchor to the inner radius, midpoint radius, and outer radius. |
 
