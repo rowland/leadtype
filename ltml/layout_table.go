@@ -399,7 +399,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		if containerFull {
 			continue
 		}
-		if !externalSplit && top+maxHeight > bottom {
+		if !externalSplit && top+maxHeight > bottom+layoutFitEpsilon {
 			containerFull = true
 			for c := 0; c < grid.Cols(); c++ {
 				if widget := grid.Cell(c, r); widget != nil {

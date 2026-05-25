@@ -255,6 +255,22 @@ func TestLayoutTable_AutoHeightRowsPreservePercentRows(t *testing.T) {
 	}
 }
 
+func TestLayoutTable_KeepsRowsThatOnlyExceedBottomByFitEpsilon(t *testing.T) {
+	c := testTableContainer(100, 30-layoutFitEpsilon/2, 1)
+
+	first := addTableTestWidget(t, c, 30, 15)
+	second := addTableTestWidget(t, c, 30, 15)
+
+	LayoutTable(c, c.LayoutStyle(), &labelTestWriter{t: t})
+
+	if !first.Visible() {
+		t.Fatal("first row hidden")
+	}
+	if !second.Visible() {
+		t.Fatal("second row hidden despite fitting within layout tolerance")
+	}
+}
+
 func TestLayoutTable_NaturalHeightLeavesAutoRowsAtPreferredHeight(t *testing.T) {
 	c := testTableContainer(200, 0, 1)
 
