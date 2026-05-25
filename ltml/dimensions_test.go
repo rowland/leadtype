@@ -260,6 +260,53 @@ func TestDimensions_SaveStateAndClearHelpers(t *testing.T) {
 	}
 }
 
+func TestDimensions_AspectInferredStateSavesRestoresAndClears(t *testing.T) {
+	var d Dimensions
+	d.ResolveAspectWidth(80)
+	d.ResolveAspectHeight(20)
+
+	if !d.WidthIsSet() || !d.HeightIsSet() {
+		t.Fatalf("aspect-inferred dimensions should be set")
+	}
+	if !d.WidthAspectInferred() || !d.HeightAspectInferred() {
+		t.Fatalf("aspect-inferred flags not set")
+	}
+
+	saved := d.SaveState()
+	d.ResolveWidth(100)
+	d.ResolveHeight(25)
+	if d.WidthAspectInferred() || d.HeightAspectInferred() {
+		t.Fatalf("ordinary resolved dimensions should clear aspect-inferred flags")
+	}
+
+	d.RestoreState(saved)
+	if !d.WidthAspectInferred() || !d.HeightAspectInferred() {
+		t.Fatalf("aspect-inferred flags not restored")
+	}
+
+	d.ClearResolvedWidth()
+	d.ClearResolvedHeight()
+	if d.WidthAspectInferred() || d.HeightAspectInferred() || d.WidthIsSet() || d.HeightIsSet() {
+		t.Fatalf("clear resolved should clear aspect-inferred dimensions")
+	}
+}
+
+func TestWidgetSpecifiedHelpersTreatOnlyAspectResolvedDimensionsAsSpecified(t *testing.T) {
+	widget := &StdWidget{}
+
+	widget.ResolveWidth(80)
+	widget.ResolveHeight(20)
+	if widgetWidthSpecified(widget) || widgetHeightSpecified(widget) {
+		t.Fatalf("ordinary resolved dimensions should not be treated as specified")
+	}
+
+	widget.ResolveAspectWidth(80)
+	widget.ResolveAspectHeight(20)
+	if !widgetWidthSpecified(widget) || !widgetHeightSpecified(widget) {
+		t.Fatalf("aspect-inferred dimensions should be treated as specified")
+	}
+}
+
 func TestStdWidget_ResolveWidthPreservesSpecifiedModeAndOverridesUntilCleared(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
 	widget := &StdWidget{}

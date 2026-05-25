@@ -28,6 +28,9 @@ type Container interface {
 }
 
 func LayoutContainer(c Container, w Writer) {
+	if preparer, ok := c.(interface{ prepareForLayout(Writer) }); ok {
+		preparer.prepareForLayout(w)
+	}
 	c.LayoutStyle().Layout(c, w)
 }
 

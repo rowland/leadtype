@@ -21,19 +21,21 @@ const (
 )
 
 type Dimensions struct {
-	sides       Sides
-	margin      Sides
-	padding     Sides
-	corners     Corners
-	width       float32
-	height      float32
-	widthValue  float32
-	heightValue float32
-	widthMode   DimensionMode
-	heightMode  DimensionMode
-	widthValid  bool
-	heightValid bool
-	max         maxDimensions
+	sides                Sides
+	margin               Sides
+	padding              Sides
+	corners              Corners
+	width                float32
+	height               float32
+	widthValue           float32
+	heightValue          float32
+	widthMode            DimensionMode
+	heightMode           DimensionMode
+	widthValid           bool
+	heightValid          bool
+	widthAspectInferred  bool
+	heightAspectInferred bool
+	max                  maxDimensions
 }
 
 type maxDimensions struct {
@@ -44,10 +46,11 @@ type maxDimensions struct {
 }
 
 type dimensionState struct {
-	resolved float32
-	value    float32
-	mode     DimensionMode
-	valid    bool
+	resolved       float32
+	value          float32
+	mode           DimensionMode
+	valid          bool
+	aspectInferred bool
 }
 
 type dimensionsState struct {
@@ -257,6 +260,7 @@ func (d *Dimensions) SetHeight(value float64) {
 	d.heightValue = float32(value)
 	d.heightMode = DimLiteral
 	d.heightValid = true
+	d.heightAspectInferred = false
 }
 
 func (d *Dimensions) SetHeightAuto() {
@@ -264,6 +268,7 @@ func (d *Dimensions) SetHeightAuto() {
 	d.heightValue = 0
 	d.heightMode = DimAuto
 	d.heightValid = false
+	d.heightAspectInferred = false
 }
 
 func (d *Dimensions) ClearHeight() {
@@ -271,6 +276,7 @@ func (d *Dimensions) ClearHeight() {
 	d.heightValue = 0
 	d.heightMode = DimUnspecified
 	d.heightValid = false
+	d.heightAspectInferred = false
 }
 
 func (d *Dimensions) SetHeightPct(value float64) {
@@ -278,6 +284,7 @@ func (d *Dimensions) SetHeightPct(value float64) {
 	d.heightValue = float32(value)
 	d.heightMode = DimPct
 	d.heightValid = false
+	d.heightAspectInferred = false
 }
 
 func (d *Dimensions) SetHeightRel(value float64) {
@@ -285,11 +292,19 @@ func (d *Dimensions) SetHeightRel(value float64) {
 	d.heightValue = float32(value)
 	d.heightMode = DimRel
 	d.heightValid = false
+	d.heightAspectInferred = false
 }
 
 func (d *Dimensions) ResolveHeight(value float64) {
 	d.height = float32(value)
 	d.heightValid = true
+	d.heightAspectInferred = false
+}
+
+func (d *Dimensions) ResolveAspectHeight(value float64) {
+	d.height = float32(value)
+	d.heightValid = true
+	d.heightAspectInferred = true
 }
 
 func (d *Dimensions) ClearResolvedHeight() {
@@ -299,6 +314,7 @@ func (d *Dimensions) ClearResolvedHeight() {
 		d.height = 0
 	}
 	d.heightValid = false
+	d.heightAspectInferred = false
 }
 
 func (d *Dimensions) HeightIsSet() bool {
@@ -334,6 +350,7 @@ func (d *Dimensions) SetWidth(value float64) {
 	d.widthValue = float32(value)
 	d.widthMode = DimLiteral
 	d.widthValid = true
+	d.widthAspectInferred = false
 }
 
 func (d *Dimensions) SetWidthAuto() {
@@ -341,6 +358,7 @@ func (d *Dimensions) SetWidthAuto() {
 	d.widthValue = 0
 	d.widthMode = DimAuto
 	d.widthValid = false
+	d.widthAspectInferred = false
 }
 
 func (d *Dimensions) ClearWidth() {
@@ -348,6 +366,7 @@ func (d *Dimensions) ClearWidth() {
 	d.widthValue = 0
 	d.widthMode = DimUnspecified
 	d.widthValid = false
+	d.widthAspectInferred = false
 }
 
 func (d *Dimensions) SetWidthPct(value float64) {
@@ -355,6 +374,7 @@ func (d *Dimensions) SetWidthPct(value float64) {
 	d.widthValue = float32(value)
 	d.widthMode = DimPct
 	d.widthValid = false
+	d.widthAspectInferred = false
 }
 
 func (d *Dimensions) SetWidthRel(value float64) {
@@ -362,11 +382,19 @@ func (d *Dimensions) SetWidthRel(value float64) {
 	d.widthValue = float32(value)
 	d.widthMode = DimRel
 	d.widthValid = false
+	d.widthAspectInferred = false
 }
 
 func (d *Dimensions) ResolveWidth(value float64) {
 	d.width = float32(value)
 	d.widthValid = true
+	d.widthAspectInferred = false
+}
+
+func (d *Dimensions) ResolveAspectWidth(value float64) {
+	d.width = float32(value)
+	d.widthValid = true
+	d.widthAspectInferred = true
 }
 
 func (d *Dimensions) ClearResolvedWidth() {
@@ -376,6 +404,7 @@ func (d *Dimensions) ClearResolvedWidth() {
 		d.width = 0
 	}
 	d.widthValid = false
+	d.widthAspectInferred = false
 }
 
 func (d *Dimensions) String() string {
@@ -411,19 +440,29 @@ func (d *Dimensions) HeightMode() DimensionMode {
 	return d.heightMode
 }
 
+func (d *Dimensions) WidthAspectInferred() bool {
+	return d.widthAspectInferred
+}
+
+func (d *Dimensions) HeightAspectInferred() bool {
+	return d.heightAspectInferred
+}
+
 func (d *Dimensions) SaveState() dimensionsState {
 	state := dimensionsState{
 		width: dimensionState{
-			resolved: d.width,
-			value:    d.widthValue,
-			mode:     d.widthMode,
-			valid:    d.widthValid,
+			resolved:       d.width,
+			value:          d.widthValue,
+			mode:           d.widthMode,
+			valid:          d.widthValid,
+			aspectInferred: d.widthAspectInferred,
 		},
 		height: dimensionState{
-			resolved: d.height,
-			value:    d.heightValue,
-			mode:     d.heightMode,
-			valid:    d.heightValid,
+			resolved:       d.height,
+			value:          d.heightValue,
+			mode:           d.heightMode,
+			valid:          d.heightValid,
+			aspectInferred: d.heightAspectInferred,
 		},
 		max: d.max,
 	}
@@ -435,9 +474,11 @@ func (d *Dimensions) RestoreState(state dimensionsState) {
 	d.widthValue = state.width.value
 	d.widthMode = state.width.mode
 	d.widthValid = state.width.valid
+	d.widthAspectInferred = state.width.aspectInferred
 	d.height = state.height.resolved
 	d.heightValue = state.height.value
 	d.heightMode = state.height.mode
 	d.heightValid = state.height.valid
+	d.heightAspectInferred = state.height.aspectInferred
 	d.max = state.max
 }

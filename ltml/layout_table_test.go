@@ -162,6 +162,32 @@ func TestLayoutTable_AutoWidthFallsBackToEqualShareWhenOmittedPreferredCannotFit
 	}
 }
 
+func TestLayoutTable_AspectInferredWidthDefinesColumnWidth(t *testing.T) {
+	c := testTableContainer(300, 100, 2)
+
+	aspect := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 150, preferredHeight: 20},
+		aspectRatio:          4,
+	}
+	aspect.SetHeight(20)
+	if err := aspect.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(aspect)
+
+	omitted := addTableTestWidget(t, c, 30, 20)
+
+	c.prepareForLayout(&labelTestWriter{t: t})
+	LayoutTable(c, c.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got := aspect.Width(); got != 80 {
+		t.Fatalf("aspect widget width = %v, want aspect-inferred column width 80", got)
+	}
+	if got := omitted.Width(); got != 220 {
+		t.Fatalf("omitted widget width = %v, want remaining column width 220", got)
+	}
+}
+
 func TestLayoutTable_ColspanDoesNotCreateAutoColumnConstraint(t *testing.T) {
 	c := testTableContainer(240, 100, 2)
 

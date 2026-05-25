@@ -582,6 +582,7 @@ type vboxSplitMetrics struct {
 }
 
 func (c *StdContainer) prepareForLayout(w Writer) {
+	prepareAspectRatioDimensions(c, w)
 	c.prepareListBullets(w)
 }
 

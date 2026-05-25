@@ -64,6 +64,17 @@ func (svg *StdSVG) PreferredWidth(w Writer) float64 {
 	return width
 }
 
+func (svg *StdSVG) IntrinsicAspectRatio(w Writer) (float64, bool) {
+	if w == nil {
+		return 0, false
+	}
+	infoWidth, infoHeight, err := svg.svgDimensions(w)
+	if err != nil || infoWidth <= 0 || infoHeight <= 0 {
+		return 0, false
+	}
+	return float64(infoWidth) / float64(infoHeight), true
+}
+
 func (svg *StdSVG) svgDimensions(w Writer) (width, height int, err error) {
 	if svg.source.Explicit() {
 		ref, err := svg.assetSource()
@@ -106,6 +117,7 @@ var _ HasAttrs = (*StdSVG)(nil)
 var _ Identifier = (*StdSVG)(nil)
 var _ Printer = (*StdSVG)(nil)
 var _ Component = (*StdSVG)(nil)
+var _ IntrinsicAspectRatioProvider = (*StdSVG)(nil)
 var _ WantsDoc = (*StdSVG)(nil)
 var _ WantsContainer = (*StdSVG)(nil)
 var _ WantsScope = (*StdSVG)(nil)

@@ -79,6 +79,14 @@ func (d *StdDraw) PreferredWidth(Writer) float64 {
 	return width
 }
 
+func (d *StdDraw) IntrinsicAspectRatio(Writer) (float64, bool) {
+	naturalWidth, naturalHeight, ok := d.naturalSize()
+	if !ok || naturalWidth <= 0 || naturalHeight <= 0 {
+		return 0, false
+	}
+	return naturalWidth / naturalHeight, true
+}
+
 func (d *StdDraw) SetAttrs(attrs map[string]string) {
 	d.StdWidget.SetAttrs(attrs)
 	d.key = strings.TrimSpace(attrs["key"])
@@ -125,6 +133,7 @@ func init() {
 var _ HasAttrs = (*StdDraw)(nil)
 var _ Identifier = (*StdDraw)(nil)
 var _ Printer = (*StdDraw)(nil)
+var _ IntrinsicAspectRatioProvider = (*StdDraw)(nil)
 var _ WantsContainer = (*StdDraw)(nil)
 var _ WantsDoc = (*StdDraw)(nil)
 var _ WantsScope = (*StdDraw)(nil)

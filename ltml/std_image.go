@@ -56,6 +56,17 @@ func (img *StdImage) PreferredWidth(w Writer) float64 {
 	return width
 }
 
+func (img *StdImage) IntrinsicAspectRatio(w Writer) (float64, bool) {
+	if w == nil {
+		return 0, false
+	}
+	infoWidth, infoHeight, err := img.imageDimensions(w)
+	if err != nil || infoWidth <= 0 || infoHeight <= 0 {
+		return 0, false
+	}
+	return float64(infoWidth) / float64(infoHeight), true
+}
+
 func (img *StdImage) imageDimensions(w Writer) (width, height int, err error) {
 	ref, err := img.assetSource()
 	if err != nil {
@@ -103,6 +114,7 @@ func init() {
 var _ HasAttrs = (*StdImage)(nil)
 var _ Identifier = (*StdImage)(nil)
 var _ Printer = (*StdImage)(nil)
+var _ IntrinsicAspectRatioProvider = (*StdImage)(nil)
 var _ WantsContainer = (*StdImage)(nil)
 var _ WantsDoc = (*StdImage)(nil)
 var _ WantsScope = (*StdImage)(nil)

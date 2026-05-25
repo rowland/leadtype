@@ -14,6 +14,18 @@ func testHBoxLabel(t *testing.T, text string) *StdLabel {
 	return label
 }
 
+type aspectRatioTestWidget struct {
+	positionedTestWidget
+	aspectRatio float64
+}
+
+func (w *aspectRatioTestWidget) IntrinsicAspectRatio(Writer) (float64, bool) {
+	if w.aspectRatio <= 0 {
+		return 0, false
+	}
+	return w.aspectRatio, true
+}
+
 func TestLayoutVBox_AlignSelfCenterCentersTopChildHorizontally(t *testing.T) {
 	c := positionedContainer(0, 0, 300, 200)
 	style := &LayoutStyle{}
@@ -31,6 +43,78 @@ func TestLayoutVBox_AlignSelfCenterCentersTopChildHorizontally(t *testing.T) {
 	}
 	if got := w.Top(); got != 0 {
 		t.Errorf("vbox top child top = %v, want 0", got)
+	}
+}
+
+func TestLayoutVBox_UsesAspectInferredWidth(t *testing.T) {
+	c := positionedContainer(0, 0, 50, 120)
+	widget := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 100, preferredHeight: 20},
+		aspectRatio:          4,
+	}
+	widget.SetHeight(20)
+	if err := widget.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(widget)
+
+	c.prepareForLayout(&labelTestWriter{t: t})
+	LayoutVBox(c, &LayoutStyle{}, &labelTestWriter{t: t})
+
+	if got := widget.Width(); got != 80 {
+		t.Fatalf("widget width = %v, want aspect-inferred width 80", got)
+	}
+}
+
+func TestLayoutVBox_UsesAspectInferredHeight(t *testing.T) {
+	c := positionedContainer(0, 0, 120, 120)
+	widget := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 100, preferredHeight: 100},
+		aspectRatio:          4,
+	}
+	widget.SetWidth(80)
+	if err := widget.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(widget)
+
+	c.prepareForLayout(&labelTestWriter{t: t})
+	LayoutVBox(c, &LayoutStyle{}, &labelTestWriter{t: t})
+
+	if got := widget.Height(); got != 20 {
+		t.Fatalf("widget height = %v, want aspect-inferred height 20", got)
+	}
+}
+
+func TestPrepareAspectRatioDimensions_LeavesAutoAndUnspecifiedDimensionsLayoutManaged(t *testing.T) {
+	c := positionedContainer(0, 0, 120, 120)
+	auto := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 100, preferredHeight: 100},
+		aspectRatio:          4,
+	}
+	auto.SetHeight(20)
+	auto.SetWidthAuto()
+	if err := auto.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(auto)
+
+	unspecified := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 100, preferredHeight: 100},
+		aspectRatio:          4,
+	}
+	if err := unspecified.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(unspecified)
+
+	c.prepareForLayout(&labelTestWriter{t: t})
+
+	if auto.WidthAspectInferred() || auto.WidthIsSet() {
+		t.Fatalf("width=auto should remain layout-managed")
+	}
+	if unspecified.WidthAspectInferred() || unspecified.HeightAspectInferred() {
+		t.Fatalf("fully unspecified widget should not infer dimensions during preparation")
 	}
 }
 
@@ -79,6 +163,38 @@ func TestStdContainer_PreferredWidthForVBoxUsesChildren(t *testing.T) {
 	}
 }
 
+func TestLayoutHBox_UsesAspectRatioProviderForThirdPartyWidgets(t *testing.T) {
+	hbox := positionedContainer(0, 0, 300, 120)
+	hbox.layout = &LayoutStyle{manager: "hbox"}
+
+	aspect := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 100, preferredHeight: 40},
+		aspectRatio:          2,
+	}
+	aspect.SetHeight(40)
+	if err := aspect.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(aspect)
+
+	panel := &positionedTestWidget{preferredWidth: 260, preferredHeight: 40}
+	panel.SetWidthAuto()
+	if err := panel.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(panel)
+
+	hbox.prepareForLayout(&labelTestWriter{t: t})
+	LayoutHBox(hbox, hbox.layout, &labelTestWriter{t: t})
+
+	if got := aspect.Width(); got != 80 {
+		t.Fatalf("aspect widget width = %v, want 80", got)
+	}
+	if got := panel.Left(); got != 80 {
+		t.Fatalf("auto sibling left = %v, want after aspect-inferred width 80", got)
+	}
+}
+
 func TestLayoutHBox_SpecifiedWidthsFitWhenContainerMatchesPreferredSum(t *testing.T) {
 	const childW = 72.0
 	const hpad = 25.2
@@ -112,6 +228,40 @@ func TestLayoutHBox_SpecifiedWidthsFitWhenContainerMatchesPreferredSum(t *testin
 
 	if left.Disabled() || right.Disabled() {
 		t.Fatalf("specified children disabled with exact-fit width: left=%v right=%v", left.Disabled(), right.Disabled())
+	}
+}
+
+func TestLayoutHBox_HeightOnlyImageReservesAspectWidthBeforeAutoSiblingShrinks(t *testing.T) {
+	hbox := positionedContainer(0, 0, 300, 120)
+	hbox.layout = &LayoutStyle{manager: "hbox"}
+
+	img := &StdImage{src: "fixture.png"}
+	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.png", "image-data"))))
+	img.SetHeight(80)
+	if err := img.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(img)
+
+	panel := &positionedTestWidget{preferredWidth: 260, preferredHeight: 40}
+	panel.SetWidthAuto()
+	if err := panel.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(panel)
+
+	writer := &imageTestWriter{dimensions: map[string][2]int{"fixture.png": {100, 100}}}
+	hbox.prepareForLayout(writer)
+	LayoutHBox(hbox, hbox.layout, writer)
+
+	if got := img.Width(); got != 80 {
+		t.Fatalf("image width = %v, want aspect width 80", got)
+	}
+	if got := panel.Left(); got != 80 {
+		t.Fatalf("auto sibling left = %v, want immediately after image width 80", got)
+	}
+	if got := panel.Width(); got != 220 {
+		t.Fatalf("auto sibling width = %v, want remaining width 220", got)
 	}
 }
 

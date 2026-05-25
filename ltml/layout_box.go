@@ -543,6 +543,10 @@ func hboxCrossAxisTop(container Container, widget Widget) float64 {
 }
 
 func widgetWidthSpecified(widget Widget) bool {
+	return widgetWidthAuthored(widget) || widgetAspectWidthInferred(widget)
+}
+
+func widgetWidthAuthored(widget Widget) bool {
 	if widget.LeftIsSet() && widget.RightIsSet() {
 		return true
 	}
@@ -555,6 +559,10 @@ func widgetWidthSpecified(widget Widget) bool {
 }
 
 func widgetHeightSpecified(widget Widget) bool {
+	return widgetHeightAuthored(widget) || widgetAspectHeightInferred(widget)
+}
+
+func widgetHeightAuthored(widget Widget) bool {
 	if widget.TopIsSet() && widget.BottomIsSet() {
 		return true
 	}

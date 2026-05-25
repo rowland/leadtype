@@ -8,6 +8,31 @@ import (
 	"github.com/rowland/leadtype/pdf"
 )
 
+func TestLayoutFlow_UsesAspectInferredDimensions(t *testing.T) {
+	flow := positionedContainer(0, 0, 50, 200)
+	flow.layout = &LayoutStyle{manager: "flow"}
+
+	widget := &aspectRatioTestWidget{
+		positionedTestWidget: positionedTestWidget{preferredWidth: 100, preferredHeight: 100},
+		aspectRatio:          4,
+	}
+	widget.SetWidth(80)
+	if err := widget.SetContainer(flow); err != nil {
+		t.Fatal(err)
+	}
+	flow.AddChild(widget)
+
+	flow.prepareForLayout(&labelTestWriter{t: t})
+	LayoutFlow(flow, flow.layout, &labelTestWriter{t: t})
+
+	if got := widget.Width(); got != 80 {
+		t.Fatalf("widget width = %v, want authored width 80", got)
+	}
+	if got := widget.Height(); got != 20 {
+		t.Fatalf("widget height = %v, want aspect-inferred height 20", got)
+	}
+}
+
 func TestLayoutFlow_RecomputesUnspecifiedCardHeightsAfterVBoxProbe(t *testing.T) {
 	writer := &labelTestWriter{t: t}
 	flowStyle := &LayoutStyle{manager: "flow", hpadding: 12, vpadding: 12}
