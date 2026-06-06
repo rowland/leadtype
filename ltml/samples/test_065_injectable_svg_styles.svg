@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120">
+  <rect class="panel" x="10" y="10" width="140" height="100" rx="10" />
+  <circle class="accent" cx="55" cy="60" r="28" />
+  <path class="mark" d="M92 72 L118 40 L130 50 L96 88 Z" />
+</svg>

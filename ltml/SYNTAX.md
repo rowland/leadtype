@@ -683,6 +683,7 @@ optional network loading.
 | Attribute | Description |
 |-----------|-------------|
 | `src` | Optional path or URL to an external SVG document. When both `src` and inline SVG body are present, `src` wins. |
+| `style` | Optional CSS text injected as a `<style>` element inside the SVG root before rendering. Applies to both inline SVG bodies and external `src` SVGs. |
 | `width`, `height` | Optional explicit dimensions. If only one is supplied, the other is inferred from the SVG aspect ratio. |
 | `max-width`, `max-height` | Optional maximum widget dimensions. Caps preserve aspect ratio and choose whichever dimension dominates. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the widget box. |
@@ -697,6 +698,16 @@ forwarded into the SVG XML. Inline SVG bodies should contain a full nested SVG
 document. External `src` content is loaded lazily into the component body on
 first use, so local assets and network SVGs follow the same render path as
 inline markup.
+
+The `style` attribute is the exception: its value is injected into the SVG
+document as a `<style><![CDATA[...]]></style>` child of the SVG root. This is
+useful when reusing the same source SVG with different class-based colors or
+stroke settings:
+
+```xml
+<svg src="badge.svg" width="1in"
+     style=".accent { fill: #f6d44e; stroke: #222222; }" />
+```
 
 Because `<svg>` is component-backed, its `src` is loaded into the component
 body lazily on first use, but its path and URL resolution rules match

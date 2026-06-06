@@ -3,16 +3,18 @@ package ltml
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 )
 
 type svgTestWriter struct {
 	labelTestWriter
-	fileDimensions   map[string][2]int
-	inlineDimensions [2]int
-	inlineCalls      []svgInlinePrintCall
-	fileCalls        []svgFilePrintCall
+	fileDimensions       map[string][2]int
+	inlineDimensions     [2]int
+	inlineDimensionCalls []string
+	inlineCalls          []svgInlinePrintCall
+	fileCalls            []svgFilePrintCall
 }
 
 type svgInlinePrintCall struct {
@@ -32,6 +34,7 @@ type svgFilePrintCall struct {
 }
 
 func (w *svgTestWriter) SVGDimensions(data []byte) (width, height int, err error) {
+	w.inlineDimensionCalls = append(w.inlineDimensionCalls, string(data))
 	if w.inlineDimensions != [2]int{} {
 		return w.inlineDimensions[0], w.inlineDimensions[1], nil
 	}
@@ -174,6 +177,32 @@ func TestStdSVG_DrawContent_UsesContentBoxDimensionsForInlineSVG(t *testing.T) {
 	}
 }
 
+func TestStdSVG_DrawContent_InjectsStyleIntoInlineSVG(t *testing.T) {
+	svg := &StdSVG{}
+	svg.SetAttrs(map[string]string{
+		"style": ".accent { fill: #f6d44e; stroke: #222222; }",
+	})
+	svg.body = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><path class="accent" d="M0 0 L10 0 L10 10 Z"/></svg>`
+	w := &svgTestWriter{inlineDimensions: [2]int{80, 40}}
+
+	if err := svg.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.inlineCalls) != 1 {
+		t.Fatalf("inline call count = %d, want 1", len(w.inlineCalls))
+	}
+	body := w.inlineCalls[0].body
+	if !strings.Contains(body, `<style><![CDATA[.accent { fill: #f6d44e; stroke: #222222; }]]></style>`) {
+		t.Fatalf("styled body = %q, want injected style element", body)
+	}
+	if !strings.Contains(body, `><style`) {
+		t.Fatalf("styled body = %q, want style inserted after svg start tag", body)
+	}
+	if len(w.inlineDimensionCalls) == 0 || !strings.Contains(w.inlineDimensionCalls[0], ".accent") {
+		t.Fatalf("dimension body = %#v, want injected style", w.inlineDimensionCalls)
+	}
+}
+
 func TestStdSVG_DrawContent_UsesFilePathWhenSrcIsSet(t *testing.T) {
 	svg := &StdSVG{}
 	svg.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", `<svg xmlns="http://www.w3.org/2000/svg"></svg>`))))
@@ -194,6 +223,64 @@ func TestStdSVG_DrawContent_UsesFilePathWhenSrcIsSet(t *testing.T) {
 	}
 	if got := w.fileCalls[0].filename; got != "fixture.svg" {
 		t.Fatalf("filename = %q, want fixture.svg", got)
+	}
+}
+
+func TestStdSVG_DrawContent_InjectsStyleIntoSrcSVG(t *testing.T) {
+	svg := &StdSVG{}
+	svg.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.svg", `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><path class="accent" d="M0 0 L10 0 L10 10 Z"/></svg>`))))
+	svg.SetAttrs(map[string]string{
+		"src":   "fixture.svg",
+		"style": ".accent { fill: #f6d44e; stroke: #222222; }",
+	})
+	w := &svgTestWriter{inlineDimensions: [2]int{80, 40}}
+
+	if err := svg.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.fileCalls) != 0 {
+		t.Fatalf("file call count = %d, want 0", len(w.fileCalls))
+	}
+	if len(w.inlineCalls) != 1 {
+		t.Fatalf("inline call count = %d, want 1", len(w.inlineCalls))
+	}
+	body := w.inlineCalls[0].body
+	if !strings.Contains(body, ".accent { fill: #f6d44e; stroke: #222222; }") {
+		t.Fatalf("styled body = %q, want injected style", body)
+	}
+	if !strings.Contains(body, `class="accent"`) {
+		t.Fatalf("styled body = %q, want original SVG content preserved", body)
+	}
+}
+
+func TestInjectSVGStyle_DifferentStylesProduceDifferentSVGBytes(t *testing.T) {
+	data := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect class="accent" width="10" height="10"/></svg>`)
+
+	blue := string(injectSVGStyle(data, ".accent { fill: blue; }"))
+	gold := string(injectSVGStyle(data, ".accent { fill: gold; }"))
+
+	if blue == gold {
+		t.Fatal("styled SVG bytes should differ for different injected styles")
+	}
+	if !strings.Contains(blue, ".accent { fill: blue; }") {
+		t.Fatalf("blue styled body = %q, want blue style", blue)
+	}
+	if !strings.Contains(gold, ".accent { fill: gold; }") {
+		t.Fatalf("gold styled body = %q, want gold style", gold)
+	}
+}
+
+func TestInjectSVGStyle_ExpandsSelfClosingSVGRoot(t *testing.T) {
+	styled := string(injectSVGStyle(
+		[]byte(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>`),
+		".accent { fill: gold; }",
+	))
+
+	if strings.Contains(styled, "/><style") {
+		t.Fatalf("styled body = %q, want expanded svg root", styled)
+	}
+	if !strings.Contains(styled, `><style><![CDATA[.accent { fill: gold; }]]></style></svg>`) {
+		t.Fatalf("styled body = %q, want style inside svg root", styled)
 	}
 }
 

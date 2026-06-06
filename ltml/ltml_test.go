@@ -256,6 +256,7 @@ func TestSamples(t *testing.T) {
 		"test_062_gradient_pens",
 		"test_063_svg_page_render_options",
 		"test_064_list_bullet_templates",
+		"test_065_injectable_svg_styles",
 	}
 
 	for _, sample := range samples {

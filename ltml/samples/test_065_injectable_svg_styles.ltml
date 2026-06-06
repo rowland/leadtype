@@ -1,0 +1,33 @@
+<ltml units="in" margin="0.55">
+  <font id="title" name="Helvetica" size="18" weight="Bold" />
+  <font id="body" name="Helvetica" size="9" />
+  <font id="caption" name="Helvetica" size="8" color="#555555" />
+  <pen id="frame" width="0.5pt" color="#999999" />
+
+  <page layout="vbox" layout.vpadding="0.18">
+    <label font="title">Injectable SVG Styles</label>
+    <p font="body">The same SVG class names are styled at the LTML call site for inline and source-based SVGs.</p>
+
+    <hbox height="2.2" layout.hpadding="0.35">
+      <vbox width="3.0" layout.vpadding="0.08">
+        <label font.weight="Bold">Inline SVG body</label>
+        <svg width="2.2" border="frame" padding="5pt"
+             style=".panel { fill: #fff7d6; stroke: #222222; stroke-width: 2; } .accent { fill: #f6d44e; } .mark { fill: #2e7d69; }">
+          <svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120">
+            <rect class="panel" x="10" y="10" width="140" height="100" rx="10" />
+            <circle class="accent" cx="55" cy="60" r="28" />
+            <path class="mark" d="M92 72 L118 40 L130 50 L96 88 Z" />
+          </svg>
+        </svg>
+        <label font="caption">Gold and green from an inline style injection.</label>
+      </vbox>
+
+      <vbox width="3.0" layout.vpadding="0.08">
+        <label font.weight="Bold">External SVG source</label>
+        <svg src="test_065_injectable_svg_styles.svg" width="2.2" border="frame" padding="5pt"
+             style=".panel { fill: #e8f3ff; stroke: #222222; stroke-width: 2; } .accent { fill: #6aa9ff; } .mark { fill: #c43f57; }" />
+        <label font="caption">Blue and red from a source SVG style injection.</label>
+      </vbox>
+    </hbox>
+  </page>
+</ltml>
