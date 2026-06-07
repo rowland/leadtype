@@ -972,12 +972,6 @@ EMC
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 BT
 72 710.7598 Td
 /P <<
@@ -1749,6 +1743,12 @@ BDC
 EMC
 EMC
 1 0 0 1 158.75 265.1898 Tm
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj

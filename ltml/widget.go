@@ -230,12 +230,12 @@ func Print(widget Widget, writer Writer) error {
 		}); err != nil {
 			return err
 		}
+		if err := widget.DrawContent(writer); err != nil {
+			return err
+		}
 		if err := withAccessibilityArtifact(writer, func() error {
 			return widget.DrawBorder(writer)
 		}); err != nil {
-			return err
-		}
-		if err := widget.DrawContent(writer); err != nil {
 			return err
 		}
 		return nil

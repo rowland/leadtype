@@ -52,7 +52,7 @@ endobj
 <<
 /Contents 21 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 6663 
+/Length 6647 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -838,7 +838,7 @@ endobj
 <<
 /Contents 22 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 6572 
+/Length 6574 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -870,7 +870,7 @@ endobj
 <<
 /Contents 23 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 6552 
+/Length 6554 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -883,7 +883,7 @@ endobj
 <<
 /Contents 24 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 3824 
+/Length 3845 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -894,7 +894,7 @@ endobj
 endobj
 21 0 obj
 <<
-/Length 6663 
+/Length 6647 
 >>
 stream
 /Artifact BMC
@@ -1068,18 +1068,6 @@ EMC
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 732 540 24 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 BT
 42 740.7598 Td
 /P <<
@@ -1093,9 +1081,19 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
+ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 732 540 24 re
+S
 EMC
 /Artifact BMC
--6 -22.6201 Td
+EMC
+/Artifact BMC
+BT
+36 718.1396 Td
 /F1 12 Tf
 0 Ts
 <0001> Tj
@@ -1364,18 +1362,10 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-[1 2] 0 d
-0 J
-36 36 540 20 re
-S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-BT
-40 42.7598 Td
+-14 -27.3799 Td
 /P <<
 /MCID 38 
 >>
@@ -1384,12 +1374,20 @@ BDC
 0 Ts
 <001e000c000c00070009000f0004000f00130004000f0009001b0007001c00030003000e00050004> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
+[1 2] 0 d
+0 J
+36 36 540 20 re
+S
+EMC
 endstream
 endobj
 22 0 obj
 <<
-/Length 6572 
+/Length 6574 
 >>
 stream
 0.8275 0.8275 0.8275 RG
@@ -1560,16 +1558,6 @@ S
 /Artifact BMC
 EMC
 /Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 732 540 24 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 EMC
 BT
 42 740.7598 Td
@@ -1584,8 +1572,18 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
+ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 732 540 24 re
+S
 EMC
-12 -22.6201 Td
+/Artifact BMC
+EMC
+BT
+54 718.1396 Td
 /P <<
 /MCID 1 
 >>
@@ -1849,18 +1847,10 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-[1 2] 0 d
-0 J
-36 36 540 20 re
-S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-BT
-40 42.7598 Td
+-14 -27.3799 Td
 /P <<
 /MCID 38 
 >>
@@ -1869,12 +1859,20 @@ BDC
 0 Ts
 <001d00180005001200070009000f0004000f00130004000f0009001b0007001c00030003000e00050004> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
+[1 2] 0 d
+0 J
+36 36 540 20 re
+S
+EMC
 endstream
 endobj
 23 0 obj
 <<
-/Length 6552 
+/Length 6554 
 >>
 stream
 0.8275 0.8275 0.8275 RG
@@ -2045,16 +2043,6 @@ S
 /Artifact BMC
 EMC
 /Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 732 540 24 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 EMC
 BT
 42 740.7598 Td
@@ -2069,8 +2057,18 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
+ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 732 540 24 re
+S
 EMC
-12 -22.6201 Td
+/Artifact BMC
+EMC
+BT
+54 718.1396 Td
 /P <<
 /MCID 1 
 >>
@@ -2334,18 +2332,10 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-[1 2] 0 d
-0 J
-36 36 540 20 re
-S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-BT
-40 42.7598 Td
+-14 -27.3799 Td
 /P <<
 /MCID 38 
 >>
@@ -2354,12 +2344,20 @@ BDC
 0 Ts
 <001e000c000c00070009000f0004000f00130004000f0009001b0007001c00030003000e00050004> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
+[1 2] 0 d
+0 J
+36 36 540 20 re
+S
+EMC
 endstream
 endobj
 24 0 obj
 <<
-/Length 3824 
+/Length 3845 
 >>
 stream
 0.8275 0.8275 0.8275 RG
@@ -2530,16 +2528,6 @@ S
 /Artifact BMC
 EMC
 /Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 732 540 24 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 EMC
 BT
 42 740.7598 Td
@@ -2554,8 +2542,18 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
+ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 732 540 24 re
+S
 EMC
-12 -22.6201 Td
+/Artifact BMC
+EMC
+BT
+54 718.1396 Td
 /P <<
 /MCID 1 
 >>
@@ -2665,18 +2663,10 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-[1 2] 0 d
-0 J
-36 36 540 20 re
-S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-BT
-40 42.7598 Td
+-14 -423.3799 Td
 /P <<
 /MCID 16 
 >>
@@ -2685,7 +2675,17 @@ BDC
 0 Ts
 <001d00180005001200070009000f0004000f00130004000f0009001b0007001c00030003000e00050004> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
+[1 2] 0 d
+0 J
+36 36 540 20 re
+S
+EMC
+/Artifact BMC
+EMC
 endstream
 endobj
 25 0 obj
@@ -2930,20 +2930,20 @@ xref
 0000011750 00000 n
 0000011930 00000 n
 0000012110 00000 n
-0000018826 00000 n
-0000025451 00000 n
-0000032056 00000 n
-0000035933 00000 n
-0000036689 00000 n
-0000036802 00000 n
-0000051364 00000 n
-0000051854 00000 n
-0000051929 00000 n
+0000018810 00000 n
+0000025437 00000 n
+0000032044 00000 n
+0000035942 00000 n
+0000036698 00000 n
+0000036811 00000 n
+0000051373 00000 n
+0000051863 00000 n
+0000051938 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 31 
 >>
 startxref
-59017
+59026
 %%EOF

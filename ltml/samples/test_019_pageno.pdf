@@ -418,10 +418,6 @@ stream
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 BT
 54 728.7598 Td
 /P <<
@@ -445,6 +441,10 @@ BDC
 0 Ts
 <000100020003000400050006> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj
@@ -453,10 +453,6 @@ endobj
 /Length 312 
 >>
 stream
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -484,6 +480,10 @@ BDC
 0 Ts
 <000100020003000400050007> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj
@@ -492,10 +492,6 @@ endobj
 /Length 460 
 >>
 stream
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -523,6 +519,10 @@ BDC
 0 Ts
 <00080009000a000b0005000c00020003000400050009000a000d0004000b0005000e000900040005000f00040010000e0011000c000200030004000500120004000b0004000e0013> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj
@@ -531,10 +531,6 @@ endobj
 /Length 347 
 >>
 stream
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -570,6 +566,10 @@ BDC
 0 Ts
 <0016> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj
@@ -578,10 +578,6 @@ endobj
 /Length 551 
 >>
 stream
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -636,6 +632,10 @@ BDC
 0 Ts
 <0013> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj
@@ -644,10 +644,6 @@ endobj
 /Length 308 
 >>
 stream
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -674,6 +670,10 @@ BDC
 /F1 12 Tf
 0 Ts
 <0001000200030004000500060006> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 EMC
 ET
 endstream

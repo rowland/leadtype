@@ -1003,10 +1003,6 @@ stream
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 BT
 39.6 738.5396 Td
 /P <<
@@ -1038,10 +1034,6 @@ EMC
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 0 -24.2701 Td
 /P <<
 /MCID 2 
@@ -1054,20 +1046,20 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-0.001 w
-[1 2] 0 d
-0 J
-39.6 543.72 216 138 re
-S
 EMC
 /Artifact BMC
+ET
 q
 0.8667 0 0 0.8667 43.6 547.72 cm
 /Fm0 Do
 Q
 EMC
 /Artifact BMC
+0.001 w
+[1 2] 0 d
+0 J
+39.6 543.72 216 138 re
+S
 EMC
 /Artifact BMC
 EMC
@@ -1103,17 +1095,17 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-290.16 543.72 216 138 re
-S
 EMC
 /Artifact BMC
+ET
 q
 0.8667 0 0 0.8667 294.16 547.72 cm
 /Fm1 Do
 Q
 EMC
 /Artifact BMC
+290.16 543.72 216 138 re
+S
 EMC
 /Artifact BMC
 EMC
@@ -1128,6 +1120,14 @@ BDC
 0 Ts
 <001700090011000700130015000d001d0005000a00090004000600090021000d> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
 ET
 endstream
 endobj
@@ -1136,10 +1136,6 @@ endobj
 /Length 1880 
 >>
 stream
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -1175,10 +1171,6 @@ EMC
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 0 -24.2701 Td
 /P <<
 /MCID 2 
@@ -1191,20 +1183,20 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-0.001 w
-[1 2] 0 d
-0 J
-39.6 543.72 216 138 re
-S
 EMC
 /Artifact BMC
+ET
 q
 0.8667 0 0 0.8667 43.6 547.72 cm
 /Fm2 Do
 Q
 EMC
 /Artifact BMC
+0.001 w
+[1 2] 0 d
+0 J
+39.6 543.72 216 138 re
+S
 EMC
 /Artifact BMC
 EMC
@@ -1240,17 +1232,17 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-ET
-290.16 543.72 216 138 re
-S
 EMC
 /Artifact BMC
+ET
 q
 0.8667 0 0 0.8667 294.16 547.72 cm
 /Fm3 Do
 Q
 EMC
 /Artifact BMC
+290.16 543.72 216 138 re
+S
 EMC
 /Artifact BMC
 EMC
@@ -1264,6 +1256,14 @@ BDC
 /F1 8 Tf
 0 Ts
 <00160007000800090005001b001a0009000a000a0003000c0009001d000500030008000b001b000a0009> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 EMC
 ET
 endstream

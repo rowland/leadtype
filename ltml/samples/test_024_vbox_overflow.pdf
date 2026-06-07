@@ -52,7 +52,7 @@ endobj
 <<
 /Contents 19 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 2509 
+/Length 2491 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -198,7 +198,7 @@ endobj
 <<
 /Contents 20 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 2080 
+/Length 2098 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -223,7 +223,7 @@ endobj
 endobj
 19 0 obj
 <<
-/Length 2509 
+/Length 2491 
 >>
 stream
 /Artifact BMC
@@ -391,18 +391,6 @@ stream
 612 18 l
 0 0 m
 612 0 l
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 720 540 36 re
 S
 EMC
 /Artifact BMC
@@ -433,7 +421,17 @@ BDC
 <0001000200030004000500060007000300080009000a000b0008000c000d00090005000c000b000b0009000c000a000400050007000e0008000f00050007000e0005000d00020009000500100003000a0004000d0005000b000c001100090012> Tj
 EMC
 /Artifact BMC
+EMC
+/Artifact BMC
 ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 720 540 36 re
+S
+EMC
+/Artifact BMC
 0.5294 0.8078 0.9804 rg
 36 489.6 540 230.4 re
 f
@@ -457,15 +455,6 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-0.001 w
-[1 2] 0 d
-0 J
-36 36 540 20 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 EMC
 BT
 40 42.7598 Td
@@ -478,12 +467,21 @@ BDC
 0 Ts
 <0013001400140005000b000c001100090005001000070007000d0009000a> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
+0.001 w
+[1 2] 0 d
+0 J
+36 36 540 20 re
+S
+EMC
 endstream
 endobj
 20 0 obj
 <<
-/Length 2080 
+/Length 2098 
 >>
 stream
 0.8275 0.8275 0.8275 RG
@@ -654,16 +652,6 @@ S
 /Artifact BMC
 EMC
 /Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 732 540 24 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 EMC
 BT
 42 740.7598 Td
@@ -676,7 +664,17 @@ BDC
 <0001000200030002000400050006000700080009000a00020004000b0002000c> Tj
 EMC
 /Artifact BMC
+EMC
+/Artifact BMC
 ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 732 540 24 re
+S
+EMC
+/Artifact BMC
 1 0.6275 0.4784 rg
 36 501.6 540 230.4 re
 f
@@ -686,15 +684,6 @@ EMC
 [] 0 d
 0 J
 36 501.6 540 230.4 re
-S
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-0.001 w
-[1 2] 0 d
-0 J
-36 36 540 20 re
 S
 EMC
 /Artifact BMC
@@ -712,7 +701,18 @@ BDC
 0 Ts
 <001500160009000e0005000b000c001100090005001000070007000d0009000a> Tj
 EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 ET
+0.001 w
+[1 2] 0 d
+0 J
+36 36 540 20 re
+S
+EMC
+/Artifact BMC
+EMC
 endstream
 endobj
 21 0 obj
@@ -940,7 +940,7 @@ xref
 0000002758 00000 n
 0000002938 00000 n
 0000003071 00000 n
-0000005633 00000 n
+0000005615 00000 n
 0000007766 00000 n
 0000008410 00000 n
 0000008507 00000 n

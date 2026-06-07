@@ -145,8 +145,8 @@ func TestPrint_RotateWrapsWidgetRendering(t *testing.T) {
 	if call.angle != 30 || call.x != 25 || call.y != 40 {
 		t.Fatalf("rotation = %+v, want angle=30 x=25 y=40", call)
 	}
-	if got := widget.steps; len(got) != 3 || got[0] != "background" || got[1] != "border" || got[2] != "content" {
-		t.Fatalf("steps = %v, want [background border content]", got)
+	if got := widget.steps; len(got) != 3 || got[0] != "background" || got[1] != "content" || got[2] != "border" {
+		t.Fatalf("steps = %v, want [background content border]", got)
 	}
 	if !widget.Printed() {
 		t.Fatal("widget should be marked printed")

@@ -288,10 +288,6 @@ stream
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 BT
 54 728.7598 Td
 /P <<
@@ -306,8 +302,6 @@ ET
 0.5918 w
 54 727.8516 m
 82.6875 727.8516 l
-/Artifact BMC
-EMC
 /Artifact BMC
 EMC
 /Artifact BMC
@@ -371,12 +365,6 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-EMC
-/Artifact BMC
-[1 2] 0 d
-0 J
-54 444 233.5 132 re
-S
 EMC
 BT
 54 566.7598 Td
@@ -459,11 +447,15 @@ BDC
 <00080006000d000d0002000e0009000f00030002000800090002000c000900040005000e0009000d000f001300060007000b00080015> Tj
 EMC
 /Artifact BMC
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 ET
+[1 2] 0 d
+0 J
+54 444 233.5 132 re
+S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 [] 0 d
 0 J
 306 444 m
@@ -473,10 +465,6 @@ EMC
 /Artifact BMC
 EMC
 /Artifact BMC
-[1 2] 0 d
-0 J
-324.5 444 233.5 132 re
-S
 EMC
 BT
 324.5 566.7598 Td
@@ -559,11 +547,17 @@ BDC
 <00080006000d000d0002000e0009000f00030002000800090002000c000900040005000e0009000d000f001300060007000b00080015> Tj
 EMC
 /Artifact BMC
-EMC
-/Artifact BMC
-EMC
-/Artifact BMC
 ET
+[1 2] 0 d
+0 J
+324.5 444 233.5 132 re
+S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 1 0.6471 0 RG
 3 w
 [] 0 d
@@ -673,6 +667,12 @@ EMC
 54 264 m
 558 264 l
 S
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 EMC
 endstream
 endobj

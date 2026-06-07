@@ -66,8 +66,6 @@ stream
 /Artifact BMC
 EMC
 /Artifact BMC
-EMC
-/Artifact BMC
 1 1 0.8784 rg
 540 684 m
 540 703.8823 523.8823 720 504 720 c
@@ -128,6 +126,8 @@ EMC
 239.6468 188 288 236.3532 288 296 c
 288 296 l
 S
+EMC
+/Artifact BMC
 EMC
 endstream
 endobj

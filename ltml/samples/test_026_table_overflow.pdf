@@ -52,7 +52,7 @@ endobj
 <<
 /Contents 18 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 2418 
+/Length 2400 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -184,7 +184,7 @@ endobj
 <<
 /Contents 19 0 R 
 /CropBox [0 0 612 792 ] 
-/Length 2165 
+/Length 2183 
 /MediaBox [0 0 612 792 ] 
 /Parent 1 0 R 
 /Resources 4 0 R 
@@ -209,7 +209,7 @@ endobj
 endobj
 18 0 obj
 <<
-/Length 2418 
+/Length 2400 
 >>
 stream
 /Artifact BMC
@@ -381,16 +381,6 @@ S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 736 540 20 re
-S
-EMC
 BT
 40 742.7598 Td
 /P <<
@@ -403,6 +393,14 @@ BDC
 EMC
 /Artifact BMC
 ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 736 540 20 re
+S
+EMC
+/Artifact BMC
 0.5294 0.8078 0.9804 rg
 36 491.2 270 244.8 re
 f
@@ -443,13 +441,6 @@ S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-0.001 w
-[1 2] 0 d
-0 J
-36 226.4 540 20 re
-S
-EMC
 BT
 40 233.1598 Td
 /P <<
@@ -461,12 +452,19 @@ BDC
 0 Ts
 <000100020002000300040005000600070003000800050009000a00070003000b000c000c00080007000d> Tj
 EMC
+/Artifact BMC
 ET
+0.001 w
+[1 2] 0 d
+0 J
+36 226.4 540 20 re
+S
+EMC
 endstream
 endobj
 19 0 obj
 <<
-/Length 2165 
+/Length 2183 
 >>
 stream
 0.8275 0.8275 0.8275 RG
@@ -636,14 +634,6 @@ stream
 S
 /Artifact BMC
 EMC
-/Artifact BMC
-0 0 0 RG
-0.001 w
-[4 2] 0 d
-0 J
-36 736 540 20 re
-S
-EMC
 BT
 40 742.7598 Td
 /P <<
@@ -656,6 +646,14 @@ BDC
 EMC
 /Artifact BMC
 ET
+0 0 0 RG
+0.001 w
+[4 2] 0 d
+0 J
+36 736 540 20 re
+S
+EMC
+/Artifact BMC
 0.8667 0.6275 0.8667 rg
 36 491.2 270 244.8 re
 f
@@ -678,13 +676,6 @@ S
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-0.001 w
-[1 2] 0 d
-0 J
-36 471.2 540 20 re
-S
-EMC
 BT
 40 477.9598 Td
 /P <<
@@ -696,7 +687,16 @@ BDC
 0 Ts
 <000e000f00070010000300040005000600070003000800050009000a00070003000b000c000c00080007000d> Tj
 EMC
+/Artifact BMC
 ET
+0.001 w
+[1 2] 0 d
+0 J
+36 471.2 540 20 re
+S
+EMC
+/Artifact BMC
+EMC
 endstream
 endobj
 20 0 obj
@@ -904,7 +904,7 @@ xref
 0000002564 00000 n
 0000002744 00000 n
 0000002883 00000 n
-0000005354 00000 n
+0000005336 00000 n
 0000007572 00000 n
 0000008132 00000 n
 0000008217 00000 n

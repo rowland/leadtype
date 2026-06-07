@@ -608,10 +608,6 @@ stream
 EMC
 /Artifact BMC
 EMC
-/Artifact BMC
-EMC
-/Artifact BMC
-EMC
 BT
 72 710.7598 Td
 /P <<
@@ -796,6 +792,10 @@ EMC
 >>
 BDC
 <000c000e001300020003000a00050015> Tj
+EMC
+/Artifact BMC
+EMC
+/Artifact BMC
 EMC
 ET
 endstream
