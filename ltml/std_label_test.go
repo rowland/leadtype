@@ -921,6 +921,48 @@ func TestStdLabel_DrawContent_AngleSupportsDynamicContent(t *testing.T) {
 	}
 }
 
+func TestParse_LabelRuleTextAlignmentSurvivesDirectAttrs(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <style>label.centered { text-align: center; text-valign: middle; }</style>
+  <page>
+    <label class="centered" width="100" height="40">Hello</label>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	label := doc.Root().Page(0).children[0].(*StdLabel)
+	if !label.textAlignSet || label.textAlign != HAlignCenter {
+		t.Fatalf("text align = %v set=%v, want center set=true", label.textAlign, label.textAlignSet)
+	}
+	if label.textVAlign != VAlignMiddle {
+		t.Fatalf("text valign = %v, want middle", label.textVAlign)
+	}
+}
+
+func TestParse_LabelDefineTextAlignmentSurvivesDirectAttrs(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <define id="right-label" tag="label" text-align="right" text-valign="bottom" />
+  <page>
+    <right-label width="100" height="40">Hello</right-label>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	label := doc.Root().Page(0).children[0].(*StdLabel)
+	if !label.textAlignSet || label.textAlign != HAlignRight {
+		t.Fatalf("text align = %v set=%v, want right set=true", label.textAlign, label.textAlignSet)
+	}
+	if label.textVAlign != VAlignBottom {
+		t.Fatalf("text valign = %v, want bottom", label.textVAlign)
+	}
+}
+
 func TestStdLabel_FittedRichText_DynamicContentUsesResolvedPageNumber(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>

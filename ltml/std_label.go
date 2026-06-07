@@ -159,10 +159,9 @@ func (l *StdLabel) SetAttrs(attrs map[string]string) {
 	if angle, ok := attrs["angle"]; ok {
 		l.angle, _ = strconv.ParseFloat(angle, 64)
 	}
-	l.textAlign = HAlignLeft
-	l.textAlignSet = false
 	if textAlign, ok := attrs["text-align"]; ok {
 		l.textAlignSet = true
+		l.textAlign = HAlignLeft
 		switch textAlign {
 		case "center":
 			l.textAlign = HAlignCenter
@@ -170,7 +169,6 @@ func (l *StdLabel) SetAttrs(attrs map[string]string) {
 			l.textAlign = HAlignRight
 		}
 	}
-	l.textVAlign = VAlignTop
 	if textVAlign, ok := attrs["text-valign"]; ok {
 		l.textVAlign = parseLabelTextVAlign(textVAlign)
 	}
