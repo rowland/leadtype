@@ -585,6 +585,53 @@ func TestStdPage_DirectChildVBoxInvalidOverflowDisablesFragmenting(t *testing.T)
 	}
 }
 
+func TestStdPage_SplitsOnlyFirstHiddenVBoxOnPhysicalPage(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	first := &flowTestWidget{name: "first", preferredHeight: 40}
+	_ = first.SetContainer(page)
+	page.AddChild(first)
+
+	var secondPages, thirdPages []int
+	second := &StdContainer{}
+	_ = second.SetContainer(page)
+	second.layout = defaultLayouts["vbox"].Clone()
+	second.SetWidth(180)
+	page.AddChild(second)
+	for i := 0; i < 2; i++ {
+		row := &flowTestWidget{name: "second-row", preferredHeight: 40, printedOn: &secondPages}
+		_ = row.SetContainer(second)
+		second.AddChild(row)
+	}
+
+	third := &StdContainer{}
+	_ = third.SetContainer(page)
+	third.layout = defaultLayouts["vbox"].Clone()
+	third.SetWidth(180)
+	page.AddChild(third)
+	for i := 0; i < 2; i++ {
+		row := &flowTestWidget{name: "third-row", preferredHeight: 40, printedOn: &thirdPages}
+		_ = row.SetContainer(third)
+		third.AddChild(row)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 3 {
+		t.Fatalf("page count = %d, want 3", w.pageCount)
+	}
+	if !slices.Equal(secondPages, []int{1, 2}) {
+		t.Fatalf("second pages = %v, want [1 2]", secondPages)
+	}
+	if !slices.Equal(thirdPages, []int{2, 3}) {
+		t.Fatalf("third pages = %v, want [2 3]", thirdPages)
+	}
+}
+
 func TestStdContainer_FlowOverflowDoesNotDefaultToContinuation(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()

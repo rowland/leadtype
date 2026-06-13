@@ -344,13 +344,15 @@ func (err *LayoutOverflowError) Error() string {
 
 func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 	printedOnce := 0
+	splitAttempted := false
 	children := slices.Clone(p.Widgets())
 	slices.SortStableFunc(children, func(a, b Widget) int {
 		return a.ZIndex() - b.ZIndex()
 	})
 	for _, child := range children {
 		if !child.Visible() || child.Disabled() {
-			if item := p.pageItemForCurrent(child); item != nil && !item.Done {
+			if item := p.pageItemForCurrent(child); item != nil && !item.Done && !splitAttempted {
+				splitAttempted = true
 				progress, err := p.trySplitChild(item, child, w)
 				if err != nil {
 					return printedOnce, err
