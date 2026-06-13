@@ -159,7 +159,7 @@ func (pw *PageWriter) AddFont(family string, options options.Options) ([]*font.F
 	if pw.dw.profiler != nil {
 		defer pw.dw.profiler.Begin("pdf.font.select").End()
 	}
-	if font, err := font.New(family, options, pw.dw.fontSources); err != nil {
+	if font, err := pw.dw.selectFont(family, options); err != nil {
 		return nil, err
 	} else {
 		return pw.addFont(font), nil

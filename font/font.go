@@ -33,6 +33,17 @@ type Font struct {
 	Shaper shaping.Shaper
 }
 
+func (font *Font) Clone() *Font {
+	if font == nil {
+		return nil
+	}
+	clone := *font
+	if font.Ranges != nil {
+		clone.Ranges = append([]string(nil), font.Ranges...)
+	}
+	return &clone
+}
+
 func New(family string, options options.Options, fontSources FontSources) (*Font, error) {
 	font := &Font{
 		family:       family,

@@ -16,6 +16,7 @@ import (
 	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/profile"
 	"github.com/rowland/leadtype/rich_text"
@@ -81,6 +82,20 @@ type countingFS struct {
 	opens int
 }
 
+type countingFontSource struct {
+	base    font.FontSource
+	selects int
+}
+
+func (s *countingFontSource) Select(family, weight, style string, ranges []string) (font.FontMetrics, error) {
+	s.selects++
+	return s.base.Select(family, weight, style, ranges)
+}
+
+func (s *countingFontSource) SubType() string {
+	return s.base.SubType()
+}
+
 func (c *countingFS) Open(name string) (fs.File, error) {
 	c.opens++
 	return c.fsys.Open(name)
@@ -139,6 +154,73 @@ func TestDocWriter_AddFontSource(t *testing.T) {
 	var fonts ttf_fonts.TtfFonts
 	dw.AddFontSource(&fonts)
 	check(t, dw.fontSources[0] == &fonts, "Font source should exist.")
+}
+
+func TestDocWriter_AddFontCachesSelections(t *testing.T) {
+	afmFonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &countingFontSource{base: afmFonts}
+	dw := NewDocWriter()
+	dw.AddFontSource(source)
+
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if source.selects != 1 {
+		t.Fatalf("font selections = %d, want 1", source.selects)
+	}
+}
+
+func TestDocWriter_AddFontSourceClearsSelectionCache(t *testing.T) {
+	afmFonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &countingFontSource{base: afmFonts}
+	dw := NewDocWriter()
+	dw.AddFontSource(source)
+
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(source)
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if source.selects != 2 {
+		t.Fatalf("font selections = %d, want 2 after adding a source", source.selects)
+	}
+}
+
+func TestDocWriter_ShareFontSelectionCacheFrom(t *testing.T) {
+	afmFonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &countingFontSource{base: afmFonts}
+	first := NewDocWriter()
+	first.AddFontSource(source)
+	second := NewDocWriter()
+	second.AddFontSource(source)
+	second.ShareFontSelectionCacheFrom(first)
+
+	if _, err := first.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := second.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if source.selects != 1 {
+		t.Fatalf("font selections = %d, want 1 shared cache miss", source.selects)
+	}
 }
 
 func TestDocWriter_Close(t *testing.T) {

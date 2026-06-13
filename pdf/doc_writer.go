@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -35,6 +36,7 @@ type DocWriter struct {
 	curPage               *PageWriter
 	options               options.Options
 	fontSources           font.FontSources
+	selectedFonts         map[string]*font.Font
 	fontKeys              map[string]string
 	fontEncodings         map[string]*fontEncoding
 	glyphRecorders        map[string]*glyphRecorder  // keyed by font PostScript name
@@ -95,6 +97,7 @@ func NewDocWriter() *DocWriter {
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
 	fontSources := make(font.FontSources, 0, 2)
+	selectedFonts := make(map[string]*font.Font)
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
@@ -104,6 +107,7 @@ func NewDocWriter() *DocWriter {
 		resources:        resources,
 		options:          options.Options{},
 		fontSources:      fontSources,
+		selectedFonts:    selectedFonts,
 		fontKeys:         fontKeys,
 		fontEncodings:    fontEncodings,
 		glyphRecorders:   make(map[string]*glyphRecorder),
@@ -171,6 +175,7 @@ func (dw *DocWriter) AddFont(family string, options options.Options) ([]*font.Fo
 
 func (dw *DocWriter) AddFontSource(fontSource font.FontSource) {
 	dw.fontSources = append(dw.fontSources, fontSource)
+	dw.selectedFonts = make(map[string]*font.Font)
 }
 
 func (dw *DocWriter) CompressPages(value bool) *DocWriter {
@@ -541,6 +546,85 @@ func (dw *DocWriter) FontSize() float64 {
 
 func (dw *DocWriter) FontSources() font.FontSources {
 	return dw.fontSources
+}
+
+func (dw *DocWriter) ShareFontSelectionCacheFrom(other *DocWriter) {
+	if other == nil {
+		return
+	}
+	if other.selectedFonts == nil {
+		other.selectedFonts = make(map[string]*font.Font)
+	}
+	dw.selectedFonts = other.selectedFonts
+}
+
+func (dw *DocWriter) selectFont(family string, opts options.Options) (*font.Font, error) {
+	key, cacheable := fontSelectionCacheKey(family, opts)
+	if cacheable {
+		if cached := dw.selectedFonts[key]; cached != nil {
+			return cached.Clone(), nil
+		}
+	}
+	selected, err := font.New(family, opts, dw.fontSources)
+	if err != nil {
+		return nil, err
+	}
+	if cacheable {
+		if dw.selectedFonts == nil {
+			dw.selectedFonts = make(map[string]*font.Font)
+		}
+		dw.selectedFonts[key] = selected.Clone()
+	}
+	return selected, nil
+}
+
+func fontSelectionCacheKey(family string, opts options.Options) (string, bool) {
+	var b strings.Builder
+	b.WriteString(family)
+	b.WriteByte(0)
+	b.WriteString(opts.StringDefault("weight", ""))
+	b.WriteByte(0)
+	b.WriteString(opts.StringDefault("style", ""))
+	b.WriteByte(0)
+	b.WriteString(fmt.Sprintf("%g", opts.FloatDefault("relative_size", 100)))
+	b.WriteByte(0)
+	if ranges, ok := opts["ranges"]; ok {
+		switch ranges := ranges.(type) {
+		case nil:
+		case []string:
+			b.WriteString("[]string")
+			for _, value := range ranges {
+				b.WriteByte(0)
+				b.WriteString(value)
+			}
+		case font.RuneSet:
+			rangesKey, ok := runeSetCacheKey(ranges)
+			if !ok {
+				return "", false
+			}
+			b.WriteString(rangesKey)
+		default:
+			return "", false
+		}
+	}
+	return b.String(), true
+}
+
+func runeSetCacheKey(ranges font.RuneSet) (string, bool) {
+	value := reflect.ValueOf(ranges)
+	if !value.IsValid() {
+		return "", true
+	}
+	if value.Kind() != reflect.Slice {
+		return "", false
+	}
+	var b strings.Builder
+	b.WriteString(value.Type().String())
+	for i := 0; i < value.Len(); i++ {
+		b.WriteByte(0)
+		b.WriteString(fmt.Sprintf("%#v", value.Index(i).Interface()))
+	}
+	return b.String(), true
 }
 
 func (dw *DocWriter) FontStyle() string {
