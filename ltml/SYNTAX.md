@@ -201,7 +201,7 @@ page flow.
 
 `<canvas>` supports ordinary LTML child widgets and local style definitions, but
 not page-only behavior such as page creation, overflow retries, debug grids, or
-page-flow splitting.
+page-flow continuation.
 
 Inner page-dependent semantics are treated as visual-only during capture:
 
@@ -225,7 +225,7 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. Use `layout.*` for inline overrides such as `layout.vpadding="9pt"`. |
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. Add a comma-delimited count such as `0.25in,4` or `true,4` to draw every fourth line bolder. |
-| `overflow`    | If `true`, allow the page to retry unprinted direct children on additional physical pages. Current support is page-only. |
+| `overflow`    | `true` or `false`. If `true`, allow the page to retry unprinted direct children on additional physical pages. Defaults to `true` for page `layout="flow"`, `layout="table"`, and `layout="vbox"`. |
 | `svg-gradient-stop-opacity-mode` | Page-local SVG gradient stop-opacity rendering mode. Overrides the document default for SVG assets rendered on this page. |
 | `svg-blend-mode` | Page-local SVG `mix-blend-mode` handling. Overrides the document default for SVG assets rendered on this page. |
 | `font`        | Reference to a named `<font>` style. |
@@ -302,9 +302,9 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `shift-y`          | Offset the widget vertically after layout. Measurements use normal LTML units; percentages use the widget's resolved height. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
 | `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`. |
-| `split`            | Whether a direct page-child paragraph may split across pages. Defaults to `true`. |
-| `orphans`          | Minimum number of lines kept on the first fragment when splitting. Defaults to `2`. |
-| `widows`           | Minimum number of lines carried to the continuation fragment when splitting. Defaults to `2`. |
+| `overflow`         | `true` or `false`. Whether a direct page-child paragraph may continue across physical pages. Defaults to `true`. |
+| `orphans`          | Minimum number of lines kept on the first continuation fragment. Defaults to `2`. |
+| `widows`           | Minimum number of lines carried to the next continuation fragment. Defaults to `2`. |
 | `colspan`, `rowspan` | Span multiple table cells (when inside a `table`). |
 | `role` | Override the generated PDF structure type when `ua="true"`. Default tagged output uses `P`. |
 
@@ -383,7 +383,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` and `radial-out` when `angles` determines the angular slots. |
 | `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. In `radial-out`, row `0` is innermost and higher rows move outward. |
 | `order`          | Grid fill order: `rows` (default) or `cols`. Used by `table`, `radial`, and `radial-out`. |
-| `split`          | Whether a direct page-child `table` or `vbox` may split across pages. Defaults to `true` for `layout="table"` and `layout="vbox"`. |
+| `overflow`       | `true` or `false`. Whether a direct page-child `table` or `vbox` may continue across physical pages. Defaults to `true` for `layout="table"` and `layout="vbox"`. |
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
 | `base-angle`     | Base angle in degrees for radial sector boundaries. Default: `0`. |
@@ -1504,30 +1504,34 @@ For a fuller example, see `ltml/samples/test_037_relative_layout.ltml`.
 
 ### Page Flow Details
 
-Page flow has three related parts: widget visibility (`display`), page retry
-(`overflow`), and widget splitting (`split`).
+Page flow has two related parts: widget visibility (`display`) and page
+continuation (`overflow`).
 
 #### Visibility and Retry
 
 - `display` defaults to `once`.
-- `overflow` is currently honored only on `<page>`.
-- When `overflow="true"`, LTML retries only direct children of the page on
-  later physical pages.
+- Page `overflow` defaults to `true` for page `layout="flow"`,
+  `layout="table"`, and `layout="vbox"`, and allows LTML to retry unprinted
+  direct children on later physical pages.
+- Direct page-child paragraph, table, and vbox `overflow` defaults to `true`
+  and allows the child to be fragmented across physical pages.
+- Use `overflow="false"` on a direct page child to keep that child whole.
 - `display="even"` and `display="odd"` follow the physical PDF page sequence,
   not `<pageno>` display values.
 
-#### Splittable Direct Page Children
+#### Continuing Direct Page Children
 
-Only direct page children participate in the built-in overflow retry/splitting
-path.
+Only direct page children participate in the built-in continuation path.
 
-- Direct page-child paragraphs can split by wrapped lines.
-- Direct page-child tables can split by whole rows.
-- Direct page-child `vbox` containers can split by stacked child widgets.
-- Paragraph splitting defaults to `split="true"`, `orphans="2"`, and
-  `widows="2"`.
-- Table splitting defaults to `split="true"` for `layout="table"` containers.
-- VBox splitting defaults to `split="true"` for `layout="vbox"` containers.
+- Direct page-child paragraphs continue by wrapped lines.
+- Direct page-child tables continue by whole rows.
+- Direct page-child `vbox` containers continue with the next stacked children
+  on each physical page.
+- Direct page-child `flow` containers do not continue across pages. A page with
+  `layout="flow"` can still retry its own direct children.
+- Paragraph continuation uses `orphans="2"` and `widows="2"` by default.
+- Table continuation is available for `layout="table"` containers.
+- VBox continuation is available for `layout="vbox"` containers.
 
 #### Repeated Chrome on Fragment Pages
 
@@ -1541,6 +1545,8 @@ path.
 
 - `hbox` preserves source order for `align="left"` and `align="right"` groups,
   but `hbox` itself does not participate in overflow retries.
+- `flow` pages participate in overflow retries; `flow` containers do not
+  fragment as direct page children.
 
 ---
 

@@ -24,8 +24,6 @@ type StdPage struct {
 	grid                          bool
 	gridStep                      float64
 	gridMajorEvery                int
-	overflow                      bool
-	overflowSet                   bool
 	svgGradientStopOpacityMode    pdf.SVGGradientStopOpacityMode
 	svgGradientStopOpacityModeSet bool
 	svgBlendMode                  pdf.SVGBlendMode
@@ -202,10 +200,6 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 			p.gridMajorEvery = majorEvery
 		}
 	}
-	if overflow, ok := attrs["overflow"]; ok {
-		p.overflowSet = true
-		p.overflow = overflow == "true"
-	}
 	if value, ok := attrs["svg-gradient-stop-opacity-mode"]; ok {
 		if mode, ok := pdf.ParseSVGGradientStopOpacityMode(value); ok {
 			p.svgGradientStopOpacityMode = mode
@@ -340,7 +334,7 @@ func (err *LayoutOverflowError) Error() string {
 		return ""
 	}
 	return fmt.Sprintf(
-		"ltml layout overflow: page %s cannot place pending widget %s (available height %.2fpt, required height %.2fpt); set max-height, reduce content size, or enable compatible splitting",
+		"ltml layout overflow: page %s cannot place pending widget %s (available height %.2fpt, required height %.2fpt); set max-height, reduce content size, or enable compatible continuation",
 		err.PagePath,
 		err.WidgetPath,
 		err.AvailableHeight,
@@ -420,8 +414,8 @@ func (p *StdPage) supportsOverflowRetry() bool {
 }
 
 func (p *StdPage) effectiveOverflow() bool {
-	if p.overflowSet {
-		return p.overflow
+	if p.overflowExplicit {
+		return p.overflowEnabled
 	}
 	return p.supportsOverflowRetry()
 }

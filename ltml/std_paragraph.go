@@ -19,7 +19,8 @@ type StdParagraph struct {
 	richText           *rich_text.RichText
 	textFill           *BrushStyle
 	bullets            []*BulletStyle
-	splitDisabled      bool
+	overflowEnabled    bool
+	overflowExplicit   bool
 	orphans            int
 	widows             int
 	splitLines         []*rich_text.RichText
@@ -199,8 +200,9 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	if bullet, ok := attrs["bullet"]; ok {
 		p.bullets = bulletStylesFor(bullet, p.scope)
 	}
-	if split, ok := attrs["split"]; ok {
-		p.splitDisabled = split == "false"
+	if overflow, ok := attrs["overflow"]; ok {
+		p.overflowExplicit = true
+		p.overflowEnabled = strings.TrimSpace(overflow) == "true"
 	}
 	if orphans, ok := attrs["orphans"]; ok {
 		if value, err := strconv.Atoi(orphans); err == nil {
@@ -238,7 +240,7 @@ func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, start
 }
 
 func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
-	if p.splitDisabled {
+	if !p.overflowAllowed() {
 		return nil, nil
 	}
 	if _, ok := detectLeaderPieces(p.textPieces); ok {
@@ -269,7 +271,14 @@ func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 }
 
 func (p *StdParagraph) SplitEnabled() bool {
-	return !p.splitDisabled
+	return p.overflowAllowed()
+}
+
+func (p *StdParagraph) overflowAllowed() bool {
+	if p.overflowExplicit {
+		return p.overflowEnabled
+	}
+	return true
 }
 
 func (p *StdParagraph) cloneForSplit(lines []*rich_text.RichText, suppressBullet bool, continuationIndent float64) *StdParagraph {

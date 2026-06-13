@@ -152,8 +152,6 @@ func TestLayoutVBox_DirectChildSplitTableUsesOuterOverflowInsteadOfSelfClipping(
 	table.order = TableOrderRows
 	table.cols = 2
 	table.SetWidthPct(100)
-	table.splitEnabled = true
-	table.splitExplicit = true
 	table.headerRows = 1
 	page.AddChild(table)
 
@@ -249,7 +247,6 @@ func TestLayoutVBox_AutoHeightDistributionUsesVisibleFragmentOnly(t *testing.T) 
 func TestStdPage_OverflowNoProgressReturnsLayoutOverflowError(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	first := &flowTestWidget{name: "first", preferredHeight: 20}
@@ -274,7 +271,6 @@ func TestStdPage_OverflowNoProgressReturnsLayoutOverflowError(t *testing.T) {
 func TestStdPage_OverflowRepeatsAlwaysAndAlternatesOddEven(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	var oddPages, evenPages, body1Pages, body2Pages []int
@@ -321,7 +317,6 @@ func TestStdPage_OverflowRepeatsAlwaysAndAlternatesOddEven(t *testing.T) {
 func TestStdPage_OverflowRepeatsNestedAlwaysChrome(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	var headerPages, footerPages, body1Pages, body2Pages []int
@@ -380,7 +375,6 @@ func TestStdPage_OverflowRepeatsNestedAlwaysChrome(t *testing.T) {
 func TestStdPage_RepeatedChromeDoesNotReserveHiddenNestedFirstChild(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	var titlePages, introPages, body1Pages, body2Pages []int
@@ -433,7 +427,6 @@ func TestStdPage_TableOverflowDefersWholeRow(t *testing.T) {
 	page.layout = defaultLayouts["table"].Clone()
 	page.order = TableOrderRows
 	page.cols = 2
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	pages := make([][]int, 6)
@@ -496,10 +489,122 @@ func TestStdPage_VBoxOverflowDefaultsToTrue(t *testing.T) {
 	}
 }
 
+func TestStdPage_DirectChildVBoxOverflowDefaultsToTrue(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.SetWidth(180)
+	page.AddChild(box)
+
+	pages := make([][]int, 3)
+	for i := range pages {
+		row := &flowTestWidget{name: "row", preferredHeight: 50, printedOn: &pages[i]}
+		_ = row.SetContainer(box)
+		box.AddChild(row)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(pages[0], []int{1}) || !slices.Equal(pages[1], []int{1}) || !slices.Equal(pages[2], []int{2}) {
+		t.Fatalf("row pages = %v, want [[1] [1] [2]]", pages)
+	}
+}
+
+func TestStdPage_DirectChildVBoxOverflowFalseDisablesFragmenting(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.SetAttrs(map[string]string{"overflow": "false"})
+	box.SetWidth(180)
+	page.AddChild(box)
+
+	pages := make([][]int, 3)
+	for i := range pages {
+		row := &flowTestWidget{name: "row", preferredHeight: 50, printedOn: &pages[i]}
+		_ = row.SetContainer(box)
+		box.AddChild(row)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 1 {
+		t.Fatalf("page count = %d, want 1", w.pageCount)
+	}
+	for i, rowPages := range pages {
+		if len(rowPages) != 0 {
+			t.Fatalf("row %d pages = %v, want []", i, rowPages)
+		}
+	}
+}
+
+func TestStdPage_DirectChildVBoxInvalidOverflowDisablesFragmenting(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["vbox"].Clone()
+	box.SetAttrs(map[string]string{"overflow": "sometimes"})
+	box.SetWidth(180)
+	page.AddChild(box)
+
+	pages := make([][]int, 3)
+	for i := range pages {
+		row := &flowTestWidget{name: "row", preferredHeight: 50, printedOn: &pages[i]}
+		_ = row.SetContainer(box)
+		box.AddChild(row)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 1 {
+		t.Fatalf("page count = %d, want 1", w.pageCount)
+	}
+	for i, rowPages := range pages {
+		if len(rowPages) != 0 {
+			t.Fatalf("row %d pages = %v, want []", i, rowPages)
+		}
+	}
+}
+
+func TestStdContainer_FlowOverflowDoesNotDefaultToContinuation(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	box := &StdContainer{}
+	_ = box.SetContainer(page)
+	box.layout = defaultLayouts["flow"].Clone()
+	page.AddChild(box)
+
+	if box.SplitEnabled() {
+		t.Fatal("flow container SplitEnabled = true, want false")
+	}
+	if result, err := box.SplitForHeight(80, &labelTestWriter{t: t}); err != nil || result != nil {
+		t.Fatalf("flow container SplitForHeight = %#v, %v; want nil, nil", result, err)
+	}
+}
+
 func TestStdPage_FixedHeightVBoxSplitDistributesAutoHeightPerPage(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	box := &StdContainer{}
@@ -565,7 +670,6 @@ func TestStdPage_FixedHeightVBoxSplitDistributesAutoHeightPerPage(t *testing.T) 
 func TestStdPage_FixedHeightVBoxSplitOnlySharesOnPagesWithAutoChildren(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	box := &StdContainer{}
@@ -616,7 +720,6 @@ func TestStdPage_FixedHeightVBoxSplitOnlySharesOnPagesWithAutoChildren(t *testin
 func TestStdPage_NaturalVBoxSplitLeavesAutoHeightAtPreferredSize(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
-	page.overflow = true
 	doc := newFlowPageDoc(page)
 
 	box := &StdContainer{}
@@ -1037,7 +1140,6 @@ func TestStdContainer_SplitForHeight_VBoxSplitsBodyParagraph(t *testing.T) {
 	para := &StdParagraph{}
 	_ = para.SetContainer(box)
 	para.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
-	para.splitDisabled = false
 	para.bullets = []*BulletStyle{{text: "*", width: 18, font: para.font}}
 	para.AddText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
 	box.AddChild(para)
@@ -1272,8 +1374,6 @@ func TestStdContainer_SplitForHeight_TableRepeatsHeaderAndFooterRows(t *testing.
 	table.order = TableOrderRows
 	table.cols = 2
 	table.SetWidth(180)
-	table.splitEnabled = true
-	table.splitExplicit = true
 	table.headerRows = 1
 	table.footerRows = 1
 	page.AddChild(table)

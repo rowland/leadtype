@@ -361,7 +361,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 	top := ContentTop(container)
 	bottom := top + MaxContentHeight(container)
 	externalSplit := false
-	if table, ok := container.(*StdContainer); ok && table.tableSplitEnabled() {
+	if table, ok := container.(*StdContainer); ok && table.SplitEnabled() {
 		if _, ok := table.Container().(*StdPage); ok {
 			externalSplit = true
 		}

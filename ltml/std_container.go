@@ -15,31 +15,31 @@ import (
 type StdContainer struct {
 	StdWidget
 	Children
-	cols            int
-	dir             Dir
-	dirExplicit     bool
-	layout          *LayoutStyle
-	listBulletIDs   string
-	listPrepared    bool
-	order           TableOrder
-	paragraphStyle  *ParagraphStyle
-	preferredHeight float64
-	preferredWidth  float64
-	rows            int
-	activeChildren  []Widget
-	splitEnabled    bool
-	splitExplicit   bool
-	headerRows      int
-	footerRows      int
-	baseAngle       float64
-	angles          []float64
-	radialSweep     radialSweep
-	centerX         float64
-	centerXSet      bool
-	centerY         float64
-	centerYSet      bool
-	outerRadius     float64
-	innerRadius     float64
+	cols             int
+	dir              Dir
+	dirExplicit      bool
+	layout           *LayoutStyle
+	listBulletIDs    string
+	listPrepared     bool
+	order            TableOrder
+	paragraphStyle   *ParagraphStyle
+	preferredHeight  float64
+	preferredWidth   float64
+	rows             int
+	activeChildren   []Widget
+	overflowEnabled  bool
+	overflowExplicit bool
+	headerRows       int
+	footerRows       int
+	baseAngle        float64
+	angles           []float64
+	radialSweep      radialSweep
+	centerX          float64
+	centerXSet       bool
+	centerY          float64
+	centerYSet       bool
+	outerRadius      float64
+	innerRadius      float64
 }
 
 func (c *StdContainer) Cols() int {
@@ -254,9 +254,9 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	if radius0, ok := attrs["r0"]; ok {
 		c.innerRadius = ParseMeasurement(radius0, c.Units())
 	}
-	if split, ok := attrs["split"]; ok {
-		c.splitExplicit = true
-		c.splitEnabled = split != "false"
+	if overflow, ok := attrs["overflow"]; ok {
+		c.overflowExplicit = true
+		c.overflowEnabled = strings.TrimSpace(overflow) == "true"
 	}
 	if headerRows, ok := attrs["header-rows"]; ok {
 		if value, err := strconv.Atoi(headerRows); err == nil {
@@ -354,7 +354,7 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 	}
 	switch c.LayoutStyle().manager {
 	case "table":
-		if !c.tableSplitEnabled() {
+		if !c.overflowAllowed() {
 			return nil, nil
 		}
 		metrics, err := c.tableSplitMetrics(w)
@@ -400,7 +400,7 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 		tail := c.cloneTableFragment(metrics, tailRows)
 		return &SplitResult{Head: head, Tail: tail}, nil
 	case "vbox":
-		if !c.vboxSplitEnabled() {
+		if !c.overflowAllowed() {
 			return nil, nil
 		}
 		return c.splitVBoxForHeight(avail, w)
@@ -414,27 +414,30 @@ func (c *StdContainer) SplitEnabled() bool {
 		return false
 	}
 	switch c.LayoutStyle().manager {
-	case "table":
-		return c.tableSplitEnabled()
-	case "vbox":
-		return c.vboxSplitEnabled()
+	case "table", "vbox":
+		return c.overflowAllowed()
 	default:
 		return false
 	}
 }
 
-func (c *StdContainer) tableSplitEnabled() bool {
-	if c.splitExplicit {
-		return c.splitEnabled
+func (c *StdContainer) overflowAllowed() bool {
+	if c.overflowExplicit {
+		return c.overflowEnabled
 	}
-	return c.LayoutStyle() != nil && c.LayoutStyle().manager == "table"
+	return containerLayoutContinuesByDefault(c.LayoutStyle())
 }
 
-func (c *StdContainer) vboxSplitEnabled() bool {
-	if c.splitExplicit {
-		return c.splitEnabled
+func containerLayoutContinuesByDefault(style *LayoutStyle) bool {
+	if style == nil {
+		return false
 	}
-	return c.LayoutStyle() != nil && c.LayoutStyle().manager == "vbox"
+	switch style.manager {
+	case "table", "vbox":
+		return true
+	default:
+		return false
+	}
 }
 
 type tableSplitMetrics struct {

@@ -14,7 +14,7 @@
     <footer display="odd">Odd table footer</footer>
     <footer display="even">Even table footer</footer>
 
-    <table order="rows" cols="2" width="100%" split="true" header-rows="1" border="dotted" padding="6pt">
+    <table order="rows" cols="2" width="100%" header-rows="1" border="dotted" padding="6pt">
       <p colspan="2" border="solid" fill="LightYellow" padding="4pt" font.weight="Bold">
         Line items
       </p>

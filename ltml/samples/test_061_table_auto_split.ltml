@@ -12,7 +12,7 @@
       order: rows;
       width: 100%;
       height: auto;
-      split: true;
+      overflow: true;
       header-rows: 1;
       border: frame;
       padding: 8pt;
