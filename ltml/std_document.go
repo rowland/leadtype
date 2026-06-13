@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/profile"
 )
 
 type StdDocument struct {
@@ -29,6 +30,7 @@ type StdDocument struct {
 	canvases                      map[string]*StdCanvas
 	canvasCaptureStack            []string
 	visualCaptureDepth            int
+	renderProfiler                *profile.Profiler
 }
 
 func (d *StdDocument) Font() *FontStyle {
@@ -80,6 +82,23 @@ func (d *StdDocument) SetPendingStart(start int) {
 }
 
 func (d *StdDocument) Print(w Writer) error {
+	clearProfiler := false
+	if d.renderProfiler == nil {
+		if profiler := profilerForWriter(w); profiler != nil {
+			d.renderProfiler = profiler
+			clearProfiler = true
+		}
+	}
+	if clearProfiler {
+		defer func() {
+			d.renderProfiler = nil
+		}()
+	}
+	if d.renderProfiler != nil {
+		setWriterProfiler(w, d.renderProfiler)
+		span := d.renderProfiler.Begin("ltml.document.print")
+		defer span.End()
+	}
 	if err := d.validateCanvasAssets(); err != nil {
 		return err
 	}

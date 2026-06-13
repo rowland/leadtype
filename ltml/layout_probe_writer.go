@@ -5,6 +5,7 @@ import (
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/profile"
 	"github.com/rowland/leadtype/rich_text"
 )
 
@@ -19,6 +20,14 @@ func newLayoutProbeWriter(base Writer) Writer {
 		}
 	}
 	return &layoutProbeWriter{base: base}
+}
+
+func (w *layoutProbeWriter) Profiler() *profile.Profiler {
+	return profilerForWriter(w.base)
+}
+
+func (w *layoutProbeWriter) SetProfiler(profiler *profile.Profiler) {
+	setWriterProfiler(w.base, profiler)
 }
 
 func (w *layoutProbeWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {

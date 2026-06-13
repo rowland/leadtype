@@ -30,6 +30,7 @@ func (dw *DocWriter) EnableTaggedPDF(value bool) {
 func (dw *DocWriter) LayoutProbeWriter() any {
 	probe := newDocWriterWithFontSources(dw.FontSources())
 	probe.SetAssetFS(dw.AssetFS())
+	probe.SetProfiler(dw.Profiler())
 	if dw.TaggedPDFEnabled() {
 		probe.EnableTaggedPDF(true)
 	}

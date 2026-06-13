@@ -30,6 +30,10 @@ func (ls *LayoutStyle) HPadding() float64 {
 
 func (ls *LayoutStyle) Layout(c Container, w Writer) {
 	// fmt.Println("In Layout")
+	if profiler := profilerForContainer(w, c); profiler != nil {
+		span := profiler.Begin("ltml.layout." + ls.manager)
+		defer span.End()
+	}
 	f := LayoutManagerFor(ls.manager)
 	f(c, ls, w)
 }

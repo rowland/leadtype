@@ -19,6 +19,7 @@ import (
 	"github.com/rowland/leadtype/internal/overlayfs"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 	"github.com/rowland/leadtype/pdf"
+	"github.com/rowland/leadtype/profile"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
@@ -105,6 +106,38 @@ func TestParse(t *testing.T) {
 			t.Fatalf("body = %q, want %q", got, want)
 		}
 	})
+}
+
+func TestProfilerRecordsParseAndRenderPhases(t *testing.T) {
+	profiler := profile.New()
+	doc, err := Parse([]byte(`<ltml><page><p>Hello, World!</p></page></ltml>`), WithProfiler(profiler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := ltpdf.NewDocWriter()
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+
+	labels := map[string]bool{}
+	for _, entry := range profiler.Entries() {
+		labels[entry.Label] = true
+	}
+	for _, want := range []string{
+		"ltml.parse",
+		"ltml.parse.pseudo_rules",
+		"ltml.doc.print",
+		"ltml.document.print",
+		"ltml.render_pass.preflight",
+		"ltml.render_pass.final",
+		"ltml.layout.vbox",
+		"ltml.widget.print.StdParagraph",
+		"ltml.widget.content.StdParagraph",
+	} {
+		if !labels[want] {
+			t.Fatalf("profile labels = %#v, missing %q", labels, want)
+		}
+	}
 }
 
 func sampleFile(filename string) string {

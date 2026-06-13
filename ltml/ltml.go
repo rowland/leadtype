@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/rowland/leadtype/profile"
 )
 
 type Doc struct {
@@ -23,6 +25,7 @@ type Doc struct {
 	assetFS      fs.FS
 	sourceDir    string
 	assetSources *assetSourceManager
+	profiler     *profile.Profiler
 }
 
 type ParseOption func(*Doc)
@@ -30,6 +33,12 @@ type ParseOption func(*Doc)
 func WithAssetFS(assetFS fs.FS) ParseOption {
 	return func(doc *Doc) {
 		doc.SetAssetFS(assetFS)
+	}
+}
+
+func WithProfiler(profiler *profile.Profiler) ParseOption {
+	return func(doc *Doc) {
+		doc.profiler = profiler
 	}
 }
 
@@ -65,6 +74,9 @@ func (doc *Doc) parseFile(filename string) error {
 }
 
 func (doc *Doc) parseReader(r io.Reader) error {
+	span := doc.profiler.Begin("ltml.parse")
+	defer span.End()
+
 	dec := xml.NewDecoder(r)
 	dec.DefaultSpace = DefaultSpace
 
@@ -108,7 +120,11 @@ func (doc *Doc) parseReader(r io.Reader) error {
 			return doc.parseErr
 		}
 	}
-	doc.applyPseudoRules()
+	{
+		span := doc.profiler.Begin("ltml.parse.pseudo_rules")
+		doc.applyPseudoRules()
+		span.End()
+	}
 	return nil
 }
 
@@ -131,6 +147,19 @@ func (doc *Doc) Print(w Writer) (err error) {
 	if doc.root == nil {
 		return nil
 	}
+	profiler := doc.profiler
+	if profiler == nil {
+		profiler = profilerForWriter(w)
+	}
+	if profiler != nil {
+		doc.root.renderProfiler = profiler
+		setWriterProfiler(w, profiler)
+	}
+	span := profiler.Begin("ltml.doc.print")
+	defer span.End()
+	defer func() {
+		doc.root.renderProfiler = nil
+	}()
 	if doc.assetFS != nil {
 		if assetSetter, ok := any(w).(interface{ SetAssetFS(fs.FS) }); ok {
 			assetSetter.SetAssetFS(doc.assetFS)

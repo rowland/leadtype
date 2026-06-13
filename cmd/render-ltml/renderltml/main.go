@@ -30,6 +30,7 @@ import (
 	"github.com/rowland/leadtype/internal/overlayfs"
 	"github.com/rowland/leadtype/ltml"
 	"github.com/rowland/leadtype/ltml/ltpdf"
+	"github.com/rowland/leadtype/profile"
 )
 
 const defaultPollInterval = 500 * time.Millisecond
@@ -56,6 +57,7 @@ type runConfig struct {
 	extraFiles   []string
 	watch        bool
 	batch        bool
+	profile      bool
 	ua           bool
 	pollInterval time.Duration
 	stderr       io.Writer
@@ -137,6 +139,7 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	fs.BoolVar(&cfg.watch, "w", false, "watch inputs and assets for changes and rerender continuously (shorthand)")
 	fs.BoolVar(&cfg.batch, "batch", false, "render multiple input files")
 	fs.BoolVar(&cfg.batch, "b", false, "render multiple input files (shorthand)")
+	fs.BoolVar(&cfg.profile, "profile", false, "print local render profiling summary")
 	fs.BoolVar(&cfg.ua, "ua", cfg.ua, "default to tagged PDF output")
 	fs.Var(&extraFiles, "extra", "additional asset `file` (may be repeated)")
 	fs.Var(&extraFiles, "e", "additional asset `file` (shorthand)")
@@ -191,6 +194,9 @@ func ltmlUADefaultFromEnv() (bool, error) {
 }
 
 func validateArgs(cfg runConfig, inputFiles []string) error {
+	if cfg.profile && cfg.submitURL != "" {
+		return fmt.Errorf("-profile is only supported for local renders")
+	}
 	if cfg.batch {
 		if len(inputFiles) == 0 {
 			return fmt.Errorf("batch mode requires at least one input file")
@@ -422,7 +428,17 @@ func renderJobToFile(cfg runConfig, job renderJob) (err error) {
 	if cfg.submitURL != "" {
 		err = submitRemote(job.inputPath, cfg.assetsDir, cfg.submitURL, cfg.extraFiles, out)
 	} else {
-		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.ua, cfg.extraFiles, out)
+		var profiler *profile.Profiler
+		if cfg.profile {
+			profiler = profile.New()
+		}
+		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.ua, cfg.extraFiles, out, profiler)
+		if cfg.profile {
+			cfg.logf("profile for %s", displayPath(job.inputPath))
+			if writeErr := profiler.WriteText(cfg.stderr); writeErr != nil && err == nil {
+				err = writeErr
+			}
+		}
 	}
 	if err != nil {
 		return err
@@ -657,7 +673,7 @@ func dirToken(root string) (string, error) {
 	return b.String(), nil
 }
 
-func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []string, out io.Writer) error {
+func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []string, out io.Writer, profiler *profile.Profiler) error {
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
@@ -670,6 +686,9 @@ func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []stri
 	if assetFS != nil {
 		opts = append(opts, ltml.WithAssetFS(assetFS))
 	}
+	if profiler != nil {
+		opts = append(opts, ltml.WithProfiler(profiler))
+	}
 	doc, err := ltml.ParseFile(absInput, opts...)
 	if err != nil {
 		return fmt.Errorf("parsing %s: %w", displayPath(absInput), err)
@@ -679,10 +698,13 @@ func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []stri
 	if fontDir != "" {
 		fontDirs = []string{fontDir}
 	}
+	span := profiler.Begin("render_ltml.font_sources")
 	w, err := ltpdf.NewDocWriterWithFontDirs(fontDirs)
+	span.End()
 	if err != nil {
 		return fmt.Errorf("initializing font sources: %w", err)
 	}
+	w.SetProfiler(profiler)
 	if ua {
 		w.EnableTaggedPDF(true)
 	}

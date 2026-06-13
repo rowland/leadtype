@@ -238,10 +238,16 @@ func (d *StdDocument) describeLinking() (*documentLinkSummary, error) {
 }
 
 func (d *StdDocument) printWithIndexes(w Writer) error {
+	span := d.renderProfiler.Begin("ltml.index.describe_links")
 	summary, err := d.describeLinking()
+	span.End()
 	if err != nil {
 		return err
 	}
+	return d.printWithIndexSummary(w, summary)
+}
+
+func (d *StdDocument) printWithIndexSummary(w Writer, summary *documentLinkSummary) error {
 	probe := newLayoutProbeWriter(w)
 	// The first probe pass discovers destinations and index entries. If indexes
 	// exist, later probe passes keep reflowing until the resolved page numbers
@@ -273,6 +279,14 @@ func (d *StdDocument) printWithIndexes(w Writer) error {
 }
 
 func (d *StdDocument) renderPass(w Writer, summary *documentLinkSummary, snapshot *documentIndexSnapshot, preflight bool) (*documentIndexSnapshot, error) {
+	if d.renderProfiler != nil {
+		label := "ltml.render_pass.final"
+		if preflight {
+			label = "ltml.render_pass.preflight"
+		}
+		span := d.renderProfiler.Begin(label)
+		defer span.End()
+	}
 	d.resetRenderState()
 	ctx := newDocumentRenderContext(snapshot, preflight)
 	d.renderContext = ctx

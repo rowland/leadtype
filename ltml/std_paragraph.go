@@ -148,6 +148,9 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 }
 
 func (p *StdParagraph) PreferredHeight(w Writer) float64 {
+	if profiler := profilerForWidget(w, p); profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "preferred_height", p).End()
+	}
 	if p.height != 0 {
 		return float64(p.height)
 	}
@@ -162,6 +165,9 @@ func (p *StdParagraph) AccessibilityText() string {
 }
 
 func (p *StdParagraph) PreferredWidth(w Writer) float64 {
+	if profiler := profilerForWidget(w, p); profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "preferred_width", p).End()
+	}
 	if p.width != 0 {
 		return float64(p.width)
 	}
@@ -240,6 +246,9 @@ func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, start
 }
 
 func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
+	if profiler := profilerForWidget(w, p); profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "split", p).End()
+	}
 	if !p.overflowAllowed() {
 		return nil, nil
 	}

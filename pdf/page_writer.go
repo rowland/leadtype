@@ -156,6 +156,9 @@ func (pw *PageWriter) initContent(dw *DocWriter, options options.Options, pageWi
 }
 
 func (pw *PageWriter) AddFont(family string, options options.Options) ([]*font.Font, error) {
+	if pw.dw.profiler != nil {
+		defer pw.dw.profiler.Begin("pdf.font.select").End()
+	}
 	if font, err := font.New(family, options, pw.dw.fontSources); err != nil {
 		return nil, err
 	} else {

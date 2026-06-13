@@ -214,8 +214,17 @@ func NonContentWidth(widget Widget) float64 {
 }
 
 func Print(widget Widget, writer Writer) error {
-	if err := widget.BeforePrint(writer); err != nil {
-		return err
+	profiler := profilerForWidget(writer, widget)
+	if profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "print", widget).End()
+	}
+	{
+		span := beginWidgetProfileSpan(profiler, "before", widget)
+		err := widget.BeforePrint(writer)
+		span.End()
+		if err != nil {
+			return err
+		}
 	}
 	if err := registerPrintedWidgetMetadata(widget, writer); err != nil {
 		return err
@@ -226,15 +235,26 @@ func Print(widget Widget, writer Writer) error {
 	}
 	render := func() error {
 		if err := withAccessibilityArtifact(writer, func() error {
-			return widget.PaintBackground(writer)
+			span := beginWidgetProfileSpan(profiler, "background", widget)
+			err := widget.PaintBackground(writer)
+			span.End()
+			return err
 		}); err != nil {
 			return err
 		}
-		if err := widget.DrawContent(writer); err != nil {
-			return err
+		{
+			span := beginWidgetProfileSpan(profiler, "content", widget)
+			err := widget.DrawContent(writer)
+			span.End()
+			if err != nil {
+				return err
+			}
 		}
 		if err := withAccessibilityArtifact(writer, func() error {
-			return widget.DrawBorder(writer)
+			span := beginWidgetProfileSpan(profiler, "border", widget)
+			err := widget.DrawBorder(writer)
+			span.End()
+			return err
 		}); err != nil {
 			return err
 		}

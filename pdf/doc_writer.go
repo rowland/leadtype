@@ -18,6 +18,7 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/profile"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/svg"
 )
@@ -55,6 +56,7 @@ type DocWriter struct {
 	destinations          map[string]namedDestination
 	pendingTargetLinks    []*linkAnnotation
 	writeToCleanups       []func()
+	profiler              *profile.Profiler
 }
 
 type cachedImage struct {
@@ -211,6 +213,14 @@ func (dw *DocWriter) RegisterWriteToCleanup(fn func()) {
 		return
 	}
 	dw.writeToCleanups = append(dw.writeToCleanups, fn)
+}
+
+func (dw *DocWriter) SetProfiler(profiler *profile.Profiler) {
+	dw.profiler = profiler
+}
+
+func (dw *DocWriter) Profiler() *profile.Profiler {
+	return dw.profiler
 }
 
 func (dw *DocWriter) runWriteToCleanups() {
@@ -436,6 +446,7 @@ func subsetTag(psName string, glyphIDs []uint16) string {
 // subset font streams for every Type0 composite font that was used during
 // rendering.
 func (dw *DocWriter) flushUnicodeFonts() {
+	defer dw.profiler.Begin("pdf.write.flush_unicode_fonts").End()
 	psNames := make([]string, 0, len(dw.glyphRecorders))
 	for psName := range dw.glyphRecorders {
 		psNames = append(psNames, psName)
@@ -489,7 +500,10 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		}
 
 		// Embed a font subset in the descriptor.
-		if subsetData, err := f.SubsetBytes(glyphIDs); err == nil {
+		span := dw.profiler.Begin("pdf.font.subset")
+		subsetData, err := f.SubsetBytes(glyphIDs)
+		span.End()
+		if err == nil {
 			fontStream := newStream(dw.nextSeq(), 0, subsetData)
 			fontStream.setLength1(len(subsetData))
 			if f.OutlineKind() == "CFF" {
@@ -802,16 +816,25 @@ func (dw *DocWriter) PrintWithOptions(text string, options options.Options) (err
 }
 
 func (dw *DocWriter) ImageDimensions(data []byte) (width, height int, err error) {
+	if dw.profiler != nil {
+		defer dw.profiler.Begin("pdf.image.dimensions").End()
+	}
 	return imageDimensions(data)
 }
 
 func (dw *DocWriter) SVGDimensions(data []byte) (width, height int, err error) {
+	if dw.profiler != nil {
+		defer dw.profiler.Begin("pdf.svg.dimensions").End()
+	}
 	return svgDimensions(data)
 }
 
 func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	if cached, ok := dw.dimensionCache[filename]; ok {
 		return cached.width, cached.height, cached.err
+	}
+	if dw.profiler != nil {
+		defer dw.profiler.Begin("pdf.image.dimensions_file").End()
 	}
 	file, err := dw.openImageFile(filename)
 	if err != nil {
@@ -831,6 +854,9 @@ func (dw *DocWriter) ImageDimensionsFromFile(filename string) (width, height int
 func (dw *DocWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
 	if cached, ok := dw.dimensionCache[filename]; ok {
 		return cached.width, cached.height, cached.err
+	}
+	if dw.profiler != nil {
+		defer dw.profiler.Begin("pdf.svg.dimensions_file").End()
 	}
 	file, err := dw.openImageFile(filename)
 	if err != nil {
@@ -915,6 +941,9 @@ func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, erro
 	if cached, ok := dw.images[key]; ok {
 		return cached.image, cached.name, nil
 	}
+	if dw.profiler != nil {
+		defer dw.profiler.Begin("pdf.image.load").End()
+	}
 	decoded, err := decodeImage(data)
 	if err != nil {
 		return nil, "", err
@@ -960,6 +989,9 @@ func (dw *DocWriter) loadImage(data []byte, key string) (*pdfImage, string, erro
 func (dw *DocWriter) loadSVGForm(data []byte, key string, renderOptions options.Options) (*cachedSVGForm, error) {
 	if cached, ok := dw.svgForms[key]; ok {
 		return cached, nil
+	}
+	if dw.profiler != nil {
+		defer dw.profiler.Begin("pdf.svg.load_form").End()
 	}
 
 	doc, warnings, err := svg.Parse(data)
@@ -1372,19 +1404,33 @@ func (dw *DocWriter) Write(text []byte) (n int, err error) {
 
 // WriteTo implements io.WriterTo.
 func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
+	defer dw.profiler.Begin("pdf.write").End()
 	defer dw.runWriteToCleanups()
 	if len(dw.pages) == 0 {
 		dw.NewPage()
 	}
-	for _, pw := range dw.pages {
-		pw.close()
+	{
+		span := dw.profiler.Begin("pdf.write.close_pages")
+		for _, pw := range dw.pages {
+			pw.close()
+		}
+		span.End()
 	}
 	dw.curPage = nil
-	if err := dw.resolveTargetLinks(); err != nil {
-		return 0, err
+	{
+		span := dw.profiler.Begin("pdf.write.resolve_links")
+		err := dw.resolveTargetLinks()
+		span.End()
+		if err != nil {
+			return 0, err
+		}
 	}
 	dw.flushUnicodeFonts()
-	dw.file.write(wr)
+	{
+		span := dw.profiler.Begin("pdf.write.file")
+		dw.file.write(wr)
+		span.End()
+	}
 	return 0, nil
 }
 

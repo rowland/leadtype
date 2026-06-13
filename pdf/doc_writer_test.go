@@ -17,6 +17,7 @@ import (
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/options"
+	"github.com/rowland/leadtype/profile"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/ttf_fonts"
 )
@@ -99,6 +100,37 @@ func TestNewDocWriter(t *testing.T) {
 	check(t, dw.pages == nil, "DocWriter pages should be nil")
 	check(t, dw.curPage == nil, "DocWriter curPage should be nil")
 	check(t, !dw.inPage(), "DocWriter should not be in page yet")
+}
+
+func TestDocWriter_ProfilerRecordsWritePhases(t *testing.T) {
+	var buf bytes.Buffer
+	profiler := profile.New()
+	dw := NewDocWriter()
+	dw.SetProfiler(profiler)
+	if got := dw.Profiler(); got != profiler {
+		t.Fatal("Profiler() did not return attached profiler")
+	}
+	dw.NewPage()
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+
+	labels := map[string]bool{}
+	for _, entry := range profiler.Entries() {
+		labels[entry.Label] = true
+	}
+	for _, want := range []string{"pdf.write", "pdf.write.close_pages", "pdf.write.resolve_links", "pdf.write.flush_unicode_fonts", "pdf.write.file"} {
+		if !labels[want] {
+			t.Fatalf("profile labels = %#v, missing %q", labels, want)
+		}
+	}
+}
+
+func TestDocWriter_ProfilerDefaultsToNil(t *testing.T) {
+	dw := NewDocWriter()
+	if dw.Profiler() != nil {
+		t.Fatal("new DocWriter profiler is not nil")
+	}
 }
 
 func TestDocWriter_AddFontSource(t *testing.T) {

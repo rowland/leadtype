@@ -105,6 +105,9 @@ func (c *StdContainer) Widgets() []Widget {
 }
 
 func (c *StdContainer) PreferredHeight(w Writer) float64 {
+	if profiler := profilerForWidget(w, c); profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "preferred_height", c).End()
+	}
 	if c.HeightIsSet() {
 		return c.Height()
 	}
@@ -129,6 +132,9 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 }
 
 func (c *StdContainer) PreferredWidth(w Writer) float64 {
+	if profiler := profilerForWidget(w, c); profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "preferred_width", c).End()
+	}
 	if c.WidthIsSet() {
 		return c.Width()
 	}
@@ -348,6 +354,9 @@ func (c *StdContainer) String() string {
 var errTableSplitUnsupportedRowSpan = errors.New("table splitting does not support rowspan > 1")
 
 func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
+	if profiler := profilerForWidget(w, c); profiler != nil {
+		defer beginWidgetProfileSpan(profiler, "split", c).End()
+	}
 	c.prepareForLayout(w)
 	if c.LayoutStyle() == nil {
 		return nil, nil

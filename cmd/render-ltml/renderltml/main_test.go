@@ -133,7 +133,7 @@ func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, assetsDir, "", false, nil, &out); err != nil {
+	if err := renderLocal(inputFile, assetsDir, "", false, nil, &out, nil); err != nil {
 		t.Fatal(err)
 	}
 	if out.Len() == 0 {
@@ -159,7 +159,7 @@ func TestRenderLocal_UADefaultEnablesTaggedPDF(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, "", "", true, nil, &out); err != nil {
+	if err := renderLocal(inputFile, "", "", true, nil, &out, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -607,6 +607,37 @@ func TestRun_LocalModeDefaultOutput(t *testing.T) {
 	}
 	if got := log.String(); !strings.Contains(got, "rendering ") || !strings.Contains(got, "wrote ") {
 		t.Fatalf("log output = %q, want render start and completion messages", got)
+	}
+}
+
+func TestRun_LocalModeProfileWritesSummary(t *testing.T) {
+	root := t.TempDir()
+	inputFile := filepath.Join(root, "report.ltml")
+	outputFile := filepath.Join(root, "report.pdf")
+	if err := os.WriteFile(inputFile, []byte(`<ltml><page><p>Hello</p></page></ltml>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var log bytes.Buffer
+	code := Main(context.Background(), []string{"-profile", "-o", outputFile, inputFile}, &log, nil)
+	if code != 0 {
+		t.Fatalf("exit code = %d, stderr = %s", code, log.String())
+	}
+	got := log.String()
+	for _, want := range []string{"profile for", "leadtype profile:", "ltml.parse", "ltml.render_pass.final", "pdf.write"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("profile output = %q, missing %q", got, want)
+		}
+	}
+}
+
+func TestValidateArgs_ProfileSubmitRejected(t *testing.T) {
+	err := validateArgs(runConfig{profile: true, submitURL: "http://example.test/render"}, []string{"input.ltml"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "local renders") {
+		t.Fatalf("error = %v", err)
 	}
 }
 
