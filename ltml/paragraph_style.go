@@ -14,6 +14,12 @@ type ParagraphStyle struct {
 	bullets []*BulletStyle
 }
 
+// HasParagraphStyle provides the effective paragraph style used as the base
+// for attribute overrides.
+type HasParagraphStyle interface {
+	ParagraphStyle() *ParagraphStyle
+}
+
 func (ps *ParagraphStyle) Apply(w Writer) {
 	ps.TextStyle.Apply(w)
 	// fmt.Printf("Applying %s\n", ps)
@@ -72,6 +78,25 @@ func ParagraphStyleFor(id string, scope HasScope) *ParagraphStyle {
 		return ps
 	}
 	return nil
+}
+
+// SetParagraphStyle sets a paragraph style field from attrName and any
+// prefixed overrides in attrs. Overrides are applied to a clone of owner's
+// effective paragraph style so named or inherited styles are not mutated.
+//
+// A third-party widget can use this from SetAttrs with its own style field:
+//
+//	SetParagraphStyle(&w.paragraphStyle, "style", attrs, w.Scope(), w)
+func SetParagraphStyle(field **ParagraphStyle, attrName string, attrs map[string]string, scope HasScope, owner HasParagraphStyle) {
+	if id, ok := attrs[attrName]; ok {
+		*field = ParagraphStyleFor(id, scope)
+	}
+	prefix := attrName + "."
+	if !MapHasKeyPrefix(attrs, prefix) {
+		return
+	}
+	*field = owner.ParagraphStyle().Clone()
+	(*field).SetAttrs(filterMapAttrs(prefix, attrs))
 }
 
 var defaultParagraphStyle = &ParagraphStyle{}

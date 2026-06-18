@@ -186,13 +186,7 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	SetBrushStyle(&p.textFill, "text-fill", attrs, p.scope, p.Units())
 	p.orphans = 2
 	p.widows = 2
-	if style, ok := attrs["style"]; ok {
-		p.paragraphStyle = ParagraphStyleFor(style, p.scope)
-	}
-	if MapHasKeyPrefix(attrs, "style.") {
-		p.paragraphStyle = p.ParagraphStyle().Clone()
-		p.paragraphStyle.SetAttrs(filterMapAttrs("style.", attrs))
-	}
+	SetParagraphStyle(&p.paragraphStyle, "style", attrs, p.scope, p)
 	if bullet, ok := attrs["bullet"]; ok {
 		p.bullets = bulletStylesFor(bullet, p.scope)
 	}

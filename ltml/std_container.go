@@ -274,13 +274,7 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 			c.footerRows = value
 		}
 	}
-	if ps, ok := attrs["paragraph-style"]; ok {
-		c.paragraphStyle = ParagraphStyleFor(ps, c.scope)
-	}
-	if MapHasKeyPrefix(attrs, "paragraph-style.") {
-		c.paragraphStyle = c.ParagraphStyle().Clone()
-		c.paragraphStyle.SetAttrs(filterMapAttrs("paragraph-style.", attrs))
-	}
+	SetParagraphStyle(&c.paragraphStyle, "paragraph-style", attrs, c.scope, c)
 }
 
 func (c *StdContainer) BaseAngle() float64 {
