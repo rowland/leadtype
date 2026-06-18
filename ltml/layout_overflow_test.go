@@ -314,6 +314,35 @@ func TestStdPage_OverflowRepeatsAlwaysAndAlternatesOddEven(t *testing.T) {
 	}
 }
 
+func TestStdPage_OverflowPageNoStartAppliesOnlyToFirstPhysicalPage(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page layout="vbox">
+    <rect height="400pt" />
+    <rect height="400pt" />
+    <div display="always" align="bottom"><label>Page <pageno start="21" /></label></div>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	pageTexts := map[int][]string{}
+	for i, rt := range w.printed {
+		pageTexts[w.printedPages[i]] = append(pageTexts[w.printedPages[i]], rt.String())
+	}
+	if got := pageTexts[1]; !slices.Contains(got, "Page 21") {
+		t.Fatalf("page 1 text = %q, want Page 21", got)
+	}
+	if got := pageTexts[2]; !slices.Contains(got, "Page 22") {
+		t.Fatalf("page 2 text = %q, want Page 22", got)
+	}
+}
+
 func TestStdPage_OverflowRepeatsNestedAlwaysChrome(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()

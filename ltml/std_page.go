@@ -430,8 +430,10 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 		savedDocPageNo = doc.documentPageNo
 		savedPhysicalPageNo = doc.physicalPageNo
 		savedPendingStart = doc.pendingStart
-		if start, ok := p.firstPageNoStartForRender(); ok {
-			doc.SetPendingStart(start)
+		if p.flowPageIndex == 1 {
+			if start, ok := p.firstPageNoStartForRender(); ok {
+				doc.SetPendingStart(start)
+			}
 		}
 		if doc.pendingStart != nil {
 			doc.SetCurrentPageStart(*doc.pendingStart)
