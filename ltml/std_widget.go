@@ -271,17 +271,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.selfAlign = SelfAlignEnd
 		}
 	}
-	if border, ok := attrs["border"]; ok {
-		widget.border = PenStyleFor(border, widget.scope)
-	}
-	if MapHasKeyPrefix(attrs, "border.") {
-		if widget.border == nil {
-			widget.border = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
-		} else {
-			widget.border = widget.border.Clone()
-		}
-		widget.border.SetAttrs(addUnits(filterMapAttrs("border.", attrs), widget.Units()))
-	}
+	SetPenStyle(&widget.border, "border", attrs, widget.scope, widget.Units())
 	for i, side := range sideNames {
 		if border, ok := attrs["border-"+side]; ok {
 			widget.borders[i] = PenStyleFor(border, widget.scope)

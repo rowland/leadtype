@@ -6,6 +6,85 @@ import (
 	"github.com/rowland/leadtype/pdf"
 )
 
+func TestSetPenStyleAssignsNamedStyle(t *testing.T) {
+	scope := &Scope{}
+	base := &PenStyle{id: "accent", color: NamedColor("Gold"), pattern: "dashed", cap: "round_cap"}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+
+	var field *PenStyle
+	SetPenStyle(&field, "border", map[string]string{"border": "accent"}, scope, "pt")
+
+	if field != base {
+		t.Fatalf("pen = %p, want named style %p", field, base)
+	}
+}
+
+func TestSetPenStyleClonesNamedStyleBeforeOverrides(t *testing.T) {
+	scope := &Scope{}
+	base := &PenStyle{id: "accent", color: NamedColor("Gold"), pattern: "dashed", cap: "round_cap"}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+
+	var field *PenStyle
+	SetPenStyle(&field, "border", map[string]string{
+		"border":       "accent",
+		"border.color": "Blue",
+	}, scope, "pt")
+
+	if field == base {
+		t.Fatal("pen reused named style, want clone")
+	}
+	if field.color != NamedColor("Blue") {
+		t.Fatalf("pen color = %v, want Blue", field.color)
+	}
+	if base.color != NamedColor("Gold") {
+		t.Fatalf("named pen color = %v, want unchanged Gold", base.color)
+	}
+}
+
+func TestSetPenStyleCreatesDefaultPenForArbitraryAttribute(t *testing.T) {
+	var field *PenStyle
+	SetPenStyle(&field, "stroke", map[string]string{
+		"stroke.width": "2",
+	}, nil, "mm")
+
+	if field == nil {
+		t.Fatal("pen is nil, want override-created pen")
+	}
+	if field.pattern != defaultPenPattern || field.cap != defaultPenCap {
+		t.Fatalf("pen defaults = pattern %q cap %q", field.pattern, field.cap)
+	}
+	if got, want := field.width, FromUnits(2, "mm"); got != want {
+		t.Fatalf("pen width = %v, want %v", got, want)
+	}
+}
+
+func TestSetPenStylePrefixedUnitsOverrideWidgetUnits(t *testing.T) {
+	var field *PenStyle
+	SetPenStyle(&field, "border", map[string]string{
+		"border.units": "cm",
+		"border.width": "2",
+	}, nil, "mm")
+
+	if got, want := field.width, FromUnits(2, "cm"); got != want {
+		t.Fatalf("pen width = %v, want %v", got, want)
+	}
+}
+
+func TestSetPenStyleLeavesFieldUnchangedWithoutMatchingAttrs(t *testing.T) {
+	base := &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+	field := base
+
+	SetPenStyle(&field, "border", map[string]string{"stroke": "Blue"}, nil, "pt")
+
+	if field != base {
+		t.Fatalf("pen = %p, want unchanged %p", field, base)
+	}
+}
+
 func TestPenStyleSetAttrsLinearGradient(t *testing.T) {
 	var ps PenStyle
 	ps.SetAttrs(map[string]string{

@@ -220,6 +220,29 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 	return ps
 }
 
+// SetPenStyle sets a pen style field from attrName and any prefixed overrides
+// in attrs. Overrides are applied to a clone so a style resolved from scope is
+// not mutated.
+//
+// A third-party widget can use this from SetAttrs with its own pen field:
+//
+//	SetPenStyle(&w.outline, "outline", attrs, w.Scope(), w.Units())
+func SetPenStyle(field **PenStyle, attrName string, attrs map[string]string, scope HasScope, units Units) {
+	if id, ok := attrs[attrName]; ok {
+		*field = PenStyleFor(id, scope)
+	}
+	prefix := attrName + "."
+	if !MapHasKeyPrefix(attrs, prefix) {
+		return
+	}
+	if *field == nil {
+		*field = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+	} else {
+		*field = (*field).Clone()
+	}
+	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
+}
+
 func (ps *PenStyle) ensureLinearGradient() *pdf.LinearGradient {
 	if ps.linearGradient == nil {
 		ps.linearGradient = &pdf.LinearGradient{}
