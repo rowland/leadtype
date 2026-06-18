@@ -300,17 +300,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.borders[i].SetAttrs(addUnits(filterMapAttrs(prefix, attrs), widget.Units()))
 		}
 	}
-	if fill, ok := attrs["fill"]; ok {
-		widget.fill = BrushStyleFor(fill, widget.scope)
-	}
-	if MapHasKeyPrefix(attrs, "fill.") {
-		if widget.fill == nil {
-			widget.fill = &BrushStyle{}
-		} else {
-			widget.fill = widget.fill.Clone()
-		}
-		widget.fill.SetAttrs(addUnits(filterMapAttrs("fill.", attrs), widget.Units()))
-	}
+	SetBrushStyle(&widget.fill, "fill", attrs, widget.scope, widget.Units())
 	if font, ok := attrs["font"]; ok {
 		widget.font = FontStyleFor(font, widget.scope)
 	}

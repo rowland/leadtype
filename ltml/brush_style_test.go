@@ -2,6 +2,86 @@ package ltml
 
 import "testing"
 
+func TestSetBrushStyleAssignsNamedStyle(t *testing.T) {
+	scope := &Scope{}
+	base := &BrushStyle{id: "accent", color: NamedColor("Gold")}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+
+	var field *BrushStyle
+	SetBrushStyle(&field, "text-fill", map[string]string{
+		"text-fill": "accent",
+	}, scope, "pt")
+
+	if field != base {
+		t.Fatalf("field = %p, want named style %p", field, base)
+	}
+}
+
+func TestSetBrushStyleClonesNamedStyleBeforeOverrides(t *testing.T) {
+	scope := &Scope{}
+	base := &BrushStyle{id: "accent", color: NamedColor("Gold")}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+
+	var field *BrushStyle
+	SetBrushStyle(&field, "text-fill", map[string]string{
+		"text-fill":       "accent",
+		"text-fill.color": "Blue",
+	}, scope, "pt")
+
+	if field == base {
+		t.Fatal("field reused named style, want clone")
+	}
+	if field.color != NamedColor("Blue") {
+		t.Fatalf("field color = %v, want Blue", field.color)
+	}
+	if base.color != NamedColor("Gold") {
+		t.Fatalf("named style color = %v, want unchanged Gold", base.color)
+	}
+}
+
+func TestSetBrushStyleCreatesStyleFromOverridesForArbitraryAttribute(t *testing.T) {
+	var field *BrushStyle
+	SetBrushStyle(&field, "fill", map[string]string{
+		"fill.kind": "linear-gradient",
+		"fill.x0":   "2",
+	}, nil, "mm")
+
+	if field == nil || field.linearGradient == nil {
+		t.Fatal("field has no linear gradient, want override-created brush")
+	}
+	if got, want := field.linearGradient.X0, FromUnits(2, "mm"); got != want {
+		t.Fatalf("x0 = %v, want %v", got, want)
+	}
+}
+
+func TestSetBrushStylePrefixedUnitsOverrideWidgetUnits(t *testing.T) {
+	var field *BrushStyle
+	SetBrushStyle(&field, "text-fill", map[string]string{
+		"text-fill.kind":  "linear-gradient",
+		"text-fill.units": "cm",
+		"text-fill.x0":    "2",
+	}, nil, "mm")
+
+	if got, want := field.linearGradient.X0, FromUnits(2, "cm"); got != want {
+		t.Fatalf("x0 = %v, want %v", got, want)
+	}
+}
+
+func TestSetBrushStyleLeavesFieldUnchangedWithoutMatchingAttrs(t *testing.T) {
+	base := &BrushStyle{color: NamedColor("Gold")}
+	field := base
+
+	SetBrushStyle(&field, "text-fill", map[string]string{"fill": "Blue"}, nil, "pt")
+
+	if field != base {
+		t.Fatalf("field = %p, want unchanged %p", field, base)
+	}
+}
+
 func TestBrushStyleSetAttrsSolidDefaults(t *testing.T) {
 	var bs BrushStyle
 	bs.SetAttrs(map[string]string{

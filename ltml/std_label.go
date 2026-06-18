@@ -144,17 +144,7 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
 	l.StdContainer.SetAttrs(attrs)
-	if fill, ok := attrs["text-fill"]; ok {
-		l.textFill = BrushStyleFor(fill, l.scope)
-	}
-	if MapHasKeyPrefix(attrs, "text-fill.") {
-		if l.textFill == nil {
-			l.textFill = &BrushStyle{}
-		} else {
-			l.textFill = l.textFill.Clone()
-		}
-		l.textFill.SetAttrs(addUnits(filterMapAttrs("text-fill.", attrs), l.Units()))
-	}
+	SetBrushStyle(&l.textFill, "text-fill", attrs, l.scope, l.Units())
 	l.shrinkToFit = attrs["fit"] == "shrink"
 	if angle, ok := attrs["angle"]; ok {
 		l.angle, _ = strconv.ParseFloat(angle, 64)

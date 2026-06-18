@@ -255,6 +255,29 @@ func BrushStyleFor(id string, scope HasScope) *BrushStyle {
 	return bs
 }
 
+// SetBrushStyle sets a brush style field from attrName and any prefixed
+// overrides in attrs. Overrides are applied to a clone so a style resolved
+// from scope is not mutated.
+//
+// A third-party widget can use this from SetAttrs with its own brush field:
+//
+//	SetBrushStyle(&w.textFill, "text-fill", attrs, w.Scope(), w.Units())
+func SetBrushStyle(field **BrushStyle, attrName string, attrs map[string]string, scope HasScope, units Units) {
+	if id, ok := attrs[attrName]; ok {
+		*field = BrushStyleFor(id, scope)
+	}
+	prefix := attrName + "."
+	if !MapHasKeyPrefix(attrs, prefix) {
+		return
+	}
+	if *field == nil {
+		*field = &BrushStyle{}
+	} else {
+		*field = (*field).Clone()
+	}
+	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
+}
+
 var _ HasAttrs = (*BrushStyle)(nil)
 var _ Styler = (*BrushStyle)(nil)
 

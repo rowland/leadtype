@@ -183,17 +183,7 @@ func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {
 
 func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
-	if fill, ok := attrs["text-fill"]; ok {
-		p.textFill = BrushStyleFor(fill, p.scope)
-	}
-	if MapHasKeyPrefix(attrs, "text-fill.") {
-		if p.textFill == nil {
-			p.textFill = &BrushStyle{}
-		} else {
-			p.textFill = p.textFill.Clone()
-		}
-		p.textFill.SetAttrs(addUnits(filterMapAttrs("text-fill.", attrs), p.Units()))
-	}
+	SetBrushStyle(&p.textFill, "text-fill", attrs, p.scope, p.Units())
 	p.orphans = 2
 	p.widows = 2
 	if style, ok := attrs["style"]; ok {
