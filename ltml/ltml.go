@@ -192,19 +192,26 @@ func (doc *Doc) cleanupAssetSources() {
 }
 
 func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
+	trueSpace := elem.Name.Space
 	trueTag := elem.Name.Local
 	var aliasDefaultAttrs map[string]string
 	if elem.Name.Space == DefaultSpace {
 		if alias, ok := doc.scope().AliasFor(trueTag); ok {
-			trueTag, aliasDefaultAttrs = alias.Tag, alias.Attrs
+			var err error
+			trueSpace, trueTag, err = aliasTarget(DefaultSpace, alias.Tag)
+			if err != nil {
+				doc.parseErr = err
+				return nil, false
+			}
+			aliasDefaultAttrs = alias.Attrs
 			debugf("Alias %s=%s %v\n", elem.Name.Local, trueTag, aliasDefaultAttrs)
 		}
 	}
-	e := makeElement(elem.Name.Space, trueTag)
+	e := makeElement(trueSpace, trueTag)
 	if e == nil {
 		debugf("Unknown tag: %s:%s\n", elem.Name.Space, elem.Name.Local)
 	}
-	capturesBody := isComponentTag(elem.Name.Space, trueTag)
+	capturesBody := isComponentTag(trueSpace, trueTag)
 	if ws, ok := e.(WantsScope); ok {
 		ws.SetScope(doc.scope())
 	}
@@ -354,7 +361,10 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		}
 	}
 	if alias, ok := e.(*Alias); ok {
-		if err := doc.scope().AddAlias(alias); err != nil {
+		if _, _, err := aliasTarget(DefaultSpace, alias.Tag); err != nil {
+			doc.parseErr = err
+			debugf("Adding alias: %s\n", err)
+		} else if err := doc.scope().AddAlias(alias); err != nil {
 			debugf("Adding alias: %s\n", err)
 		}
 	}

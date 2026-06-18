@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Alias struct {
@@ -43,6 +44,26 @@ func (a *Alias) SetAttrs(attrs map[string]string) {
 func (a *Alias) String() string {
 	return fmt.Sprintf("Alias id=%s tag=%s %v",
 		a.ID, a.Tag, a.Attrs)
+}
+
+func aliasTarget(defaultNamespace, value string) (namespace, tag string, err error) {
+	parts := strings.Split(value, ":")
+	switch len(parts) {
+	case 1:
+		namespace, tag = defaultNamespace, parts[0]
+	case 2:
+		namespace, tag = parts[0], parts[1]
+	default:
+		return "", "", invalidAliasTargetError(value)
+	}
+	if !reTag.MatchString(namespace) || !reTag.MatchString(tag) {
+		return "", "", invalidAliasTargetError(value)
+	}
+	return namespace, tag, nil
+}
+
+func invalidAliasTargetError(value string) error {
+	return fmt.Errorf("invalid define tag %q: expected %q or %q", value, "tag", "namespace:tag")
 }
 
 var StdAliases = map[string]*Alias{

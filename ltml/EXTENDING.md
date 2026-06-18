@@ -495,6 +495,33 @@ defaults, implement `HasDefaultAttrs`. The parser merges those attrs before
 selector rules and direct XML attrs, so a widget can express defaults like
 `font="fixed"` without special-case render logic.
 
+```go
+func (w *MyWidget) DefaultAttrs(ltml.HasScope) map[string]string {
+    return map[string]string{
+        "fill":    "White",
+        "padding": "6pt",
+    }
+}
+```
+
+`SetAttrs` is called once for each applicable cascade layer. Implement it
+incrementally: update a field only when its key is present. Do not reset fields
+for absent keys or call `DefaultAttrs` from `SetAttrs`, because a later layer
+would otherwise erase values supplied by an earlier layer.
+
+`define` aliases may target registered third-party tags using
+`tag="namespace:tag"`. The alias itself remains a local, unqualified name:
+
+```xml
+<ltml xmlns:acme="acme">
+  <define id="warning-card" tag="acme:card" fill="Gold" />
+  <warning-card fill="Orange" />
+</ltml>
+```
+
+Qualified targets must contain exactly one namespace and one tag. Empty parts
+and targets with more than one colon are rejected.
+
 If a helper interface or inline-text type needs font access, prefer embedding
 `HasFont` instead of restating `Font() *FontStyle`. That keeps font-aware code
 sharing one contract.
