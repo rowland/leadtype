@@ -78,9 +78,7 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 	if ry, ok := attrs["ry"]; ok {
 		bs.ry = ParseMeasurement(ry, bs.units)
 	}
-	if font, ok := attrs["font"]; ok {
-		bs.font = FontStyleFor(font, bs.scope)
-	}
+	SetFontStyle(&bs.font, "font", attrs, bs.scope, bs.units, nil)
 	if text, ok := attrs["text"]; ok {
 		bs.text = strings.TrimSpace(text)
 	}

@@ -301,23 +301,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		}
 	}
 	SetBrushStyle(&widget.fill, "fill", attrs, widget.scope, widget.Units())
-	if font, ok := attrs["font"]; ok {
-		widget.font = FontStyleFor(font, widget.scope)
-	}
-	if MapHasKeyPrefix(attrs, "font.") {
-		baseFont := widget.font
-		if baseFont == nil {
-			if widget.container != nil {
-				baseFont = widget.container.Font()
-			} else {
-				baseFont = defaultFont
-			}
-		}
-		widget.font = baseFont.Clone()
-		widget.font.SetScope(widget.scope)
-		// widget.font.SetAttrs("font.", normalizeFontDecorationMeasurementAttrs(attrs, "font.", widget.Units()))
-		widget.font.SetAttrs(addUnits(filterMapAttrs("font.", attrs), widget.Units()))
-	}
+	SetFontStyle(&widget.font, "font", attrs, widget.scope, widget.Units(), widget.container)
 	if colSpan, ok := attrs["colspan"]; ok {
 		widget.colSpan, _ = strconv.Atoi(colSpan)
 	}

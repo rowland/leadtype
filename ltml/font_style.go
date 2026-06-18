@@ -518,6 +518,35 @@ func FontStyleFor(id string, scope HasScope) *FontStyle {
 	return nil
 }
 
+// SetFontStyle sets a font style field from attrName and any prefixed
+// overrides in attrs. Overrides are applied to a clone so named and inherited
+// styles are not mutated. When field is nil, parent supplies the base font; a
+// nil parent uses LTML's default font.
+//
+// A third-party widget can use this from SetAttrs with its own font field:
+//
+//	SetFontStyle(&w.font, "font", attrs, w.Scope(), w.Units(), w.Container())
+func SetFontStyle(field **FontStyle, attrName string, attrs map[string]string, scope HasScope, units Units, parent HasFont) {
+	if id, ok := attrs[attrName]; ok {
+		*field = FontStyleFor(id, scope)
+	}
+	prefix := attrName + "."
+	if !MapHasKeyPrefix(attrs, prefix) {
+		return
+	}
+	base := *field
+	if base == nil {
+		if parent == nil {
+			base = defaultFont
+		} else {
+			base = parent.Font()
+		}
+	}
+	*field = base.Clone()
+	(*field).SetScope(scope)
+	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
+}
+
 var _ HasAttrs = (*FontStyle)(nil)
 var _ Styler = (*FontStyle)(nil)
 var _ WantsScope = (*FontStyle)(nil)

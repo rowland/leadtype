@@ -29,6 +29,129 @@ type mockWriter struct {
 	t             testing.TB
 }
 
+type testFontProvider struct {
+	font *FontStyle
+}
+
+func (p *testFontProvider) Font() *FontStyle {
+	return p.font
+}
+
+func TestSetFontStyleAssignsNamedStyle(t *testing.T) {
+	scope := &Scope{}
+	base := &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+
+	var field *FontStyle
+	SetFontStyle(&field, "font", map[string]string{"font": "body"}, scope, "pt", nil)
+
+	if field != base {
+		t.Fatalf("font = %p, want named style %p", field, base)
+	}
+}
+
+func TestSetFontStyleClonesNamedStyleBeforeOverrides(t *testing.T) {
+	oldScope := &Scope{}
+	scope := &Scope{}
+	base := &FontStyle{
+		scope:   oldScope,
+		id:      "body",
+		entries: []fontEntry{{name: "Helvetica"}},
+		weight:  "Regular",
+	}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+
+	var field *FontStyle
+	SetFontStyle(&field, "font", map[string]string{
+		"font":        "body",
+		"font.weight": "Bold",
+	}, scope, "pt", nil)
+
+	if field == base {
+		t.Fatal("font reused named style, want clone")
+	}
+	if field.weight != "Bold" {
+		t.Fatalf("font weight = %q, want Bold", field.weight)
+	}
+	if field.scope != scope {
+		t.Fatalf("font scope = %p, want %p", field.scope, scope)
+	}
+	if base.weight != "Regular" || base.scope != oldScope {
+		t.Fatalf("named style mutated: %#v", base)
+	}
+}
+
+func TestSetFontStyleClonesParentAndAppliesWidgetUnits(t *testing.T) {
+	base := &FontStyle{entries: []fontEntry{{name: "Helvetica"}}, weight: "Regular"}
+	parent := &testFontProvider{font: base}
+	var field *FontStyle
+
+	SetFontStyle(&field, "font", map[string]string{
+		"font.weight":       "Bold",
+		"font.stroke-width": "2",
+	}, nil, "mm", parent)
+
+	if field == base {
+		t.Fatal("font reused parent style, want clone")
+	}
+	if field.strokeWidth == nil || *field.strokeWidth != FromUnits(2, "mm") {
+		t.Fatalf("stroke width = %v, want 2mm", field.strokeWidth)
+	}
+	if base.weight != "Regular" || base.strokeWidth != nil {
+		t.Fatalf("parent font mutated: %#v", base)
+	}
+}
+
+func TestSetFontStyleMissingNameFallsBackToParent(t *testing.T) {
+	scope := &Scope{}
+	base := &FontStyle{entries: []fontEntry{{name: "Helvetica"}}, weight: "Regular"}
+	parent := &testFontProvider{font: base}
+	field := &FontStyle{weight: "Old"}
+
+	SetFontStyle(&field, "font", map[string]string{
+		"font":        "missing",
+		"font.weight": "Bold",
+	}, scope, "pt", parent)
+
+	if field == base || field.weight != "Bold" {
+		t.Fatalf("font = %#v, want overridden clone of parent", field)
+	}
+}
+
+func TestSetFontStyleNilParentUsesDefaultAndExplicitUnits(t *testing.T) {
+	var field *FontStyle
+
+	SetFontStyle(&field, "text-font", map[string]string{
+		"text-font.units":        "cm",
+		"text-font.stroke-width": "2",
+	}, nil, "mm", nil)
+
+	if field == defaultFont {
+		t.Fatal("font reused default style, want clone")
+	}
+	if field.strokeWidth == nil || *field.strokeWidth != FromUnits(2, "cm") {
+		t.Fatalf("stroke width = %v, want 2cm", field.strokeWidth)
+	}
+	if defaultFont.strokeWidth != nil {
+		t.Fatalf("default font stroke width = %v, want unchanged nil", defaultFont.strokeWidth)
+	}
+}
+
+func TestSetFontStyleLeavesFieldUnchangedWithoutMatchingAttrs(t *testing.T) {
+	base := &FontStyle{}
+	field := base
+
+	SetFontStyle(&field, "font", map[string]string{"text-font.weight": "Bold"}, nil, "pt", nil)
+
+	if field != base {
+		t.Fatalf("font = %p, want unchanged %p", field, base)
+	}
+}
+
 func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
 	m.addFontCalls = append(m.addFontCalls, family)
 	m.addFontNames = append(m.addFontNames, family)

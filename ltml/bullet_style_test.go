@@ -85,6 +85,52 @@ func TestBulletStyle_SetAttrs_ExtendedModes(t *testing.T) {
 	}
 }
 
+func TestBulletStyle_SetAttrs_ClonesNamedFontForOverrides(t *testing.T) {
+	scope := &Scope{}
+	base := &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, weight: "Regular"}
+	if err := scope.AddStyle(base); err != nil {
+		t.Fatal(err)
+	}
+	style := &BulletStyle{scope: scope}
+
+	style.SetAttrs(map[string]string{
+		"font":        "body",
+		"font.weight": "Bold",
+	})
+
+	if style.font == base {
+		t.Fatal("bullet font reused named style, want clone")
+	}
+	if style.font == nil || style.font.weight != "Bold" {
+		t.Fatalf("bullet font = %#v, want Bold", style.font)
+	}
+	if base.weight != "Regular" {
+		t.Fatalf("named font weight = %q, want unchanged Regular", base.weight)
+	}
+}
+
+func TestBulletStyle_SetAttrs_FontOverridesCloneDefaultWithBulletUnits(t *testing.T) {
+	style := &BulletStyle{units: "mm"}
+
+	style.SetAttrs(map[string]string{
+		"font.weight":       "Bold",
+		"font.stroke-width": "2",
+	})
+
+	if style.font == nil || style.font == defaultFont {
+		t.Fatalf("bullet font = %p, want clone of default", style.font)
+	}
+	if style.font.weight != "Bold" {
+		t.Fatalf("bullet font weight = %q, want Bold", style.font.weight)
+	}
+	if style.font.strokeWidth == nil || *style.font.strokeWidth != FromUnits(2, "mm") {
+		t.Fatalf("bullet stroke width = %v, want 2mm", style.font.strokeWidth)
+	}
+	if defaultFont.weight != "" || defaultFont.strokeWidth != nil {
+		t.Fatalf("default font mutated: %#v", defaultFont)
+	}
+}
+
 func TestBulletStyleFor_BuiltInListMarkers(t *testing.T) {
 	ordered := BulletStyleFor("ordered", &defaultScope)
 	if ordered == nil || ordered.Format() != "%d." {
