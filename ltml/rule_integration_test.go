@@ -78,6 +78,23 @@ func childParagraph(t *testing.T, container *StdContainer, index int) *StdParagr
 	return p
 }
 
+func TestRules_integration_inline_style_reports_invalid_selector(t *testing.T) {
+	_, err := Parse([]byte(`
+		<ltml>
+			<style>
+				.bar-graph re2:scorebar { width: 66%; }
+				.score-badge { width: 22pt; height: 22pt; }
+			</style>
+			<page />
+		</ltml>`))
+	if err == nil {
+		t.Fatal("Parse error = nil, want invalid selector error")
+	}
+	if !strings.Contains(err.Error(), `unknown pseudo-class "scorebar"`) {
+		t.Fatalf("Parse error = %q, want unknown pseudo-class error", err)
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Font size set by a tag rule
 // ----------------------------------------------------------------------------

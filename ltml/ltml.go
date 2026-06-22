@@ -508,6 +508,9 @@ func applyPseudoRuleAttrs(scope HasScope, target Widget, resolver *selectorStruc
 }
 
 func (doc *Doc) endElement(_ xml.EndElement) {
+	if rules, ok := doc.current().(*Rules); ok && rules.parseErr != nil {
+		doc.parseErr = rules.parseErr
+	}
 	doc.pop()
 }
 
