@@ -140,6 +140,13 @@ func (c *StdCircle) radius() float64 {
 	return c.StdShape.radius()
 }
 
+func (c *StdCircle) intrinsicSize(Writer) (width, height float64, ok bool) {
+	if c.radiusValue <= 0 {
+		return 0, 0, false
+	}
+	return c.radiusValue*2 + NonContentWidth(c), c.radiusValue*2 + NonContentHeight(c), true
+}
+
 type StdEllipse struct {
 	StdShape
 	rx float64

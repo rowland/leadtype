@@ -22,9 +22,35 @@ type aspectDimensionState interface {
 	HeightAspectInferred() bool
 }
 
+type intrinsicSizeProvider interface {
+	intrinsicSize(writer Writer) (width, height float64, ok bool)
+}
+
 func prepareAspectRatioDimensions(container Container, writer Writer) {
 	for _, widget := range container.Widgets() {
+		resolveIntrinsicSizeDimensions(widget, writer)
 		resolveAspectRatioDimensions(widget, writer)
+	}
+}
+
+func resolveIntrinsicSizeDimensions(widget Widget, writer Writer) {
+	provider, ok := widget.(intrinsicSizeProvider)
+	if !ok || widgetWidthAuthored(widget) || widgetHeightAuthored(widget) || widgetAutoWidth(widget) || widgetAutoHeight(widget) {
+		return
+	}
+	width, height, ok := provider.intrinsicSize(writer)
+	if !ok || width <= 0 || height <= 0 {
+		return
+	}
+	if resolver, ok := widget.(aspectWidthResolver); ok {
+		resolver.ResolveAspectWidth(width)
+	} else {
+		widget.ResolveWidth(width)
+	}
+	if resolver, ok := widget.(aspectHeightResolver); ok {
+		resolver.ResolveAspectHeight(height)
+	} else {
+		widget.ResolveHeight(height)
 	}
 }
 

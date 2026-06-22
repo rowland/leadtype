@@ -148,6 +148,40 @@ func TestStdCircle_DrawContent_UsesContentBoxCenterAndRadius(t *testing.T) {
 	}
 }
 
+func TestStdCircle_RadiusMatchesExplicitDiameterInHBox(t *testing.T) {
+	hbox := &StdContainer{}
+	hbox.SetWidth(200)
+	hbox.SetHeight(60)
+	hbox.SetAttrs(map[string]string{"layout": "hbox"})
+
+	fromRadius := &StdCircle{}
+	fromRadius.SetAttrs(map[string]string{"r": "20pt"})
+	hbox.AddChild(fromRadius)
+	if err := fromRadius.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+
+	fromDiameter := &StdCircle{}
+	fromDiameter.SetAttrs(map[string]string{"width": "40pt", "height": "40pt"})
+	hbox.AddChild(fromDiameter)
+	if err := fromDiameter.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+
+	hbox.LayoutWidget(&shapeTestWriter{})
+
+	if fromRadius.Width() != fromDiameter.Width() || fromRadius.Height() != fromDiameter.Height() {
+		t.Fatalf("radius circle size = (%v, %v), diameter circle size = (%v, %v)",
+			fromRadius.Width(), fromRadius.Height(), fromDiameter.Width(), fromDiameter.Height())
+	}
+	if fromRadius.Width() != 40 || fromRadius.Height() != 40 {
+		t.Fatalf("radius circle size = (%v, %v), want (40, 40)", fromRadius.Width(), fromRadius.Height())
+	}
+	if !fromRadius.WidthAspectInferred() || !fromRadius.HeightAspectInferred() {
+		t.Fatal("radius circle dimensions were not marked as intrinsically inferred")
+	}
+}
+
 func TestStdCircle_DrawContent_AppliesGradientBorderInShapeBox(t *testing.T) {
 	circle := &StdCircle{}
 	circle.SetLeft(10)
