@@ -9,6 +9,34 @@ import (
 	"github.com/rowland/leadtype/pdf"
 )
 
+func TestDisplayMode_ParseAndString(t *testing.T) {
+	tests := []struct {
+		input string
+		want  DisplayMode
+		text  string
+	}{
+		{input: "once", want: DisplayOnce, text: "once"},
+		{input: "always", want: DisplayAlways, text: "always"},
+		{input: "first", want: DisplayFirst, text: "first"},
+		{input: "succeeding", want: DisplaySucceeding, text: "succeeding"},
+		{input: "even", want: DisplayEven, text: "even"},
+		{input: "odd", want: DisplayOdd, text: "odd"},
+		{input: "last", want: DisplayLast, text: "last"},
+		{input: "  LAST  ", want: DisplayLast, text: "last"},
+		{input: "unknown", want: DisplayOnce, text: "once"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			if got := ParseDisplayMode(tc.input); got != tc.want {
+				t.Fatalf("ParseDisplayMode(%q) = %v, want %v", tc.input, got, tc.want)
+			}
+			if got := tc.want.String(); got != tc.text {
+				t.Fatalf("%v.String() = %q, want %q", tc.want, got, tc.text)
+			}
+		})
+	}
+}
+
 func TestStdWidget_SetAttrs_ParsesSideSpecificBorders(t *testing.T) {
 	scope := &Scope{}
 	scope.SetParentScope(&defaultScope)

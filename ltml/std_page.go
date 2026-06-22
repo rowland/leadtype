@@ -31,7 +31,17 @@ type StdPage struct {
 	flowPageIndex                 int
 	flowItems                     []*pageItem
 	activeChildren                []Widget
+	displayLastState              displayLastState
+	displayLastPresent            bool
 }
+
+type displayLastState uint8
+
+const (
+	displayLastHidden displayLastState = iota
+	displayLastReserved
+	displayLastVisible
+)
 
 type pageItem struct {
 	Source  Widget
@@ -41,7 +51,9 @@ type pageItem struct {
 
 func (p *StdPage) BeforePrint(w Writer) error {
 	p.flowPageIndex = 1
+	p.displayLastState = displayLastHidden
 	p.initFlowItems()
+	p.displayLastPresent = p.containsDisplayLastWidget()
 	return p.preparePhysicalPage(w, true)
 }
 
@@ -443,25 +455,29 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 		doc.physicalPageNo++
 	}
 
-	if force {
+	if force && !p.displayLastPresent {
+		p.displayLastState = displayLastHidden
 		p.rebuildActiveChildren()
 		p.newPhysicalPage(w)
 		LayoutContainer(p, w)
 	} else {
+		p.displayLastState = p.chooseDisplayLastState(w)
 		probe := newLayoutProbeWriter(w)
 		p.rebuildActiveChildren()
 		LayoutContainer(p, probe)
-		if p.countVisibleOnceChildren() == 0 && !p.hasSplittableOnceProgress(probe) {
-			if doc != nil {
-				doc.documentPageNo = savedDocPageNo
-				doc.physicalPageNo = savedPhysicalPageNo
-				doc.pendingStart = savedPendingStart
+		if !force || p.displayLastState == displayLastReserved {
+			if p.countVisibleOnceChildren() == 0 && !p.hasSplittableOnceProgress(probe) {
+				if doc != nil {
+					doc.documentPageNo = savedDocPageNo
+					doc.physicalPageNo = savedPhysicalPageNo
+					doc.pendingStart = savedPendingStart
+				}
+				err := p.newLayoutOverflowError(probe)
+				if err == nil {
+					return errNoProgressPage
+				}
+				return err
 			}
-			err := p.newLayoutOverflowError(probe)
-			if err == nil {
-				return errNoProgressPage
-			}
-			return err
 		}
 		p.rebuildActiveChildren()
 		p.newPhysicalPage(w)
@@ -473,6 +489,89 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 		}
 	}
 	return nil
+}
+
+func (p *StdPage) chooseDisplayLastState(w Writer) displayLastState {
+	if !p.displayLastPresent {
+		return displayLastHidden
+	}
+	if len(p.flowItems) == 0 {
+		return displayLastVisible
+	}
+	p.displayLastState = displayLastHidden
+	p.rebuildActiveChildren()
+	hiddenProbe := newLayoutProbeWriter(w)
+	LayoutContainer(p, hiddenProbe)
+	if !p.pendingOnceChildrenCompleteOnPage(hiddenProbe) {
+		return displayLastHidden
+	}
+
+	p.displayLastState = displayLastVisible
+	p.rebuildActiveChildren()
+	visibleProbe := newLayoutProbeWriter(w)
+	LayoutContainer(p, visibleProbe)
+	if p.pendingOnceChildrenCompleteOnPage(visibleProbe) {
+		return displayLastVisible
+	}
+	return displayLastReserved
+}
+
+func (p *StdPage) containsDisplayLastWidget() bool {
+	found := false
+	walkWidgets(p, func(widget Widget) bool {
+		if widget.Display() == DisplayLast {
+			found = true
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+func (p *StdPage) pendingOnceChildrenCompleteOnPage(w Writer) bool {
+	var hidden Widget
+	for _, item := range p.flowItems {
+		if item.Done || item.Current == nil || widgetZeroFootprint(item.Current) {
+			continue
+		}
+		if item.Current.Visible() && !item.Current.Disabled() {
+			continue
+		}
+		if hidden != nil {
+			return false
+		}
+		hidden = item.Current
+	}
+	if hidden == nil {
+		return true
+	}
+	splittable, ok := hidden.(Splittable)
+	if !ok {
+		return false
+	}
+	result, err := splittable.SplitForHeight(p.availableHeightForChild(hidden), w)
+	return err == nil && result != nil && result.Head != nil && result.Tail == nil
+}
+
+func displayLastParticipatesInLayout(widget Widget) bool {
+	page := rootPageForWidget(widget)
+	return page == nil || page.displayLastState != displayLastHidden
+}
+
+func suppressDisplayLastPaint(widget Widget) bool {
+	if widget.Display() != DisplayLast {
+		return false
+	}
+	page := rootPageForWidget(widget)
+	return page != nil && page.displayLastState == displayLastReserved
+}
+
+func rootPageForWidget(widget Widget) *StdPage {
+	parented, ok := widget.(interface{ Container() Container })
+	if !ok {
+		return nil
+	}
+	return rootPageForContainer(parented.Container())
 }
 
 func (p *StdPage) newPhysicalPage(w Writer) {

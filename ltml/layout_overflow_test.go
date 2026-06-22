@@ -314,6 +314,164 @@ func TestStdPage_OverflowRepeatsAlwaysAndAlternatesOddEven(t *testing.T) {
 	}
 }
 
+func TestStdPage_DisplayLastRendersOnSinglePhysicalPage(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	var bodyPages, footerPages []int
+	body := &flowTestWidget{name: "body", preferredHeight: 40, printedOn: &bodyPages}
+	_ = body.SetContainer(page)
+	page.AddChild(body)
+
+	footer := &flowTestWidget{name: "footer", preferredHeight: 10, printedOn: &footerPages}
+	_ = footer.SetContainer(page)
+	footer.SetAttrs(map[string]string{"align": "bottom", "display": "last"})
+	page.AddChild(footer)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 1 || !slices.Equal(bodyPages, []int{1}) || !slices.Equal(footerPages, []int{1}) {
+		t.Fatalf("page count/body/footer = %d/%v/%v, want 1/[1]/[1]", w.pageCount, bodyPages, footerPages)
+	}
+	if footer.Bottom() != 100 {
+		t.Fatalf("footer bottom = %v, want 100", footer.Bottom())
+	}
+}
+
+func TestStdPage_DisplayLastReservesSpaceAndCarriesBodyForward(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	var firstPages, secondPages, footerPages []int
+	first := &flowTestWidget{name: "first", preferredHeight: 60, printedOn: &firstPages}
+	_ = first.SetContainer(page)
+	page.AddChild(first)
+	second := &flowTestWidget{name: "second", preferredHeight: 40, printedOn: &secondPages}
+	_ = second.SetContainer(page)
+	page.AddChild(second)
+
+	footer := &flowTestWidget{name: "footer", preferredHeight: 10, printedOn: &footerPages}
+	_ = footer.SetContainer(page)
+	footer.SetAttrs(map[string]string{"align": "bottom", "display": "last"})
+	page.AddChild(footer)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(firstPages, []int{1}) || !slices.Equal(secondPages, []int{2}) {
+		t.Fatalf("body pages = %v/%v, want [1]/[2]", firstPages, secondPages)
+	}
+	if !slices.Equal(footerPages, []int{2}) {
+		t.Fatalf("footer pages = %v, want [2]", footerPages)
+	}
+}
+
+func TestStdPage_DisplayLastSupportsMultipleAndNestedWidgets(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	var firstPages, secondPages, directPages, nestedPages []int
+	first := &flowTestWidget{name: "first", preferredHeight: 60, printedOn: &firstPages}
+	_ = first.SetContainer(page)
+	page.AddChild(first)
+	second := &flowTestWidget{name: "second", preferredHeight: 60, printedOn: &secondPages}
+	_ = second.SetContainer(page)
+	page.AddChild(second)
+
+	direct := &flowTestWidget{name: "direct-last", preferredHeight: 10, printedOn: &directPages}
+	_ = direct.SetContainer(page)
+	direct.SetAttrs(map[string]string{"align": "bottom", "display": "last"})
+	page.AddChild(direct)
+
+	nestedFooter := &StdContainer{}
+	_ = nestedFooter.SetContainer(page)
+	nestedFooter.SetAttrs(map[string]string{"align": "bottom", "display": "always", "layout": "vbox", "height": "10pt"})
+	page.AddChild(nestedFooter)
+	nested := &flowTestWidget{name: "nested-last", preferredHeight: 10, printedOn: &nestedPages}
+	_ = nested.SetContainer(nestedFooter)
+	nested.SetAttrs(map[string]string{"display": "last"})
+	nestedFooter.AddChild(nested)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(directPages, []int{2}) || !slices.Equal(nestedPages, []int{2}) {
+		t.Fatalf("last widget pages = direct:%v nested:%v, want [2]/[2]", directPages, nestedPages)
+	}
+}
+
+func TestStdPage_DisplayLastFollowsSplitContentToFinalPage(t *testing.T) {
+	tests := []struct {
+		name   string
+		sample string
+	}{
+		{name: "vbox", sample: "test_024_vbox_overflow.ltml"},
+		{name: "paragraph", sample: "test_027_paragraph_split.ltml"},
+		{name: "table", sample: "test_028_table_split_headers.ltml"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			doc, err := ParseFile(sampleFile(tc.sample))
+			if err != nil {
+				t.Fatal(err)
+			}
+			page := doc.Root().Page(0)
+			var footerPages []int
+			footer := &flowTestWidget{name: "last-footer", preferredHeight: 10, printedOn: &footerPages}
+			_ = footer.SetContainer(page)
+			footer.SetAttrs(map[string]string{"align": "bottom", "display": "last"})
+			page.AddChild(footer)
+
+			w := &labelTestWriter{t: t}
+			if err := doc.Print(w); err != nil {
+				t.Fatal(err)
+			}
+			if w.pageCount < 2 {
+				t.Fatalf("page count = %d, want split content on at least two pages", w.pageCount)
+			}
+			if !slices.Equal(footerPages, []int{w.pageCount}) {
+				t.Fatalf("footer pages = %v, want final page [%d]", footerPages, w.pageCount)
+			}
+		})
+	}
+}
+
+func TestStdPage_DisplayLastReturnsOverflowErrorWhenFooterPreventsProgress(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	body := &flowTestWidget{name: "body", preferredHeight: 40}
+	_ = body.SetContainer(page)
+	page.AddChild(body)
+	footer := &flowTestWidget{name: "footer", preferredHeight: 100}
+	_ = footer.SetContainer(page)
+	footer.SetAttrs(map[string]string{"align": "bottom", "display": "last"})
+	page.AddChild(footer)
+
+	err := doc.Print(&labelTestWriter{t: t})
+	var overflowErr *LayoutOverflowError
+	if !errors.As(err, &overflowErr) {
+		t.Fatalf("Print error = %v, want LayoutOverflowError", err)
+	}
+	if overflowErr.AvailableHeight != 0 || overflowErr.RequiredHeight != 40 {
+		t.Fatalf("overflow sizes = available %v required %v, want 0 and 40", overflowErr.AvailableHeight, overflowErr.RequiredHeight)
+	}
+}
+
 func TestStdPage_OverflowPageNoStartAppliesOnlyToFirstPhysicalPage(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>

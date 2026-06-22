@@ -1,0 +1,26 @@
+<ltml units="in" margin="0.35">
+  <pagestyle id="display-last-demo" width="6in" height="4in" />
+
+  <page style="display-last-demo" layout="vbox" layout.vpadding="6pt" font.name="Helvetica" font.size="10pt">
+    <label display="always" align="top" width="100%" height="24pt"
+           fill="LightSkyBlue" border="thin" padding="5pt" font.weight="Bold">
+      Display last - physical page <pageno />
+    </label>
+
+    <label width="100%" height="70pt" fill="MistyRose" border="thin"
+           padding="8pt" text-valign="middle">Body block A</label>
+    <label width="100%" height="70pt" fill="PaleGreen" border="thin"
+           padding="8pt" text-valign="middle">Body block B</label>
+    <label width="100%" height="30pt" fill="LightYellow" border="thin"
+           padding-left="8pt" text-valign="middle">Body block C moves to the final page</label>
+
+    <label display="last" align="bottom" width="100%" height="30pt"
+           fill="MediumSeaGreen" border="thin" padding="7pt" font.weight="Bold">
+      Final-page-only footer
+    </label>
+    <label display="always" align="bottom" width="100%" height="18pt"
+           fill="LightGray" border="thin" padding="3pt">
+      Repeating footer
+    </label>
+  </page>
+</ltml>
