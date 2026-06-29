@@ -16,7 +16,7 @@ render-ltml -b [flags] <file1> <file2> ...
 | Flag | Short | Description |
 |------|-------|-------------|
 | `-assets <dir>` | `-a` | Directory of static assets available during rendering |
-| `-extra <file>` | `-e` | Additional asset file (may be repeated) |
+| `-extra <file[:path]>` | `-e` | Additional asset file, optionally mapped to a virtual asset path (may be repeated) |
 | `-output <path>` | `-o` | Output file in single-file mode, or output directory in batch mode |
 | `-submit <url>` |  | Submit a multipart render request to this URL instead of rendering locally |
 | `-watch` | `-w` | Watch inputs and assets for changes and rerender continuously |
@@ -40,6 +40,13 @@ filesystem resolve through this virtual layer:
 - Files supplied with `-extra` form the upper layer and shadow same-named files from `-assets`.
 - Files in the `-assets` directory form the lower layer and are used when an asset is not supplied as an extra file.
 
+By default, an extra file is exposed at its base name. To expose a file at a
+nested virtual asset path, use Docker-style `source:target` syntax:
+
+```sh
+render-ltml -extra ./tmp/logo.png:assets/logo.png report.ltml
+```
+
 When an asset filesystem is attached, asset names must be clean relative `fs.FS` paths such as `logo.png` or `assets/logo.png`. Paths like `./logo.png`, `a/../logo.png`, or absolute paths are rejected.
 
 Without `-assets` / `-extra`, fallback path resolution depends on the LTML
@@ -47,7 +54,7 @@ feature, but both built-in `<image>` and component-backed file loads such as
 `<svg src="...">` resolve relative file paths relative to the LTML document
 being rendered.
 
-If the same base name is given more than once via `-extra`, the last occurrence wins locally. Remote submission rejects duplicate `-extra` base names before sending the request.
+If the same virtual asset path is given more than once via `-extra`, the last occurrence wins locally. Remote submission rejects duplicate `-extra` virtual paths before sending the request.
 
 ### Watch mode
 
@@ -72,7 +79,7 @@ When `-submit` is set, `render-ltml` sends a `multipart/form-data` request to th
 
 - Each LTML input file is sent as an `ltml` part in its own request.
 - Each `-extra` file is uploaded as a `file` part.
-- Each uploaded file uses its base name as the multipart `filename`, matching local `-extra` behavior.
+- Each uploaded file uses its virtual asset path as the multipart `filename`, matching local `-extra` behavior.
 - Batch mode submits one request per input file.
 - `-assets` is not supported in remote mode; use explicit `-extra` uploads instead.
 

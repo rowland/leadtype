@@ -13,7 +13,6 @@ import (
 	"image/color"
 	"image/png"
 	"io"
-	"io/fs"
 
 	"github.com/rowland/leadtype/svg"
 )
@@ -117,10 +116,6 @@ func imageKey(data []byte) string {
 	default:
 		return fmt.Sprintf("image:%x", sum)
 	}
-}
-
-func validAssetPath(name string) bool {
-	return name != "." && fs.ValidPath(name)
 }
 
 func isJPEG(image []byte) bool {

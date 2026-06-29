@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/rowland/leadtype/internal/assetpath"
 )
 
 type assetSourceKind int
@@ -101,7 +103,7 @@ func resolveAssetSourceRef(doc *Doc, container Container, src string) (assetSour
 
 func resolveFileAssetSourceRef(doc *Doc, src string) (assetSourceRef, error) {
 	if doc != nil && doc.assetFS != nil {
-		if !validAssetPath(src) {
+		if !assetpath.Valid(src) {
 			return assetSourceRef{}, fmt.Errorf("invalid asset path %q", src)
 		}
 		info, err := fs.Stat(doc.assetFS, src)

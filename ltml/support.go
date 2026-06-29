@@ -5,7 +5,6 @@ package ltml
 
 import (
 	"encoding/xml"
-	"io/fs"
 	"strings"
 )
 
@@ -52,22 +51,3 @@ func addUnits(attrs map[string]string, units Units) map[string]string {
 	attrs["units"] = string(units)
 	return attrs
 }
-
-func validAssetPath(name string) bool {
-	return name != "." && fs.ValidPath(name)
-}
-
-// type stringSlice []string
-
-// func (ss stringSlice) index(value string) int {
-// 	for i, s := range ss {
-// 		if s == value {
-// 			return i
-// 		}
-// 	}
-// 	return -1
-// }
-
-// func (ss stringSlice) has(value string) bool {
-// 	return ss.index(value) >= 0
-// }

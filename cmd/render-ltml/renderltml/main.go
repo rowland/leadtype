@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rowland/leadtype/internal/assetpath"
 	"github.com/rowland/leadtype/internal/overlayfs"
 	"github.com/rowland/leadtype/ltml"
 	"github.com/rowland/leadtype/ltml/ltpdf"
@@ -54,7 +55,7 @@ type runConfig struct {
 	fontDir      string
 	outputPath   string
 	submitURL    string
-	extraFiles   []string
+	extraFiles   []extraAsset
 	watch        bool
 	batch        bool
 	profile      bool
@@ -67,6 +68,11 @@ type runConfig struct {
 type renderJob struct {
 	inputPath  string
 	outputPath string
+}
+
+type extraAsset struct {
+	sourcePath  string
+	virtualPath string
 }
 
 type watchPaths struct {
@@ -141,8 +147,8 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	fs.BoolVar(&cfg.batch, "b", false, "render multiple input files (shorthand)")
 	fs.BoolVar(&cfg.profile, "profile", false, "print local render profiling summary")
 	fs.BoolVar(&cfg.ua, "ua", cfg.ua, "default to tagged PDF output")
-	fs.Var(&extraFiles, "extra", "additional asset `file` (may be repeated)")
-	fs.Var(&extraFiles, "e", "additional asset `file` (shorthand)")
+	fs.Var(&extraFiles, "extra", "additional asset `file[:path]` (may be repeated)")
+	fs.Var(&extraFiles, "e", "additional asset `file[:path]` (shorthand)")
 	fs.Usage = func() {
 		fmt.Fprintf(stderr, "Usage: render-ltml [flags] <file>\n")
 		fmt.Fprintf(stderr, "   or: render-ltml -b [flags] <file1> <file2> ...\n\nFlags:\n")
@@ -157,7 +163,11 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 		return 2
 	}
 
-	cfg.extraFiles = []string(extraFiles)
+	cfg.extraFiles, err = parseExtraAssets([]string(extraFiles))
+	if err != nil {
+		fmt.Fprintf(stderr, "render-ltml: %v\n", err)
+		return 2
+	}
 	if registerWidgets != nil {
 		if err := registerWidgets(); err != nil {
 			fmt.Fprintf(stderr, "render-ltml: %v\n", err)
@@ -205,6 +215,44 @@ func validateArgs(cfg runConfig, inputFiles []string) error {
 	}
 	if len(inputFiles) != 1 {
 		return fmt.Errorf("expected exactly one input file")
+	}
+	return nil
+}
+
+func parseExtraAssets(values []string) ([]extraAsset, error) {
+	extras := make([]extraAsset, 0, len(values))
+	for _, value := range values {
+		extra, err := parseExtraAsset(value)
+		if err != nil {
+			return nil, err
+		}
+		extras = append(extras, extra)
+	}
+	return extras, nil
+}
+
+func parseExtraAsset(value string) (extraAsset, error) {
+	sourcePath := value
+	virtualPath := filepath.Base(value)
+	if colon := strings.LastIndex(value, ":"); colon >= 0 {
+		sourcePath = value[:colon]
+		virtualPath = value[colon+1:]
+	}
+	if sourcePath == "" {
+		return extraAsset{}, fmt.Errorf("-extra source path must not be empty")
+	}
+	if err := validateExtraVirtualPath(virtualPath); err != nil {
+		return extraAsset{}, fmt.Errorf("-extra virtual path %q: %w", virtualPath, err)
+	}
+	return extraAsset{sourcePath: sourcePath, virtualPath: virtualPath}, nil
+}
+
+func validateExtraVirtualPath(path string) error {
+	if path == "" {
+		return fmt.Errorf("must not be empty")
+	}
+	if !assetpath.Valid(path) {
+		return fmt.Errorf("must be a clean relative asset path")
 	}
 	return nil
 }
@@ -527,9 +575,9 @@ func buildWatchPaths(cfg runConfig, jobs []renderJob) watchPaths {
 
 	extras := make([]string, 0, len(cfg.extraFiles))
 	for _, extraFile := range cfg.extraFiles {
-		absExtra, err := filepath.Abs(extraFile)
+		absExtra, err := filepath.Abs(extraFile.sourcePath)
 		if err != nil {
-			extras = append(extras, extraFile)
+			extras = append(extras, extraFile.sourcePath)
 			continue
 		}
 		extras = append(extras, absExtra)
@@ -673,7 +721,7 @@ func dirToken(root string) (string, error) {
 	return b.String(), nil
 }
 
-func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []string, out io.Writer, profiler *profile.Profiler) error {
+func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []extraAsset, out io.Writer, profiler *profile.Profiler) error {
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
@@ -721,7 +769,7 @@ func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []stri
 	return nil
 }
 
-func submitRemote(absInput, assetsDir, submitURL string, extraFiles []string, out io.Writer) error {
+func submitRemote(absInput, assetsDir, submitURL string, extraFiles []extraAsset, out io.Writer) error {
 	if assetsDir != "" {
 		return fmt.Errorf("remote submission does not support -assets; upload explicit files with -extra instead")
 	}
@@ -769,8 +817,8 @@ func submitRemote(absInput, assetsDir, submitURL string, extraFiles []string, ou
 	return nil
 }
 
-func buildRemoteRequestBody(absInput string, ltmlBytes []byte, extraFiles []string) ([]byte, string, error) {
-	if err := validateUniqueExtraBaseNames(extraFiles); err != nil {
+func buildRemoteRequestBody(absInput string, ltmlBytes []byte, extraFiles []extraAsset) ([]byte, string, error) {
+	if err := validateUniqueExtraVirtualPaths(extraFiles); err != nil {
 		return nil, "", err
 	}
 
@@ -801,40 +849,39 @@ func buildRemoteRequestBody(absInput string, ltmlBytes []byte, extraFiles []stri
 	return body.Bytes(), mw.FormDataContentType(), nil
 }
 
-func addExtraFilePart(mw *multipart.Writer, extraFile string) error {
-	absExtra, err := filepath.Abs(extraFile)
+func addExtraFilePart(mw *multipart.Writer, extraFile extraAsset) error {
+	absExtra, err := filepath.Abs(extraFile.sourcePath)
 	if err != nil {
-		return fmt.Errorf("resolving extra file %s: %w", extraFile, err)
+		return fmt.Errorf("resolving extra file %s: %w", extraFile.sourcePath, err)
 	}
 
 	f, err := os.Open(absExtra)
 	if err != nil {
-		return fmt.Errorf("opening extra file %s: %w", extraFile, err)
+		return fmt.Errorf("opening extra file %s: %w", extraFile.sourcePath, err)
 	}
 	defer f.Close()
 
 	fileHeader := textproto.MIMEHeader{}
-	fileHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, escapeMultipartFilename(filepath.Base(extraFile))))
+	fileHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, escapeMultipartFilename(extraFile.virtualPath)))
 	fileHeader.Set("Content-Type", "application/octet-stream")
 
 	part, err := mw.CreatePart(fileHeader)
 	if err != nil {
-		return fmt.Errorf("creating file part for %s: %w", extraFile, err)
+		return fmt.Errorf("creating file part for %s: %w", extraFile.sourcePath, err)
 	}
 	if _, err := io.Copy(part, f); err != nil {
-		return fmt.Errorf("writing file part for %s: %w", extraFile, err)
+		return fmt.Errorf("writing file part for %s: %w", extraFile.sourcePath, err)
 	}
 	return nil
 }
 
-func validateUniqueExtraBaseNames(extraFiles []string) error {
+func validateUniqueExtraVirtualPaths(extraFiles []extraAsset) error {
 	seen := make(map[string]string, len(extraFiles))
 	for _, extraFile := range extraFiles {
-		base := filepath.Base(extraFile)
-		if prev, ok := seen[base]; ok {
-			return fmt.Errorf("duplicate -extra base name %q from %s and %s", base, prev, extraFile)
+		if prev, ok := seen[extraFile.virtualPath]; ok {
+			return fmt.Errorf("duplicate -extra virtual path %q from %s and %s", extraFile.virtualPath, prev, extraFile.sourcePath)
 		}
-		seen[base] = extraFile
+		seen[extraFile.virtualPath] = extraFile.sourcePath
 	}
 	return nil
 }
@@ -860,7 +907,7 @@ func readTrimmedResponse(r io.Reader) (string, error) {
 // Returns nil, nil, nil when neither assetsDir nor extraFiles are provided.
 // When a non-nil cleanup function is returned, the caller must invoke it after
 // rendering is complete.
-func buildOptionalAssetFS(assetsDir string, extraFiles []string) (fs.FS, func(), error) {
+func buildOptionalAssetFS(assetsDir string, extraFiles []extraAsset) (fs.FS, func(), error) {
 	hasAssets := assetsDir != ""
 	hasExtras := len(extraFiles) > 0
 
@@ -881,17 +928,21 @@ func buildOptionalAssetFS(assetsDir string, extraFiles []string) (fs.FS, func(),
 		extraDir = tmpDir
 
 		for _, f := range extraFiles {
-			abs, err := filepath.Abs(f)
+			abs, err := filepath.Abs(f.sourcePath)
 			if err != nil {
 				cleanup()
-				return nil, nil, fmt.Errorf("resolving extra file %s: %w", f, err)
+				return nil, nil, fmt.Errorf("resolving extra file %s: %w", f.sourcePath, err)
 			}
-			dst := filepath.Join(extraDir, filepath.Base(f))
-			// If two extra files share a base name, the last one wins.
+			dst := filepath.Join(extraDir, filepath.FromSlash(f.virtualPath))
+			if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
+				cleanup()
+				return nil, nil, fmt.Errorf("creating parent dir for extra file %s: %w", f.virtualPath, err)
+			}
+			// If two extra files share a virtual path, the last one wins.
 			os.Remove(dst)
 			if err := os.Symlink(abs, dst); err != nil {
 				cleanup()
-				return nil, nil, fmt.Errorf("linking extra file %s: %w", filepath.Base(f), err)
+				return nil, nil, fmt.Errorf("linking extra file %s: %w", f.virtualPath, err)
 			}
 		}
 	}

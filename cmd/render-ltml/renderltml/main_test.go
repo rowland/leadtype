@@ -57,6 +57,24 @@ func registerRenderLocalComponent(t *testing.T) {
 	renderLocalComponentMu.Unlock()
 }
 
+func mustExtraAssets(t *testing.T, values ...string) []extraAsset {
+	t.Helper()
+	extras, err := parseExtraAssets(values)
+	if err != nil {
+		t.Fatalf("parse extra assets: %v", err)
+	}
+	return extras
+}
+
+func multipartFilenameParam(t *testing.T, part *multipart.Part) string {
+	t.Helper()
+	_, params, err := mime.ParseMediaType(part.Header.Get("Content-Disposition"))
+	if err != nil {
+		t.Fatalf("parse content disposition: %v", err)
+	}
+	return params["filename"]
+}
+
 func TestBuildOptionalAssetFS_ExtraOverridesAssetsDir(t *testing.T) {
 	assetsDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(assetsDir, "logo.txt"), []byte("lower"), 0o600); err != nil {
@@ -69,7 +87,7 @@ func TestBuildOptionalAssetFS_ExtraOverridesAssetsDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, []string{extraFile})
+	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, mustExtraAssets(t, extraFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,6 +101,30 @@ func TestBuildOptionalAssetFS_ExtraOverridesAssetsDir(t *testing.T) {
 	}
 	if string(data) != "upper" {
 		t.Fatalf("expected upper override, got %q", data)
+	}
+}
+
+func TestBuildOptionalAssetFS_ExtraMapsToVirtualPath(t *testing.T) {
+	extraDir := t.TempDir()
+	extraFile := filepath.Join(extraDir, "logo.txt")
+	if err := os.WriteFile(extraFile, []byte("mapped"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	assetFS, cleanup, err := buildOptionalAssetFS("", mustExtraAssets(t, extraFile+":assets/logo.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	data, err := fs.ReadFile(assetFS, "assets/logo.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "mapped" {
+		t.Fatalf("expected mapped extra, got %q", data)
 	}
 }
 
@@ -110,6 +152,33 @@ func TestBuildOptionalAssetFS_PreservesNestedAssetPathsFromAssetsDir(t *testing.
 	}
 	if string(data) != "nested" {
 		t.Fatalf("expected nested asset, got %q", data)
+	}
+}
+
+func TestParseExtraAssets(t *testing.T) {
+	extras := mustExtraAssets(t, "/tmp/logo.txt", "/tmp/generated.txt:assets/logo.txt")
+	if got, want := extras[0], (extraAsset{sourcePath: "/tmp/logo.txt", virtualPath: "logo.txt"}); got != want {
+		t.Fatalf("unmapped extra = %#v, want %#v", got, want)
+	}
+	if got, want := extras[1], (extraAsset{sourcePath: "/tmp/generated.txt", virtualPath: "assets/logo.txt"}); got != want {
+		t.Fatalf("mapped extra = %#v, want %#v", got, want)
+	}
+}
+
+func TestParseExtraAsset_RejectsInvalidVirtualPaths(t *testing.T) {
+	tests := []string{
+		"/tmp/logo.txt:",
+		"/tmp/logo.txt:.",
+		"/tmp/logo.txt:./logo.png",
+		"/tmp/logo.txt:a/../logo.png",
+		"/tmp/logo.txt:/assets/logo.png",
+	}
+	for _, tt := range tests {
+		t.Run(tt, func(t *testing.T) {
+			if _, err := parseExtraAsset(tt); err == nil {
+				t.Fatal("expected invalid virtual path error")
+			}
+		})
 	}
 }
 
@@ -243,7 +312,7 @@ func TestBuildRemoteRequestBody_IncludesLTMLAndExtraFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body, contentType, err := buildRemoteRequestBody(inputFile, ltmlBytes, []string{logoFile, iconFile})
+	body, contentType, err := buildRemoteRequestBody(inputFile, ltmlBytes, mustExtraAssets(t, logoFile, iconFile+":assets/icon.dat"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,8 +373,8 @@ func TestBuildRemoteRequestBody_IncludesLTMLAndExtraFiles(t *testing.T) {
 	if got := part.FormName(); got != "file" {
 		t.Fatalf("third part form name = %q, want file", got)
 	}
-	if got := part.FileName(); got != "icon.dat" {
-		t.Fatalf("third part filename = %q, want icon.dat", got)
+	if got := multipartFilenameParam(t, part); got != "assets/icon.dat" {
+		t.Fatalf("third part filename = %q, want assets/icon.dat", got)
 	}
 	data, err = io.ReadAll(part)
 	if err != nil {
@@ -316,7 +385,7 @@ func TestBuildRemoteRequestBody_IncludesLTMLAndExtraFiles(t *testing.T) {
 	}
 }
 
-func TestBuildRemoteRequestBody_RejectsDuplicateExtraBaseNames(t *testing.T) {
+func TestBuildRemoteRequestBody_RejectsDuplicateExtraVirtualPaths(t *testing.T) {
 	extraRoot := t.TempDir()
 	firstDir := filepath.Join(extraRoot, "one")
 	secondDir := filepath.Join(extraRoot, "two")
@@ -336,11 +405,11 @@ func TestBuildRemoteRequestBody_RejectsDuplicateExtraBaseNames(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, err := buildRemoteRequestBody("report.ltml", []byte(`<ltml></ltml>`), []string{first, second})
+	_, _, err := buildRemoteRequestBody("report.ltml", []byte(`<ltml></ltml>`), mustExtraAssets(t, first+":assets/logo.png", second+":assets/logo.png"))
 	if err == nil {
-		t.Fatal("expected duplicate base name error")
+		t.Fatal("expected duplicate virtual path error")
 	}
-	if !strings.Contains(err.Error(), `duplicate -extra base name "logo.png"`) {
+	if !strings.Contains(err.Error(), `duplicate -extra virtual path "assets/logo.png"`) {
 		t.Fatalf("error = %v", err)
 	}
 }
@@ -412,7 +481,7 @@ func TestSubmitRemote_WritesResponseBody(t *testing.T) {
 	defer srv.Close()
 
 	var out bytes.Buffer
-	if err := submitRemote(inputFile, "", srv.URL+"/render", []string{extraFile}, &out); err != nil {
+	if err := submitRemote(inputFile, "", srv.URL+"/render", mustExtraAssets(t, extraFile), &out); err != nil {
 		t.Fatal(err)
 	}
 	if got := out.String(); got != "%PDF-remote" {
@@ -871,7 +940,7 @@ func TestWatchModeRerendersAfterExtraFileChange(t *testing.T) {
 	go func() {
 		errCh <- run(ctx, runConfig{
 			watch:        true,
-			extraFiles:   []string{extraFile},
+			extraFiles:   mustExtraAssets(t, extraFile),
 			pollInterval: 20 * time.Millisecond,
 			stderr:       &log,
 			onRender: func(job renderJob, err error) {

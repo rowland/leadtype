@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"mime"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"time"
+
+	"github.com/rowland/leadtype/internal/assetpath"
 )
 
 var nextRequestID uint64
@@ -66,7 +67,7 @@ func generateULID() (string, error) {
 // the same fs.FS path constraints used for upload filenames: it must be a
 // clean, relative path with no ".." components.
 func validateOutputFilename(name string) error {
-	if name == "" || name == "." || !fs.ValidPath(name) {
+	if !assetpath.Valid(name) {
 		return fmt.Errorf("X-Output-File %q is not a valid filename", name)
 	}
 	return nil
@@ -136,7 +137,7 @@ func validateUploadFilename(filename, uploadDir string) (string, error) {
 	if filename == "" {
 		return "", fmt.Errorf("filename must not be empty")
 	}
-	if filename == "." || !fs.ValidPath(filename) {
+	if !assetpath.Valid(filename) {
 		return "", fmt.Errorf("filename must be a clean relative asset path")
 	}
 	return filepath.Join(uploadDir, filepath.FromSlash(filename)), nil

@@ -18,6 +18,7 @@ import (
 	"github.com/rowland/leadtype/codepage"
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
+	"github.com/rowland/leadtype/internal/assetpath"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/profile"
 	"github.com/rowland/leadtype/rich_text"
@@ -241,7 +242,7 @@ func (dw *DocWriter) readImageFile(filename string) ([]byte, error) {
 	if filepath.IsAbs(filename) || dw.assetFS == nil {
 		return os.ReadFile(filename)
 	}
-	if !validAssetPath(filename) {
+	if !assetpath.Valid(filename) {
 		return nil, fmt.Errorf("invalid asset path %q", filename)
 	}
 	info, err := fs.Stat(dw.assetFS, filename)
@@ -262,7 +263,7 @@ func (dw *DocWriter) openImageFile(filename string) (fs.File, error) {
 	if filepath.IsAbs(filename) || dw.assetFS == nil {
 		file, err = os.Open(filename)
 	} else {
-		if !validAssetPath(filename) {
+		if !assetpath.Valid(filename) {
 			return nil, fmt.Errorf("invalid asset path %q", filename)
 		}
 		file, err = dw.assetFS.Open(filename)
