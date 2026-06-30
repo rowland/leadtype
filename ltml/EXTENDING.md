@@ -54,12 +54,16 @@ Doc                      — top-level parser; holds a stack and scope stack
   3. If the element implements `WantsScope`, injects the current scope.
   4. If the element implements `WantsContainer` / `HasParent`, links it to the
      current container/parent on the stack.
-  5. Merges attributes in priority order: alias defaults → matching rule
+  5. Pushes the element onto the element stack. If it implements `HasScope`,
+     establishes its child scope; built-in scoped containers use that scope for
+     the owner's own resource lookup.
+  6. Applies attributes in priority order: alias defaults → matching rule
      attributes → direct XML attributes.
-  6. If the element is a `Styler`, registers it in the current scope.
-  7. If the element is a `*LayoutStyle`, `*Alias`, or `*Rules`, registers it
-     in the current scope.
-  8. Pushes the element onto the element stack (and scope stack if `HasScope`).
+  7. If the element is a `Styler`, registers it in the current scope.
+  8. If the element is a `*LayoutStyle`, `*PageStyle`, `*Alias`, or `*Rules`,
+     registers it in the current scope.
+  9. After a style, layout, or page-style registration, refreshes the active
+     scope owner's resource-backed attributes from their original cascade.
 
 - **`xml.EndElement`** → pops the element (and scope) stack.
 - **`xml.CharData`** → calls `AddText` if the top element implements `HasText`.
@@ -356,17 +360,26 @@ functions:
 
 ## The Scope System
 
-Both `StdDocument` and `StdPage` embed `Scope` directly, so both satisfy
-`HasScope`. The parser's `push` method detects `HasScope` and sets the parent
-scope, building a lookup chain that walks from innermost to outermost. When a
-`<page>` element is popped off the stack its scope is discarded, so definitions
-inside it are never visible to sibling pages.
+`StdDocument`, `StdPage`, and `StdCanvas` embed `Scope` directly, so they
+satisfy `HasScope`. The parser's `push` method detects `HasScope`, sets the
+parent scope, and binds the scoped container's own resource lookup to that new
+scope. This builds a lookup chain that walks from innermost to outermost. When
+a `<page>` or `<canvas>` element is popped off the stack its scope is discarded,
+so definitions inside it are never visible to sibling scopes.
 
 ```
 defaultScope (global)
   └─ StdDocument.Scope   (<ltml> — shared across all pages)
-       └─ StdPage.Scope  (<page> — exclusive to that page instance)
+       ├─ StdCanvas.Scope (<canvas> — exclusive to that canvas)
+       └─ StdPage.Scope   (<page> — exclusive to that page instance)
 ```
+
+The parser retains the ordered default, rule, and direct-attribute layers for a
+scope owner. Registering a local style, layout, or page style resets and
+reapplies only the owner's resource-backed attributes. Thus an owner can
+reference a resource declared at the beginning of its body while ordinary
+children and dependencies between resource declarations remain
+declaration-ordered.
 
 **Default scope contents:**
 

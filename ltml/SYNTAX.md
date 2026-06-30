@@ -30,23 +30,45 @@ visible only to that canvas capture. Definitions placed inside a `<page>` are
 visible only to that page. Definitions placed directly inside `<ltml>` are
 visible to all pages and canvases. A page or canvas can always reference
 definitions from its parent `<ltml>` scope, but sibling scopes stay isolated.
+The attributes on a scope owner may also reference resources declared inside
+that same scope. This lets standalone pages and canvases use stable local names
+without coordinating IDs with the rest of the document:
 
 ```xml
 <ltml>
   <font id="body" name="Helvetica" size="12" />  <!-- shared by all pages -->
 
-  <page>
+  <page font="body">
+    <font id="body" name="Times New Roman" size="11" />  <!-- shadows the shared body -->
     <font id="title" name="Helvetica" size="24" weight="Bold" />  <!-- this page only -->
     <p font="title">Page One</p>
-    <p font="body">Body text.</p>
+    <p>Body text.</p>
   </page>
 
-  <page>
+  <page font="body">
     <!-- "title" is not visible here -->
-    <p font="body">Page Two</p>
+    <p>Page Two uses the shared Helvetica body.</p>
   </page>
 </ltml>
 ```
+
+The same convention works at the document root, including for the document's
+default page style:
+
+```xml
+<ltml font="body" style="book">
+  <font id="body" name="Helvetica" size="11" />
+  <pagestyle id="book" units="in" width="6" height="9" />
+  <page>
+    <p>Document content.</p>
+  </page>
+</ltml>
+```
+
+This is a narrow exception for the owner of a scope, not general declaration
+hoisting. Put resource declarations before ordinary content that refers to
+them. Dependencies between resource declarations also remain
+declaration-ordered.
 
 ---
 
@@ -840,8 +862,10 @@ id="..."/>` can define an explicit zero-footprint destination.
 
 ## Style Definitions
 
-Style definitions are placed inside `<ltml>` (or `<page>` for page-scoped
-styles) before the content that uses them.
+Style definitions are placed inside `<ltml>`, `<page>`, or `<canvas>` before
+ordinary content that uses them. A scope owner's own attributes may reference
+definitions placed at the beginning of that scope, as described under
+[Scope](#scope).
 
 ### `<font>` — Font Style
 
@@ -1083,12 +1107,21 @@ one-off custom page size.
 
 #### Custom named page sizes (`<pagestyle>`)
 
-Use `<pagestyle>` to define a reusable named page size anywhere a `<page>` has
-not yet been opened (typically at the top of the document):
+Use `<pagestyle>` to define a reusable named page size at document scope:
 
 ```xml
 <pagestyle id="book" units="in" width="6" height="9"/>
 <page style="book" margin="0.75in">
+  <!-- content -->
+</page>
+```
+
+For a standalone page, the page may instead reference a page style declared at
+the beginning of its own scope:
+
+```xml
+<page style="book" margin="0.75in">
+  <pagestyle id="book" units="in" width="6" height="9"/>
   <!-- content -->
 </page>
 ```
@@ -1101,8 +1134,9 @@ not yet been opened (typically at the top of the document):
 | `units`       | Unit for `width` and `height`: `pt` (default), `in`, `cm`, `mm`, `dp`. |
 | `orientation` | `portrait` (default) or `landscape`. |
 
-Once defined, the name is available to all subsequent `<page>` elements in the
-same scope, just like the built-in size names.
+At document scope, the name is available to all subsequent `<page>` elements.
+At page scope, it is isolated to that page and may safely reuse a name from
+another page.
 
 #### Avery extension package
 

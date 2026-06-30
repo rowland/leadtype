@@ -183,19 +183,7 @@ var reMargin = regexp.MustCompile(`^margin(-top|-right|-bottom|-left)?$`)
 
 func (p *StdPage) SetAttrs(attrs map[string]string) {
 	p.StdContainer.SetAttrs(attrs)
-	if style, ok := attrs["style"]; ok {
-		p.pageStyle = PageStyleFor(style, p.scope)
-	}
-	if MapHasKeyPrefix(attrs, "style.") {
-		base := p.pageStyle
-		if base == nil {
-			base = PageStyleFor("letter", p.scope)
-		}
-		if base != nil {
-			p.pageStyle = base.Clone()
-			p.pageStyle.SetAttrs(addUnits(filterMapAttrs("style.", attrs), p.Units()))
-		}
-	}
+	p.setPageResourceAttrs(attrs, p.Units())
 	if grid, ok := attrs["grid"]; ok {
 		step, majorEvery := parsePageGrid(grid)
 		switch step {
@@ -228,6 +216,32 @@ func (p *StdPage) SetAttrs(attrs map[string]string) {
 		if reMargin.MatchString(k) {
 			p.marginChanged = true
 			break
+		}
+	}
+}
+
+func (p *StdPage) resetResourceAttrs() {
+	p.StdContainer.resetResourceAttrs()
+	p.pageStyle = nil
+}
+
+func (p *StdPage) setResourceAttrs(attrs map[string]string, units Units) {
+	p.StdContainer.setResourceAttrs(attrs, units)
+	p.setPageResourceAttrs(attrs, units)
+}
+
+func (p *StdPage) setPageResourceAttrs(attrs map[string]string, units Units) {
+	if style, ok := attrs["style"]; ok {
+		p.pageStyle = PageStyleFor(style, p.scope)
+	}
+	if MapHasKeyPrefix(attrs, "style.") {
+		base := p.pageStyle
+		if base == nil {
+			base = PageStyleFor("letter", p.scope)
+		}
+		if base != nil {
+			p.pageStyle = base.Clone()
+			p.pageStyle.SetAttrs(addUnits(filterMapAttrs("style.", attrs), units))
 		}
 	}
 }

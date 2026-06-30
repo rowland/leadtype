@@ -196,16 +196,9 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		c.dirExplicit = true
 		c.dir = ParseDir(dirVal)
 	}
-	if layout, ok := attrs["layout"]; ok {
-		c.layout = LayoutStyleFor(layout, c.scope)
-	}
 	if bullets, ok := attrs["bullets"]; ok {
 		c.listBulletIDs = strings.TrimSpace(bullets)
 		c.listPrepared = false
-	}
-	if MapHasKeyPrefix(attrs, "layout.") {
-		c.layout = c.LayoutStyle().Clone()
-		c.layout.SetAttrs(addUnits(filterMapAttrs("layout.", attrs), c.Units()))
 	}
 	if order, ok := attrs["order"]; ok {
 		switch order {
@@ -273,6 +266,28 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		if value, err := strconv.Atoi(footerRows); err == nil {
 			c.footerRows = value
 		}
+	}
+	c.setContainerResourceAttrs(attrs, c.Units())
+}
+
+func (c *StdContainer) resetResourceAttrs() {
+	c.StdWidget.resetResourceAttrs()
+	c.layout = nil
+	c.paragraphStyle = nil
+}
+
+func (c *StdContainer) setResourceAttrs(attrs map[string]string, units Units) {
+	c.StdWidget.setResourceAttrs(attrs, units)
+	c.setContainerResourceAttrs(attrs, units)
+}
+
+func (c *StdContainer) setContainerResourceAttrs(attrs map[string]string, units Units) {
+	if layout, ok := attrs["layout"]; ok {
+		c.layout = LayoutStyleFor(layout, c.scope)
+	}
+	if MapHasKeyPrefix(attrs, "layout.") {
+		c.layout = c.LayoutStyle().Clone()
+		c.layout.SetAttrs(addUnits(filterMapAttrs("layout.", attrs), units))
 	}
 	SetParagraphStyle(&c.paragraphStyle, "paragraph-style", attrs, c.scope, c)
 }

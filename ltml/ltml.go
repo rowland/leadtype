@@ -19,13 +19,30 @@ import (
 type Doc struct {
 	root         *StdDocument
 	stack        []any
-	scopes       []HasScope
+	scopeFrames  []scopeFrame
 	rootScope    Scope // per-document root scope; parent = &defaultScope
 	parseErr     error
 	assetFS      fs.FS
 	sourceDir    string
 	assetSources *assetSourceManager
 	profiler     *profile.Profiler
+}
+
+type scopeResourceOwner interface {
+	resetResourceAttrs()
+	setResourceAttrs(map[string]string, Units)
+	Units() Units
+}
+
+type scopeAttrLayer struct {
+	attrs map[string]string
+	units Units
+}
+
+type scopeFrame struct {
+	scope      HasScope
+	owner      scopeResourceOwner
+	attrLayers []scopeAttrLayer
 }
 
 type ParseOption func(*Doc)
@@ -298,7 +315,8 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 			}
 		}
 	}
-	applyElementAttrs(doc.scope(), e, defaultAttrs, attrs, sourcePath)
+	attrLayers := applyElementAttrs(doc.scope(), e, defaultAttrs, attrs, sourcePath)
+	doc.captureScopeOwnerAttrs(e, attrLayers)
 	if wrapper != nil {
 		applyElementAttrs(doc.scope(), wrapper, defaultAttrs, attrs, sourcePath)
 	}
@@ -344,6 +362,8 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		}
 		if err := doc.scope().AddStyle(style); err != nil {
 			debugf("Adding style: %s\n", err)
+		} else {
+			doc.refreshScopeOwnerResources()
 		}
 	}
 	if layout, ok := e.(*LayoutStyle); ok {
@@ -353,11 +373,15 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		}
 		if err := doc.scope().AddLayout(layout); err != nil {
 			debugf("Adding layout: %s\n", err)
+		} else {
+			doc.refreshScopeOwnerResources()
 		}
 	}
 	if pageStyle, ok := e.(*PageStyle); ok {
 		if err := doc.scope().AddPageStyle(pageStyle); err != nil {
 			debugf("Adding page style: %s\n", err)
+		} else {
+			doc.refreshScopeOwnerResources()
 		}
 	}
 	if alias, ok := e.(*Alias); ok {
@@ -457,12 +481,25 @@ func (doc *Doc) applyPseudoRulesToWidget(widget Widget, resolver *selectorStruct
 
 // applyElementAttrs applies default attrs, matching selector rules, and direct
 // element attrs to a target in that precedence order.
-func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[string]string, pathOverride string) {
+func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[string]string, pathOverride string) []scopeAttrLayer {
 	if target == nil {
-		return
+		return nil
 	}
+	var applied []scopeAttrLayer
+	owner, captureAttrs := target.(scopeResourceOwner)
 	if e, ok := target.(HasAttrs); ok {
-		e.SetAttrs(defaultAttrs)
+		apply := func(values map[string]string) {
+			e.SetAttrs(values)
+			if captureAttrs {
+				if resourceAttrs := scopeOwnerResourceAttrs(values); len(resourceAttrs) > 0 {
+					applied = append(applied, scopeAttrLayer{
+						attrs: resourceAttrs,
+						units: owner.Units(),
+					})
+				}
+			}
+		}
+		apply(defaultAttrs)
 		path := pathOverride
 		if path == "" {
 			if p, ok := target.(HasPath); ok {
@@ -471,11 +508,32 @@ func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[strin
 		}
 		if path != "" {
 			scope.EachRuleFor(path, func(rule *Rule) {
-				e.SetAttrs(rule.Attrs)
+				apply(rule.Attrs)
 			})
 		}
-		e.SetAttrs(attrs)
+		apply(attrs)
 	}
+	return applied
+}
+
+func scopeOwnerResourceAttrs(attrs map[string]string) map[string]string {
+	var resourceAttrs map[string]string
+	for name, value := range attrs {
+		switch {
+		case name == "font", strings.HasPrefix(name, "font."),
+			name == "fill", strings.HasPrefix(name, "fill."),
+			name == "border", strings.HasPrefix(name, "border."),
+			strings.HasPrefix(name, "border-"),
+			name == "layout", strings.HasPrefix(name, "layout."),
+			name == "paragraph-style", strings.HasPrefix(name, "paragraph-style."),
+			name == "style", strings.HasPrefix(name, "style."):
+			if resourceAttrs == nil {
+				resourceAttrs = make(map[string]string)
+			}
+			resourceAttrs[name] = value
+		}
+	}
+	return resourceAttrs
 }
 
 // applyPseudoRuleAttrs applies matching pseudo-class selector attrs to a
@@ -530,7 +588,14 @@ func (doc *Doc) push(value any) {
 	doc.stack = append(doc.stack, value)
 	if scope, ok := value.(HasScope); ok {
 		scope.SetParentScope(doc.scope())
-		doc.scopes = append(doc.scopes, scope)
+		frame := scopeFrame{scope: scope}
+		if owner, ok := value.(scopeResourceOwner); ok {
+			frame.owner = owner
+			if scoped, ok := value.(WantsScope); ok {
+				scoped.SetScope(scope)
+			}
+		}
+		doc.scopeFrames = append(doc.scopeFrames, frame)
 	}
 }
 
@@ -538,10 +603,35 @@ func (doc *Doc) pop() (value any) {
 	if len(doc.stack) > 0 {
 		value, doc.stack = doc.stack[len(doc.stack)-1], doc.stack[:len(doc.stack)-1]
 		if _, ok := value.(HasScope); ok {
-			doc.scopes = doc.scopes[:len(doc.scopes)-1]
+			doc.scopeFrames = doc.scopeFrames[:len(doc.scopeFrames)-1]
 		}
 	}
 	return
+}
+
+func (doc *Doc) captureScopeOwnerAttrs(value any, attrLayers []scopeAttrLayer) {
+	if _, ok := value.(HasScope); !ok || len(doc.scopeFrames) == 0 {
+		return
+	}
+	frame := &doc.scopeFrames[len(doc.scopeFrames)-1]
+	if frame.owner == nil {
+		return
+	}
+	frame.attrLayers = attrLayers
+}
+
+func (doc *Doc) refreshScopeOwnerResources() {
+	if len(doc.scopeFrames) == 0 {
+		return
+	}
+	frame := &doc.scopeFrames[len(doc.scopeFrames)-1]
+	if frame.owner == nil || len(frame.attrLayers) == 0 {
+		return
+	}
+	frame.owner.resetResourceAttrs()
+	for _, layer := range frame.attrLayers {
+		frame.owner.setResourceAttrs(layer.attrs, layer.units)
+	}
 }
 
 func (doc *Doc) current() (value any) {
@@ -552,8 +642,8 @@ func (doc *Doc) current() (value any) {
 }
 
 func (doc *Doc) scope() HasScope {
-	if len(doc.scopes) > 0 {
-		return doc.scopes[len(doc.scopes)-1]
+	if len(doc.scopeFrames) > 0 {
+		return doc.scopeFrames[len(doc.scopeFrames)-1].scope
 	}
 	// Return the per-document root scope, which inherits from defaultScope.
 	// This ensures concurrent documents can carry different asset filesystems.

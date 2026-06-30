@@ -271,27 +271,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 			widget.selfAlign = SelfAlignEnd
 		}
 	}
-	SetPenStyle(&widget.border, "border", attrs, widget.scope, widget.Units())
-	for i, side := range sideNames {
-		if border, ok := attrs["border-"+side]; ok {
-			widget.borders[i] = PenStyleFor(border, widget.scope)
-		}
-		prefix := "border-" + side + "."
-		if MapHasKeyPrefix(attrs, prefix) {
-			base := widget.borders[i]
-			if base == nil {
-				base = widget.border
-			}
-			if base == nil {
-				widget.borders[i] = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
-			} else {
-				widget.borders[i] = base.Clone()
-			}
-			widget.borders[i].SetAttrs(addUnits(filterMapAttrs(prefix, attrs), widget.Units()))
-		}
-	}
-	SetBrushStyle(&widget.fill, "fill", attrs, widget.scope, widget.Units())
-	SetFontStyle(&widget.font, "font", attrs, widget.scope, widget.Units(), widget.container)
+	widget.setResourceAttrs(attrs, widget.Units())
 	if colSpan, ok := attrs["colspan"]; ok {
 		widget.colSpan, _ = strconv.Atoi(colSpan)
 	}
@@ -328,6 +308,37 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if value, ok := attrs["role"]; ok {
 		widget.role = strings.TrimSpace(value)
 	}
+}
+
+func (widget *StdWidget) resetResourceAttrs() {
+	widget.border = nil
+	widget.borders = [4]*PenStyle{}
+	widget.fill = nil
+	widget.font = nil
+}
+
+func (widget *StdWidget) setResourceAttrs(attrs map[string]string, units Units) {
+	SetPenStyle(&widget.border, "border", attrs, widget.scope, units)
+	for i, side := range sideNames {
+		if border, ok := attrs["border-"+side]; ok {
+			widget.borders[i] = PenStyleFor(border, widget.scope)
+		}
+		prefix := "border-" + side + "."
+		if MapHasKeyPrefix(attrs, prefix) {
+			base := widget.borders[i]
+			if base == nil {
+				base = widget.border
+			}
+			if base == nil {
+				widget.borders[i] = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+			} else {
+				widget.borders[i] = base.Clone()
+			}
+			widget.borders[i].SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
+		}
+	}
+	SetBrushStyle(&widget.fill, "fill", attrs, widget.scope, units)
+	SetFontStyle(&widget.font, "font", attrs, widget.scope, units, widget.container)
 }
 
 func (widget *StdWidget) backgroundRect() (x, y, width, height float64) {
