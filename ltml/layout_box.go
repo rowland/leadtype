@@ -343,6 +343,7 @@ type vboxFragment struct {
 
 func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer, headers, body, footers []Widget) vboxFragment {
 	constrained := container.Height() != 0
+	continues := containerHasEffectiveContinuation(container)
 	bottom := math.Inf(1)
 	if constrained {
 		bottom = ContentTop(container) + MaxContentHeight(container)
@@ -354,14 +355,14 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 		entry := measureVBoxChild(container, writer, widget)
 		widget.SetTop(top)
 		if widgetZeroFootprint(widget) {
-			widget.SetVisible(widget.Top() <= bottom)
+			widget.SetVisible(!continues || widget.Top() <= bottom)
 			if widget.Visible() {
 				fragment.headers = append(fragment.headers, entry)
 			}
 			continue
 		}
 		top += entry.height + style.VPadding()
-		widget.SetVisible(widget.Bottom() <= bottom)
+		widget.SetVisible(!continues || widget.Bottom() <= bottom)
 		if widget.Visible() {
 			fragment.headers = append(fragment.headers, entry)
 		}
@@ -375,10 +376,10 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 			entry := measureVBoxChild(container, writer, widget)
 			widget.SetBottom(footerBottom)
 			if widgetZeroFootprint(widget) {
-				widget.SetVisible(widget.Top() >= top)
+				widget.SetVisible(!continues || widget.Top() >= top)
 			} else {
 				footerBottom = widget.Top() - style.VPadding()
-				widget.SetVisible(widget.Top() >= top)
+				widget.SetVisible(!continues || widget.Top() >= top)
 			}
 			if widget.Visible() {
 				fragment.footers = append([]vboxMeasuredWidget{entry}, fragment.footers...)
@@ -400,13 +401,13 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 		entry := measureVBoxChild(container, writer, widget)
 		widget.SetTop(top)
 		if widgetZeroFootprint(widget) {
-			widget.SetVisible(widget.Top() <= bodyBottom)
+			widget.SetVisible(!continues || widget.Top() <= bodyBottom)
 			if widget.Visible() {
 				fragment.body = append(fragment.body, entry)
 			}
 			continue
 		}
-		if constrained && top+entry.height > bodyBottom+layoutFitEpsilon {
+		if constrained && continues && top+entry.height > bodyBottom+layoutFitEpsilon {
 			containerFull = true
 			widget.SetVisible(false)
 			continue

@@ -58,6 +58,159 @@ func newFlowPageDoc(page *StdPage) *StdDocument {
 	return doc
 }
 
+func TestContainerHasEffectiveContinuation(t *testing.T) {
+	newPage := func(manager, overflow string) *StdPage {
+		page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+		page.layout = defaultLayouts[manager].Clone()
+		if overflow != "" {
+			page.SetAttrs(map[string]string{"overflow": overflow})
+		}
+		return page
+	}
+	addBox := func(parent Container, manager, overflow string) *StdContainer {
+		box := &StdContainer{}
+		box.layout = defaultLayouts[manager].Clone()
+		if overflow != "" {
+			box.SetAttrs(map[string]string{"overflow": overflow})
+		}
+		_ = box.SetContainer(parent)
+		parent.AddChild(box)
+		return box
+	}
+
+	tests := []struct {
+		name  string
+		setup func() Container
+		want  bool
+	}{
+		{
+			name: "vbox page",
+			setup: func() Container {
+				return newPage("vbox", "")
+			},
+			want: true,
+		},
+		{
+			name: "flow page",
+			setup: func() Container {
+				return newPage("flow", "")
+			},
+			want: true,
+		},
+		{
+			name: "table page",
+			setup: func() Container {
+				return newPage("table", "")
+			},
+			want: true,
+		},
+		{
+			name: "disabled page",
+			setup: func() Container {
+				return newPage("vbox", "false")
+			},
+			want: false,
+		},
+		{
+			name: "direct vbox",
+			setup: func() Container {
+				return addBox(newPage("vbox", ""), "vbox", "")
+			},
+			want: true,
+		},
+		{
+			name: "direct table",
+			setup: func() Container {
+				return addBox(newPage("vbox", ""), "table", "")
+			},
+			want: true,
+		},
+		{
+			name: "disabled current vbox",
+			setup: func() Container {
+				return addBox(newPage("vbox", ""), "vbox", "false")
+			},
+			want: false,
+		},
+		{
+			name: "nested vbox",
+			setup: func() Container {
+				page := newPage("vbox", "")
+				outer := addBox(page, "vbox", "")
+				return addBox(outer, "vbox", "")
+			},
+			want: true,
+		},
+		{
+			name: "nested table as current",
+			setup: func() Container {
+				page := newPage("vbox", "")
+				outer := addBox(page, "vbox", "")
+				return addBox(outer, "table", "")
+			},
+			want: true,
+		},
+		{
+			name: "hbox ancestor",
+			setup: func() Container {
+				page := newPage("vbox", "")
+				row := addBox(page, "hbox", "")
+				return addBox(row, "vbox", "")
+			},
+			want: false,
+		},
+		{
+			name: "flow ancestor",
+			setup: func() Container {
+				page := newPage("vbox", "")
+				flow := addBox(page, "flow", "")
+				return addBox(flow, "vbox", "")
+			},
+			want: false,
+		},
+		{
+			name: "table ancestor",
+			setup: func() Container {
+				page := newPage("vbox", "")
+				table := addBox(page, "table", "")
+				return addBox(table, "vbox", "")
+			},
+			want: false,
+		},
+		{
+			name: "disabled vbox ancestor",
+			setup: func() Container {
+				page := newPage("vbox", "")
+				outer := addBox(page, "vbox", "false")
+				return addBox(outer, "vbox", "")
+			},
+			want: false,
+		},
+		{
+			name: "nested flow as current",
+			setup: func() Container {
+				return addBox(newPage("vbox", ""), "flow", "true")
+			},
+			want: false,
+		},
+		{
+			name: "absolute current",
+			setup: func() Container {
+				return addBox(newPage("vbox", ""), "absolute", "true")
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := containerHasEffectiveContinuation(tc.setup()); got != tc.want {
+				t.Fatalf("containerHasEffectiveContinuation() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestLayoutVBox_TopAndBottomChildrenPreserveSourceOrder(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
 	page.layout = defaultLayouts["vbox"].Clone()
@@ -128,6 +281,129 @@ func TestLayoutFlow_WrapsAndHidesOverflowingWidgets(t *testing.T) {
 	}
 	if third.Visible() {
 		t.Fatalf("third should be hidden after overflowing flow layout")
+	}
+}
+
+func TestLayoutFlow_PageOverflowFalsePaintsOverflowingWidgets(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 100, height: 45}}
+	page.layout = defaultLayouts["flow"].Clone()
+	page.SetAttrs(map[string]string{"overflow": "false"})
+
+	widgets := make([]*flowTestWidget, 3)
+	for i := range widgets {
+		widget := &flowTestWidget{name: "flow", preferredWidth: 60, preferredHeight: 20}
+		_ = widget.SetContainer(page)
+		page.AddChild(widget)
+		widgets[i] = widget
+	}
+
+	LayoutFlow(page, page.layout, &labelTestWriter{t: t})
+
+	for i, widget := range widgets {
+		if !widget.Visible() || widget.layoutCalls != 1 {
+			t.Fatalf("widget %d visible/layoutCalls = %v/%d, want true/1", i, widget.Visible(), widget.layoutCalls)
+		}
+	}
+	if widgets[2].Bottom() <= page.Bottom() {
+		t.Fatalf("third widget bottom = %v, want beyond page bottom %v", widgets[2].Bottom(), page.Bottom())
+	}
+}
+
+func TestLayoutFlow_NestedContainerPaintsOverflowingWidgets(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	flow := &StdContainer{}
+	flow.layout = defaultLayouts["flow"].Clone()
+	flow.SetLeft(0)
+	flow.SetTop(0)
+	flow.SetWidth(100)
+	flow.SetHeight(45)
+	_ = flow.SetContainer(page)
+	page.AddChild(flow)
+
+	widgets := make([]*flowTestWidget, 3)
+	for i := range widgets {
+		widget := &flowTestWidget{name: "flow", preferredWidth: 60, preferredHeight: 20}
+		_ = widget.SetContainer(flow)
+		flow.AddChild(widget)
+		widgets[i] = widget
+	}
+
+	LayoutFlow(flow, flow.layout, &labelTestWriter{t: t})
+
+	for i, widget := range widgets {
+		if !widget.Visible() || widget.layoutCalls != 1 {
+			t.Fatalf("widget %d visible/layoutCalls = %v/%d, want true/1", i, widget.Visible(), widget.layoutCalls)
+		}
+	}
+	if widgets[2].Bottom() <= flow.Bottom() {
+		t.Fatalf("third widget bottom = %v, want beyond flow bottom %v", widgets[2].Bottom(), flow.Bottom())
+	}
+}
+
+func TestLayoutTable_PageOverflowFalsePaintsOverflowingRows(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 100, height: 45}}
+	page.layout = defaultLayouts["table"].Clone()
+	page.cols = 1
+	page.SetAttrs(map[string]string{"overflow": "false"})
+
+	cells := make([]*flowTestWidget, 3)
+	for i := range cells {
+		cell := &flowTestWidget{name: "cell", preferredHeight: 20}
+		_ = cell.SetContainer(page)
+		page.AddChild(cell)
+		cells[i] = cell
+	}
+
+	LayoutTable(page, page.layout, &labelTestWriter{t: t})
+
+	for i, cell := range cells {
+		if !cell.Visible() || cell.layoutCalls != 1 {
+			t.Fatalf("cell %d visible/layoutCalls = %v/%d, want true/1", i, cell.Visible(), cell.layoutCalls)
+		}
+	}
+	if cells[2].Bottom() <= page.Bottom() {
+		t.Fatalf("third cell bottom = %v, want beyond page bottom %v", cells[2].Bottom(), page.Bottom())
+	}
+}
+
+func TestLayoutTable_NestedWithoutContinuationPaintsOverflowingRows(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	row := &StdContainer{}
+	row.layout = defaultLayouts["hbox"].Clone()
+	_ = row.SetContainer(page)
+	page.AddChild(row)
+
+	table := &StdContainer{}
+	table.layout = defaultLayouts["table"].Clone()
+	table.cols = 1
+	table.SetLeft(0)
+	table.SetTop(0)
+	table.SetWidth(100)
+	table.SetHeight(45)
+	_ = table.SetContainer(row)
+	row.AddChild(table)
+
+	cells := make([]*flowTestWidget, 3)
+	for i := range cells {
+		cell := &flowTestWidget{name: "cell", preferredHeight: 20}
+		_ = cell.SetContainer(table)
+		table.AddChild(cell)
+		cells[i] = cell
+	}
+
+	LayoutTable(table, table.layout, &labelTestWriter{t: t})
+
+	for i, cell := range cells {
+		if !cell.Visible() || cell.layoutCalls != 1 {
+			t.Fatalf("cell %d visible/layoutCalls = %v/%d, want true/1", i, cell.Visible(), cell.layoutCalls)
+		}
+	}
+	if cells[2].Bottom() <= table.Bottom() {
+		t.Fatalf("third cell bottom = %v, want beyond table bottom %v", cells[2].Bottom(), table.Bottom())
 	}
 }
 
@@ -205,6 +481,59 @@ func TestLayoutVBox_SkipsBodyChildrenAfterFirstOverflow(t *testing.T) {
 	}
 	if tail.preferredWidths != 0 || tail.preferredHeights != 0 {
 		t.Fatalf("tail preferred calls = width:%d height:%d, want none", tail.preferredWidths, tail.preferredHeights)
+	}
+}
+
+func TestLayoutVBox_PaintsOverflowWhenHBoxBreaksContinuationPath(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+
+	row := &StdContainer{}
+	row.layout = defaultLayouts["hbox"].Clone()
+	_ = row.SetContainer(page)
+	page.AddChild(row)
+
+	panel := &StdContainer{}
+	panel.layout = defaultLayouts["vbox"].Clone()
+	panel.SetWidth(100)
+	panel.SetHeight(60)
+	panel.SetLeft(0)
+	panel.SetTop(0)
+	_ = panel.SetContainer(row)
+	row.AddChild(panel)
+
+	header := &flowTestWidget{name: "header", preferredHeight: 20}
+	_ = header.SetContainer(panel)
+	panel.AddChild(header)
+
+	body := &flowTestWidget{name: "body", preferredHeight: 50}
+	_ = body.SetContainer(panel)
+	panel.AddChild(body)
+
+	footer := &flowTestWidget{name: "footer", preferredHeight: 10}
+	footer.SetAttrs(map[string]string{"align": "bottom"})
+	_ = footer.SetContainer(panel)
+	panel.AddChild(footer)
+
+	LayoutVBox(panel, panel.layout, &labelTestWriter{t: t})
+
+	if !header.Visible() || header.layoutCalls != 1 {
+		t.Fatalf("header visible/layoutCalls = %v/%d, want true/1", header.Visible(), header.layoutCalls)
+	}
+	if !body.Visible() || body.layoutCalls != 1 {
+		t.Fatalf("body visible/layoutCalls = %v/%d, want true/1", body.Visible(), body.layoutCalls)
+	}
+	if !footer.Visible() || footer.layoutCalls != 1 {
+		t.Fatalf("footer visible/layoutCalls = %v/%d, want true/1", footer.Visible(), footer.layoutCalls)
+	}
+	if body.Bottom() <= panel.Bottom() {
+		t.Fatalf("body bottom = %v, want beyond fixed panel bottom %v", body.Bottom(), panel.Bottom())
+	}
+	if footer.Bottom() != panel.Bottom() {
+		t.Fatalf("footer bottom = %v, want anchored to panel bottom %v", footer.Bottom(), panel.Bottom())
+	}
+	if panel.Height() != 60 {
+		t.Fatalf("panel height = %v, want fixed height 60", panel.Height())
 	}
 }
 
@@ -706,6 +1035,122 @@ func TestStdPage_DirectChildVBoxOverflowDefaultsToTrue(t *testing.T) {
 	}
 }
 
+func TestStdPage_RecursivelySplitsNestedVBoxWithEffectiveContinuation(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	outer := &StdContainer{}
+	outer.layout = defaultLayouts["vbox"].Clone()
+	outer.SetWidth(180)
+	_ = outer.SetContainer(page)
+	page.AddChild(outer)
+
+	inner := &StdContainer{}
+	inner.layout = defaultLayouts["vbox"].Clone()
+	inner.SetWidth(180)
+	_ = inner.SetContainer(outer)
+	outer.AddChild(inner)
+
+	pages := make([][]int, 2)
+	for i := range pages {
+		row := &flowTestWidget{name: "row", preferredHeight: 60, printedOn: &pages[i]}
+		_ = row.SetContainer(inner)
+		inner.AddChild(row)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(pages[0], []int{1}) || !slices.Equal(pages[1], []int{2}) {
+		t.Fatalf("row pages = %v, want [[1] [2]]", pages)
+	}
+}
+
+func TestStdPage_RecursivelySplitsNestedTableWithEffectiveContinuation(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	outer := &StdContainer{}
+	outer.layout = defaultLayouts["vbox"].Clone()
+	outer.SetWidth(180)
+	_ = outer.SetContainer(page)
+	page.AddChild(outer)
+
+	table := &StdContainer{}
+	table.layout = defaultLayouts["table"].Clone()
+	table.order = TableOrderRows
+	table.cols = 1
+	table.SetWidth(180)
+	_ = table.SetContainer(outer)
+	outer.AddChild(table)
+
+	pages := make([][]int, 2)
+	for i := range pages {
+		cell := &flowTestWidget{name: "cell", preferredHeight: 60, printedOn: &pages[i]}
+		_ = cell.SetContainer(table)
+		table.AddChild(cell)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 {
+		t.Fatalf("page count = %d, want 2", w.pageCount)
+	}
+	if !slices.Equal(pages[0], []int{1}) || !slices.Equal(pages[1], []int{2}) {
+		t.Fatalf("cell pages = %v, want [[1] [2]]", pages)
+	}
+}
+
+func TestStdPage_NestedVBoxOverflowFalsePaintsAllChildren(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 120}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+
+	outer := &StdContainer{}
+	outer.layout = defaultLayouts["vbox"].Clone()
+	outer.SetWidth(180)
+	outer.SetHeight(100)
+	_ = outer.SetContainer(page)
+	page.AddChild(outer)
+
+	inner := &StdContainer{}
+	inner.layout = defaultLayouts["vbox"].Clone()
+	inner.SetAttrs(map[string]string{"overflow": "false"})
+	inner.SetWidth(180)
+	inner.SetHeight(50)
+	_ = inner.SetContainer(outer)
+	outer.AddChild(inner)
+
+	pages := make([][]int, 2)
+	for i := range pages {
+		row := &flowTestWidget{name: "row", preferredHeight: 30, printedOn: &pages[i]}
+		_ = row.SetContainer(inner)
+		inner.AddChild(row)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 1 {
+		t.Fatalf("page count = %d, want 1", w.pageCount)
+	}
+	if !slices.Equal(pages[0], []int{1}) || !slices.Equal(pages[1], []int{1}) {
+		t.Fatalf("row pages = %v, want [[1] [1]]", pages)
+	}
+	if inner.Height() != 50 {
+		t.Fatalf("inner height = %v, want fixed height 50", inner.Height())
+	}
+}
+
 func TestStdPage_DirectChildVBoxOverflowFalseDisablesFragmenting(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
 	page.layout = defaultLayouts["vbox"].Clone()
@@ -1089,8 +1534,8 @@ func TestStdPage_ExplicitOverflowFalseDisablesDefaultRetry(t *testing.T) {
 	if len(body1Pages) != 1 || body1Pages[0] != 1 {
 		t.Fatalf("body1 pages = %v, want [1]", body1Pages)
 	}
-	if len(body2Pages) != 0 {
-		t.Fatalf("body2 pages = %v, want []", body2Pages)
+	if len(body2Pages) != 1 || body2Pages[0] != 1 {
+		t.Fatalf("body2 pages = %v, want [1]", body2Pages)
 	}
 }
 

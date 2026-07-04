@@ -23,6 +23,7 @@ type Container interface {
 	ParagraphStyle() *ParagraphStyle
 	Query(f func(value Widget) bool) []Widget
 	Rows() int
+	SplitEnabled() bool
 	Units() Units
 	Widgets() []Widget
 }
@@ -63,4 +64,41 @@ func rootPageForContainer(c Container) *StdPage {
 		c = c.Container()
 	}
 	return nil
+}
+
+// containerHasEffectiveContinuation reports whether container can continue its
+// own non-fitting content through every ancestor to an overflow-enabled page.
+// A table can continue its own rows, but only a vbox can propagate a child
+// container's continuation recursively.
+func containerHasEffectiveContinuation(container Container) bool {
+	if !containerContinuationEnabled(container) {
+		return false
+	}
+	if _, ok := container.(*StdPage); ok {
+		return true
+	}
+
+	for parent := container.Container(); parent != nil; parent = parent.Container() {
+		if page, ok := parent.(*StdPage); ok {
+			return page.effectiveOverflow() && page.supportsOverflowRetry()
+		}
+		if !containerPropagatesContinuation(parent) {
+			return false
+		}
+	}
+	return false
+}
+
+func containerContinuationEnabled(container Container) bool {
+	if page, ok := container.(*StdPage); ok {
+		return page.effectiveOverflow() && page.supportsOverflowRetry()
+	}
+	return container.SplitEnabled()
+}
+
+func containerPropagatesContinuation(container Container) bool {
+	if container.LayoutStyle() == nil || container.LayoutStyle().manager != "vbox" {
+		return false
+	}
+	return container.SplitEnabled()
 }

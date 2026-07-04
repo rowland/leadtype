@@ -6,6 +6,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 	var cx, cy, maxY float64
 	rtl := IsRTL(container)
 	containerFull := false
+	continues := containerHasEffectiveContinuation(container)
 	bottom := math.Inf(1)
 	if container.Height() != 0 {
 		bottom = ContentTop(container) + MaxContentHeight(container)
@@ -29,7 +30,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 			}
 			widget.SetTop(ContentTop(container) + cy)
 			widget.LayoutWidget(writer)
-			widget.SetVisible(widget.Top() <= bottom)
+			widget.SetVisible(!continues || widget.Top() <= bottom)
 			continue
 		}
 		if widgetAutoWidth(widget) || !widgetWidthSpecified(widget) {
@@ -55,7 +56,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 			widget.ResolveHeight(widget.PreferredHeight(writer))
 		}
 		widget.LayoutWidget(writer)
-		if widget.Bottom() > bottom {
+		if continues && widget.Bottom() > bottom {
 			containerFull = true
 			widget.SetVisible(false)
 			continue

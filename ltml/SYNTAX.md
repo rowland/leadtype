@@ -1547,6 +1547,12 @@ continuation (`overflow`).
 - Page `overflow` defaults to `true` for page `layout="flow"`,
   `layout="table"`, and `layout="vbox"`, and allows LTML to retry unprinted
   direct children on later physical pages.
+- `overflow` controls page continuation; it does not establish a clipping
+  boundary. A height-constrained `flow`, `table`, or `vbox` paints all of its
+  children when it has no effective continuation path, even when they extend
+  beyond the container.
+- When page overflow is disabled, `flow`, `table`, and `vbox` pages paint all
+  of their children on the current physical page.
 - Direct page-child paragraph, table, and vbox `overflow` defaults to `true`
   and allows the child to be fragmented across physical pages.
 - Use `overflow="false"` on a direct page child to keep that child whole.
@@ -1558,7 +1564,13 @@ continuation (`overflow`).
 
 #### Continuing Direct Page Children
 
-Only direct page children participate in the built-in continuation path.
+Only direct page children are tracked as page-flow items. An enabled vbox may
+propagate continuation for descendant vboxes, tables, and paragraphs through
+an unbroken chain of enabled vboxes. A table can continue its own whole rows
+through that chain, but a table cell does not propagate continuation for a
+container inside the cell. An `hbox`, nested `flow`, table cell, disabled vbox,
+or other non-propagating container breaks the path; vertical layouts below the
+break paint their children visibly instead of silently hiding them.
 
 - Direct page-child paragraphs continue by wrapped lines.
 - Direct page-child tables continue by whole rows.
