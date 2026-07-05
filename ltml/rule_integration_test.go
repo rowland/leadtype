@@ -505,6 +505,29 @@ func TestRules_integration_table_row_and_col_pseudos_apply(t *testing.T) {
 	}
 }
 
+func TestRules_integration_display_none_overrides_repeating_display(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>
+				.repeating { display: succeeding; }
+				.hidden { display: none; }
+			</style>
+			<page>
+				<div>
+					<p class="repeating hidden">hidden</p>
+				</div>
+			</page>
+		</ltml>`)
+
+	paragraph := childParagraph(t, firstContainer(t, doc), 0)
+	if paragraph.display != DisplayNone {
+		t.Fatalf("display = %s, want none", paragraph.display)
+	}
+	if widgetDisplayForRender(paragraph, false, 2, 2) {
+		t.Fatal("display:none widget should not participate in layout or rendering")
+	}
+}
+
 func TestRules_integration_direct_attrs_override_pseudo_rules(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>

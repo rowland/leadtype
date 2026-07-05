@@ -22,6 +22,7 @@ func TestDisplayMode_ParseAndString(t *testing.T) {
 		{input: "even", want: DisplayEven, text: "even"},
 		{input: "odd", want: DisplayOdd, text: "odd"},
 		{input: "last", want: DisplayLast, text: "last"},
+		{input: "none", want: DisplayNone, text: "none"},
 		{input: "  LAST  ", want: DisplayLast, text: "last"},
 		{input: "unknown", want: DisplayOnce, text: "once"},
 	}

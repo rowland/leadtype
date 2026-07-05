@@ -323,7 +323,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `shift-x`          | Offset the widget horizontally after layout. Measurements use normal LTML units; percentages use the widget's resolved width. |
 | `shift-y`          | Offset the widget vertically after layout. Measurements use normal LTML units; percentages use the widget's resolved height. |
 | `align`            | Position within parent vbox: `top` (header), `bottom` (footer). |
-| `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`, `last`. |
+| `display`          | Retry/visibility policy for repeated page rendering: `once` (default), `always`, `first`, `succeeding`, `even`, `odd`, `last`, or `none` to remove the widget from layout and rendering. |
 | `overflow`         | `true` or `false`. Whether a direct page-child paragraph may continue across physical pages. Defaults to `true`. |
 | `orphans`          | Minimum number of lines kept on the first continuation fragment. Defaults to `2`. |
 | `widows`           | Minimum number of lines carried to the next continuation fragment. Defaults to `2`. |
@@ -1544,6 +1544,8 @@ continuation (`overflow`).
 #### Visibility and Retry
 
 - `display` defaults to `once`.
+- `display="none"` (or CSS `display: none`) removes a widget from layout and
+  rendering, and can override a repeating display mode assigned by another rule.
 - Page `overflow` defaults to `true` for page `layout="flow"`,
   `layout="table"`, and `layout="vbox"`, and allows LTML to retry unprinted
   direct children on later physical pages.

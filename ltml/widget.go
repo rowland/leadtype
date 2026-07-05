@@ -103,6 +103,7 @@ const (
 	DisplayEven
 	DisplayOdd
 	DisplayLast
+	DisplayNone
 )
 
 type ZeroFootprint interface {
@@ -123,6 +124,8 @@ func ParseDisplayMode(value string) DisplayMode {
 		return DisplayOdd
 	case "last":
 		return DisplayLast
+	case "none":
+		return DisplayNone
 	default:
 		return DisplayOnce
 	}
@@ -142,6 +145,8 @@ func (d DisplayMode) String() string {
 		return "odd"
 	case DisplayLast:
 		return "last"
+	case DisplayNone:
+		return "none"
 	case DisplayOnce:
 		fallthrough
 	default:
@@ -163,6 +168,8 @@ func widgetDisplayForRender(widget Widget, parentRepeats bool, flowPageIndex int
 		return physicalPageNo%2 == 1
 	case DisplayLast:
 		return displayLastParticipatesInLayout(widget)
+	case DisplayNone:
+		return false
 	case DisplayOnce:
 		if parentRepeats && !widgetDisplayExplicit(widget) {
 			return true
@@ -221,6 +228,9 @@ func NonContentWidth(widget Widget) float64 {
 }
 
 func Print(widget Widget, writer Writer) error {
+	if widget.Display() == DisplayNone {
+		return nil
+	}
 	if suppressDisplayLastPaint(widget) {
 		return nil
 	}
