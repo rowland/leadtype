@@ -858,6 +858,12 @@ The element body is the entry label text. Entries render in encounter order.
 Any printed page or widget with an `id` can be a destination, and `<target
 id="..."/>` can define an explicit zero-footprint destination.
 
+`<index-entry>` does not require a matching `<index>` in the same document.
+Entries whose index id is not rendered by any `<index>` widget are collected
+during layout but produce no visible output. This lets shared page templates
+carry TOC metadata without also requiring a table-of-contents page on every
+render.
+
 ---
 
 ## Style Definitions

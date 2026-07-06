@@ -93,6 +93,11 @@ Entries are still rendered in encounter order. By default, an empty
 right-aligned page number. The rendered row links to the entry's target
 destination.
 
+`<index-entry>` does not require a matching `<index>` in the same document.
+Orphan entries are collected during preflight but produce no visible output.
+This supports shared page templates that carry TOC metadata even when a given
+render omits the table-of-contents page.
+
 ---
 
 ## PDF Implementation

@@ -210,19 +210,27 @@ func TestStdDocument_Print_RejectsInvalidLinkAttrs(t *testing.T) {
 	}
 }
 
-func TestStdDocument_Print_RejectsMissingIndexDefinition(t *testing.T) {
+func TestStdDocument_Print_AllowsOrphanIndexEntry(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>
   <page>
-    <index-entry index="toc" target="intro">Intro</index-entry>
+    <index-entry index="toc" target="intro">TOC label</index-entry>
     <label id="intro">Introduction</label>
   </page>
 </ltml>`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := doc.Print(&labelTestWriter{t: t}); err == nil || !strings.Contains(err.Error(), "missing index") {
-		t.Fatalf("Print error = %v, want missing index error", err)
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatalf("Print error = %v, want success when index definition is absent", err)
+	}
+	pageTexts := pageTextsByNumber(w)
+	if !strings.Contains(pageTexts[1], "Introduction") {
+		t.Fatalf("page 1 text = %q, want visible label without index output", pageTexts[1])
+	}
+	if strings.Contains(pageTexts[1], "TOC label") {
+		t.Fatalf("page 1 text = %q, want orphan index-entry label omitted from output", pageTexts[1])
 	}
 }
 

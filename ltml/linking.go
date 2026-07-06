@@ -173,7 +173,6 @@ func (d *StdDocument) describeLinking() (*documentLinkSummary, error) {
 		indexIDs:   make(map[string]struct{}),
 		targetRefs: make(map[string]struct{}),
 	}
-	indexRefs := make(map[string]struct{})
 	var err error
 	walkWidgets(d, func(widget Widget) bool {
 		switch value := widget.(type) {
@@ -214,25 +213,12 @@ func (d *StdDocument) describeLinking() (*documentLinkSummary, error) {
 				err = fmt.Errorf("<index-entry> requires a target attribute")
 				return false
 			}
-			summary.hasIndexes = true
-			indexRefs[value.indexID] = struct{}{}
 			summary.targetRefs[value.target] = struct{}{}
 		}
 		return true
 	})
 	if err != nil {
 		return nil, err
-	}
-	var missingIndexes []string
-	for indexID := range indexRefs {
-		if _, ok := summary.indexIDs[indexID]; ok {
-			continue
-		}
-		missingIndexes = append(missingIndexes, indexID)
-	}
-	if len(missingIndexes) > 0 {
-		sort.Strings(missingIndexes)
-		return nil, fmt.Errorf("missing index definition(s): %s", strings.Join(missingIndexes, ", "))
 	}
 	return summary, nil
 }
