@@ -1512,12 +1512,12 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 			pw.checkSetSpacing()
 
 			if shaped != nil {
-				// Poppler extracts marked-content /ActualText for Arabic runs in
-				// visual order, so we store the replacement text reversed to
-				// preserve logical codepoint order after its bidi wrappers are
-				// stripped during extraction tests.
+				// ActualText is replacement text and must always be stored in
+				// logical Unicode order. PDF consumers are responsible for bidi
+				// presentation; reversing it here merely happens to compensate for
+				// one extractor and causes conforming consumers to double-reverse.
 				if emit.emitAccessibility {
-					closeActualText = pw.beginActualTextContent(reverseRunesString(p.Text))
+					closeActualText = pw.beginActualTextContent(p.Text)
 				}
 				usedPositionedText = true
 				fontSize := p.FontSize
@@ -1633,7 +1633,11 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 					buf.WriteByte(byte(code >> 8))
 					buf.WriteByte(byte(code & 0xFF))
 					pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+penX, leafStart.Y)
+					closeAliasText := gr != nil && gr.requiresActualText(code, []rune{r}) && pw.beginActualTextContent(string(r))
 					pw.tw.showHex(buf.Bytes())
+					if closeAliasText {
+						pw.mw.endMarkedContent()
+					}
 					buf.Reset()
 					penX += (fsize * float64(advanceWidth)) + p.CharSpacing
 					if r == ' ' {
@@ -1647,13 +1651,27 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 					if gr != nil {
 						code = gr.record(gid, r)
 					}
+					if gr != nil && gr.requiresActualText(code, []rune{r}) {
+						if buf.Len() > 0 {
+							pw.tw.showHex(buf.Bytes())
+							buf.Reset()
+						}
+						closeAliasText := pw.beginActualTextContent(string(r))
+						pw.tw.showHex([]byte{byte(code >> 8), byte(code & 0xFF)})
+						if closeAliasText {
+							pw.mw.endMarkedContent()
+						}
+						continue
+					}
 					buf.WriteByte(byte(code >> 8))
 					buf.WriteByte(byte(code & 0xFF))
 				}
 				// Composite-font CIDs are arbitrary binary bytes. Emit them as a
 				// hex string instead of a literal PDF string so control-byte CIDs
 				// do not rely on reader-specific string parsing behavior.
-				pw.tw.showHex(buf.Bytes())
+				if buf.Len() > 0 {
+					pw.tw.showHex(buf.Bytes())
+				}
 			}
 			if usePositionedGlyphs {
 				pw.tw.setMatrix(1, 0, 0, 1, leafStart.X+p.Width(), leafStart.Y)
@@ -1898,14 +1916,6 @@ func shapedGlyphClusterData(glyphs []shaping.GlyphPosition, runes []rune) ([]int
 	}
 
 	return sortedStarts, clusterSequences, clusterGlyphs
-}
-
-func reverseRunesString(s string) string {
-	runes := []rune(s)
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
-	}
-	return string(runes)
 }
 
 func (pw *PageWriter) FontColor() colors.Color {

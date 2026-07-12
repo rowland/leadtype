@@ -1,4 +1,4 @@
-<ltml ua="true">
+<ltml ua="true" lang="ar">
   <layout id="vbox" padding="10pt" />
   <font id="body" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="12" />
   <font id="heading" name="Amiri, Arial Unicode MS, Geeza Pro, Noto Naskh Arabic, Noto Sans Arabic" size="18" weight="Bold" />

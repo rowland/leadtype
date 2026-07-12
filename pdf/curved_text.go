@@ -491,7 +491,9 @@ func (pw *PageWriter) showCurvedTextGlyph(glyph curvedTextRenderGlyph, placement
 		pw.checkSetVTextAlign(false)
 
 		code := glyph.GlyphID
-		if gr := pw.dw.glyphRecorders[glyph.font.PostScriptName()]; gr != nil {
+		var gr *glyphRecorder
+		gr = pw.dw.glyphRecorders[glyph.font.PostScriptName()]
+		if gr != nil {
 			if len(glyph.mappedText) > 0 {
 				code = gr.recordRunes(glyph.GlyphID, glyph.mappedText)
 			} else {
@@ -502,7 +504,11 @@ func (pw *PageWriter) showCurvedTextGlyph(glyph curvedTextRenderGlyph, placement
 		xAxis, yAxis := curvedTextFrame(placement.Tangent, placement.Normal, facing)
 		origin = placement.originPointWithAxes(xAxis, yAxis, placement.BaselineOffset)
 		pw.tw.setMatrix(xAxis.X, xAxis.Y, yAxis.X, yAxis.Y, origin.X, origin.Y)
+		closeAliasText := gr != nil && gr.requiresActualText(code, glyph.mappedText) && pw.beginActualTextContent(string(glyph.mappedText))
 		pw.tw.showHex(buf)
+		if closeAliasText {
+			pw.mw.endMarkedContent()
+		}
 		return nil
 	}
 

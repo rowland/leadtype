@@ -90,6 +90,14 @@ func (c *catalog) setStructTreeRoot(root *structTreeRoot) {
 	c.dict["StructTreeRoot"] = &indirectObjectRef{root}
 }
 
+func (c *catalog) setLanguage(language string) {
+	if language == "" {
+		delete(c.dict, "Lang")
+		return
+	}
+	c.dict["Lang"] = textString(language)
+}
+
 type dictionary map[string]writer
 
 func (d dictionary) keys() []string {

@@ -17,6 +17,7 @@ type StdDocument struct {
 	documentPageNo                int
 	physicalPageNo                int
 	pendingStart                  *int
+	language                      string
 	ua                            bool
 	networkAssets                 bool
 	compressPages                 bool
@@ -103,6 +104,7 @@ func (d *StdDocument) Print(w Writer) error {
 		return err
 	}
 	applyWriterAccessibility(w, d)
+	w.SetLanguage(d.language)
 	d.applyWriterCompression(w)
 	d.applyWriterSVGCompatibility(w)
 	return d.printWithIndexes(w)
@@ -198,6 +200,9 @@ func (d *StdDocument) SetAttrs(attrs map[string]string) {
 	}
 	if value, ok := attrs["ua"]; ok {
 		d.ua = value == "true"
+	}
+	if value, ok := attrs["lang"]; ok {
+		d.language = strings.TrimSpace(value)
 	}
 	if value, ok := attrs["network-assets"]; ok {
 		d.networkAssets = value == "true"

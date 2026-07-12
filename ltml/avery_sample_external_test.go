@@ -197,6 +197,7 @@ func (w *sampleTestWriter) SetLineColor(value colors.Color) (prev colors.Color) 
 func (w *sampleTestWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
 func (w *sampleTestWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return 1.0 }
 func (w *sampleTestWriter) SetLineWidth(width float64)                          {}
+func (w *sampleTestWriter) SetLanguage(language string)                         {}
 func (w *sampleTestWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
 	return pdf.SVGBlendModeRespect
 }

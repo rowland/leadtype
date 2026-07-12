@@ -56,6 +56,18 @@ func TestCatalog(t *testing.T) {
 	expectS(t, "3 0 obj\n<<\n/Outlines 2 0 R \n/PageMode /UseNone \n/Pages 1 0 R \n/Type /Catalog \n>>\nendobj\n", buf.String())
 }
 
+func TestCatalogLanguage(t *testing.T) {
+	ps := newPages(1, 0)
+	o := newOutlines(2, 0)
+	c := newCatalog(3, 0, "UseNone", ps, o)
+	c.setLanguage("ar")
+	var buf bytes.Buffer
+	c.write(&buf)
+	if !strings.Contains(buf.String(), "/Lang (ar)") {
+		t.Fatalf("catalog missing language:\n%s", buf.String())
+	}
+}
+
 func TestDictionary(t *testing.T) {
 	var buf bytes.Buffer
 	d := dictionary{"foo": str("bar"), "baz": integer(7)}

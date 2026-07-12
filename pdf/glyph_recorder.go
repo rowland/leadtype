@@ -13,9 +13,10 @@ import "fmt"
 //
 // These values happen to coincide for some fonts, which is why confusing them
 // can survive for years. CID-keyed CFF fonts may have non-identity GID-to-CID
-// mappings, and one source glyph may need several emitted codes when different
-// authored Unicode sequences shape to that glyph. At document close this data
-// drives ToUnicode, widths, the Encoding CMap, CIDSet, and font subsetting.
+// mappings. For ordinary composite fonts LeadType may allocate sequential
+// codes; for CID-keyed CFF it emits the font CID directly so Identity-H works
+// across PDF consumers. At document close this data drives ToUnicode, widths,
+// CIDSet, and font subsetting.
 type glyphRecorder struct {
 	keyToCID  map[glyphUseKey]uint16
 	cidUses   map[uint16]glyphUse
@@ -72,9 +73,11 @@ func (gr *glyphRecorder) recordEmpty(glyphID uint16) uint16 {
 	return gr.cidFor(glyphID, nil)
 }
 
-// cidFor returns the character code to emit. The historical name is retained
-// internally, but in non-identity mode the return value is not necessarily the
-// descendant font CID; fontCIDForCode performs that second mapping.
+// cidFor returns the character code to emit. CID-keyed CFF uses the font CID as
+// that code, avoiding a custom Encoding CMap that several otherwise capable
+// PDF consumers fail to apply to native CFF fonts. A ToUnicode entry can give
+// that CID only one meaning; emitters use requiresActualText to preserve less
+// common Unicode aliases of the same glyph at the point where they occur.
 func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	if gr.identity {
 		cid := glyphID
@@ -99,6 +102,26 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	if cid, ok := gr.keyToCID[key]; ok {
 		return cid
 	}
+	if gr.cidForGID != nil {
+		fontCID, ok := gr.cidForGID(glyphID)
+		if !ok {
+			if gr.err == nil {
+				gr.err = fmt.Errorf("glyph %d has no CID mapping", glyphID)
+			}
+			return 0
+		}
+		if _, used := gr.cidUses[fontCID]; used {
+			gr.keyToCID[key] = fontCID
+			return fontCID
+		}
+		gr.keyToCID[key] = fontCID
+		gr.cidUses[fontCID] = glyphUse{
+			glyphID: glyphID,
+			fontCID: fontCID,
+			runes:   append([]rune(nil), runes...),
+		}
+		return fontCID
+	}
 	if gr.nextCID > 0xffff {
 		if gr.err == nil {
 			gr.err = fmt.Errorf("composite font uses more than 65535 character codes")
@@ -107,24 +130,23 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	}
 	cid := uint16(gr.nextCID)
 	gr.nextCID++
-	fontCID := cid
-	if gr.cidForGID != nil {
-		var ok bool
-		fontCID, ok = gr.cidForGID(glyphID)
-		if !ok {
-			if gr.err == nil {
-				gr.err = fmt.Errorf("glyph %d has no CID mapping", glyphID)
-			}
-			return 0
-		}
-	}
 	gr.keyToCID[key] = cid
 	gr.cidUses[cid] = glyphUse{
 		glyphID: glyphID,
-		fontCID: fontCID,
+		fontCID: cid,
 		runes:   append([]rune(nil), runes...),
 	}
 	return cid
+}
+
+// requiresActualText reports whether this occurrence has a different Unicode
+// meaning from the one retained in ToUnicode for code. CID-keyed fonts commonly
+// share outlines among compatibility characters, spaces, and punctuation.
+// Keeping Identity-H makes their normal text selectable in more PDF consumers;
+// a small ActualText span is needed only for those ambiguous occurrences.
+func (gr *glyphRecorder) requiresActualText(code uint16, runes []rune) bool {
+	use, ok := gr.cidUses[code]
+	return ok && string(use.runes) != string(runes)
 }
 
 // mapping returns a copy of the CID → Unicode-sequence map.

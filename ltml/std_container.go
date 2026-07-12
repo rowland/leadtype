@@ -10,6 +10,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/rowland/leadtype/pdf"
 )
 
 type StdContainer struct {
@@ -69,8 +71,15 @@ func (c *StdContainer) BeforePrint(w Writer) error {
 }
 
 func (c *StdContainer) drawChildren(w Writer) error {
+	if writerTaggedPDFEnabled(w) && c.resolvedAccessibilityRole("") == "Table" && c.LayoutStyle().manager == "table" {
+		return c.drawAccessibleTableRows(w)
+	}
+	return c.drawChildrenInPaintOrder(w, c.Widgets())
+}
+
+func (c *StdContainer) drawChildrenInPaintOrder(w Writer, widgets []Widget) error {
 	// fmt.Printf("DrawContent %s\n", c)
-	children := slices.Clone(c.Widgets())
+	children := slices.Clone(widgets)
 	slices.SortStableFunc(children, func(a, b Widget) int {
 		return a.ZIndex() - b.ZIndex()
 	})
@@ -79,6 +88,46 @@ func (c *StdContainer) drawChildren(w Writer) error {
 			continue
 		}
 		if err := Print(child, w); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// drawAccessibleTableRows inserts the row level required between Table and
+// TH/TD structure elements. LTML tables are flat widget containers, so rows do
+// not otherwise exist as objects that the generic accessibility wrapper can
+// tag. Painting by row also follows the table's natural reading order.
+func (c *StdContainer) drawAccessibleTableRows(w Writer) error {
+	var (
+		grid *WidgetGrid
+		err  error
+	)
+	if c.Order() == TableOrderCols {
+		grid, err = colGrid(c)
+	} else {
+		grid, err = rowGrid(c)
+	}
+	if err != nil {
+		return err
+	}
+	painted := make(map[Widget]bool)
+	for row := 0; row < grid.Rows(); row++ {
+		rowWidgets := make([]Widget, 0, grid.Cols())
+		for col := 0; col < grid.Cols(); col++ {
+			widget := grid.Cell(col, row)
+			if widget == nil || painted[widget] {
+				continue
+			}
+			painted[widget] = true
+			rowWidgets = append(rowWidgets, widget)
+		}
+		if len(rowWidgets) == 0 {
+			continue
+		}
+		if err := withAccessibilityTag(w, "TR", pdf.AccessibilityOptions{}, func() error {
+			return c.drawChildrenInPaintOrder(w, rowWidgets)
+		}); err != nil {
 			return err
 		}
 	}

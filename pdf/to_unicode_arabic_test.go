@@ -192,6 +192,43 @@ func TestUnicodeMode_ArabicExtractionRoundTripsExactly(t *testing.T) {
 	}
 }
 
+func TestUnicodeMode_ArabicActualTextUsesLogicalOrder(t *testing.T) {
+	fc, err := ttf_fonts.New("../shaping/testdata/Amiri-Regular.ttf")
+	if err != nil || len(fc.FontInfos) == 0 {
+		t.Skipf("Arabic fixture font not found: %v", err)
+	}
+
+	const text = "برنامج أمسيات الحي الثقافية"
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+	if _, err := pw.SetFont(fc.FontInfos[0].Family(), 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	pw.Print(text)
+
+	var pdfData bytes.Buffer
+	if _, err := dw.WriteTo(&pdfData); err != nil {
+		t.Fatal(err)
+	}
+	var encoded bytes.Buffer
+	textString(text).write(&encoded)
+	want := "/ActualText " + encoded.String()
+	if !strings.Contains(pdfData.String(), want) {
+		t.Fatalf("PDF does not contain logical-order ActualText %q", want)
+	}
+	var reversed bytes.Buffer
+	runes := []rune(text)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	textString(string(runes)).write(&reversed)
+	if strings.Contains(pdfData.String(), "/ActualText "+reversed.String()) {
+		t.Fatal("PDF contains visual-order Arabic ActualText")
+	}
+}
+
 func TestUnicodeMode_ArabicExtractionPreservesDistinctSequences(t *testing.T) {
 	if _, err := exec.LookPath("pdftotext"); err != nil {
 		t.Skipf("pdftotext unavailable: %v", err)
@@ -330,11 +367,23 @@ func TestUnicodeMode_ArabicCurvedTextHasNoUnmappedCIDs(t *testing.T) {
 
 func normalizeArabicExtractorOutput(s string) string {
 	s = strings.TrimSpace(s)
-	return strings.Map(func(r rune) rune {
-		switch r {
-		case '\u202B', '\u202C':
-			return -1
+	runes := []rune(s)
+	out := make([]rune, 0, len(runes))
+	for i := 0; i < len(runes); i++ {
+		if runes[i] != '\u202B' {
+			if runes[i] != '\u202C' {
+				out = append(out, runes[i])
+			}
+			continue
 		}
-		return r
-	}, s)
+		end := i + 1
+		for end < len(runes) && runes[end] != '\u202C' {
+			end++
+		}
+		for j := end - 1; j > i; j-- {
+			out = append(out, runes[j])
+		}
+		i = end
+	}
+	return string(out)
 }

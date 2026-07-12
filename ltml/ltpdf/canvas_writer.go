@@ -64,6 +64,10 @@ func (w *canvasWriter) SetLineWidth(width float64) {
 	w.PageWriter.SetLineWidth(width, "pt")
 }
 
+func (w *canvasWriter) SetLanguage(language string) {
+	w.docWriter.SetLanguage(language)
+}
+
 func (w *canvasWriter) SetSVGBlendMode(mode pdf.SVGBlendMode) pdf.SVGBlendMode {
 	return w.PageWriter.SetSVGBlendMode(mode)
 }

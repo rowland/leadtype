@@ -171,7 +171,8 @@ func (w *layoutProbeWriter) SetLineDashPattern(pattern string) (prev string) { r
 func (w *layoutProbeWriter) SetLineSpacing(lineSpacing float64) (prev float64) {
 	return w.base.SetLineSpacing(lineSpacing)
 }
-func (w *layoutProbeWriter) SetLineWidth(width float64) {}
+func (w *layoutProbeWriter) SetLineWidth(width float64)  {}
+func (w *layoutProbeWriter) SetLanguage(language string) { w.base.SetLanguage(language) }
 func (w *layoutProbeWriter) SetSVGBlendMode(mode pdf.SVGBlendMode) pdf.SVGBlendMode {
 	return w.base.SetSVGBlendMode(mode)
 }

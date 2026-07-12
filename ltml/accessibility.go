@@ -109,6 +109,7 @@ func withWidgetRoleAccessibility(w Writer, widget *StdWidget, defaultRole, resol
 	return withAccessibilityTag(w, role, pdf.AccessibilityOptions{
 		ActualText: accessibilityReplacementText(resolvedText),
 		ID:         widget.AccessibilityLogicalID(),
+		Language:   accessibilityTextLanguage(resolvedText),
 	}, fn)
 }
 
@@ -117,6 +118,13 @@ func accessibilityReplacementText(text string) string {
 		if unicode.Is(unicode.Arabic, r) {
 			return text
 		}
+	}
+	return ""
+}
+
+func accessibilityTextLanguage(text string) string {
+	if accessibilityReplacementText(text) != "" {
+		return "ar"
 	}
 	return ""
 }

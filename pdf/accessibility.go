@@ -9,6 +9,7 @@ import (
 type AccessibilityOptions struct {
 	ActualText string
 	ID         string
+	Language   string
 }
 
 type accessibilityState struct {
@@ -113,6 +114,9 @@ func (s *accessibilityState) resolveElement(parent *structElem, tag string, opts
 	}
 	elem := newStructElem(s.dw.nextSeq(), 0, tag, parentRef)
 	elem.actualText = opts.ActualText
+	if opts.Language != "" {
+		elem.dict["Lang"] = textString(opts.Language)
+	}
 	s.dw.file.body.add(elem)
 	if parent != nil {
 		parent.appendKid(&indirectObjectRef{elem})

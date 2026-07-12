@@ -12,8 +12,13 @@ type compressionTestWriter struct {
 	compressPages              bool
 	compressToUnicode          bool
 	compressEmbeddedFonts      bool
+	language                   string
 	svgGradientStopOpacityMode pdf.SVGGradientStopOpacityMode
 	svgBlendMode               pdf.SVGBlendMode
+}
+
+func (w *compressionTestWriter) SetLanguage(language string) {
+	w.language = language
 }
 
 type pageOptionTestWriter struct {
@@ -88,6 +93,21 @@ func TestStdDocument_Print_DefaultCompressionAttrsFalse(t *testing.T) {
 	if w.compressPages || w.compressToUnicode || w.compressEmbeddedFonts {
 		t.Fatalf("compression flags = pages:%t toUnicode:%t embedded:%t, want all false",
 			w.compressPages, w.compressToUnicode, w.compressEmbeddedFonts)
+	}
+}
+
+func TestStdDocument_Print_AppliesDocumentLanguage(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml lang="ar"><page><label>Hello</label></page></ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &compressionTestWriter{labelTestWriter: labelTestWriter{t: t}}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.language != "ar" {
+		t.Fatalf("language = %q, want ar", w.language)
 	}
 }
 

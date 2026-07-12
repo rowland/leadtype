@@ -389,14 +389,10 @@ func TestPdftotextArabicWords(t *testing.T) {
 			}
 			got := strings.TrimSpace(string(out))
 
-			// Normalize: strip only the bidi wrappers added by the extractor.
-			normalized := strings.Map(func(r rune) rune {
-				switch r {
-				case '\u202B', '\u202C':
-					return -1
-				}
-				return r
-			}, got)
+			// Poppler serializes an RTL extraction run in visual codepoint order
+			// inside an RLE/PDF wrapper. Decode that transport representation
+			// before comparing it with the PDF's logical-order ActualText.
+			normalized := normalizeArabicExtractorOutput(got)
 
 			// Show exact output with codepoints.
 			t.Logf("input:      %q (U+%s)", word, formatCodepoints([]rune(word)))

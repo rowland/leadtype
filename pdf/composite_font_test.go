@@ -463,7 +463,7 @@ func TestUnicodeMode_CFFOpenTypeFontFile3(t *testing.T) {
 	}
 }
 
-func TestUnicodeMode_CIDKeyedCFFUsesCustomEncodingAndNativeCFF(t *testing.T) {
+func TestUnicodeMode_CIDKeyedCFFUsesIdentityEncodingAndNativeCFF(t *testing.T) {
 	fc := testFontSource(t, "../ttf/testdata/minimal-cid-cff.otf")
 	dw := NewDocWriter()
 	dw.AddFontSource(fc)
@@ -480,8 +480,7 @@ func TestUnicodeMode_CIDKeyedCFFUsesCustomEncodingAndNativeCFF(t *testing.T) {
 	for _, want := range []string{
 		"/Subtype /CIDFontType0",
 		"/Subtype /CIDFontType0C",
-		"/CMapName /LeadType-CID-Encoding",
-		"begincidchar",
+		"/Encoding /Identity-H",
 		"/CIDSet",
 		"/ToUnicode",
 	} {
@@ -489,8 +488,33 @@ func TestUnicodeMode_CIDKeyedCFFUsesCustomEncodingAndNativeCFF(t *testing.T) {
 			t.Fatalf("CID-keyed CFF PDF missing %q", want)
 		}
 	}
-	if strings.Contains(pdf, "/Encoding /Identity-H") {
-		t.Fatal("CID-keyed CFF Type0 font unexpectedly uses Identity-H")
+	if strings.Contains(pdf, "LeadType-CID-Encoding") {
+		t.Fatal("CID-keyed CFF Type0 font unexpectedly uses a custom Encoding CMap")
+	}
+}
+
+func TestCIDKeyedGlyphRecorderUsesFontCIDAsCharacterCode(t *testing.T) {
+	gr := newCIDKeyedGlyphRecorder(func(gid uint16) (uint16, bool) {
+		return gid + 100, true
+	})
+	if got := gr.record(7, '中'); got != 107 {
+		t.Fatalf("character code = %d, want font CID 107", got)
+	}
+	if got := gr.fontCIDForCode(107); got != 107 {
+		t.Fatalf("font CID = %d, want 107", got)
+	}
+	aliasCode := gr.record(7, '文')
+	if aliasCode != 107 {
+		t.Fatalf("alias character code = %d, want 107", aliasCode)
+	}
+	if !gr.requiresActualText(aliasCode, []rune{'文'}) {
+		t.Fatal("Unicode alias does not require ActualText")
+	}
+	if gr.requiresActualText(aliasCode, []rune{'中'}) {
+		t.Fatal("primary ToUnicode meaning unexpectedly requires ActualText")
+	}
+	if err := gr.error(); err != nil {
+		t.Fatalf("collision error = %v", err)
 	}
 }
 

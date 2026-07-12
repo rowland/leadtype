@@ -335,6 +335,7 @@ func (m *mockWriter) SetLineColor(v colors.Color) colors.Color                  
 func (m *mockWriter) SetLineDashPattern(p string) string                               { return "" }
 func (m *mockWriter) SetLineSpacing(ls float64) float64                                { return 0 }
 func (m *mockWriter) SetLineWidth(w float64)                                           {}
+func (m *mockWriter) SetLanguage(language string)                                      {}
 func (m *mockWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
 	return pdf.SVGBlendModeRespect
 }

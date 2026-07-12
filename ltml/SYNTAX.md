@@ -88,6 +88,7 @@ elements.
 | `compress-to-unicode` | If `true`, compress generated `ToUnicode` streams. Default: `false`. |
 | `compress-embedded-fonts` | If `true`, compress embedded font subset streams. Default: `false`. |
 | `ua` | If `true`, opt the whole document into tagged PDF output and accessibility structure generation. Default: `false`. |
+| `lang` | BCP 47 natural-language tag written to the PDF catalog, such as `ar` or `zh-Hans`. |
 | `svg-gradient-stop-opacity-mode` | Default SVG gradient stop-opacity rendering mode for pages. Use `compatibility` to collapse varying stop alpha to flat object opacity for broader PDF viewer compatibility. Default: `soft-mask`. |
 | `svg-blend-mode` | Default SVG `mix-blend-mode` handling for pages. Use `ignore` to drop blend modes (matches legacy PDFlib output). Default: `respect` (matches WebKit/Chrome). |
 
@@ -333,9 +334,11 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `colspan`, `rowspan` | Span multiple table cells (when inside a `table`). |
 | `role` | Override the generated PDF structure type when `ua="true"`. Default tagged output uses `P`. |
 
-When `ua="true"`, paragraphs automatically emit `/ActualText` from their fully
-resolved plain text. That text includes inline links and `<pageno>` output, but
-not decorative bullet chrome or non-text decoration.
+When `ua="true"`, Arabic paragraphs emit logical-order `/ActualText` from their
+fully resolved plain text. Other scripts rely on rendered text and `/ToUnicode`
+so viewers can retain granular selection. Replacement text includes inline
+links and `<pageno>` output, but not decorative bullet chrome or non-text
+decoration.
 
 ---
 
@@ -352,8 +355,8 @@ Supports the same `font.*` attributes as `<p>`.
 
 `<span>` does not define its own LTML accessibility attributes. In tagged
 output, spans contribute text to the enclosing paragraph or label. Inline links
-still emit `Link` structure elements, but `/ActualText` remains on the enclosing
-paragraph or label rather than on the span or link itself.
+still emit `Link` structure elements. When Arabic replacement text is needed,
+it remains on the enclosing paragraph or label rather than on the link itself.
 
 ---
 
@@ -568,8 +571,9 @@ line break in stacked layouts. Labels still do not wrap; `fit="shrink"` scales
 the rendered text instead. Unlike the generic widget `rotate` attribute, label
 `angle` rotates only the text paint operation.
 
-When `ua="true"`, labels automatically emit `/ActualText` from their fully
-resolved plain text, including inline links and `<pageno>` output.
+When `ua="true"`, Arabic labels emit logical-order `/ActualText` from their
+fully resolved plain text, including inline links and `<pageno>` output. Other
+labels rely on rendered text and `/ToUnicode` for granular selection.
 
 ---
 
@@ -636,8 +640,9 @@ source-resolution rules as component-backed tags such as `<svg>`:
   explicitly enabled; network assets are fetched lazily into a temp file and
   cleaned up after rendering
 
-When `<pre>` participates in tagged output through `role`, LTML uses that same
-resolved preformatted text for `/ActualText`.
+When `<pre>` participates in tagged output through `role`, Arabic content uses
+the same resolved preformatted text as logical-order `/ActualText`; other
+scripts rely on rendered text and `/ToUnicode`.
 
 ---
 

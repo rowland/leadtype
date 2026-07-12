@@ -74,6 +74,7 @@ type Writer interface {
 	SetLineDashPattern(pattern string) (prev string)
 	SetLineSpacing(lineSpacing float64) (prev float64)
 	SetLineWidth(width float64)
+	SetLanguage(language string)
 	SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode
 	SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode
 	SetStrikeout(strikeout bool) (prev bool)

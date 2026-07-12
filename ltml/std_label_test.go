@@ -298,6 +298,7 @@ func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) {
 func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)   { return "" }
 func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64) { return w.lineSpacing }
 func (w *labelTestWriter) SetLineWidth(width float64)                        { w.lineWidths = append(w.lineWidths, width) }
+func (w *labelTestWriter) SetLanguage(language string)                       {}
 func (w *labelTestWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
 	return pdf.SVGBlendModeRespect
 }

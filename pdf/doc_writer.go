@@ -487,7 +487,7 @@ func (dw *DocWriter) flushUnicodeFonts() error {
 		}
 		sort.Slice(glyphIDs, func(i, j int) bool { return glyphIDs[i] < glyphIDs[j] })
 		f := dw.unicodeFonts[psName]
-		cidInfo, cidKeyed := f.CIDSystemInfo()
+		_, cidKeyed := f.CIDSystemInfo()
 		upm := f.UnitsPerEm()
 
 		// Width keys belong to the descendant font's CID namespace, whereas
@@ -526,15 +526,6 @@ func (dw *DocWriter) flushUnicodeFonts() error {
 		}
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
-		if cidKeyed {
-			// LeadType allocates compact character codes independently of the
-			// font's often sparse CIDs. This CMap joins those namespaces.
-			encodingData := codeToCIDCMapData(codeToFontCID, cidSystemInfo{registry: cidInfo.Registry, ordering: cidInfo.Ordering, supplement: cidInfo.Supplement})
-			encodingStream := newStream(dw.nextSeq(), 0, encodingData)
-			dw.file.body.add(encodingStream)
-			dw.type0Fonts[psName].setEncoding(&indirectObjectRef{encodingStream})
-		}
-
 		if f.OutlineKind() != "CFF" {
 			// CIDFontType2 has no CFF charset, so PDF needs an explicit map from
 			// descendant CIDs to subset glyph IDs.
@@ -625,6 +616,12 @@ func (dw *DocWriter) FontSources() font.FontSources {
 
 func (dw *DocWriter) SetFontTrace(w io.Writer) {
 	dw.fontTrace = w
+}
+
+// SetLanguage sets the document's natural language for tagged PDF consumers.
+// language should be a BCP 47 language tag such as "ar" or "zh-Hans".
+func (dw *DocWriter) SetLanguage(language string) {
+	dw.catalog.setLanguage(strings.TrimSpace(language))
 }
 
 func (dw *DocWriter) FontTrace() io.Writer {
