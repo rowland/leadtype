@@ -45,6 +45,14 @@ func (font *Font) Clone() *Font {
 }
 
 func New(family string, options options.Options, fontSources FontSources) (*Font, error) {
+	return newFont(family, options, fontSources, false)
+}
+
+func NewClosest(family string, options options.Options, fontSources FontSources) (*Font, error) {
+	return newFont(family, options, fontSources, true)
+}
+
+func newFont(family string, options options.Options, fontSources FontSources, closest bool) (*Font, error) {
 	font := &Font{
 		family:       family,
 		Weight:       options.StringDefault("weight", ""),
@@ -61,7 +69,16 @@ func New(family string, options options.Options, fontSources FontSources) (*Font
 	}
 	var err error
 	for _, fontSource := range fontSources {
-		if font.metrics, err = fontSource.Select(font.family, font.Weight, font.style, font.Ranges); err == nil {
+		if closest {
+			if source, ok := fontSource.(ClosestFontSource); ok {
+				font.metrics, err = source.SelectClosest(font.family, font.Weight, font.style, font.Ranges)
+			} else {
+				font.metrics, err = fontSource.Select(font.family, font.Weight, font.style, font.Ranges)
+			}
+		} else {
+			font.metrics, err = fontSource.Select(font.family, font.Weight, font.style, font.Ranges)
+		}
+		if err == nil {
 			font.subType = fontSource.SubType()
 			if ss, ok := fontSource.(ShaperSource); ok {
 				font.Shaper = ss.Shaper()
@@ -226,6 +243,47 @@ type ByteReader interface {
 	Bytes() []byte
 }
 
+// CIDSystemInfo identifies the character collection used by a CID-keyed font.
+// Registry, Ordering, and Supplement are the CFF ROS values and are copied into
+// the corresponding PDF dictionaries and Encoding CMap.
+type CIDSystemInfo struct {
+	Registry   string
+	Ordering   string
+	Supplement int
+}
+
+// CIDMapper is implemented by metrics backends for CID-keyed fonts whose
+// glyph IDs and character identifiers are distinct namespaces.
+type CIDMapper interface {
+	CIDSystemInfo() (registry, ordering string, supplement int, ok bool)
+	CIDForGlyph(glyphID uint16) (uint16, bool)
+}
+
+func (font *Font) CIDSystemInfo() (CIDSystemInfo, bool) {
+	if mapper, ok := font.metrics.(CIDMapper); ok {
+		registry, ordering, supplement, found := mapper.CIDSystemInfo()
+		return CIDSystemInfo{Registry: registry, Ordering: ordering, Supplement: supplement}, found
+	}
+	return CIDSystemInfo{}, false
+}
+
+// CIDForGlyph translates the source font's glyph index to its character
+// identifier. Callers need this when a CID-keyed CFF charset is non-identity;
+// the returned CID is not a Unicode value and is not a PDF character code.
+func (font *Font) CIDForGlyph(glyphID uint16) (uint16, bool) {
+	if mapper, ok := font.metrics.(CIDMapper); ok {
+		return mapper.CIDForGlyph(glyphID)
+	}
+	return 0, false
+}
+
+// IsCIDKeyed reports whether the metrics backend exposes a CFF ROS and
+// GID-to-CID mapping.
+func (font *Font) IsCIDKeyed() bool {
+	_, ok := font.CIDSystemInfo()
+	return ok
+}
+
 // FontKey returns a stable string identifying the underlying font file,
 // or "" if the backend does not support it (e.g. AFM fonts).
 func (font *Font) FontKey() string {
@@ -244,6 +302,9 @@ func (font *Font) Bytes() []byte {
 	return nil
 }
 
+// OutlineKind reports the font-program technology used for PDF embedding and
+// diagnostics. It does not imply whether a CFF font is name- or CID-keyed; use
+// IsCIDKeyed for that distinction.
 func (font *Font) OutlineKind() string {
 	return font.metrics.OutlineKind()
 }
@@ -255,6 +316,13 @@ type Subsetter interface {
 	Subset(glyphIDs []uint16) ([]byte, error)
 }
 
+// PDFSubsetter optionally supplies a font program in the exact stream format
+// required by PDF. This is used by CID-keyed CFF fonts, whose raw CFF program
+// has normative CID charset semantics that an OpenType wrapper does not.
+type PDFSubsetter interface {
+	PDFSubset(glyphIDs []uint16) (data []byte, subtype string, err error)
+}
+
 // SubsetBytes returns a font binary containing only the supplied glyph IDs, or
 // an error if the underlying font type does not support subsetting.
 func (font *Font) SubsetBytes(glyphIDs []uint16) ([]byte, error) {
@@ -262,6 +330,17 @@ func (font *Font) SubsetBytes(glyphIDs []uint16) ([]byte, error) {
 		return s.Subset(glyphIDs)
 	}
 	return nil, fmt.Errorf("SubsetBytes: font type %T does not support subsetting", font.metrics)
+}
+
+// PDFSubsetBytes returns the font-program bytes and optional FontFile3 subtype
+// appropriate for direct PDF embedding. Most backends return an sfnt subset;
+// CID-keyed CFF returns its raw CFF program with subtype CIDFontType0C.
+func (font *Font) PDFSubsetBytes(glyphIDs []uint16) ([]byte, string, error) {
+	if s, ok := font.metrics.(PDFSubsetter); ok {
+		return s.PDFSubset(glyphIDs)
+	}
+	data, err := font.SubsetBytes(glyphIDs)
+	return data, "", err
 }
 
 func stringSlicesEqual(sl1, sl2 []string) bool {

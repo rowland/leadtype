@@ -4,8 +4,10 @@
 package ttf_fonts
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/rowland/leadtype/font"
@@ -212,6 +214,51 @@ func TestTtfFonts_SelectCFFOpenTypeFonts(t *testing.T) {
 	}
 	if f.PostScriptName() != "MinimalCFF" {
 		t.Fatalf("PostScriptName = %q, want MinimalCFF", f.PostScriptName())
+	}
+}
+
+func TestTtfFonts_WriteCatalog(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal.ttc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := fc.WriteCatalog(&out); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	if !strings.HasPrefix(got, "family\tstyle\tfull_name\tpostscript_name\toutline\tcid_keyed\tglyphs\tfile\tttc_offset\n") {
+		t.Fatalf("catalog header missing: %q", got)
+	}
+	for _, want := range []string{"Minimal\tRegular\tMinimal\tMinimal\tTrueType\tfalse\t", "Minimal\tBold\tMinimal Bold\tMinimal-Bold\tTrueType\tfalse\t"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("catalog missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestTtfFonts_SelectClosestUsesNearestRealWeight(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal.ttc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	selected, err := fc.SelectClosest("Minimal", "Black", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if selected.FullName() != "Minimal Bold" {
+		t.Fatalf("closest Black face = %q, want Minimal Bold", selected.FullName())
+	}
+}
+
+func TestTtfFonts_CatalogIdentifiesCIDKeyedCFF(t *testing.T) {
+	fc, err := New("../ttf/testdata/minimal-cid-cff.otf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := fc.CatalogString()
+	if !strings.Contains(got, "MinimalCIDCFF\tRegular\tMinimalCIDCFF\tMinimalCIDCFF\tCFF\ttrue\t") {
+		t.Fatalf("CID-keyed catalog row missing:\n%s", got)
 	}
 }
 
