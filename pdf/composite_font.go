@@ -11,10 +11,18 @@ import (
 
 // ── CIDSystemInfo ─────────────────────────────────────────────────────────────
 
-type cidSystemInfo struct{}
+type cidSystemInfo struct {
+	registry   string
+	ordering   string
+	supplement int
+}
 
 func (c *cidSystemInfo) write(w io.Writer) {
-	fmt.Fprintf(w, "<< /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> ")
+	io.WriteString(w, "<< /Registry ")
+	str(c.registry).write(w)
+	io.WriteString(w, "/Ordering ")
+	str(c.ordering).write(w)
+	fmt.Fprintf(w, "/Supplement %d >> ", c.supplement)
 }
 
 // ── /W sparse width array ─────────────────────────────────────────────────────
@@ -102,11 +110,26 @@ func (f *cidFont) init(seq, gen int,
 	fontDescriptor *fontDescriptor,
 	defaultWidth int,
 	widths writer) *cidFont {
+	return f.initWithSystemInfo(seq, gen, subType, baseFont, fontDescriptor, defaultWidth, widths, "Adobe", "Identity", 0)
+}
+
+// initWithSystemInfo constructs the descendant CIDFont. registry/ordering/
+// supplement must describe the embedded CFF ROS when the font is CID-keyed;
+// Identity is appropriate only for the synthetic CID namespace used by the
+// ordinary TrueType composite-font path.
+func (f *cidFont) initWithSystemInfo(seq, gen int,
+	subType string,
+	baseFont string,
+	fontDescriptor *fontDescriptor,
+	defaultWidth int,
+	widths writer,
+	registry, ordering string,
+	supplement int) *cidFont {
 	f.dictionaryObject.init(seq, gen)
 	f.dict["Type"] = name("Font")
 	f.dict["Subtype"] = name(subType)
 	f.dict["BaseFont"] = name(baseFont)
-	f.dict["CIDSystemInfo"] = &cidSystemInfo{}
+	f.dict["CIDSystemInfo"] = &cidSystemInfo{registry: registry, ordering: ordering, supplement: supplement}
 	f.dict["FontDescriptor"] = &indirectObjectRef{fontDescriptor}
 	f.dict["DW"] = integer(defaultWidth)
 	f.dict["W"] = widths
@@ -114,6 +137,17 @@ func (f *cidFont) init(seq, gen int,
 		f.dict["CIDToGIDMap"] = name("Identity")
 	}
 	return f
+}
+
+func newCIDFontWithSystemInfo(seq, gen int,
+	subType string,
+	baseFont string,
+	fontDescriptor *fontDescriptor,
+	defaultWidth int,
+	widths writer,
+	registry, ordering string,
+	supplement int) *cidFont {
+	return new(cidFont).initWithSystemInfo(seq, gen, subType, baseFont, fontDescriptor, defaultWidth, widths, registry, ordering, supplement)
 }
 
 func newCIDFont(seq, gen int,
@@ -175,4 +209,10 @@ func (f *type0Font) setBaseFont(n string) {
 
 func (f *type0Font) setToUnicode(ref *indirectObjectRef) {
 	f.dict["ToUnicode"] = ref
+}
+
+// setEncoding replaces Identity-H with a custom CMap stream. CID-keyed CFF
+// uses this when LeadType's compact emitted codes differ from font CIDs.
+func (f *type0Font) setEncoding(ref *indirectObjectRef) {
+	f.dict["Encoding"] = ref
 }

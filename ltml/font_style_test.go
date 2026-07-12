@@ -648,17 +648,17 @@ func TestFontStyle_Apply_UsesFirstAvailableFontInChain(t *testing.T) {
 	fs.Apply(w)
 
 	if len(w.setFontCalls) != 2 || w.setFontCalls[0] != "Missing Primary" || w.setFontCalls[1] != "Helvetica" {
-		t.Fatalf("SetFont calls = %v, want [Missing Primary Helvetica]", w.setFontCalls)
+		t.Fatalf("SetFont calls = %v, want exact attempts in fallback order", w.setFontCalls)
 	}
 	if w.setFontName != "Helvetica" {
 		t.Fatalf("final SetFont name = %q, want %q", w.setFontName, "Helvetica")
 	}
-	if len(w.addFontCalls) != 2 || w.addFontCalls[0] != "Missing Primary" || w.addFontCalls[1] != "Courier" {
-		t.Fatalf("AddFont calls = %v, want [Missing Primary Courier]", w.addFontCalls)
+	if len(w.addFontCalls) != 3 || w.addFontCalls[0] != "Missing Primary" || w.addFontCalls[1] != "Missing Primary" || w.addFontCalls[2] != "Courier" {
+		t.Fatalf("AddFont calls = %v, want per-family exact and nearest fallbacks", w.addFontCalls)
 	}
 }
 
-func TestFontStyle_Apply_TwoPassFallbackPrefersExactBeforeRelaxed(t *testing.T) {
+func TestFontStyle_Apply_PrefersExactFaceBeforeNearest(t *testing.T) {
 	fs := &FontStyle{
 		entries: []fontEntry{
 			{name: "Primary"},
@@ -677,8 +677,8 @@ func TestFontStyle_Apply_TwoPassFallbackPrefersExactBeforeRelaxed(t *testing.T) 
 
 	fs.Apply(w)
 
-	if len(w.addFontCalls) != 3 || w.addFontCalls[0] != "Earlier Fallback" || w.addFontCalls[1] != "Later Exact" || w.addFontCalls[2] != "Earlier Fallback" {
-		t.Fatalf("AddFont calls = %v, want [Earlier Fallback Later Exact Earlier Fallback]", w.addFontCalls)
+	if len(w.addFontCalls) != 3 || w.addFontCalls[0] != "Earlier Fallback" || w.addFontCalls[1] != "Earlier Fallback" || w.addFontCalls[2] != "Later Exact" {
+		t.Fatalf("AddFont calls = %v, want per-family exact and nearest fallbacks", w.addFontCalls)
 	}
 }
 
@@ -708,7 +708,7 @@ func TestFontStyle_Apply_FallsBackToDefaultFontWhenChainMissing(t *testing.T) {
 	}
 }
 
-func TestFontStyle_Apply_RelaxesDefaultFallbackWhenRequestedWeightMissing(t *testing.T) {
+func TestFontStyle_Apply_UsesNearestDefaultFaceWhenRequestedWeightMissing(t *testing.T) {
 	fs := &FontStyle{
 		entries: []fontEntry{
 			{name: "Missing One"},
@@ -736,7 +736,7 @@ func TestFontStyle_Apply_RelaxesDefaultFallbackWhenRequestedWeightMissing(t *tes
 	if got := w.setFontOpts[2].StringDefault("weight", ""); got != "Black" {
 		t.Fatalf("first default fallback weight = %q, want Black", got)
 	}
-	if got := w.setFontOpts[3].StringDefault("weight", ""); got != "" {
-		t.Fatalf("relaxed default fallback weight = %q, want empty", got)
+	if got := w.setFontOpts[3].StringDefault("match", ""); got != "nearest" {
+		t.Fatalf("default fallback match = %q, want nearest", got)
 	}
 }

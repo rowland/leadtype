@@ -3,24 +3,39 @@
 
 package pdf
 
-// glyphRecorder accumulates the glyph IDs used for a single font face
-// during document rendering, along with the Unicode codepoints they represent.
-// It is used in Unicode mode to build the /W width array and the ToUnicode
-// CMap stream at document close.
+import "fmt"
+
+// glyphRecorder keeps three namespaces separate for one composite PDF font:
+//
+//   - emitted character code: the uint16 written by text-showing operators;
+//   - source GID: the glyph selected by cmap or shaping in the source font;
+//   - font CID: the identifier stored in a CID-keyed CFF charset.
+//
+// These values happen to coincide for some fonts, which is why confusing them
+// can survive for years. CID-keyed CFF fonts may have non-identity GID-to-CID
+// mappings, and one source glyph may need several emitted codes when different
+// authored Unicode sequences shape to that glyph. At document close this data
+// drives ToUnicode, widths, the Encoding CMap, CIDSet, and font subsetting.
 type glyphRecorder struct {
-	keyToCID map[glyphUseKey]uint16
-	cidUses  map[uint16]glyphUse
-	nextCID  uint16
-	identity bool
+	keyToCID  map[glyphUseKey]uint16
+	cidUses   map[uint16]glyphUse
+	nextCID   uint32
+	identity  bool
+	cidForGID func(uint16) (uint16, bool)
+	err       error
 }
 
+// glyphUseKey makes ToUnicode semantics part of code allocation. Reusing a GID
+// is safe only when it represents the same authored text sequence.
 type glyphUseKey struct {
 	glyphID uint16
 	text    string
 }
 
+// glyphUse is the complete meaning of one emitted character code.
 type glyphUse struct {
 	glyphID uint16
+	fontCID uint16
 	runes   []rune
 }
 
@@ -28,9 +43,15 @@ func newGlyphRecorder(identity bool) *glyphRecorder {
 	return &glyphRecorder{
 		keyToCID: make(map[glyphUseKey]uint16),
 		cidUses:  make(map[uint16]glyphUse),
-		nextCID:  1, // reserve CID 0 for .notdef
+		nextCID:  1, // reserve character code 0 for .notdef
 		identity: identity,
 	}
+}
+
+func newCIDKeyedGlyphRecorder(cidForGID func(uint16) (uint16, bool)) *glyphRecorder {
+	gr := newGlyphRecorder(false)
+	gr.cidForGID = cidForGID
+	return gr
 }
 
 // record notes that glyphID was used to render the given rune.
@@ -51,6 +72,9 @@ func (gr *glyphRecorder) recordEmpty(glyphID uint16) uint16 {
 	return gr.cidFor(glyphID, nil)
 }
 
+// cidFor returns the character code to emit. The historical name is retained
+// internally, but in non-identity mode the return value is not necessarily the
+// descendant font CID; fontCIDForCode performs that second mapping.
 func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	if gr.identity {
 		cid := glyphID
@@ -63,6 +87,7 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 		}
 		gr.cidUses[cid] = glyphUse{
 			glyphID: glyphID,
+			fontCID: cid,
 			runes:   append([]rune(nil), runes...),
 		}
 		return cid
@@ -74,11 +99,29 @@ func (gr *glyphRecorder) cidFor(glyphID uint16, runes []rune) uint16 {
 	if cid, ok := gr.keyToCID[key]; ok {
 		return cid
 	}
-	cid := gr.nextCID
+	if gr.nextCID > 0xffff {
+		if gr.err == nil {
+			gr.err = fmt.Errorf("composite font uses more than 65535 character codes")
+		}
+		return 0
+	}
+	cid := uint16(gr.nextCID)
 	gr.nextCID++
+	fontCID := cid
+	if gr.cidForGID != nil {
+		var ok bool
+		fontCID, ok = gr.cidForGID(glyphID)
+		if !ok {
+			if gr.err == nil {
+				gr.err = fmt.Errorf("glyph %d has no CID mapping", glyphID)
+			}
+			return 0
+		}
+	}
 	gr.keyToCID[key] = cid
 	gr.cidUses[cid] = glyphUse{
 		glyphID: glyphID,
+		fontCID: fontCID,
 		runes:   append([]rune(nil), runes...),
 	}
 	return cid
@@ -123,3 +166,14 @@ func (gr *glyphRecorder) glyphIDForCID(cid uint16) uint16 {
 	}
 	return 0
 }
+
+// fontCIDForCode maps a text-showing character code to the CID understood by
+// the descendant CIDFont. It is used to construct a custom Encoding CMap.
+func (gr *glyphRecorder) fontCIDForCode(code uint16) uint16 {
+	if use, ok := gr.cidUses[code]; ok {
+		return use.fontCID
+	}
+	return 0
+}
+
+func (gr *glyphRecorder) error() error { return gr.err }

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rowland/leadtype/colors"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 	"github.com/rowland/leadtype/ttf"
@@ -62,6 +63,11 @@ func (fs *FontStyle) applyWithSize(w Writer, size float64) {
 		"weight": fs.weight,
 		"style":  fs.style,
 	}
+	// Establish the primary face using exact matches across the entire family
+	// chain. Trying "nearest" immediately for the first family would let its
+	// Regular face displace a later family's real Bold face and silently erase
+	// authored emphasis. Once the primary is fixed, nearest faces are useful as
+	// coverage fallbacks for scripts the primary does not contain.
 	primaryIndex := -1
 	for i, entry := range fs.entries {
 		opts := applyEntryOptions(entry, baseOpts)
@@ -71,28 +77,22 @@ func (fs *FontStyle) applyWithSize(w Writer, size float64) {
 		}
 	}
 	if primaryIndex >= 0 {
-		needsRelaxed := make([]fontEntry, 0, len(fs.entries)-1)
 		for i, entry := range fs.entries {
 			if i == primaryIndex {
 				continue
 			}
 			opts := applyEntryOptions(entry, baseOpts)
-			if fonts, err := w.AddFont(entry.name, opts); err == nil && len(fonts) > 0 {
-				continue
-			}
-			needsRelaxed = append(needsRelaxed, entry)
-		}
-		for _, entry := range needsRelaxed {
-			if relaxed, ok := relaxedEntryOptions(entry, baseOpts); ok {
-				w.AddFont(entry.name, relaxed)
-			}
+			addFontWithNearest(w, entry.name, opts)
 		}
 	}
 	if primaryIndex < 0 {
 		// Keep LTML renderable on machines that lack requested system fonts.
-		if fonts, err := w.SetFont(defaultFontName, size, baseOpts); err != nil || len(fonts) == 0 {
-			if relaxed, ok := relaxedEntryOptions(fontEntry{name: defaultFontName}, baseOpts); ok {
-				w.SetFont(defaultFontName, size, relaxed)
+		if fonts, err := setFontWithNearest(w, defaultFontName, size, baseOpts); err == nil && len(fonts) > 0 {
+			for _, entry := range fs.entries {
+				opts := applyEntryOptions(entry, baseOpts)
+				nearest := cloneOptions(opts)
+				nearest["match"] = "nearest"
+				w.AddFont(entry.name, nearest)
 			}
 		}
 	}
@@ -102,6 +102,37 @@ func (fs *FontStyle) applyWithSize(w Writer, size float64) {
 	w.SetStrikeout(fs.strikeout)
 	w.SetUnderline(fs.underline)
 	w.SetLineSpacing(fs.lineHeight)
+}
+
+func setFontWithNearest(w Writer, family string, size float64, opts options.Options) ([]*font.Font, error) {
+	fonts, err := w.SetFont(family, size, opts)
+	if err == nil && len(fonts) > 0 {
+		return fonts, nil
+	}
+	nearest := cloneOptions(opts)
+	nearest["match"] = "nearest"
+	return w.SetFont(family, size, nearest)
+}
+
+// addFontWithNearest preserves family priority for coverage fonts: try the
+// requested face, then the closest real face in that same family. The font
+// source does not synthesize weight or style.
+func addFontWithNearest(w Writer, family string, opts options.Options) ([]*font.Font, error) {
+	fonts, err := w.AddFont(family, opts)
+	if err == nil && len(fonts) > 0 {
+		return fonts, nil
+	}
+	nearest := cloneOptions(opts)
+	nearest["match"] = "nearest"
+	return w.AddFont(family, nearest)
+}
+
+func cloneOptions(opts options.Options) options.Options {
+	clone := make(options.Options, len(opts)+1)
+	for key, value := range opts {
+		clone[key] = value
+	}
+	return clone
 }
 
 // applyEntryOptions copies base and adds per-entry ranges and relative_size.
@@ -124,31 +155,6 @@ func applyEntryOptions(entry fontEntry, base options.Options) options.Options {
 		opts["relative_size"] = entry.relativeSize * 100
 	}
 	return opts
-}
-
-// relaxedEntryOptions removes weight/style so fallback fonts can still supply
-// missing glyphs when the exact face (e.g. Bold) is unavailable.
-func relaxedEntryOptions(entry fontEntry, base options.Options) (options.Options, bool) {
-	if base.StringDefault("weight", "") == "" && base.StringDefault("style", "") == "" {
-		return nil, false
-	}
-	opts := make(options.Options, len(base)+2)
-	for k, v := range base {
-		opts[k] = v
-	}
-	delete(opts, "weight")
-	delete(opts, "style")
-	if len(entry.ranges) > 0 {
-		if rs, err := ttf.NewCodepointRangeSet(entry.ranges...); err == nil {
-			opts["ranges"] = rs
-		} else {
-			opts["ranges"] = entry.ranges
-		}
-	}
-	if entry.relativeSize != 0 {
-		opts["relative_size"] = entry.relativeSize * 100
-	}
-	return opts, true
 }
 
 func (fs *FontStyle) Clone() *FontStyle {

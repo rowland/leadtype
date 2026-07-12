@@ -60,6 +60,7 @@ type DocWriter struct {
 	pendingTargetLinks    []*linkAnnotation
 	writeToCleanups       []func()
 	profiler              *profile.Profiler
+	fontTrace             io.Writer
 }
 
 type cachedImage struct {
@@ -409,18 +410,33 @@ func (dw *DocWriter) fontKeyUnicode(f *font.Font) string {
 	key := fmt.Sprintf("F%d", len(dw.fontKeys))
 	dw.fontKeys[cacheName] = key
 
+	// A Type 0 font is a two-stage mapping. Its Encoding maps emitted character
+	// codes to descendant-font CIDs; the descendant then maps CIDs to glyphs.
+	// TrueType normally uses Identity plus CIDToGIDMap. CID-keyed CFF instead
+	// carries its CID-to-glyph relationship in the CFF charset and needs its
+	// actual ROS on both PDF font dictionaries.
 	cidSubtype := "CIDFontType2"
+	systemInfo := font.CIDSystemInfo{Registry: "Adobe", Ordering: "Identity", Supplement: 0}
+	cidKeyed := false
 	if f.OutlineKind() == "CFF" {
 		cidSubtype = "CIDFontType0"
+		if info, ok := f.CIDSystemInfo(); ok {
+			systemInfo = info
+			cidKeyed = true
+		}
 	}
-	cid := newCIDFont(dw.nextSeq(), 0, cidSubtype, psName, descriptor, 1000, array{})
+	cid := newCIDFontWithSystemInfo(dw.nextSeq(), 0, cidSubtype, psName, descriptor, 1000, array{}, systemInfo.Registry, systemInfo.Ordering, systemInfo.Supplement)
 	dw.file.body.add(cid)
 
 	t0 := newType0Font(dw.nextSeq(), 0, psName, cid)
 	dw.file.body.add(t0)
 
 	dw.resources.fonts[key] = &indirectObjectRef{t0}
-	dw.glyphRecorders[psName] = newGlyphRecorder(f.OutlineKind() == "CFF")
+	if cidKeyed {
+		dw.glyphRecorders[psName] = newCIDKeyedGlyphRecorder(f.CIDForGlyph)
+	} else {
+		dw.glyphRecorders[psName] = newGlyphRecorder(f.OutlineKind() == "CFF")
+	}
 	dw.unicodeFonts[psName] = f
 	dw.cidFonts[psName] = cid
 	dw.type0Fonts[psName] = t0
@@ -451,7 +467,7 @@ func subsetTag(psName string, glyphIDs []uint16) string {
 // It fills in the /W width arrays, ToUnicode CMap streams, and embedded
 // subset font streams for every Type0 composite font that was used during
 // rendering.
-func (dw *DocWriter) flushUnicodeFonts() {
+func (dw *DocWriter) flushUnicodeFonts() error {
 	defer dw.profiler.Begin("pdf.write.flush_unicode_fonts").End()
 	psNames := make([]string, 0, len(dw.glyphRecorders))
 	for psName := range dw.glyphRecorders {
@@ -461,6 +477,9 @@ func (dw *DocWriter) flushUnicodeFonts() {
 
 	for _, psName := range psNames {
 		gr := dw.glyphRecorders[psName]
+		if err := gr.error(); err != nil {
+			return fmt.Errorf("font %s: %w", psName, err)
+		}
 		mapping := gr.mapping()
 		glyphIDs := gr.glyphIDs()
 		if len(glyphIDs) == 0 {
@@ -468,21 +487,30 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		}
 		sort.Slice(glyphIDs, func(i, j int) bool { return glyphIDs[i] < glyphIDs[j] })
 		f := dw.unicodeFonts[psName]
+		cidInfo, cidKeyed := f.CIDSystemInfo()
 		upm := f.UnitsPerEm()
 
-		// Build /W width array from emitted CIDs.
+		// Width keys belong to the descendant font's CID namespace, whereas
+		// ToUnicode keys belong to the emitted character-code namespace.
 		cids := gr.cids()
 		sort.Slice(cids, func(i, j int) bool { return cids[i] < cids[j] })
 		cidWidths := make(map[uint16]int, len(cids))
 		cidToGID := make(map[uint16]uint16, len(cids))
+		codeToFontCID := make(map[uint16]uint16, len(cids))
 		for _, cid := range cids {
 			gid := gr.glyphIDForCID(cid)
-			cidToGID[cid] = gid
+			widthCID := cid
+			if cidKeyed {
+				widthCID = gr.fontCIDForCode(cid)
+				codeToFontCID[cid] = widthCID
+			} else {
+				cidToGID[cid] = gid
+			}
 			w := f.AdvanceWidthForGlyph(gid)
 			if upm > 0 {
 				w = w * 1000 / upm
 			}
-			cidWidths[cid] = w
+			cidWidths[widthCID] = w
 		}
 		defWidth := mostCommonWidth(cidWidths)
 		dw.cidFonts[psName].setDefaultWidth(defWidth)
@@ -498,22 +526,64 @@ func (dw *DocWriter) flushUnicodeFonts() {
 		}
 		dw.file.body.add(tuStream)
 		dw.type0Fonts[psName].setToUnicode(&indirectObjectRef{tuStream})
+		if cidKeyed {
+			// LeadType allocates compact character codes independently of the
+			// font's often sparse CIDs. This CMap joins those namespaces.
+			encodingData := codeToCIDCMapData(codeToFontCID, cidSystemInfo{registry: cidInfo.Registry, ordering: cidInfo.Ordering, supplement: cidInfo.Supplement})
+			encodingStream := newStream(dw.nextSeq(), 0, encodingData)
+			dw.file.body.add(encodingStream)
+			dw.type0Fonts[psName].setEncoding(&indirectObjectRef{encodingStream})
+		}
 
 		if f.OutlineKind() != "CFF" {
+			// CIDFontType2 has no CFF charset, so PDF needs an explicit map from
+			// descendant CIDs to subset glyph IDs.
 			cidMapStream := newStream(dw.nextSeq(), 0, cidToGIDMapData(cidToGID))
 			dw.file.body.add(cidMapStream)
 			dw.cidFonts[psName].setCIDToGIDMap(&indirectObjectRef{cidMapStream})
 		}
 
-		// Embed a font subset in the descriptor.
+		// Embed a font subset in the descriptor. Some fonts, notably CID-keyed
+		// CFF OpenType fonts, are usable for glyph lookup but cannot yet be
+		// subset by our local subsetter; for those, embed the full font file so
+		// viewers do not substitute a mismatched local font.
 		span := dw.profiler.Begin("pdf.font.subset")
-		subsetData, err := f.SubsetBytes(glyphIDs)
+		subsetData, pdfFontSubtype, err := f.PDFSubsetBytes(glyphIDs)
 		span.End()
-		if err == nil {
-			fontStream := newStream(dw.nextSeq(), 0, subsetData)
-			fontStream.setLength1(len(subsetData))
+		fontData := subsetData
+		subsetEmbedded := err == nil
+		if err != nil && cidKeyed {
+			return fmt.Errorf("subset CID-keyed CFF font %s (%s): %w", psName, f.Filename(), err)
+		}
+		if err != nil {
+			fontData = f.Bytes()
+		}
+		if len(fontData) > 0 {
+			fontStream := newStream(dw.nextSeq(), 0, fontData)
+			fontStream.setLength1(len(fontData))
 			if f.OutlineKind() == "CFF" {
-				fontStream.setSubtype("OpenType")
+				if pdfFontSubtype == "" {
+					pdfFontSubtype = "OpenType"
+				}
+				fontStream.setSubtype(pdfFontSubtype)
+			}
+			if cidKeyed && subsetEmbedded {
+				// CIDSet is also indexed by font CID, not by emitted code or GID.
+				fontCIDs := make([]uint16, 0, len(codeToFontCID)+1)
+				fontCIDs = append(fontCIDs, 0)
+				seen := map[uint16]bool{0: true}
+				for _, cid := range codeToFontCID {
+					if !seen[cid] {
+						seen[cid] = true
+						fontCIDs = append(fontCIDs, cid)
+					}
+				}
+				cidSetStream := newStream(dw.nextSeq(), 0, cidSetData(fontCIDs))
+				dw.file.body.add(cidSetStream)
+				dw.fontDescriptors[psName].setCIDSet(&indirectObjectRef{cidSetStream})
+			}
+			if dw.fontTrace != nil {
+				fmt.Fprintf(dw.fontTrace, "font embedded postscript=%q outline=%q cid_keyed=%t glyphs=%d subset_bytes=%d source_bytes=%d\n", psName, f.OutlineKind(), cidKeyed, len(glyphIDs), len(fontData), len(f.Bytes()))
 			}
 			if dw.compressEmbeddedFonts {
 				if err := fontStream.compress(); err != nil {
@@ -527,14 +597,18 @@ func (dw *DocWriter) flushUnicodeFonts() {
 				dw.fontDescriptors[psName].setFontFile2(&indirectObjectRef{fontStream})
 			}
 
-			// Apply the 6-char subset tag to all three name occurrences:
-			// FontDescriptor/FontName, CIDFont/BaseFont, Type0/BaseFont.
+			if !subsetEmbedded {
+				continue
+			}
+			// Apply the 6-char subset tag to all three name occurrences only
+			// when the embedded font file actually is a subset.
 			taggedName := subsetTag(psName, glyphIDs) + "+" + psName
 			dw.fontDescriptors[psName].dict["FontName"] = name(taggedName)
 			dw.cidFonts[psName].setBaseFont(taggedName)
 			dw.type0Fonts[psName].setBaseFont(taggedName)
 		}
 	}
+	return nil
 }
 
 func (dw *DocWriter) Fonts() []*font.Font {
@@ -547,6 +621,14 @@ func (dw *DocWriter) FontSize() float64 {
 
 func (dw *DocWriter) FontSources() font.FontSources {
 	return dw.fontSources
+}
+
+func (dw *DocWriter) SetFontTrace(w io.Writer) {
+	dw.fontTrace = w
+}
+
+func (dw *DocWriter) FontTrace() io.Writer {
+	return dw.fontTrace
 }
 
 func (dw *DocWriter) ShareFontSelectionCacheFrom(other *DocWriter) {
@@ -566,10 +648,19 @@ func (dw *DocWriter) selectFont(family string, opts options.Options) (*font.Font
 			return cached.Clone(), nil
 		}
 	}
-	selected, err := font.New(family, opts, dw.fontSources)
+	match := opts.StringDefault("match", "exact")
+	var selected *font.Font
+	var err error
+	if match == "nearest" {
+		selected, err = font.NewClosest(family, opts, dw.fontSources)
+	} else {
+		selected, err = font.New(family, opts, dw.fontSources)
+	}
 	if err != nil {
+		dw.traceFontSelection(family, opts, nil, err)
 		return nil, err
 	}
+	dw.traceFontSelection(family, opts, selected, nil)
 	if cacheable {
 		if dw.selectedFonts == nil {
 			dw.selectedFonts = make(map[string]*font.Font)
@@ -579,6 +670,26 @@ func (dw *DocWriter) selectFont(family string, opts options.Options) (*font.Font
 	return selected, nil
 }
 
+func (dw *DocWriter) traceFontSelection(family string, opts options.Options, selected *font.Font, err error) {
+	if dw.fontTrace == nil {
+		return
+	}
+	status := "selected"
+	weight := opts.StringDefault("weight", "")
+	style := opts.StringDefault("style", "")
+	match := opts.StringDefault("match", "exact")
+	ranges := ""
+	if rawRanges, ok := opts["ranges"]; ok {
+		ranges = fmt.Sprintf(" ranges=%v", rawRanges)
+	}
+	if err != nil {
+		fmt.Fprintf(dw.fontTrace, "font %s match=%s family=%q weight=%q style=%q%s error=%v\n", "error", match, family, weight, style, ranges, err)
+		return
+	}
+	fmt.Fprintf(dw.fontTrace, "font %s match=%s family=%q weight=%q style=%q%s -> family=%q full=%q postscript=%q file=%q\n",
+		status, match, family, weight, style, ranges, selected.Family(), selected.FullName(), selected.PostScriptName(), selected.Filename())
+}
+
 func fontSelectionCacheKey(family string, opts options.Options) (string, bool) {
 	var b strings.Builder
 	b.WriteString(family)
@@ -586,6 +697,8 @@ func fontSelectionCacheKey(family string, opts options.Options) (string, bool) {
 	b.WriteString(opts.StringDefault("weight", ""))
 	b.WriteByte(0)
 	b.WriteString(opts.StringDefault("style", ""))
+	b.WriteByte(0)
+	b.WriteString(opts.StringDefault("match", "exact"))
 	b.WriteByte(0)
 	b.WriteString(fmt.Sprintf("%g", opts.FloatDefault("relative_size", 100)))
 	b.WriteByte(0)
@@ -1510,7 +1623,9 @@ func (dw *DocWriter) WriteTo(wr io.Writer) (int64, error) {
 			return 0, err
 		}
 	}
-	dw.flushUnicodeFonts()
+	if err := dw.flushUnicodeFonts(); err != nil {
+		return 0, err
+	}
 	{
 		span := dw.profiler.Begin("pdf.write.file")
 		dw.file.write(wr)

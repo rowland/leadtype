@@ -134,3 +134,56 @@ func cidToGIDMapData(cidToGID map[uint16]uint16) []byte {
 	}
 	return data
 }
+
+// codeToCIDCMapData creates the Type 0 Encoding CMap used by a CID-keyed CFF
+// font. ToUnicode answers "what authored text did this code represent?"; this
+// CMap instead answers "which descendant-font CID should render this code?".
+// Entries are sorted for deterministic PDFs and split into blocks because PDF
+// consumers conventionally limit each begincidchar section to 100 entries.
+func codeToCIDCMapData(codeToCID map[uint16]uint16, systemInfo cidSystemInfo) []byte {
+	codes := make([]int, 0, len(codeToCID))
+	for code := range codeToCID {
+		codes = append(codes, int(code))
+	}
+	sort.Ints(codes)
+	var sb strings.Builder
+	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
+	sb.WriteString("12 dict begin\n")
+	sb.WriteString("begincmap\n")
+	fmt.Fprintf(&sb, "/CIDSystemInfo << /Registry (%s) /Ordering (%s) /Supplement %d >> def\n", systemInfo.registry, systemInfo.ordering, systemInfo.supplement)
+	sb.WriteString("/CMapName /LeadType-CID-Encoding def\n")
+	sb.WriteString("/CMapType 1 def\n")
+	sb.WriteString("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n")
+	const blockSize = 100
+	for i := 0; i < len(codes); i += blockSize {
+		end := i + blockSize
+		if end > len(codes) {
+			end = len(codes)
+		}
+		fmt.Fprintf(&sb, "%d begincidchar\n", end-i)
+		for _, rawCode := range codes[i:end] {
+			code := uint16(rawCode)
+			fmt.Fprintf(&sb, "<%04X> %d\n", code, codeToCID[code])
+		}
+		sb.WriteString("endcidchar\n")
+	}
+	sb.WriteString("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n")
+	return []byte(sb.String())
+}
+
+// cidSetData builds the FontDescriptor CIDSet bit field. Bit n says that CID n
+// is present in the embedded subset; bit order within each byte is high first,
+// as required by PDF.
+func cidSetData(cids []uint16) []byte {
+	maxCID := uint16(0)
+	for _, cid := range cids {
+		if cid > maxCID {
+			maxCID = cid
+		}
+	}
+	data := make([]byte, int(maxCID)/8+1)
+	for _, cid := range cids {
+		data[int(cid)/8] |= byte(0x80 >> (cid % 8))
+	}
+	return data
+}

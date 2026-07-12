@@ -21,7 +21,91 @@ import (
 	"github.com/rowland/leadtype/ttf_fonts"
 )
 
+type fullCFFFallbackSource struct {
+	metrics *fullCFFFallbackMetrics
+}
+
+func (s *fullCFFFallbackSource) Select(family, weight, style string, ranges []string) (font.FontMetrics, error) {
+	if family != "Full CFF" {
+		return nil, errors.New("not found")
+	}
+	return s.metrics, nil
+}
+
+func (s *fullCFFFallbackSource) SubType() string {
+	return "TrueType"
+}
+
+type fullCFFFallbackMetrics struct {
+	bytes []byte
+}
+
+func (m *fullCFFFallbackMetrics) AdvanceWidth(r rune) (int, bool) {
+	if m.GlyphIndex(r) == 0 {
+		return 0, true
+	}
+	return 512, false
+}
+
+func (m *fullCFFFallbackMetrics) AdvanceWidthForGlyph(glyphID uint16) int {
+	if glyphID == 0 {
+		return 0
+	}
+	return 512
+}
+
+func (m *fullCFFFallbackMetrics) Ascent() int             { return 800 }
+func (m *fullCFFFallbackMetrics) BoundingBox() [4]int     { return [4]int{0, -200, 512, 800} }
+func (m *fullCFFFallbackMetrics) Bytes() []byte           { return m.bytes }
+func (m *fullCFFFallbackMetrics) CapHeight() int          { return 700 }
+func (m *fullCFFFallbackMetrics) Copyright() string       { return "" }
+func (m *fullCFFFallbackMetrics) Descent() int            { return -200 }
+func (m *fullCFFFallbackMetrics) Family() string          { return "Full CFF" }
+func (m *fullCFFFallbackMetrics) Filename() string        { return "full-cff.otf" }
+func (m *fullCFFFallbackMetrics) Flags() uint32           { return 4 }
+func (m *fullCFFFallbackMetrics) FontKey() string         { return "full-cff" }
+func (m *fullCFFFallbackMetrics) FullName() string        { return "Full CFF" }
+func (m *fullCFFFallbackMetrics) ItalicAngle() float64    { return 0 }
+func (m *fullCFFFallbackMetrics) Leading() int            { return 0 }
+func (m *fullCFFFallbackMetrics) LineGap() int            { return 0 }
+func (m *fullCFFFallbackMetrics) NumGlyphs() int          { return 64 }
+func (m *fullCFFFallbackMetrics) OutlineKind() string     { return "CFF" }
+func (m *fullCFFFallbackMetrics) PostScriptName() string  { return "FullCFF" }
+func (m *fullCFFFallbackMetrics) StemV() int              { return 80 }
+func (m *fullCFFFallbackMetrics) StrikeoutPosition() int  { return 300 }
+func (m *fullCFFFallbackMetrics) StrikeoutThickness() int { return 50 }
+func (m *fullCFFFallbackMetrics) Style() string           { return "Regular" }
+func (m *fullCFFFallbackMetrics) Subset([]uint16) ([]byte, error) {
+	return nil, errors.New("subset unsupported")
+}
+func (m *fullCFFFallbackMetrics) SupportsArabic() bool    { return false }
+func (m *fullCFFFallbackMetrics) UnderlinePosition() int  { return -100 }
+func (m *fullCFFFallbackMetrics) UnderlineThickness() int { return 50 }
+func (m *fullCFFFallbackMetrics) UnitsPerEm() int         { return 1000 }
+func (m *fullCFFFallbackMetrics) Version() string         { return "" }
+func (m *fullCFFFallbackMetrics) XHeight() int            { return 500 }
+
+func (m *fullCFFFallbackMetrics) GlyphIndex(r rune) uint16 {
+	switch r {
+	case '中':
+		return 10
+	case '文':
+		return 11
+	default:
+		return 0
+	}
+}
+
 // ── buildCIDWidthArray ────────────────────────────────────────────────────────
+
+func TestCIDSystemInfo_DefaultSerializationRemainsStable(t *testing.T) {
+	var buf bytes.Buffer
+	(&cidSystemInfo{registry: "Adobe", ordering: "Identity", supplement: 0}).write(&buf)
+	const want = "<< /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> "
+	if got := buf.String(); got != want {
+		t.Fatalf("CIDSystemInfo = %q, want %q", got, want)
+	}
+}
 
 func TestBuildCIDWidthArray_Empty(t *testing.T) {
 	w := buildCIDWidthArray(nil, 0)
@@ -376,6 +460,71 @@ func TestUnicodeMode_CFFOpenTypeFontFile3(t *testing.T) {
 	}
 	if second := render(); second != pdf {
 		t.Fatal("expected deterministic CFF OTF PDF output")
+	}
+}
+
+func TestUnicodeMode_CIDKeyedCFFUsesCustomEncodingAndNativeCFF(t *testing.T) {
+	fc := testFontSource(t, "../ttf/testdata/minimal-cid-cff.otf")
+	dw := NewDocWriter()
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+	pw.SetFont("MinimalCIDCFF", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("A中")
+
+	var buf bytes.Buffer
+	if _, err := dw.WriteTo(&buf); err != nil {
+		t.Fatal(err)
+	}
+	pdf := buf.String()
+	for _, want := range []string{
+		"/Subtype /CIDFontType0",
+		"/Subtype /CIDFontType0C",
+		"/CMapName /LeadType-CID-Encoding",
+		"begincidchar",
+		"/CIDSet",
+		"/ToUnicode",
+	} {
+		if !strings.Contains(pdf, want) {
+			t.Fatalf("CID-keyed CFF PDF missing %q", want)
+		}
+	}
+	if strings.Contains(pdf, "/Encoding /Identity-H") {
+		t.Fatal("CID-keyed CFF Type0 font unexpectedly uses Identity-H")
+	}
+}
+
+func TestUnicodeMode_CFFFullFontFallbackWhenSubsetFails(t *testing.T) {
+	fullBytes, err := os.ReadFile("../ttf/testdata/minimal-cff.otf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw := NewDocWriter()
+	dw.AddFontSource(&fullCFFFallbackSource{metrics: &fullCFFFallbackMetrics{bytes: fullBytes}})
+
+	pw := dw.NewPage()
+	pw.SetFont("Full CFF", 12, options.Options{})
+	pw.MoveTo(72, 720)
+	pw.Print("中文")
+
+	var buf bytes.Buffer
+	dw.WriteTo(&buf)
+	pdf := buf.String()
+
+	if !strings.Contains(pdf, "/CIDFontType0") {
+		t.Fatalf("expected /CIDFontType0 for CFF full-font fallback, got excerpt:\n%s", extractSection(pdf, "/FontDescriptor", 800))
+	}
+	if !strings.Contains(pdf, "/FontFile3") {
+		t.Fatalf("expected full CFF fallback to embed /FontFile3, got excerpt:\n%s", extractSection(pdf, "/FontDescriptor", 800))
+	}
+	if !strings.Contains(pdf, "/Subtype /OpenType") {
+		t.Fatalf("expected FontFile3 /Subtype /OpenType, got excerpt:\n%s", extractSection(pdf, "/FontFile3", 800))
+	}
+	if strings.Contains(pdf, "/CIDToGIDMap") {
+		t.Fatal("did not expect CIDToGIDMap for CFF full-font fallback")
+	}
+	if strings.Contains(pdf, "+FullCFF") {
+		t.Fatal("did not expect subset tag when embedding the full fallback font")
 	}
 }
 

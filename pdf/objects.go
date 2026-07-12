@@ -217,6 +217,10 @@ func (fd *fontDescriptor) setFontFile3(ref *indirectObjectRef) {
 	fd.dict["FontFile3"] = ref
 }
 
+func (fd *fontDescriptor) setCIDSet(ref *indirectObjectRef) {
+	fd.dict["CIDSet"] = ref
+}
+
 type fontEncoding struct {
 	dictionaryObject
 }

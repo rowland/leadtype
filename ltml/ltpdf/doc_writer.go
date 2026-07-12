@@ -31,6 +31,7 @@ func (dw *DocWriter) LayoutProbeWriter() any {
 	probe := newDocWriterWithFontSources(dw.FontSources())
 	probe.SetAssetFS(dw.AssetFS())
 	probe.SetProfiler(dw.Profiler())
+	probe.SetFontTrace(dw.FontTrace())
 	probe.ShareFontSelectionCacheFrom(dw.DocWriter)
 	if dw.TaggedPDFEnabled() {
 		probe.EnableTaggedPDF(true)
@@ -85,17 +86,12 @@ func NewDocWriter() *DocWriter {
 	return dw
 }
 
-// NewDocWriterWithFontDirs creates a DocWriter that searches system fonts plus
-// each directory in dirs. It returns an error if any entry in dirs is invalid.
+// NewDocWriterWithFontDirs creates a DocWriter that searches each directory in
+// dirs before system fonts. It returns an error if any entry in dirs is invalid.
 func NewDocWriterWithFontDirs(dirs []string) (*DocWriter, error) {
-	ttFonts, err := ttf_fonts.NewFromSystemFonts()
+	ttFonts, err := ttf_fonts.NewFromDirsAndSystemFonts(dirs)
 	if err != nil {
 		return nil, err
-	}
-	for _, dir := range dirs {
-		if err := ttFonts.AddDir(dir); err != nil {
-			return nil, err
-		}
 	}
 	afmFonts, err := afm_fonts.Default()
 	if err != nil {
