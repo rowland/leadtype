@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (HBox auto width) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (When an hbox has surplus room, omitted widths keep their preferred size and only width="auto" children absorb the slack. In a constrained hbox, auto behaves the same as an omitted width. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -182,7 +180,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Roomy container) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -196,7 +193,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (fixed) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -210,7 +206,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (preferred width) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -224,7 +219,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (auto A fills slack) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -238,7 +232,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (auto B fills slack) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -252,7 +245,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (Constrained container) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -266,7 +258,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (fixed) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -280,7 +271,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (preferred width) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -294,7 +284,6 @@ endobj
 endobj
 24 0 obj
 <<
-/ActualText (auto A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -308,7 +297,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (auto B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -867,35 +855,35 @@ xref
 0000000484 00000 n
 0000000659 00000 n
 0000000838 00000 n
-0000000968 00000 n
-0000001297 00000 n
-0000001612 00000 n
-0000001768 00000 n
-0000002112 00000 n
-0000002431 00000 n
-0000002780 00000 n
-0000002931 00000 n
-0000003063 00000 n
-0000003184 00000 n
-0000003315 00000 n
-0000003449 00000 n
-0000003583 00000 n
-0000003721 00000 n
-0000003842 00000 n
-0000003974 00000 n
-0000004097 00000 n
-0000004220 00000 n
-0000007780 00000 n
-0000008564 00000 n
-0000008681 00000 n
-0000023695 00000 n
-0000024325 00000 n
-0000024420 00000 n
+0000000937 00000 n
+0000001266 00000 n
+0000001581 00000 n
+0000001737 00000 n
+0000001878 00000 n
+0000002197 00000 n
+0000002546 00000 n
+0000002697 00000 n
+0000002798 00000 n
+0000002898 00000 n
+0000002998 00000 n
+0000003098 00000 n
+0000003198 00000 n
+0000003299 00000 n
+0000003399 00000 n
+0000003500 00000 n
+0000003601 00000 n
+0000003702 00000 n
+0000007262 00000 n
+0000008046 00000 n
+0000008163 00000 n
+0000023177 00000 n
+0000023807 00000 n
+0000023902 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 33 
 >>
 startxref
-34252
+33734
 %%EOF

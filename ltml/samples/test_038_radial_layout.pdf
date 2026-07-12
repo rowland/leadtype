@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Radial Layout) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (A radial container behaves like a table wrapped around a circle. Some children below are explicit sectors, while direct labels and paragraphs are wrapped into implicit sectors at parse time.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -187,7 +185,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Auto below midline) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -203,7 +200,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (This paragraph is a direct child of the radial container, so LTML wraps it in an implicit sector and shapes its lines to the changing width of the wedge.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -305,7 +301,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (01) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -327,7 +322,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (02) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -341,7 +335,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (Facing override) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -357,7 +350,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (Merged sectors can host longer copy. This paragraph uses variable line widths that follow the sector instead of a rectangular frame.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -414,7 +406,6 @@ endobj
 endobj
 27 0 obj
 <<
-/ActualText (03) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -436,7 +427,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (start / inner) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -450,7 +440,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (end / outer) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -472,7 +461,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (Another implicit sector paragraph keeps ordinary LTML widgets but inherits sector geometry from the wrapper.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -511,7 +499,6 @@ endobj
 endobj
 33 0 obj
 <<
-/ActualText (Auto above midline) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -527,7 +514,6 @@ endobj
 endobj
 35 0 obj
 <<
-/ActualText (04) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -549,7 +535,6 @@ endobj
 endobj
 37 0 obj
 <<
-/ActualText (Explicit sectors can hold nested paragraphs, labels, and positioned children.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -1781,47 +1766,47 @@ xref
 0000000743 00000 n
 0000000932 00000 n
 0000001112 00000 n
-0000001240 00000 n
-0000001569 00000 n
-0000001874 00000 n
-0000002030 00000 n
-0000002415 00000 n
-0000002734 00000 n
-0000003090 00000 n
-0000003241 00000 n
-0000003334 00000 n
-0000003404 00000 n
-0000004296 00000 n
-0000004366 00000 n
-0000004486 00000 n
-0000004556 00000 n
-0000004676 00000 n
-0000004766 00000 n
-0000004836 00000 n
-0000005362 00000 n
-0000005432 00000 n
-0000005552 00000 n
-0000005632 00000 n
-0000005763 00000 n
-0000005892 00000 n
-0000005962 00000 n
-0000006386 00000 n
-0000006479 00000 n
-0000006549 00000 n
-0000006669 00000 n
-0000006739 00000 n
-0000007249 00000 n
-0000022875 00000 n
-0000023687 00000 n
-0000023808 00000 n
-0000039262 00000 n
-0000039920 00000 n
-0000040019 00000 n
+0000001211 00000 n
+0000001540 00000 n
+0000001845 00000 n
+0000002001 00000 n
+0000002180 00000 n
+0000002499 00000 n
+0000002855 00000 n
+0000003006 00000 n
+0000003065 00000 n
+0000003135 00000 n
+0000003858 00000 n
+0000003928 00000 n
+0000004030 00000 n
+0000004100 00000 n
+0000004202 00000 n
+0000004261 00000 n
+0000004331 00000 n
+0000004709 00000 n
+0000004779 00000 n
+0000004881 00000 n
+0000004961 00000 n
+0000005063 00000 n
+0000005165 00000 n
+0000005235 00000 n
+0000005535 00000 n
+0000005594 00000 n
+0000005664 00000 n
+0000005766 00000 n
+0000005836 00000 n
+0000006253 00000 n
+0000021879 00000 n
+0000022691 00000 n
+0000022812 00000 n
+0000038266 00000 n
+0000038924 00000 n
+0000039023 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 45 
 >>
 startxref
-49827
+48831
 %%EOF

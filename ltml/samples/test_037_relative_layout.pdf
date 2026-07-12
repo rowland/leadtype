@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Relative Layout) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (Use layout="relative" when a container should provide its own coordinate system for overlays, callouts, and anchored badges.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -182,7 +180,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Container-local coordinates) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -196,7 +193,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (left="0.2" top="0.45") 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -210,7 +206,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (Explicit left/top) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -224,7 +219,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (Anchored from right/bottom) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -238,7 +232,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (right="0.3") 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -252,7 +245,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (width="35%" height="40%") 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -266,7 +258,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (Sized by left, right, top, bottom) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -280,7 +271,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (Default vbox container with a positioned child.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -301,7 +291,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (Positional attrs without an explicit position still opt a child into relative placement.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -330,7 +319,6 @@ endobj
 endobj
 26 0 obj
 <<
-/ActualText (Implicit relative) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -344,7 +332,6 @@ endobj
 endobj
 27 0 obj
 <<
-/ActualText (Page-scope pattern) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -358,7 +345,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText (A page can also use relative coordinates when you want page-local positioning.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -1226,38 +1212,38 @@ xref
 0000000540 00000 n
 0000000736 00000 n
 0000000915 00000 n
-0000001045 00000 n
-0000001374 00000 n
-0000001691 00000 n
-0000001847 00000 n
-0000002128 00000 n
-0000002447 00000 n
-0000002834 00000 n
-0000002985 00000 n
-0000003128 00000 n
-0000003265 00000 n
-0000003398 00000 n
-0000003540 00000 n
-0000003667 00000 n
-0000003807 00000 n
-0000003956 00000 n
-0000004120 00000 n
-0000004178 00000 n
-0000004503 00000 n
-0000004637 00000 n
-0000004772 00000 n
-0000005087 00000 n
-0000011547 00000 n
-0000012485 00000 n
-0000012624 00000 n
-0000030010 00000 n
-0000030654 00000 n
-0000030751 00000 n
+0000001014 00000 n
+0000001343 00000 n
+0000001660 00000 n
+0000001816 00000 n
+0000001957 00000 n
+0000002276 00000 n
+0000002663 00000 n
+0000002814 00000 n
+0000002914 00000 n
+0000003014 00000 n
+0000003114 00000 n
+0000003214 00000 n
+0000003314 00000 n
+0000003414 00000 n
+0000003514 00000 n
+0000003615 00000 n
+0000003673 00000 n
+0000003894 00000 n
+0000003995 00000 n
+0000004096 00000 n
+0000004317 00000 n
+0000010777 00000 n
+0000011715 00000 n
+0000011854 00000 n
+0000029240 00000 n
+0000029884 00000 n
+0000029981 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 36 
 >>
 startxref
-40921
+40151
 %%EOF

@@ -233,10 +233,13 @@ func TestRenderLocal_UADefaultEnablesTaggedPDF(t *testing.T) {
 	}
 
 	pdfText := out.String()
-	for _, fragment := range []string{"/StructTreeRoot", "/S /P", "/ActualText (Hello world)"} {
+	for _, fragment := range []string{"/StructTreeRoot", "/S /P", "/ToUnicode"} {
 		if !strings.Contains(pdfText, fragment) {
 			t.Fatalf("expected tagged PDF fragment %q in output:\n%s", fragment, pdfText)
 		}
+	}
+	if strings.Contains(pdfText, "/ActualText (Hello world)") {
+		t.Fatalf("rendered text should not be replaced at structure-element granularity:\n%s", pdfText)
 	}
 }
 

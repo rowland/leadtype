@@ -69,7 +69,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Canvas Definitions And Draw Placements) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -126,7 +125,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (This sample defines a single reusable canvas, then places it through ordinary LTML layout containers. The page content uses margins, padding, and layout managers rather than hand-positioned coordinates. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -188,7 +186,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Natural Size Placement) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -202,7 +199,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (Omit both width and height and LTML uses the canvas natural 240pt square. The draw participates in normal vbox layout and is centered with padding around it. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -342,7 +338,6 @@ endstream
 endobj
 21 0 obj
 <<
-/ActualText (The placement matches the definition size exactly. ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -356,7 +351,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (Scaled Reuse) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -370,7 +364,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (The same stored geometry can be placed smaller with width-only sizing, or stretched when both dimensions are explicit. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -509,7 +502,6 @@ endstream
 endobj
 27 0 obj
 <<
-/ActualText (90pt wide) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -639,7 +631,6 @@ endstream
 endobj
 31 0 obj
 <<
-/ActualText (54pt wide) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -653,7 +644,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (Width-only draws preserve aspect ratio automatically. ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -681,7 +671,6 @@ endobj
 endobj
 34 0 obj
 <<
-/ActualText (96pt by 72pt) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -695,7 +684,6 @@ endobj
 endobj
 35 0 obj
 <<
-/ActualText (Setting both width and height stretches to the destination box. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -727,7 +715,6 @@ endobj
 endobj
 37 0 obj
 <<
-/ActualText (Repeated Placements Across Pages) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -741,7 +728,6 @@ endobj
 endobj
 38 0 obj
 <<
-/ActualText (The detailed geometry lives in the canvas definition. Every placement below reuses the stored form while choosing a different destination size. ) 
 /K [<<
 /Type /MCR 
 /Pg 36 0 R 
@@ -760,7 +746,6 @@ endobj
 endobj
 39 0 obj
 <<
-/ActualText (Postage-Stamp Placements) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -774,7 +759,6 @@ endobj
 endobj
 40 0 obj
 <<
-/ActualText (A flow container lays out several small placements as ordinary widgets with consistent spacing and padding. ) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -802,7 +786,6 @@ endobj
 endobj
 42 0 obj
 <<
-/ActualText (76pt wide) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -830,7 +813,6 @@ endobj
 endobj
 44 0 obj
 <<
-/ActualText (68pt wide) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -858,7 +840,6 @@ endobj
 endobj
 46 0 obj
 <<
-/ActualText (60pt wide) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -886,7 +867,6 @@ endobj
 endobj
 48 0 obj
 <<
-/ActualText (52pt wide) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -914,7 +894,6 @@ endobj
 endobj
 50 0 obj
 <<
-/ActualText (44pt wide) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -928,7 +907,6 @@ endobj
 endobj
 51 0 obj
 <<
-/ActualText (Reference Size) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -942,7 +920,6 @@ endobj
 endobj
 52 0 obj
 <<
-/ActualText (A medium placement can still feel crisp without redefining the asset. ) 
 /K [<<
 /Type /MCR 
 /Pg 36 0 R 
@@ -975,7 +952,6 @@ endobj
 endobj
 54 0 obj
 <<
-/ActualText (Presentation Size) 
 /K <<
 /Type /MCR 
 /Pg 36 0 R 
@@ -989,7 +965,6 @@ endobj
 endobj
 55 0 obj
 <<
-/ActualText (Larger placements can move back toward the original scale while continuing to reuse the same captured canvas. ) 
 /K [<<
 /Type /MCR 
 /Pg 36 0 R 
@@ -2222,67 +2197,67 @@ xref
 0000000782 00000 n
 0000001125 00000 n
 0000001304 00000 n
-0000001457 00000 n
-0000001786 00000 n
-0000002142 00000 n
-0000002298 00000 n
-0000002658 00000 n
-0000002977 00000 n
-0000003375 00000 n
-0000003526 00000 n
-0000003664 00000 n
-0000004055 00000 n
-0000004202 00000 n
-0000004301 00000 n
-0000005781 00000 n
-0000005948 00000 n
-0000006077 00000 n
-0000006394 00000 n
-0000006543 00000 n
-0000006671 00000 n
-0000008168 00000 n
-0000008294 00000 n
-0000008442 00000 n
-0000008583 00000 n
-0000010079 00000 n
-0000010205 00000 n
-0000010376 00000 n
-0000010528 00000 n
-0000010657 00000 n
-0000010880 00000 n
-0000011060 00000 n
-0000011209 00000 n
-0000011512 00000 n
-0000011653 00000 n
-0000011878 00000 n
-0000012038 00000 n
-0000012164 00000 n
-0000012324 00000 n
-0000012450 00000 n
-0000012610 00000 n
-0000012737 00000 n
-0000012898 00000 n
-0000013025 00000 n
-0000013186 00000 n
-0000013313 00000 n
-0000013445 00000 n
-0000013676 00000 n
-0000013826 00000 n
-0000013961 00000 n
-0000014232 00000 n
-0000014381 00000 n
-0000021166 00000 n
-0000028262 00000 n
-0000029228 00000 n
-0000029371 00000 n
-0000047881 00000 n
-0000048651 00000 n
-0000048766 00000 n
+0000001403 00000 n
+0000001732 00000 n
+0000002088 00000 n
+0000002244 00000 n
+0000002385 00000 n
+0000002704 00000 n
+0000003102 00000 n
+0000003253 00000 n
+0000003353 00000 n
+0000003570 00000 n
+0000003717 00000 n
+0000003816 00000 n
+0000005296 00000 n
+0000005396 00000 n
+0000005497 00000 n
+0000005679 00000 n
+0000005828 00000 n
+0000005956 00000 n
+0000007453 00000 n
+0000007554 00000 n
+0000007702 00000 n
+0000007843 00000 n
+0000009339 00000 n
+0000009440 00000 n
+0000009541 00000 n
+0000009693 00000 n
+0000009794 00000 n
+0000009937 00000 n
+0000010117 00000 n
+0000010218 00000 n
+0000010361 00000 n
+0000010462 00000 n
+0000010563 00000 n
+0000010723 00000 n
+0000010824 00000 n
+0000010984 00000 n
+0000011085 00000 n
+0000011245 00000 n
+0000011347 00000 n
+0000011508 00000 n
+0000011610 00000 n
+0000011771 00000 n
+0000011873 00000 n
+0000011975 00000 n
+0000012120 00000 n
+0000012270 00000 n
+0000012372 00000 n
+0000012517 00000 n
+0000012666 00000 n
+0000019451 00000 n
+0000026547 00000 n
+0000027513 00000 n
+0000027656 00000 n
+0000046166 00000 n
+0000046936 00000 n
+0000047051 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 65 
 >>
 startxref
-61396
+59681
 %%EOF

@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Built-in Heading Tags With rem Sizing) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (This page uses a 12pt page font, so 1rem = 12pt. The built-in heading aliases below expand to <label>, and each heading spells out its rem multiplier so the rendered scale is easy to verify. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -207,7 +205,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Page-root scale) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -221,7 +218,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (Each alias below uses the same 12pt page root.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -240,7 +236,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText <feff00680031002020140020003200720065006d0020003d00200032003400700074> 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -254,7 +249,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (Largest level.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -268,7 +262,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText <feff006800320020201400200031002e0037003500720065006d0020003d00200032003100700074> 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -282,7 +275,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (Strong section heading.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -296,7 +288,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText <feff006800330020201400200031002e003500720065006d0020003d00200031003800700074> 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -310,7 +301,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (Common subheading size.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -324,7 +314,6 @@ endobj
 endobj
 24 0 obj
 <<
-/ActualText <feff006800340020201400200031002e0032003500720065006d0020003d00200031003500700074> 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -338,7 +327,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (Just above body copy.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -352,7 +340,6 @@ endobj
 endobj
 26 0 obj
 <<
-/ActualText <feff006800350020201400200031002e00310032003500720065006d0020003d002000310033002e003500700074> 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -366,7 +353,6 @@ endobj
 endobj
 27 0 obj
 <<
-/ActualText (Matches the root size in bold.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -380,7 +366,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText <feff00680036002020140020003100720065006d0020003d00200031003200700074> 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -394,7 +379,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (Smallest custom heading.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -408,7 +392,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (Nested body at 0.75rem) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -422,7 +405,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (This panel reduces its inherited body text to 0.75rem = 9pt. The headings below should still resolve against the 12pt page root. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -451,7 +433,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (Nested h2 stays 21pt) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -465,7 +446,6 @@ endobj
 endobj
 33 0 obj
 <<
-/ActualText (The body copy in this card is smaller, but the rem heading still resolves against the page root rather than the local panel font. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -489,7 +469,6 @@ endobj
 endobj
 34 0 obj
 <<
-/ActualText (Nested h4 stays 15pt) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -503,7 +482,6 @@ endobj
 endobj
 35 0 obj
 <<
-/ActualText (This matches the left-column h4 even though the paragraph text is 9pt. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -522,7 +500,6 @@ endobj
 endobj
 36 0 obj
 <<
-/ActualText (Nested h6 stays 12pt) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -536,7 +513,6 @@ endobj
 endobj
 37 0 obj
 <<
-/ActualText (The smallest heading still sits above the local body size, which makes the page-root behavior obvious at a glance. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -1378,47 +1354,47 @@ xref
 0000000666 00000 n
 0000000925 00000 n
 0000001104 00000 n
-0000001256 00000 n
-0000001585 00000 n
-0000001973 00000 n
-0000002129 00000 n
-0000002667 00000 n
-0000002986 00000 n
-0000003352 00000 n
-0000003503 00000 n
-0000003634 00000 n
-0000003838 00000 n
-0000004024 00000 n
-0000004155 00000 n
-0000004353 00000 n
-0000004493 00000 n
-0000004687 00000 n
-0000004827 00000 n
+0000001203 00000 n
+0000001532 00000 n
+0000001920 00000 n
+0000002076 00000 n
+0000002407 00000 n
+0000002726 00000 n
+0000003092 00000 n
+0000003243 00000 n
+0000003343 00000 n
+0000003485 00000 n
+0000003587 00000 n
+0000003688 00000 n
+0000003790 00000 n
+0000003891 00000 n
+0000003993 00000 n
+0000004094 00000 n
+0000004196 00000 n
+0000004297 00000 n
+0000004399 00000 n
+0000004500 00000 n
+0000004602 00000 n
+0000004703 00000 n
+0000004804 00000 n
 0000005025 00000 n
-0000005163 00000 n
-0000005373 00000 n
-0000005520 00000 n
-0000005706 00000 n
-0000005847 00000 n
-0000005986 00000 n
-0000006352 00000 n
-0000006490 00000 n
-0000006818 00000 n
-0000006956 00000 n
-0000007186 00000 n
-0000007324 00000 n
-0000007637 00000 n
-0000015189 00000 n
-0000016071 00000 n
-0000016202 00000 n
-0000032860 00000 n
-0000033798 00000 n
-0000033937 00000 n
+0000005127 00000 n
+0000005309 00000 n
+0000005411 00000 n
+0000005554 00000 n
+0000005656 00000 n
+0000005838 00000 n
+0000013390 00000 n
+0000014272 00000 n
+0000014403 00000 n
+0000031061 00000 n
+0000031999 00000 n
+0000032138 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 45 
 >>
 startxref
-49975
+48176
 %%EOF

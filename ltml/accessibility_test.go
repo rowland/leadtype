@@ -46,6 +46,26 @@ func renderLTMLPDF(t *testing.T, input string, assetFS fs.FS) string {
 	return buf.String()
 }
 
+func TestAccessibilityReplacementTextIsReservedForArabic(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		want string
+	}{
+		{name: "latin", text: "Hello world"},
+		{name: "chinese", text: "中文可逐字选择"},
+		{name: "arabic", text: "مرحبا بالعالم", want: "مرحبا بالعالم"},
+		{name: "mixed arabic", text: "Page مرحبا 1", want: "Page مرحبا 1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := accessibilityReplacementText(tt.text); got != tt.want {
+				t.Fatalf("accessibilityReplacementText(%q) = %q, want %q", tt.text, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestLTML_UAEnablesTaggedPDF(t *testing.T) {
 	pdfText := renderLTMLPDF(t, `
 <ltml ua="true">
@@ -59,14 +79,13 @@ func TestLTML_UAEnablesTaggedPDF(t *testing.T) {
 		"/StructTreeRoot",
 		"/S /P",
 		"/S /Link",
-		"/ActualText (Hello world)",
 	} {
 		if !strings.Contains(pdfText, fragment) {
 			t.Fatalf("expected tagged fragment %q in output:\n%s", fragment, pdfText)
 		}
 	}
-	if count := strings.Count(pdfText, "/ActualText ("); count != 1 {
-		t.Fatalf("actual-text count = %d, want 1\n%s", count, pdfText)
+	if strings.Contains(pdfText, "/ActualText (Hello world)") {
+		t.Fatalf("text structure should rely on rendered text and ToUnicode:\n%s", pdfText)
 	}
 }
 
@@ -118,10 +137,13 @@ func TestLTML_WriterTaggedPDFDefaultIsPreserved(t *testing.T) {
 		t.Fatal(err)
 	}
 	pdfText := buf.String()
-	for _, fragment := range []string{"/StructTreeRoot", "/S /P", "/ActualText (Hello world)"} {
+	for _, fragment := range []string{"/StructTreeRoot", "/S /P"} {
 		if !strings.Contains(pdfText, fragment) {
 			t.Fatalf("expected tagged fragment %q in output:\n%s", fragment, pdfText)
 		}
+	}
+	if strings.Contains(pdfText, "/ActualText (Hello world)") {
+		t.Fatalf("text structure should not contain replacement text:\n%s", pdfText)
 	}
 }
 
@@ -139,8 +161,8 @@ func TestLTML_LegacyPDFAttrsDoNotAffectOutput(t *testing.T) {
 	if strings.Contains(pdfText, "/S /H1") {
 		t.Fatalf("did not expect legacy pdf.tag override in output:\n%s", pdfText)
 	}
-	if !strings.Contains(pdfText, "/ActualText (Hello)") || strings.Contains(pdfText, "/ActualText (Wrong)") {
-		t.Fatalf("expected automatic actual text from label content:\n%s", pdfText)
+	if strings.Contains(pdfText, "/ActualText") {
+		t.Fatalf("legacy or automatic replacement text reached output:\n%s", pdfText)
 	}
 }
 
@@ -155,8 +177,8 @@ func TestLTML_LabelRoleOverride(t *testing.T) {
 	if !strings.Contains(pdfText, "/S /H1") {
 		t.Fatalf("expected H1 role override in output:\n%s", pdfText)
 	}
-	if !strings.Contains(pdfText, "/ActualText (Heading)") {
-		t.Fatalf("expected label actual text in output:\n%s", pdfText)
+	if strings.Contains(pdfText, "/ActualText (Heading)") {
+		t.Fatalf("text heading should rely on rendered text and ToUnicode:\n%s", pdfText)
 	}
 }
 
@@ -192,7 +214,7 @@ func TestLTML_InvalidRoleFallsBackToDefaultRole(t *testing.T) {
 	}
 }
 
-func TestLTML_ParagraphActualTextIncludesDynamicPageNo(t *testing.T) {
+func TestLTML_DynamicPageNoRemainsRenderedText(t *testing.T) {
 	pdfText := renderLTMLPDF(t, `
 <ltml ua="true">
   <page>
@@ -200,15 +222,15 @@ func TestLTML_ParagraphActualTextIncludesDynamicPageNo(t *testing.T) {
   </page>
 </ltml>`, nil)
 
-	if !strings.Contains(pdfText, "/ActualText (Page 1)") {
-		t.Fatalf("expected resolved page number in label actual text:\n%s", pdfText)
+	if strings.Contains(pdfText, "/ActualText (Page 1)") {
+		t.Fatalf("dynamic text should not become replacement text:\n%s", pdfText)
 	}
 	if !strings.Contains(pdfText, "(Page 1) Tj") && !strings.Contains(pdfText, "<") {
 		t.Fatalf("expected page number content to render as text:\n%s", pdfText)
 	}
 }
 
-func TestLTML_PreRoleIncludesActualText(t *testing.T) {
+func TestLTML_PreRoleUsesRenderedText(t *testing.T) {
 	pdfText := renderLTMLPDF(t, `
 <ltml ua="true">
   <page>
@@ -223,8 +245,8 @@ func TestLTML_PreRoleIncludesActualText(t *testing.T) {
 	if !strings.Contains(pdfText, "/S /Code") {
 		t.Fatalf("expected pre role in output:\n%s", pdfText)
 	}
-	if !strings.Contains(pdfText, "/ActualText (if x < 1 {\n  return\n})") {
-		t.Fatalf("expected pre actual text in output:\n%s", pdfText)
+	if strings.Contains(pdfText, "/ActualText") {
+		t.Fatalf("preformatted text should not become replacement text:\n%s", pdfText)
 	}
 }
 

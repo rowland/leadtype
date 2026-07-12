@@ -110,10 +110,13 @@ When `ua="true"` is set, LTML emits PDF structure for conservative defaults:
 - `<image>`, `<line>`, and shape primitives with `alt` default to `Figure`
 - decorative graphics without `alt`, borders, backgrounds, debug grids, and shape chrome are emitted as PDF artifacts
 
-When tagged output is enabled, LTML fills `/ActualText` automatically for
-paragraphs and labels from their fully resolved plain text, including inline
-links and dynamic text such as `<pageno>`. LTML does not emit `/ActualText` for
-inline spans or links.
+Text widgets normally remain represented by their rendered text and per-font
+`/ToUnicode` mappings. LTML does not add `/ActualText` replacement strings to
+directly mappable text because replacement text can make an entire structure
+element behave as one indivisible selection in PDF viewers. Arabic text retains
+resolved `/ActualText` because shaping and bidirectional display order otherwise
+prevent reliable recovery of logical reading order. Dynamic text such as
+`<pageno>` is rendered directly and remains selectable.
 
 Widget-level accessibility attributes are intentionally small:
 

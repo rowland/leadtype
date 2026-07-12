@@ -81,7 +81,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Bullet variants) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -138,7 +137,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (Text bullets keep the existing font-based behavior.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -510,7 +508,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (Image bullets can use compact SVG marks through the normal image pipeline.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -677,7 +674,6 @@ endstream
 endobj
 29 0 obj
 <<
-/ActualText (Circle bullets use the shared closed-shape rendering path.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -691,7 +687,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (Ellipse bullets can use the same pen and brush styling.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -705,7 +700,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (Polygon bullets support configurable side counts and rotation.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -719,7 +713,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (Triangle bullets are a convenience alias over polygons.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -733,7 +726,6 @@ endobj
 endobj
 33 0 obj
 <<
-/ActualText (Square bullets are another polygon alias with square defaults.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -747,7 +739,6 @@ endobj
 endobj
 34 0 obj
 <<
-/ActualText (Five-point stars use a point-up default orientation.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -761,7 +752,6 @@ endobj
 endobj
 35 0 obj
 <<
-/ActualText (Star bullets can use pen and brush styling, including gradients.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -793,7 +783,6 @@ endobj
 endobj
 38 0 obj
 <<
-/ActualText (Four-point stars use a point-up default orientation.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -807,7 +796,6 @@ endobj
 endobj
 39 0 obj
 <<
-/ActualText (Diamond bullets are a star alias with diamond defaults.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -2990,65 +2978,65 @@ xref
 0000000665 00000 n
 0000000868 00000 n
 0000001048 00000 n
-0000001178 00000 n
-0000001507 00000 n
-0000001782 00000 n
-0000001938 00000 n
-0000002105 00000 n
-0000002392 00000 n
-0000006710 00000 n
-0000003265 00000 n
-0000006876 00000 n
-0000007195 00000 n
-0000007572 00000 n
-0000007723 00000 n
-0000007913 00000 n
-0000008021 00000 n
-0000008145 00000 n
-0000008200 00000 n
-0000008313 00000 n
-0000008447 00000 n
-0000008502 00000 n
-0000008695 00000 n
-0000009650 00000 n
-0000009824 00000 n
-0000009995 00000 n
-0000010173 00000 n
-0000010344 00000 n
-0000010522 00000 n
-0000010690 00000 n
-0000010870 00000 n
-0000010974 00000 n
-0000011117 00000 n
-0000011286 00000 n
-0000011458 00000 n
-0000011707 00000 n
-0000012037 00000 n
-0000012357 00000 n
-0000012512 00000 n
-0000012969 00000 n
-0000013286 00000 n
-0000013925 00000 n
-0000014080 00000 n
-0000014549 00000 n
-0000014978 00000 n
-0000031703 00000 n
-0000033426 00000 n
-0000033678 00000 n
-0000223898 00000 n
-0000224532 00000 n
-0000224627 00000 n
-0000292181 00000 n
-0000293049 00000 n
-0000293178 00000 n
-0000309596 00000 n
-0000310100 00000 n
-0000310177 00000 n
+0000001147 00000 n
+0000001476 00000 n
+0000001751 00000 n
+0000001907 00000 n
+0000002007 00000 n
+0000002294 00000 n
+0000006612 00000 n
+0000003167 00000 n
+0000006778 00000 n
+0000007097 00000 n
+0000007474 00000 n
+0000007625 00000 n
+0000007725 00000 n
+0000007833 00000 n
+0000007957 00000 n
+0000008012 00000 n
+0000008125 00000 n
+0000008259 00000 n
+0000008314 00000 n
+0000008507 00000 n
+0000009462 00000 n
+0000009562 00000 n
+0000009662 00000 n
+0000009762 00000 n
+0000009862 00000 n
+0000009962 00000 n
+0000010062 00000 n
+0000010162 00000 n
+0000010266 00000 n
+0000010409 00000 n
+0000010510 00000 n
+0000010611 00000 n
+0000010860 00000 n
+0000011190 00000 n
+0000011510 00000 n
+0000011665 00000 n
+0000012122 00000 n
+0000012439 00000 n
+0000013078 00000 n
+0000013233 00000 n
+0000013702 00000 n
+0000014131 00000 n
+0000030856 00000 n
+0000032579 00000 n
+0000032831 00000 n
+0000223051 00000 n
+0000223685 00000 n
+0000223780 00000 n
+0000291334 00000 n
+0000292202 00000 n
+0000292331 00000 n
+0000308749 00000 n
+0000309253 00000 n
+0000309330 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 63 
 >>
 startxref
-316905
+316058
 %%EOF

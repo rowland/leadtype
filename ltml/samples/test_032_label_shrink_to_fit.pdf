@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Label parity features) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (Labels remain single-line. The left column uses fit="shrink"; the right column keeps the current non-fitting behavior for comparison. 12 pt fonts specified. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -192,7 +190,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (fit="shrink") 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -206,7 +203,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (without fit) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -220,7 +216,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (A very long translated page heading ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -234,7 +229,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (A very long translated page heading ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -248,7 +242,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (Quarterly Performance Summary ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -272,7 +265,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (Quarterly Performance Summary ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -296,7 +288,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (Short headings are fine. ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -310,7 +301,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (Short headings are fine. ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -324,7 +314,6 @@ endobj
 endobj
 24 0 obj
 <<
-/ActualText (Label angle rotates only the text. Widget rotate transforms the full box, including fill and border. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -363,7 +352,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (label angle) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -377,7 +365,6 @@ endobj
 endobj
 26 0 obj
 <<
-/ActualText (widget rotate) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -391,7 +378,6 @@ endobj
 endobj
 27 0 obj
 <<
-/ActualText (Angle Text ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -405,7 +391,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText (Rotate Box ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -419,7 +404,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (alignment anchors) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -433,7 +417,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (left anchor) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -447,7 +430,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (center anchor) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -461,7 +443,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (right anchor) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -475,7 +456,6 @@ endobj
 endobj
 33 0 obj
 <<
-/ActualText (Left Anchor ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -489,7 +469,6 @@ endobj
 endobj
 34 0 obj
 <<
-/ActualText (Center Anchor ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -503,7 +482,6 @@ endobj
 endobj
 35 0 obj
 <<
-/ActualText (Right Anchor ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -517,7 +495,6 @@ endobj
 endobj
 36 0 obj
 <<
-/ActualText (text decorations) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -531,7 +508,6 @@ endobj
 endobj
 37 0 obj
 <<
-/ActualText (Underlined Text ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -545,7 +521,6 @@ endobj
 endobj
 38 0 obj
 <<
-/ActualText (Strikeout Text ) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -1608,48 +1583,48 @@ xref
 0000000652 00000 n
 0000000918 00000 n
 0000001097 00000 n
-0000001233 00000 n
-0000001562 00000 n
-0000001901 00000 n
-0000002057 00000 n
-0000002447 00000 n
-0000002766 00000 n
-0000003129 00000 n
-0000003280 00000 n
-0000003408 00000 n
-0000003535 00000 n
-0000003687 00000 n
-0000003839 00000 n
-0000004066 00000 n
-0000004294 00000 n
-0000004436 00000 n
-0000004578 00000 n
-0000004994 00000 n
-0000005122 00000 n
-0000005252 00000 n
-0000005380 00000 n
-0000005508 00000 n
-0000005642 00000 n
-0000005770 00000 n
-0000005900 00000 n
-0000006029 00000 n
-0000006158 00000 n
-0000006289 00000 n
-0000006419 00000 n
-0000006552 00000 n
-0000006685 00000 n
-0000006817 00000 n
-0000015593 00000 n
-0000016475 00000 n
-0000016606 00000 n
-0000033444 00000 n
-0000034158 00000 n
-0000034265 00000 n
+0000001196 00000 n
+0000001525 00000 n
+0000001864 00000 n
+0000002020 00000 n
+0000002237 00000 n
+0000002556 00000 n
+0000002919 00000 n
+0000003070 00000 n
+0000003170 00000 n
+0000003270 00000 n
+0000003370 00000 n
+0000003470 00000 n
+0000003651 00000 n
+0000003833 00000 n
+0000003934 00000 n
+0000004035 00000 n
+0000004334 00000 n
+0000004435 00000 n
+0000004536 00000 n
+0000004637 00000 n
+0000004738 00000 n
+0000004839 00000 n
+0000004940 00000 n
+0000005041 00000 n
+0000005142 00000 n
+0000005243 00000 n
+0000005344 00000 n
+0000005445 00000 n
+0000005546 00000 n
+0000005647 00000 n
+0000005748 00000 n
+0000014524 00000 n
+0000015406 00000 n
+0000015537 00000 n
+0000032375 00000 n
+0000033089 00000 n
+0000033196 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 46 
 >>
 startxref
-45299
+44230
 %%EOF

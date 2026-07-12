@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (List splitting) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -135,7 +134,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (Ordered lists should continue numbering across pages.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -207,7 +205,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Default unordered list) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -221,7 +218,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (Default unordered list items use a built-in disc marker.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -235,7 +231,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (Only direct child paragraphs receive markers automatically.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -249,7 +244,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (Default ordered list) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -263,7 +257,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (Default ordered list items use decimal markers.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -277,7 +270,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (Markers auto-size so double-digit ordinals stay aligned.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -291,7 +283,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (Custom bullets) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -305,7 +296,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (Custom unordered lists can reuse named bullet styles.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -319,7 +309,6 @@ endobj
 endobj
 24 0 obj
 <<
-/ActualText (This example uses a filled star marker.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -333,7 +322,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (This first ordered item is intentionally long so the list container must split it across pages without reprinting the marker on the continuation fragment. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -432,7 +420,6 @@ endobj
 endobj
 26 0 obj
 <<
-/ActualText (Odd list footer) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -464,7 +451,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText (Second ordered item continues the numbering after the split.) 
 /K <<
 /Type /MCR 
 /Pg 27 0 R 
@@ -478,7 +464,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (Third ordered item confirms numbering remains stable on later fragments.) 
 /K [<<
 /Type /MCR 
 /Pg 27 0 R 
@@ -497,7 +482,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (Fourth ordered item keeps the decimal sequence going.) 
 /K <<
 /Type /MCR 
 /Pg 27 0 R 
@@ -511,7 +495,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (Fifth ordered item leaves enough content to require a continuation page.) 
 /K [<<
 /Type /MCR 
 /Pg 27 0 R 
@@ -530,7 +513,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (Sixth ordered item should not restart at one.) 
 /K <<
 /Type /MCR 
 /Pg 27 0 R 
@@ -544,7 +526,6 @@ endobj
 endobj
 33 0 obj
 <<
-/ActualText (Even list footer) 
 /K [<<
 /Type /MCR 
 /Pg 27 0 R 
@@ -576,7 +557,6 @@ endobj
 endobj
 35 0 obj
 <<
-/ActualText (Seventh ordered item remains aligned with the rest of the list.) 
 /K [<<
 /Type /MCR 
 /Pg 34 0 R 
@@ -595,7 +575,6 @@ endobj
 endobj
 36 0 obj
 <<
-/ActualText (Eighth ordered item gives the second page more than one ordinal.) 
 /K [<<
 /Type /MCR 
 /Pg 34 0 R 
@@ -614,7 +593,6 @@ endobj
 endobj
 37 0 obj
 <<
-/ActualText (Ninth ordered item keeps the list moving.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -628,7 +606,6 @@ endobj
 endobj
 38 0 obj
 <<
-/ActualText (Tenth ordered item exercises double-digit width alignment.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -642,7 +619,6 @@ endobj
 endobj
 39 0 obj
 <<
-/ActualText (Eleventh ordered item keeps the auto-sized marker slot in use.) 
 /K [<<
 /Type /MCR 
 /Pg 34 0 R 
@@ -661,7 +637,6 @@ endobj
 endobj
 40 0 obj
 <<
-/ActualText (Twelfth ordered item closes the sample.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -675,7 +650,6 @@ endobj
 endobj
 41 0 obj
 <<
-/ActualText (Thirteenth ordered item keeps the list going.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -689,7 +663,6 @@ endobj
 endobj
 42 0 obj
 <<
-/ActualText (Fourteenth ordered item adds one more body row.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -703,7 +676,6 @@ endobj
 endobj
 43 0 obj
 <<
-/ActualText (Fifteenth ordered item confirms numbering stays monotonic.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -717,7 +689,6 @@ endobj
 endobj
 44 0 obj
 <<
-/ActualText (Sixteenth ordered item leaves no room for a restart bug.) 
 /K <<
 /Type /MCR 
 /Pg 34 0 R 
@@ -731,7 +702,6 @@ endobj
 endobj
 45 0 obj
 <<
-/ActualText (Seventeenth ordered item ensures a later fragment still has markers.) 
 /K [<<
 /Type /MCR 
 /Pg 34 0 R 
@@ -763,7 +733,6 @@ endobj
 endobj
 47 0 obj
 <<
-/ActualText (Eighteenth ordered item keeps the footer and marker logic busy.) 
 /K [<<
 /Type /MCR 
 /Pg 46 0 R 
@@ -782,7 +751,6 @@ endobj
 endobj
 48 0 obj
 <<
-/ActualText (Nineteenth ordered item remains aligned in the same slot width.) 
 /K [<<
 /Type /MCR 
 /Pg 46 0 R 
@@ -801,7 +769,6 @@ endobj
 endobj
 49 0 obj
 <<
-/ActualText (Twentieth ordered item finishes the ordered sequence.) 
 /K <<
 /Type /MCR 
 /Pg 46 0 R 
@@ -2169,62 +2136,62 @@ xref
 0000000888 00000 n
 0000001210 00000 n
 0000001389 00000 n
-0000001638 00000 n
-0000001967 00000 n
-0000002271 00000 n
-0000002427 00000 n
-0000002716 00000 n
-0000003035 00000 n
-0000003429 00000 n
-0000003580 00000 n
-0000003718 00000 n
-0000003890 00000 n
-0000004065 00000 n
-0000004201 00000 n
-0000004364 00000 n
-0000004536 00000 n
-0000004666 00000 n
-0000004835 00000 n
-0000004991 00000 n
-0000006823 00000 n
-0000006998 00000 n
-0000007178 00000 n
-0000007356 00000 n
-0000007589 00000 n
-0000007760 00000 n
-0000007993 00000 n
-0000008156 00000 n
-0000008332 00000 n
-0000008512 00000 n
-0000008734 00000 n
-0000008957 00000 n
-0000009115 00000 n
-0000009290 00000 n
-0000009511 00000 n
-0000009668 00000 n
-0000009831 00000 n
-0000009996 00000 n
-0000010172 00000 n
-0000010346 00000 n
-0000010575 00000 n
-0000010755 00000 n
-0000010977 00000 n
-0000011199 00000 n
-0000011369 00000 n
-0000017996 00000 n
-0000023586 00000 n
-0000028508 00000 n
-0000030630 00000 n
-0000031666 00000 n
-0000031820 00000 n
-0000051086 00000 n
-0000051702 00000 n
-0000051795 00000 n
+0000001608 00000 n
+0000001937 00000 n
+0000002241 00000 n
+0000002397 00000 n
+0000002617 00000 n
+0000002936 00000 n
+0000003330 00000 n
+0000003481 00000 n
+0000003581 00000 n
+0000003681 00000 n
+0000003781 00000 n
+0000003881 00000 n
+0000003981 00000 n
+0000004081 00000 n
+0000004181 00000 n
+0000004281 00000 n
+0000004382 00000 n
+0000005151 00000 n
+0000005295 00000 n
+0000005475 00000 n
+0000005577 00000 n
+0000005722 00000 n
+0000005824 00000 n
+0000005969 00000 n
+0000006071 00000 n
+0000006215 00000 n
+0000006395 00000 n
+0000006538 00000 n
+0000006681 00000 n
+0000006782 00000 n
+0000006883 00000 n
+0000007026 00000 n
+0000007128 00000 n
+0000007230 00000 n
+0000007332 00000 n
+0000007434 00000 n
+0000007536 00000 n
+0000007681 00000 n
+0000007861 00000 n
+0000008004 00000 n
+0000008147 00000 n
+0000008248 00000 n
+0000014875 00000 n
+0000020465 00000 n
+0000025387 00000 n
+0000027509 00000 n
+0000028545 00000 n
+0000028699 00000 n
+0000047965 00000 n
+0000048581 00000 n
+0000048674 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 60 
 >>
 startxref
-61759
+58638
 %%EOF

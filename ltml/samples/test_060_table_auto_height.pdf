@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Table auto height) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (Fixed-height tables preserve fixed and percent rows, then share true surplus height only with rows containing height="auto" cells. Natural-height tables leave auto rows at preferred height. ) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -182,7 +180,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Roomy fixed-height table) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -204,7 +201,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (fixed row A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -218,7 +214,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (fixed row B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -232,7 +227,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (15% row A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -246,7 +240,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (15% row B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -260,7 +253,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (preferred row A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -274,7 +266,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (preferred row B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -288,7 +279,6 @@ endobj
 endobj
 24 0 obj
 <<
-/ActualText (auto row grows A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -302,7 +292,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (auto row grows B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -316,7 +305,6 @@ endobj
 endobj
 26 0 obj
 <<
-/ActualText (Natural-height table) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -338,7 +326,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText (preferred row A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -352,7 +339,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (preferred row B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -366,7 +352,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (auto row stays preferred A) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -380,7 +365,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (auto row stays preferred B) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -1012,41 +996,41 @@ xref
 0000000512 00000 n
 0000000645 00000 n
 0000000824 00000 n
-0000000956 00000 n
-0000001285 00000 n
-0000001602 00000 n
-0000001758 00000 n
-0000002105 00000 n
-0000002424 00000 n
-0000002787 00000 n
-0000002938 00000 n
-0000003079 00000 n
-0000003204 00000 n
-0000003332 00000 n
-0000003460 00000 n
-0000003586 00000 n
-0000003712 00000 n
-0000003844 00000 n
-0000003976 00000 n
-0000004110 00000 n
-0000004244 00000 n
-0000004382 00000 n
-0000004479 00000 n
-0000004612 00000 n
-0000004745 00000 n
-0000004889 00000 n
-0000005033 00000 n
-0000009722 00000 n
-0000010534 00000 n
-0000010655 00000 n
-0000026029 00000 n
-0000026659 00000 n
-0000026754 00000 n
+0000000923 00000 n
+0000001252 00000 n
+0000001569 00000 n
+0000001725 00000 n
+0000001866 00000 n
+0000002185 00000 n
+0000002548 00000 n
+0000002699 00000 n
+0000002800 00000 n
+0000002925 00000 n
+0000003026 00000 n
+0000003127 00000 n
+0000003228 00000 n
+0000003329 00000 n
+0000003430 00000 n
+0000003531 00000 n
+0000003633 00000 n
+0000003735 00000 n
+0000003837 00000 n
+0000003934 00000 n
+0000004036 00000 n
+0000004138 00000 n
+0000004240 00000 n
+0000004342 00000 n
+0000009031 00000 n
+0000009843 00000 n
+0000009964 00000 n
+0000025338 00000 n
+0000025968 00000 n
+0000026063 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 39 
 >>
 startxref
-36318
+35627
 %%EOF

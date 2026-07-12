@@ -67,7 +67,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Generalized List Bullet Templates) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -124,7 +123,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (Built-in list aliases) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -138,7 +136,6 @@ endobj
 endobj
 13 0 obj
 <<
-/ActualText (ul) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -152,7 +149,6 @@ endobj
 endobj
 14 0 obj
 <<
-/ActualText (Uses the predefined unordered bullet style.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -214,7 +210,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (Only direct child paragraphs receive markers.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -233,7 +228,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (ol) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -247,7 +241,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (Uses the predefined ordered bullet style.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -261,7 +254,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (Numbers are formatted at layout time.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -275,7 +267,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (Image plus generated ordinal) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -289,7 +280,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (The image bullet and the generated number each reserve their own slot.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -361,7 +351,6 @@ endstream
 endobj
 26 0 obj
 <<
-/ActualText (Double markers are useful when matching a legacy report layout.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -375,7 +364,6 @@ endobj
 endobj
 27 0 obj
 <<
-/ActualText (The paragraph text wraps after both bullet slots.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -389,7 +377,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText (Custom format on a div) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -403,7 +390,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (A vbox can use the same bullets attribute as ol and ul aliases.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -417,7 +403,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (The second bullet uses format="%d\)" for custom numbering.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -431,7 +416,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (Authors can combine shape, image, text, and formatted bullets.) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -1170,41 +1154,41 @@ xref
 0000000548 00000 n
 0000000751 00000 n
 0000000930 00000 n
-0000001078 00000 n
-0000001407 00000 n
-0000001749 00000 n
-0000001905 00000 n
-0000002042 00000 n
-0000002160 00000 n
-0000002360 00000 n
-0000002679 00000 n
-0000003052 00000 n
-0000003203 00000 n
-0000003405 00000 n
-0000003523 00000 n
-0000003680 00000 n
-0000003833 00000 n
-0000003978 00000 n
-0000004165 00000 n
-0000004264 00000 n
-0000004824 00000 n
-0000005004 00000 n
-0000005170 00000 n
-0000005309 00000 n
-0000005489 00000 n
-0000005664 00000 n
-0000005843 00000 n
-0000012274 00000 n
-0000013156 00000 n
-0000013287 00000 n
-0000029873 00000 n
-0000030559 00000 n
-0000030662 00000 n
+0000001029 00000 n
+0000001358 00000 n
+0000001700 00000 n
+0000001856 00000 n
+0000001956 00000 n
+0000002056 00000 n
+0000002197 00000 n
+0000002516 00000 n
+0000002889 00000 n
+0000003040 00000 n
+0000003181 00000 n
+0000003281 00000 n
+0000003381 00000 n
+0000003481 00000 n
+0000003582 00000 n
+0000003683 00000 n
+0000003782 00000 n
+0000004342 00000 n
+0000004443 00000 n
+0000004544 00000 n
+0000004645 00000 n
+0000004746 00000 n
+0000004847 00000 n
+0000004948 00000 n
+0000011379 00000 n
+0000012261 00000 n
+0000012392 00000 n
+0000028978 00000 n
+0000029664 00000 n
+0000029767 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 39 
 >>
 startxref
-41204
+40309
 %%EOF

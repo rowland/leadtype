@@ -63,7 +63,6 @@ endobj
 endobj
 8 0 obj
 <<
-/ActualText (Radial Out Layout) 
 /K <<
 /Type /MCR 
 /Pg 7 0 R 
@@ -120,7 +119,6 @@ endobj
 endobj
 12 0 obj
 <<
-/ActualText (This variant starts at the center: row 0 is the innermost track, and each new row grows outward.) 
 /K [<<
 /Type /MCR 
 /Pg 7 0 R 
@@ -182,7 +180,6 @@ endobj
 endobj
 16 0 obj
 <<
-/ActualText (Cat) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -190,7 +187,6 @@ endobj
 endobj
 17 0 obj
 <<
-/ActualText (Dog) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -198,7 +194,6 @@ endobj
 endobj
 18 0 obj
 <<
-/ActualText (Fox) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -206,7 +201,6 @@ endobj
 endobj
 19 0 obj
 <<
-/ActualText (Hare) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -214,7 +208,6 @@ endobj
 endobj
 20 0 obj
 <<
-/ActualText (Owl) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -222,7 +215,6 @@ endobj
 endobj
 21 0 obj
 <<
-/ActualText (Lynx) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -230,7 +222,6 @@ endobj
 endobj
 22 0 obj
 <<
-/ActualText (Otter) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -238,7 +229,6 @@ endobj
 endobj
 23 0 obj
 <<
-/ActualText (Panda) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -246,7 +236,6 @@ endobj
 endobj
 24 0 obj
 <<
-/ActualText (Quail) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -254,7 +243,6 @@ endobj
 endobj
 25 0 obj
 <<
-/ActualText (Raven) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -262,7 +250,6 @@ endobj
 endobj
 26 0 obj
 <<
-/ActualText (Seal) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -270,7 +257,6 @@ endobj
 endobj
 27 0 obj
 <<
-/ActualText (Tiger) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -278,7 +264,6 @@ endobj
 endobj
 28 0 obj
 <<
-/ActualText (Badger) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -286,7 +271,6 @@ endobj
 endobj
 29 0 obj
 <<
-/ActualText (Falcon) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -294,7 +278,6 @@ endobj
 endobj
 30 0 obj
 <<
-/ActualText (Jaguar) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -302,7 +285,6 @@ endobj
 endobj
 31 0 obj
 <<
-/ActualText (Koala) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -310,7 +292,6 @@ endobj
 endobj
 32 0 obj
 <<
-/ActualText (Turtle) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -318,7 +299,6 @@ endobj
 endobj
 33 0 obj
 <<
-/ActualText (Walrus) 
 /P 6 0 R 
 /S /TD 
 /Type /StructElem 
@@ -1454,43 +1434,43 @@ xref
 0000000414 00000 n
 0000000645 00000 n
 0000000825 00000 n
-0000000957 00000 n
-0000001286 00000 n
-0000001654 00000 n
-0000001810 00000 n
-0000002063 00000 n
-0000002382 00000 n
-0000002707 00000 n
-0000002858 00000 n
-0000002936 00000 n
-0000003014 00000 n
-0000003092 00000 n
-0000003171 00000 n
-0000003249 00000 n
-0000003328 00000 n
-0000003408 00000 n
-0000003488 00000 n
-0000003568 00000 n
-0000003648 00000 n
-0000003727 00000 n
-0000003807 00000 n
-0000003888 00000 n
-0000003969 00000 n
-0000004050 00000 n
-0000004130 00000 n
-0000004211 00000 n
-0000004292 00000 n
-0000020778 00000 n
-0000021436 00000 n
-0000021535 00000 n
-0000035017 00000 n
-0000035815 00000 n
-0000035934 00000 n
+0000000924 00000 n
+0000001253 00000 n
+0000001621 00000 n
+0000001777 00000 n
+0000001918 00000 n
+0000002237 00000 n
+0000002562 00000 n
+0000002713 00000 n
+0000002772 00000 n
+0000002831 00000 n
+0000002890 00000 n
+0000002949 00000 n
+0000003008 00000 n
+0000003067 00000 n
+0000003126 00000 n
+0000003185 00000 n
+0000003244 00000 n
+0000003303 00000 n
+0000003362 00000 n
+0000003421 00000 n
+0000003480 00000 n
+0000003539 00000 n
+0000003598 00000 n
+0000003657 00000 n
+0000003716 00000 n
+0000003775 00000 n
+0000020261 00000 n
+0000020919 00000 n
+0000021018 00000 n
+0000034500 00000 n
+0000035298 00000 n
+0000035417 00000 n
 trailer
 <<
 /Root 3 0 R 
 /Size 41 
 >>
 startxref
-48912
+48395
 %%EOF

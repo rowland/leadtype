@@ -3,6 +3,7 @@ package ltml
 import (
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/rowland/leadtype/pdf"
 )
@@ -76,7 +77,13 @@ func (w *StdWidget) resolvedAccessibilityRole(defaultRole string) string {
 	return normalizeAccessibilityRole(defaultRole)
 }
 
-func withWidgetRoleAccessibility(w Writer, widget *StdWidget, defaultRole string, actualText string, fn func() error) error {
+// withWidgetRoleAccessibility associates rendered text with a structure
+// element. Most text relies on its per-font ToUnicode mapping: adding
+// replacement text would make the whole structure element an atomic selection
+// unit in PDF viewers. Arabic is the exception because shaping and bidi display
+// order can prevent the glyph stream from recovering logical reading order, so
+// Arabic widgets retain their resolved text as ActualText.
+func withWidgetRoleAccessibility(w Writer, widget *StdWidget, defaultRole, resolvedText string, fn func() error) error {
 	if widget == nil {
 		if fn != nil {
 			return fn()
@@ -100,9 +107,18 @@ func withWidgetRoleAccessibility(w Writer, widget *StdWidget, defaultRole string
 		return nil
 	}
 	return withAccessibilityTag(w, role, pdf.AccessibilityOptions{
-		ActualText: actualText,
+		ActualText: accessibilityReplacementText(resolvedText),
 		ID:         widget.AccessibilityLogicalID(),
 	}, fn)
+}
+
+func accessibilityReplacementText(text string) string {
+	for _, r := range text {
+		if unicode.Is(unicode.Arabic, r) {
+			return text
+		}
+	}
+	return ""
 }
 
 func withGraphicAccessibility(w Writer, widget *StdWidget, defaultRole string, fn func() error) error {
