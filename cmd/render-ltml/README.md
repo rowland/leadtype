@@ -22,6 +22,8 @@ render-ltml -b [flags] <file1> <file2> ...
 | `-watch` | `-w` | Watch inputs and assets for changes and rerender continuously |
 | `-batch` | `-b` | Render multiple input files |
 | `-ua` |  | Default to tagged PDF output |
+| `-list-fonts` |  | List searchable TTF/OTF font identifiers and exit |
+| `-trace-fonts` |  | Print local font selection decisions while rendering |
 
 ### Output paths
 
@@ -55,6 +57,25 @@ feature, but both built-in `<image>` and component-backed file loads such as
 being rendered.
 
 If the same virtual asset path is given more than once via `-extra`, the last occurrence wins locally. Remote submission rejects duplicate `-extra` virtual paths before sending the request.
+
+### Font diagnostics
+
+Use `-list-fonts` with `-font-dir` to catalog the family, style, full name, and
+PostScript identifiers that CSS font rules can request. The catalog also shows
+the outline type, CID-keyed status, and glyph count:
+
+```sh
+render-ltml -font-dir ./assets -list-fonts
+```
+
+Use `-trace-fonts` during a local render to print each requested family, weight,
+and style, whether the match was exact or nearest-face, and the actual selected
+font file or lookup error. One final line per used font reports its outline
+type, CID-keyed status, used glyph count, and embedded subset size:
+
+```sh
+render-ltml -trace-fonts -font-dir ./assets report.ltml
+```
 
 ### Watch mode
 

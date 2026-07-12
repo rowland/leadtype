@@ -32,6 +32,7 @@ import (
 	"github.com/rowland/leadtype/ltml"
 	"github.com/rowland/leadtype/ltml/ltpdf"
 	"github.com/rowland/leadtype/profile"
+	"github.com/rowland/leadtype/ttf_fonts"
 )
 
 const defaultPollInterval = 500 * time.Millisecond
@@ -59,6 +60,8 @@ type runConfig struct {
 	watch        bool
 	batch        bool
 	profile      bool
+	listFonts    bool
+	traceFonts   bool
 	ua           bool
 	pollInterval time.Duration
 	stderr       io.Writer
@@ -146,6 +149,8 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	fs.BoolVar(&cfg.batch, "batch", false, "render multiple input files")
 	fs.BoolVar(&cfg.batch, "b", false, "render multiple input files (shorthand)")
 	fs.BoolVar(&cfg.profile, "profile", false, "print local render profiling summary")
+	fs.BoolVar(&cfg.listFonts, "list-fonts", false, "list searchable TTF/OTF font identifiers and exit")
+	fs.BoolVar(&cfg.traceFonts, "trace-fonts", false, "print local font selection decisions")
 	fs.BoolVar(&cfg.ua, "ua", cfg.ua, "default to tagged PDF output")
 	fs.Var(&extraFiles, "extra", "additional asset `file[:path]` (may be repeated)")
 	fs.Var(&extraFiles, "e", "additional asset `file[:path]` (shorthand)")
@@ -181,6 +186,14 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 		return 2
 	}
 
+	if cfg.listFonts {
+		if err := listFonts(cfg.fontDir, stderr); err != nil {
+			fmt.Fprintf(stderr, "render-ltml: %v\n", err)
+			return 1
+		}
+		return 0
+	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -204,8 +217,20 @@ func ltmlUADefaultFromEnv() (bool, error) {
 }
 
 func validateArgs(cfg runConfig, inputFiles []string) error {
+	if cfg.listFonts {
+		if len(inputFiles) != 0 {
+			return fmt.Errorf("-list-fonts does not accept input files")
+		}
+		if cfg.submitURL != "" {
+			return fmt.Errorf("-list-fonts is only supported for local font directories")
+		}
+		return nil
+	}
 	if cfg.profile && cfg.submitURL != "" {
 		return fmt.Errorf("-profile is only supported for local renders")
+	}
+	if cfg.traceFonts && cfg.submitURL != "" {
+		return fmt.Errorf("-trace-fonts is only supported for local renders")
 	}
 	if cfg.batch {
 		if len(inputFiles) == 0 {
@@ -215,6 +240,21 @@ func validateArgs(cfg runConfig, inputFiles []string) error {
 	}
 	if len(inputFiles) != 1 {
 		return fmt.Errorf("expected exactly one input file")
+	}
+	return nil
+}
+
+func listFonts(fontDir string, out io.Writer) error {
+	var fontDirs []string
+	if fontDir != "" {
+		fontDirs = []string{fontDir}
+	}
+	fc, err := ttf_fonts.NewFromDirsAndSystemFonts(fontDirs)
+	if err != nil {
+		return fmt.Errorf("initializing font catalog: %w", err)
+	}
+	if err := fc.WriteCatalog(out); err != nil {
+		return fmt.Errorf("writing font catalog: %w", err)
 	}
 	return nil
 }
@@ -480,7 +520,7 @@ func renderJobToFile(cfg runConfig, job renderJob) (err error) {
 		if cfg.profile {
 			profiler = profile.New()
 		}
-		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.ua, cfg.extraFiles, out, profiler)
+		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.ua, cfg.traceFonts, cfg.extraFiles, out, cfg.stderr, profiler)
 		if cfg.profile {
 			cfg.logf("profile for %s", displayPath(job.inputPath))
 			if writeErr := profiler.WriteText(cfg.stderr); writeErr != nil && err == nil {
@@ -721,7 +761,7 @@ func dirToken(root string) (string, error) {
 	return b.String(), nil
 }
 
-func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []extraAsset, out io.Writer, profiler *profile.Profiler) error {
+func renderLocal(absInput, assetsDir, fontDir string, ua, traceFonts bool, extraFiles []extraAsset, out, traceOut io.Writer, profiler *profile.Profiler) error {
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
@@ -753,6 +793,9 @@ func renderLocal(absInput, assetsDir, fontDir string, ua bool, extraFiles []extr
 		return fmt.Errorf("initializing font sources: %w", err)
 	}
 	w.SetProfiler(profiler)
+	if traceFonts {
+		w.SetFontTrace(traceOut)
+	}
 	if ua {
 		w.EnableTaggedPDF(true)
 	}

@@ -202,7 +202,7 @@ func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, assetsDir, "", false, nil, &out, nil); err != nil {
+	if err := renderLocal(inputFile, assetsDir, "", false, false, nil, &out, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if out.Len() == 0 {
@@ -228,7 +228,7 @@ func TestRenderLocal_UADefaultEnablesTaggedPDF(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, "", "", true, nil, &out, nil); err != nil {
+	if err := renderLocal(inputFile, "", "", true, false, nil, &out, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -237,6 +237,46 @@ func TestRenderLocal_UADefaultEnablesTaggedPDF(t *testing.T) {
 		if !strings.Contains(pdfText, fragment) {
 			t.Fatalf("expected tagged PDF fragment %q in output:\n%s", fragment, pdfText)
 		}
+	}
+}
+
+func TestRenderLocal_TraceFonts(t *testing.T) {
+	inputFile := filepath.Join(t.TempDir(), "report.ltml")
+	if err := os.WriteFile(inputFile, []byte(`
+<ltml>
+  <font id="body" name="Minimal" size="12" />
+  <page font="body">
+    <p>Hello</p>
+    <p>Again</p>
+  </page>
+</ltml>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	fontDir := t.TempDir()
+	fontBytes, err := os.ReadFile(filepath.Join("..", "..", "..", "ttf", "testdata", "minimal.ttf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fontDir, "minimal.ttf"), fontBytes, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var out, trace bytes.Buffer
+	if err := renderLocal(inputFile, "", fontDir, false, true, nil, &out, &trace, nil); err != nil {
+		t.Fatal(err)
+	}
+	got := trace.String()
+	for _, want := range []string{`family="Minimal"`, `postscript="Minimal"`, `minimal.ttf`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("trace missing %q in:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "font cached") {
+		t.Fatalf("trace should not include cache hits:\n%s", got)
+	}
+	if count := strings.Count(got, `font selected match=exact family="Minimal"`); count != 1 {
+		t.Fatalf("selected trace count = %d, want 1:\n%s", count, got)
 	}
 }
 
@@ -587,6 +627,22 @@ func TestNormalizeInterspersedArgs_AllowsFlagsAfterInputs(t *testing.T) {
 	}
 	if got, want := fs.Args(), []string{"ltml/samples/one.ltml", "ltml/samples/two.ltml"}; !equalStrings(got, want) {
 		t.Fatalf("args = %#v, want %#v", got, want)
+	}
+}
+
+func TestValidateArgs_ListFontsAcceptsNoInputs(t *testing.T) {
+	if err := validateArgs(runConfig{listFonts: true}, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateArgs_ListFontsRejectsInputs(t *testing.T) {
+	err := validateArgs(runConfig{listFonts: true}, []string{"report.ltml"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "does not accept input files") {
+		t.Fatalf("error = %v", err)
 	}
 }
 
