@@ -22,22 +22,35 @@ type Font struct {
 	vheaTable vheaTable
 	vmtxTable vmtxTable
 	rawBytes  []byte // non-nil only when loaded via LoadFontFromBytes
+	cffCID    *cffCIDMetadata
 
 	supportsArabic bool
 }
 
 func (font *Font) OutlineKind() string {
 	if font.HasCFFOutlines() {
-		cidKeyed, err := font.HasCIDKeyedCFFOutlines()
-		if err == nil && cidKeyed {
-			// CID-keyed CFF system fonts are loadable through the legacy
-			// composite path, but the new CFF subset/embed path handles
-			// non-CID CFF1 fonts only.
-			return "TrueType"
-		}
 		return "CFF"
 	}
 	return "TrueType"
+}
+
+// CIDSystemInfo exposes the CFF ROS parsed at load time. PDF generation calls
+// it through font.CIDMapper; name-keyed CFF and TrueType fonts return ok=false.
+func (font *Font) CIDSystemInfo() (registry, ordering string, supplement int, ok bool) {
+	if font.cffCID == nil {
+		return "", "", 0, false
+	}
+	return font.cffCID.registry, font.cffCID.ordering, font.cffCID.supplement, true
+}
+
+// CIDForGlyph looks up the source CFF charset, whose entries map GIDs to CIDs
+// for CID-keyed fonts. It intentionally does not consult cmap: cmap maps
+// Unicode to GID, a different relationship.
+func (font *Font) CIDForGlyph(glyphID uint16) (uint16, bool) {
+	if font.cffCID == nil || int(glyphID) >= len(font.cffCID.glyphCIDs) {
+		return 0, false
+	}
+	return font.cffCID.glyphCIDs[glyphID], true
 }
 
 // FontKey returns a stable string identifying this font, used as a cache key
@@ -106,6 +119,23 @@ func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
 		return
 	}
 	font.supportsArabic = font.detectArabicSupport()
+	if entry := font.tableDir.table("maxp"); entry != nil {
+		if err = font.maxpTable.init(file, entry); err != nil {
+			return
+		}
+	}
+	if entry := font.tableDir.table("CFF "); entry != nil {
+		data := make([]byte, entry.length)
+		if _, err = file.Seek(int64(entry.offset), io.SeekStart); err != nil {
+			return err
+		}
+		if _, err = io.ReadFull(file, data); err != nil {
+			return err
+		}
+		if font.cffCID, err = parseCFFCIDMetadata(data, int(font.maxpTable.numGlyphs)); err != nil {
+			return err
+		}
+	}
 
 	if entry := font.tableDir.table("cmap"); entry != nil {
 		if err = font.cmapTable.init(file, entry); err != nil {
@@ -124,11 +154,6 @@ func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
 	}
 	if entry := font.tableDir.table("post"); entry != nil {
 		if err = font.postTable.init(file, entry, font.maxpTable.numGlyphs); err != nil {
-			return
-		}
-	}
-	if entry := font.tableDir.table("maxp"); entry != nil {
-		if err = font.maxpTable.init(file, entry); err != nil {
 			return
 		}
 	}
@@ -153,7 +178,7 @@ func (font *Font) init(file io.ReadSeeker, offset int64) (err error) {
 // 47.8 ns go1 (returning bool err)
 func (font *Font) AdvanceWidth(codepoint rune) (width int, err bool) {
 	index := font.cmapTable.glyphIndex(int(codepoint))
-	if index < 0 {
+	if index <= 0 {
 		return 0, true
 	}
 	return int(font.hmtxTable.lookupAdvanceWidth(index)), false

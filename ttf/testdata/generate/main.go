@@ -27,6 +27,7 @@ func main() {
 	ttfData := buildFont("Minimal", "Regular", 400)
 	ttfBold := buildFont("Minimal", "Bold", 700)
 	otfData := buildCFFFont("MinimalCFF", "Regular", 400)
+	cidOTFData := buildCIDCFFFont("MinimalCIDCFF", "Regular", 300)
 
 	if err := os.WriteFile(filepath.Join(outDir, "minimal.ttf"), ttfData, 0644); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -39,6 +40,12 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("wrote minimal-cff.otf")
+
+	if err := os.WriteFile(filepath.Join(outDir, "minimal-cid-cff.otf"), cidOTFData, 0644); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	fmt.Println("wrote minimal-cid-cff.otf")
 
 	ttcData := buildTTC(ttfData, ttfBold)
 	if err := os.WriteFile(filepath.Join(outDir, "minimal.ttc"), ttcData, 0644); err != nil {
@@ -122,6 +129,23 @@ func buildCFFFont(family, subfamily string, weight uint16) []byte {
 		"post": buildPost(),
 	}
 
+	return assembleSFNT(0x4F54544F, tables)
+}
+
+func buildCIDCFFFont(family, subfamily string, weight uint16) []byte {
+	cp := codepoints()
+	numGlyphs := uint16(len(cp) + 1)
+	tables := map[string][]byte{
+		"CFF ": buildCIDCFF(family, numGlyphs),
+		"cmap": buildCmap(cp),
+		"head": buildHead(),
+		"hhea": buildHhea(numGlyphs),
+		"hmtx": buildHmtx(numGlyphs),
+		"maxp": buildCFFMaxp(numGlyphs),
+		"name": buildName(family, subfamily),
+		"OS/2": buildOS2(weight, cp),
+		"post": buildPost(),
+	}
 	return assembleSFNT(0x4F54544F, tables)
 }
 
@@ -456,6 +480,70 @@ func buildCFF(family string, numGlyphs uint16) []byte {
 		panic("CFF top dict offsets did not converge")
 	}
 	return out
+}
+
+func buildCIDCFF(family string, numGlyphs uint16) []byte {
+	nameIndex := buildCFFIndex([][]byte{[]byte(strings.ReplaceAll(family, " ", ""))})
+	stringIndex := buildCFFIndex([][]byte{[]byte("Adobe"), []byte("Identity")})
+	globalSubrs := buildCFFIndex(nil)
+	var charset bytes.Buffer
+	charset.WriteByte(0)
+	for gid := uint16(1); gid < numGlyphs; gid++ {
+		putU16(&charset, 1000+gid)
+	}
+	var fdSelect bytes.Buffer
+	fdSelect.WriteByte(3)
+	putU16(&fdSelect, 2)
+	putU16(&fdSelect, 0)
+	fdSelect.WriteByte(0)
+	putU16(&fdSelect, numGlyphs/2)
+	fdSelect.WriteByte(1)
+	putU16(&fdSelect, numGlyphs)
+	charstrings := make([][]byte, numGlyphs)
+	for i := range charstrings {
+		charstrings[i] = cffBoxCharstring()
+	}
+	charStringsIndex := buildCFFIndex(charstrings)
+	fdArrayIndex := buildCFFIndex([][]byte{{}, {}})
+
+	var lastTop []byte
+	for i := 0; i < 8; i++ {
+		topIndex := buildCFFIndex([][]byte{lastTop})
+		charsetOffset := 4 + len(nameIndex) + len(topIndex) + len(stringIndex) + len(globalSubrs)
+		fdSelectOffset := charsetOffset + charset.Len()
+		charStringsOffset := fdSelectOffset + fdSelect.Len()
+		fdArrayOffset := charStringsOffset + len(charStringsIndex)
+		var top []byte
+		top = appendCFFInt(top, 391)
+		top = appendCFFInt(top, 392)
+		top = appendCFFInt(top, 0)
+		top = append(top, 12, 30) // ROS
+		top = appendCFFInt(top, 2000)
+		top = append(top, 12, 34) // CIDCount
+		top = appendCFFInt(top, charsetOffset)
+		top = append(top, 15)
+		top = appendCFFInt(top, charStringsOffset)
+		top = append(top, 17)
+		top = appendCFFInt(top, fdArrayOffset)
+		top = append(top, 12, 36)
+		top = appendCFFInt(top, fdSelectOffset)
+		top = append(top, 12, 37)
+		if bytes.Equal(top, lastTop) {
+			var b bytes.Buffer
+			b.Write([]byte{1, 0, 4, 4})
+			b.Write(nameIndex)
+			b.Write(buildCFFIndex([][]byte{top}))
+			b.Write(stringIndex)
+			b.Write(globalSubrs)
+			b.Write(charset.Bytes())
+			b.Write(fdSelect.Bytes())
+			b.Write(charStringsIndex)
+			b.Write(fdArrayIndex)
+			return b.Bytes()
+		}
+		lastTop = top
+	}
+	panic("CID CFF top dict offsets did not converge")
 }
 
 func buildCFFCharset(numGlyphs uint16) []byte {

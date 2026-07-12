@@ -22,6 +22,10 @@ const (
 var cffEndChar = []byte{14}
 var cffReturn = []byte{11}
 
+// cffSubsetData is the parsed CFF1 program in the form needed by both
+// name-keyed and CID-keyed subsetters. INDEX objects are represented as slices
+// of their object bytes so unused CharStrings and subroutines can be replaced
+// or pruned without interpreting drawing operators.
 type cffSubsetData struct {
 	name       []byte
 	topDict    []byte
@@ -31,14 +35,35 @@ type cffSubsetData struct {
 	charstring [][]byte
 	private    []byte
 	localSubr  [][]byte
+	isCID      bool
+	fdSelect   []uint8
+	fontDicts  []cffFontDictData
 }
 
+// cffFontDictData holds one entry from a CID font's FDArray together with the
+// Private DICT and local Subrs reached from that entry. Local subroutine numbers
+// are meaningful only within their owning Font DICT.
+type cffFontDictData struct {
+	dict      []byte
+	private   []byte
+	localSubr [][]byte
+}
+
+// cffTopDictInfo records offsets and CID operators from the Top DICT. The raw
+// Top DICT is retained separately and rewritten after rebuilt INDEX sizes make
+// all absolute offsets known.
 type cffTopDictInfo struct {
 	charsetOffset     int
 	charStringsOffset int
 	privateOffset     int
 	privateLength     int
 	isCID             bool
+	rosRegistrySID    int
+	rosOrderingSID    int
+	rosSupplement     int
+	cidCount          int
+	fdArrayOffset     int
+	fdSelectOffset    int
 }
 
 type cffPrivateInfo struct {
@@ -60,6 +85,9 @@ func (font *Font) subsetCFFOpenType(glyphIDs []uint16) ([]byte, error) {
 	parsed, err := parseCFFForSubset(cffRaw, int(font.maxpTable.numGlyphs))
 	if err != nil {
 		return nil, err
+	}
+	if parsed.isCID {
+		return font.subsetCIDKeyedCFF(raw, parsed, glyphIDs)
 	}
 
 	closure := make(map[uint16]bool, len(glyphIDs)+1)
@@ -149,6 +177,237 @@ func (font *Font) subsetCFFOpenType(glyphIDs []uint16) ([]byte, error) {
 	return assembleSFNT(font.scalar, tables)
 }
 
+// subsetCIDKeyedCFF builds a dense subset: retained source GIDs are sorted and
+// assigned new contiguous GIDs, while their original CIDs are deliberately
+// preserved in the CFF charset. It also removes unused Font DICTs, remaps
+// FDSelect, and rebuilds OpenType tables whose entries are indexed by GID.
+//
+// Preserving CIDs is essential because the PDF descendant font is addressed by
+// those CIDs. The PDF Encoding CMap maps LeadType's emitted character codes to
+// them; assuming new GID == CID is invalid for fonts such as Source Han.
+func (font *Font) subsetCIDKeyedCFF(raw []byte, parsed *cffSubsetData, glyphIDs []uint16) ([]byte, error) {
+	// Always retain .notdef, then establish the one source-GID to subset-GID
+	// map shared by CharStrings, cmap, metrics, and maxp.
+	closure := map[uint16]bool{0: true}
+	for _, gid := range glyphIDs {
+		if int(gid) >= len(parsed.charstring) {
+			return nil, fmt.Errorf("subset cff: glyph %d is outside CharStrings INDEX", gid)
+		}
+		closure[gid] = true
+	}
+	oldGlyphs := make([]int, 0, len(closure))
+	for gid := range closure {
+		oldGlyphs = append(oldGlyphs, int(gid))
+	}
+	sort.Ints(oldGlyphs)
+	oldToNew := make(map[uint16]uint16, len(oldGlyphs))
+	charstrings := make([][]byte, len(oldGlyphs))
+	charsets := make([]uint16, len(oldGlyphs))
+	oldFDs := make([]uint8, len(oldGlyphs))
+	for newGID, oldGID := range oldGlyphs {
+		oldToNew[uint16(oldGID)] = uint16(newGID)
+		charstrings[newGID] = parsed.charstring[oldGID]
+		charsets[newGID] = parsed.charsets[oldGID]
+		oldFDs[newGID] = parsed.fdSelect[oldGID]
+	}
+
+	// FDArray indexes are internal to this CFF program, so unused entries may
+	// be removed as long as every retained glyph's FDSelect value is remapped.
+	usedFDSet := make(map[uint8]bool)
+	for _, fd := range oldFDs {
+		usedFDSet[fd] = true
+	}
+	usedFDs := make([]int, 0, len(usedFDSet))
+	for fd := range usedFDSet {
+		usedFDs = append(usedFDs, int(fd))
+	}
+	sort.Ints(usedFDs)
+	fdRemap := make(map[uint8]uint8, len(usedFDs))
+	fontDicts := make([]cffFontDictData, len(usedFDs))
+	usedLocals := make([]map[int]bool, len(usedFDs))
+	for newFD, oldFD := range usedFDs {
+		fdRemap[uint8(oldFD)] = uint8(newFD)
+		fontDicts[newFD] = parsed.fontDicts[oldFD]
+		usedLocals[newFD] = make(map[int]bool)
+	}
+	fdSelect := make([]uint8, len(oldFDs))
+	for gid, oldFD := range oldFDs {
+		fdSelect[gid] = fdRemap[oldFD]
+	}
+
+	// A global subroutine executes in the local-subroutine environment of its
+	// caller's FD. Visit it once per (FD, global-index), not merely once per
+	// global index, or local dependencies from later FDs can be missed.
+	usedGlobals := make(map[int]bool)
+	visitedGlobals := make(map[cffGlobalContext]bool)
+	for newGID, oldGID := range oldGlyphs {
+		fd := int(fdSelect[newGID])
+		collectCFFCIDSubrs(parsed.charstring[oldGID], fd, fontDicts, parsed.globalSubr, usedLocals, usedGlobals, visitedGlobals, 0)
+	}
+	globalSubrs := pruneCFFSubrs(parsed.globalSubr, usedGlobals)
+	for fd := range fontDicts {
+		fontDicts[fd].localSubr = pruneCFFSubrs(fontDicts[fd].localSubr, usedLocals[fd])
+	}
+
+	cffData, err := buildSubsetCIDCFF(parsed.name, parsed.topDict, parsed.strings, globalSubrs, charstrings, charsets, fdSelect, fontDicts)
+	if err != nil {
+		return nil, err
+	}
+	maxpBuf := buildCFFMaxpTable(uint16(len(oldGlyphs)))
+	hheaBuf, err := subsetHheaTable(raw, font.tableDir.table("hhea"), uint16(len(oldGlyphs)))
+	if err != nil {
+		return nil, err
+	}
+	hmtxBuf := font.subsetHmtxTableRemapped(oldGlyphs)
+	cmapBuf, err := font.subsetCmapTableRemapped(closure, oldToNew)
+	if err != nil {
+		return nil, err
+	}
+	postBuf, err := subsetCFFPostTable(raw, font.tableDir.table("post"))
+	if err != nil {
+		return nil, err
+	}
+
+	tables := make([]sfntTable, 0, len(font.tableDir.entries))
+	for _, entry := range font.tableDir.entries {
+		if !cffSubsetKeepTable(entry.tag) {
+			continue
+		}
+		var data []byte
+		switch entry.tag {
+		case "CFF ":
+			data = cffData
+		case "maxp":
+			data = maxpBuf
+		case "hhea":
+			data = hheaBuf
+		case "hmtx":
+			data = hmtxBuf
+		case "cmap":
+			data = cmapBuf
+		case "post":
+			data = postBuf
+		default:
+			data = append([]byte(nil), raw[entry.offset:entry.offset+entry.length]...)
+		}
+		tables = append(tables, sfntTable{tag: entry.tag, data: data})
+	}
+	return assembleSFNT(font.scalar, tables)
+}
+
+func (font *Font) subsetHmtxTableRemapped(oldGlyphs []int) []byte {
+	var buf bytes.Buffer
+	for _, oldGID := range oldGlyphs {
+		metric := font.hmtxTable.lookup(oldGID)
+		writeUint16(&buf, metric.advanceWidth)
+		writeInt16(&buf, metric.leftSideBearing)
+	}
+	return buf.Bytes()
+}
+
+func (font *Font) subsetCmapTableRemapped(closure map[uint16]bool, oldToNew map[uint16]uint16) ([]byte, error) {
+	mappings, err := font.subsetCodepointMappings(closure)
+	if err != nil {
+		return nil, err
+	}
+	for codepoint, oldGID := range mappings {
+		newGID, ok := oldToNew[oldGID]
+		if !ok {
+			delete(mappings, codepoint)
+			continue
+		}
+		mappings[codepoint] = newGID
+	}
+	for codepoint := range mappings {
+		if codepoint > 0xffff {
+			return buildSubsetFormat12Cmap(mappings), nil
+		}
+	}
+	return buildSubsetFormat4Cmap(mappings), nil
+}
+
+func subsetCFFPostTable(raw []byte, entry *tableDirEntry) ([]byte, error) {
+	if entry == nil || entry.length < 32 {
+		return nil, fmt.Errorf("subset cff: malformed post table")
+	}
+	data := append([]byte(nil), raw[entry.offset:entry.offset+32]...)
+	binary.BigEndian.PutUint32(data, 0x00030000)
+	return data, nil
+}
+
+type cffGlobalContext struct {
+	fd    int
+	index int
+}
+
+// collectCFFCIDSubrs walks Type 2 callsubr/callgsubr instructions to compute
+// subroutine closure for a CID font. It is not an outline interpreter; it only
+// maintains enough operand and stem state to skip numbers and hint masks and
+// to identify subroutine operands. The depth guard makes cyclic or malicious
+// programs fail closed instead of recursing indefinitely.
+func collectCFFCIDSubrs(charstring []byte, fd int, fontDicts []cffFontDictData, globalSubrs [][]byte, usedLocals []map[int]bool, usedGlobals map[int]bool, visitedGlobals map[cffGlobalContext]bool, depth int) {
+	if depth > 32 || fd < 0 || fd >= len(fontDicts) {
+		return
+	}
+	localSubrs := fontDicts[fd].localSubr
+	stack := make([]int, 0, 16)
+	stems := 0
+	for pos := 0; pos < len(charstring); {
+		b := charstring[pos]
+		if n, ok := type2NumberLen(charstring[pos:]); ok {
+			value, _ := parseType2Number(charstring[pos:])
+			stack = append(stack, value)
+			pos += n
+			continue
+		}
+		if b == 10 || b == 29 {
+			if len(stack) > 0 {
+				operand := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				if b == 10 {
+					idx := operand + cffSubrBias(len(localSubrs))
+					if idx >= 0 && idx < len(localSubrs) && !usedLocals[fd][idx] {
+						usedLocals[fd][idx] = true
+						collectCFFCIDSubrs(localSubrs[idx], fd, fontDicts, globalSubrs, usedLocals, usedGlobals, visitedGlobals, depth+1)
+					}
+				} else {
+					idx := operand + cffSubrBias(len(globalSubrs))
+					ctx := cffGlobalContext{fd: fd, index: idx}
+					if idx >= 0 && idx < len(globalSubrs) && !visitedGlobals[ctx] {
+						visitedGlobals[ctx] = true
+						usedGlobals[idx] = true
+						collectCFFCIDSubrs(globalSubrs[idx], fd, fontDicts, globalSubrs, usedLocals, usedGlobals, visitedGlobals, depth+1)
+					}
+				}
+			}
+			pos++
+			continue
+		}
+		switch b {
+		case 1, 3, 18, 23:
+			stems += len(stack) / 2
+			stack = stack[:0]
+			pos++
+			continue
+		case 19, 20:
+			stems += len(stack) / 2
+			pos++
+			pos += (stems + 7) / 8
+			if pos > len(charstring) {
+				return
+			}
+			stack = stack[:0]
+			continue
+		}
+		if b == 12 {
+			pos += 2
+		} else {
+			pos++
+		}
+		stack = stack[:0]
+	}
+}
+
 func cffSubsetKeepTable(tag string) bool {
 	switch tag {
 	case "CFF ", "cmap", "head", "hhea", "hmtx", "maxp", "name", "OS/2", "post":
@@ -158,6 +417,9 @@ func cffSubsetKeepTable(tag string) bool {
 	}
 }
 
+// parseCFFForSubset follows the CFF header and INDEX sequence, then resolves
+// Top DICT offsets into the structures needed for rewriting. Both charset and
+// FDSelect are expanded to one value per GID so dense remapping is explicit.
 func parseCFFForSubset(data []byte, numGlyphs int) (*cffSubsetData, error) {
 	if len(data) < 4 || data[0] != 1 || data[1] != 0 {
 		return nil, fmt.Errorf("subset cff: unsupported CFF header")
@@ -180,9 +442,6 @@ func parseCFFForSubset(data []byte, numGlyphs int) (*cffSubsetData, error) {
 	topInfo, err := parseCFFTopDict(topDicts[0])
 	if err != nil {
 		return nil, err
-	}
-	if topInfo.isCID {
-		return nil, fmt.Errorf("subset cff: CID-keyed CFF fonts are not supported yet")
 	}
 	strings, next, err := parseCFFIndex(data, next)
 	if err != nil {
@@ -209,20 +468,45 @@ func parseCFFForSubset(data []byte, numGlyphs int) (*cffSubsetData, error) {
 
 	var private []byte
 	var localSubrs [][]byte
-	if topInfo.privateLength > 0 {
-		if topInfo.privateOffset < 0 || topInfo.privateOffset+topInfo.privateLength > len(data) {
-			return nil, fmt.Errorf("subset cff: invalid Private DICT bounds")
-		}
-		private = data[topInfo.privateOffset : topInfo.privateOffset+topInfo.privateLength]
-		privInfo, err := parseCFFPrivateDict(private)
+	var fdSelect []uint8
+	var fontDicts []cffFontDictData
+	if topInfo.isCID {
+		fdSelect, err = parseCFFFDSelect(data, topInfo.fdSelectOffset, numGlyphs)
 		if err != nil {
 			return nil, err
 		}
-		if privInfo.subrsOffset > 0 {
-			localSubrs, _, err = parseCFFIndex(data, topInfo.privateOffset+privInfo.subrsOffset)
+		if topInfo.fdArrayOffset <= 0 {
+			return nil, fmt.Errorf("subset cff: missing FDArray offset")
+		}
+		fdDicts, _, err := parseCFFIndex(data, topInfo.fdArrayOffset)
+		if err != nil {
+			return nil, err
+		}
+		fontDicts = make([]cffFontDictData, len(fdDicts))
+		for i, dict := range fdDicts {
+			fdInfo, err := parseCFFTopDict(dict)
 			if err != nil {
 				return nil, err
 			}
+			fontDicts[i].dict = dict
+			if fdInfo.privateLength > 0 {
+				priv, subrs, err := parseCFFPrivateAndSubrs(data, fdInfo.privateOffset, fdInfo.privateLength)
+				if err != nil {
+					return nil, err
+				}
+				fontDicts[i].private = priv
+				fontDicts[i].localSubr = subrs
+			}
+		}
+		for gid, fd := range fdSelect {
+			if int(fd) >= len(fontDicts) {
+				return nil, fmt.Errorf("subset cff: glyph %d selects missing FD %d", gid, fd)
+			}
+		}
+	} else if topInfo.privateLength > 0 {
+		private, localSubrs, err = parseCFFPrivateAndSubrs(data, topInfo.privateOffset, topInfo.privateLength)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -235,7 +519,29 @@ func parseCFFForSubset(data []byte, numGlyphs int) (*cffSubsetData, error) {
 		charstring: charstrings,
 		private:    private,
 		localSubr:  localSubrs,
+		isCID:      topInfo.isCID,
+		fdSelect:   fdSelect,
+		fontDicts:  fontDicts,
 	}, nil
+}
+
+func parseCFFPrivateAndSubrs(data []byte, offset, length int) ([]byte, [][]byte, error) {
+	if offset < 0 || offset+length > len(data) {
+		return nil, nil, fmt.Errorf("subset cff: invalid Private DICT bounds")
+	}
+	private := data[offset : offset+length]
+	info, err := parseCFFPrivateDict(private)
+	if err != nil {
+		return nil, nil, err
+	}
+	var subrs [][]byte
+	if info.subrsOffset > 0 {
+		subrs, _, err = parseCFFIndex(data, offset+info.subrsOffset)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return private, subrs, nil
 }
 
 func parseCFFTopDict(dict []byte) (cffTopDictInfo, error) {
@@ -257,8 +563,28 @@ func parseCFFTopDict(dict []byte) (cffTopDictInfo, error) {
 					info.privateOffset = operands[len(operands)-1]
 				}
 			}
-		} else if len(op) == 2 && op[0] == 12 && op[1] == 30 {
-			info.isCID = true
+		} else if len(op) == 2 && op[0] == 12 {
+			switch op[1] {
+			case 30:
+				info.isCID = true
+				if len(operands) >= 3 {
+					info.rosRegistrySID = operands[len(operands)-3]
+					info.rosOrderingSID = operands[len(operands)-2]
+					info.rosSupplement = operands[len(operands)-1]
+				}
+			case 34:
+				if len(operands) > 0 {
+					info.cidCount = operands[len(operands)-1]
+				}
+			case 36:
+				if len(operands) > 0 {
+					info.fdArrayOffset = operands[len(operands)-1]
+				}
+			case 37:
+				if len(operands) > 0 {
+					info.fdSelectOffset = operands[len(operands)-1]
+				}
+			}
 		}
 	})
 }
@@ -324,6 +650,9 @@ func readCFFOffset(b []byte, size int) int {
 	return n
 }
 
+// parseCFFCharset expands formats 0, 1, and 2 into one SID or CID per GID.
+// Element zero remains zero for .notdef, which is implicit in all CFF charset
+// formats and therefore absent from the encoded ranges.
 func parseCFFCharset(data []byte, off, numGlyphs int) ([]uint16, error) {
 	charsets := make([]uint16, numGlyphs)
 	if numGlyphs == 0 {
@@ -378,6 +707,9 @@ func parseCFFCharset(data []byte, off, numGlyphs int) ([]uint16, error) {
 	return charsets, nil
 }
 
+// walkCFFDict tokenizes DICT data without assigning semantics to most
+// operators. Offset parsers and rewriters share it so escaped operators and
+// variable-width integer encodings are handled consistently.
 func walkCFFDict(data []byte, handle func(op []byte, operands []int)) error {
 	var operands []int
 	for pos := 0; pos < len(data); {
@@ -550,6 +882,147 @@ func buildSubsetCFF(name []byte, topDict []byte, strings [][]byte, globalSubrs [
 		return nil, fmt.Errorf("subset cff: top dict offsets did not converge")
 	}
 	return out, nil
+}
+
+// buildSubsetCIDCFF serializes a CID-keyed CFF program after dense remapping.
+// Absolute offsets in Top DICT, Font DICT, and Private DICT depend on the byte
+// sizes of structures that contain those offsets. The builder therefore lays
+// out provisional objects and iterates until encoded offsets and total sizes
+// stabilize before producing the final byte stream.
+func buildSubsetCIDCFF(name, topDict []byte, strings, globalSubrs, charstrings [][]byte, charsets []uint16, fdSelect []uint8, fontDicts []cffFontDictData) ([]byte, error) {
+	nameIndex := buildCFFIndex([][]byte{name})
+	stringIndex := buildCFFIndex(strings)
+	globalIndex := buildCFFIndex(globalSubrs)
+	charsetData := buildCFFCharsetFormat0(charsets)
+	fdSelectData := buildCFFFDSelectFormat3(fdSelect)
+	charStringsIndex := buildCFFIndex(charstrings)
+
+	topBase, err := filterCFFDict(topDict, func(op []byte) bool {
+		if len(op) == 1 {
+			return op[0] == cffOpCharset || op[0] == cffOpEncoding || op[0] == cffOpCharStrings || op[0] == cffOpPrivate
+		}
+		return len(op) == 2 && op[0] == 12 && (op[1] == 36 || op[1] == 37)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	privateBlocks := make([][]byte, len(fontDicts))
+	fdBases := make([][]byte, len(fontDicts))
+	for i, fd := range fontDicts {
+		privateBase, err := filterCFFDict(fd.private, func(op []byte) bool {
+			return len(op) == 1 && op[0] == cffOpSubrs
+		})
+		if err != nil {
+			return nil, err
+		}
+		localIndex := buildCFFIndex(fd.localSubr)
+		privateDict := buildCFFPrivateDict(privateBase, len(fd.localSubr) > 0)
+		privateBlocks[i] = append(privateDict, localIndex...)
+		fdBases[i], err = filterCFFDict(fd.dict, func(op []byte) bool {
+			return len(op) == 1 && op[0] == cffOpPrivate
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var lastTop []byte
+	lastFDDicts := make([][]byte, len(fontDicts))
+	for iteration := 0; iteration < 16; iteration++ {
+		topIndex := buildCFFIndex([][]byte{lastTop})
+		fdArrayIndex := buildCFFIndex(lastFDDicts)
+		charsetOffset := 4 + len(nameIndex) + len(topIndex) + len(stringIndex) + len(globalIndex)
+		fdSelectOffset := charsetOffset + len(charsetData)
+		charStringsOffset := fdSelectOffset + len(fdSelectData)
+		fdArrayOffset := charStringsOffset + len(charStringsIndex)
+		privateOffset := fdArrayOffset + len(fdArrayIndex)
+
+		newFDDicts := make([][]byte, len(fontDicts))
+		for i := range fontDicts {
+			dict := append([]byte(nil), fdBases[i]...)
+			privateDictLength := len(privateBlocks[i]) - len(buildCFFIndex(fontDicts[i].localSubr))
+			if privateDictLength > 0 {
+				dict = appendCFFInt(dict, privateDictLength)
+				dict = appendCFFInt(dict, privateOffset)
+				dict = append(dict, cffOpPrivate)
+			}
+			newFDDicts[i] = dict
+			privateOffset += len(privateBlocks[i])
+		}
+
+		top := append([]byte(nil), topBase...)
+		top = appendCFFInt(top, charsetOffset)
+		top = append(top, cffOpCharset)
+		top = appendCFFInt(top, charStringsOffset)
+		top = append(top, cffOpCharStrings)
+		top = appendCFFInt(top, fdArrayOffset)
+		top = append(top, 12, 36)
+		top = appendCFFInt(top, fdSelectOffset)
+		top = append(top, 12, 37)
+
+		if bytes.Equal(top, lastTop) && byteSlicesEqual(newFDDicts, lastFDDicts) {
+			var buf bytes.Buffer
+			buf.Write([]byte{1, 0, 4, 4})
+			buf.Write(nameIndex)
+			buf.Write(buildCFFIndex([][]byte{top}))
+			buf.Write(stringIndex)
+			buf.Write(globalIndex)
+			buf.Write(charsetData)
+			buf.Write(fdSelectData)
+			buf.Write(charStringsIndex)
+			buf.Write(buildCFFIndex(newFDDicts))
+			for _, block := range privateBlocks {
+				buf.Write(block)
+			}
+			return buf.Bytes(), nil
+		}
+		lastTop = top
+		lastFDDicts = newFDDicts
+	}
+	return nil, fmt.Errorf("subset cff: CID offsets did not converge")
+}
+
+func byteSlicesEqual(a, b [][]byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !bytes.Equal(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// buildCFFFDSelectFormat3 run-length encodes the expanded FD assignment. Format
+// 3 is deterministic and generally compact for fonts whose language regions
+// use long contiguous runs of one Font DICT.
+func buildCFFFDSelectFormat3(fds []uint8) []byte {
+	var buf bytes.Buffer
+	buf.WriteByte(3)
+	if len(fds) == 0 {
+		writeUint16(&buf, 0)
+		writeUint16(&buf, 0)
+		return buf.Bytes()
+	}
+	type fdRange struct {
+		first int
+		fd    uint8
+	}
+	ranges := []fdRange{{first: 0, fd: fds[0]}}
+	for gid := 1; gid < len(fds); gid++ {
+		if fds[gid] != fds[gid-1] {
+			ranges = append(ranges, fdRange{first: gid, fd: fds[gid]})
+		}
+	}
+	writeUint16(&buf, uint16(len(ranges)))
+	for _, r := range ranges {
+		writeUint16(&buf, uint16(r.first))
+		buf.WriteByte(r.fd)
+	}
+	writeUint16(&buf, uint16(len(fds)))
+	return buf.Bytes()
 }
 
 func buildCFFPrivateDict(base []byte, hasLocalSubrs bool) []byte {
@@ -757,6 +1230,9 @@ func cffSubrBias(n int) int {
 	}
 }
 
+// pruneCFFSubrs preserves INDEX positions instead of renumbering calls. Unused
+// entries become a one-byte return program; used call operands and subroutine
+// bias therefore remain valid without rewriting Type 2 charstrings.
 func pruneCFFSubrs(subrs [][]byte, used map[int]bool) [][]byte {
 	if len(subrs) == 0 {
 		return nil

@@ -113,6 +113,20 @@ func (fi *FontInfo) HasTable(tag string) bool {
 	return fi.tableDir.table(tag) != nil
 }
 
+// NumGlyphs reads maxp without loading the full font. It is used by font
+// catalog diagnostics; zero means the table was absent or unreadable.
+func (fi *FontInfo) NumGlyphs() int {
+	entry := fi.tableDir.table("maxp")
+	if entry == nil {
+		return 0
+	}
+	data, err := fi.readTable(entry)
+	if err != nil || len(data) < 6 {
+		return 0
+	}
+	return int(binary.BigEndian.Uint16(data[4:6]))
+}
+
 func (fi *FontInfo) HasTrueTypeOutlines() bool {
 	return fi.HasTable("glyf") && fi.HasTable("loca")
 }
@@ -190,6 +204,12 @@ func (fi *FontInfo) XHeight() int {
 		return int(fi.os2Table.sxHeight)
 	}
 	return 0
+}
+
+// WeightClass returns OS/2.usWeightClass, normally a CSS-compatible value from
+// 100 through 900. Closest-face selection treats zero as Regular (400).
+func (fi *FontInfo) WeightClass() int {
+	return int(fi.os2Table.usWeightClass)
 }
 
 func (fi *FontInfo) readTable(entry *tableDirEntry) ([]byte, error) {

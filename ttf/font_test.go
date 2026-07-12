@@ -3,7 +3,16 @@
 
 package ttf
 
-import "testing"
+import (
+	"io"
+	"testing"
+)
+
+type zeroGlyphIndexer struct{}
+
+func (zeroGlyphIndexer) init(file io.Reader) error    { return nil }
+func (zeroGlyphIndexer) glyphIndex(codepoint int) int { return 0 }
+func (zeroGlyphIndexer) write(wr io.Writer)           {}
 
 func aw(width int, err bool) int {
 	return width
@@ -44,6 +53,15 @@ func TestLoadFont(t *testing.T) {
 	expectI(t, "MaxWidth", 4096, f.MaxWidth())
 	expectI(t, "UnderlinePosition", -217, f.UnderlinePosition())
 	expectI(t, "UnderlineThickness", 150, f.UnderlineThickness())
+}
+
+func TestAdvanceWidth_TreatsGlyphZeroAsMissing(t *testing.T) {
+	f := &Font{
+		cmapTable: cmapTable{preferredIndexer: zeroGlyphIndexer{}},
+	}
+	if _, missing := f.AdvanceWidth('中'); !missing {
+		t.Fatal("AdvanceWidth reported glyph 0 as present")
+	}
 }
 
 // 9,151,820 ns

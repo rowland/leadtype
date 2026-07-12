@@ -4,6 +4,7 @@
 package ttf
 
 import (
+	"bytes"
 	"encoding/binary"
 	"os"
 	"strings"
@@ -15,6 +16,7 @@ import (
 const minimalTTF = "testdata/minimal.ttf"
 
 const minimalCFF = "testdata/minimal-cff.otf"
+const minimalCIDCFF = "testdata/minimal-cid-cff.otf"
 
 func TestSubset_CFFOpenType(t *testing.T) {
 	orig, err := LoadFont(minimalCFF)
@@ -51,6 +53,66 @@ func TestSubset_CFFOpenType(t *testing.T) {
 	}
 	if !strings.Contains(string(subset), "CFF ") {
 		t.Fatal("subset sfnt missing CFF table tag")
+	}
+}
+
+func TestSubset_CIDKeyedCFFPreservesCIDsAndCompactsGlyphs(t *testing.T) {
+	orig, err := LoadFont(minimalCIDCFF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registry, ordering, supplement, ok := orig.CIDSystemInfo()
+	if !ok || registry != "Adobe" || ordering != "Identity" || supplement != 0 {
+		t.Fatalf("CIDSystemInfo = %q %q %d %t", registry, ordering, supplement, ok)
+	}
+	oldGID := orig.GlyphIndex('A')
+	wantCID := uint16(1000) + oldGID
+	if cid, ok := orig.CIDForGlyph(oldGID); !ok || cid != wantCID {
+		t.Fatalf("CIDForGlyph(%d) = %d, %t; want %d, true", oldGID, cid, ok, wantCID)
+	}
+
+	first, err := orig.Subset([]uint16{oldGID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := orig.Subset([]uint16{oldGID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(first, second) {
+		t.Fatal("CID-keyed CFF subset is not deterministic")
+	}
+	subset, err := LoadFontFromBytes(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if subset.NumGlyphs() != 2 {
+		t.Fatalf("subset NumGlyphs = %d, want 2", subset.NumGlyphs())
+	}
+	if got := subset.GlyphIndex('A'); got != 1 {
+		t.Fatalf("subset glyph for A = %d, want dense GID 1", got)
+	}
+	if cid, ok := subset.CIDForGlyph(1); !ok || cid != wantCID {
+		t.Fatalf("subset CIDForGlyph(1) = %d, %t; want %d, true", cid, ok, wantCID)
+	}
+
+	cff, err := sfntTableData(first, "CFF ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := parseCFFForSubset(cff, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(parsed.fontDicts) != 1 {
+		t.Fatalf("subset FDArray count = %d, want 1", len(parsed.fontDicts))
+	}
+	pdfData, subtype, err := orig.PDFSubset([]uint16{oldGID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if subtype != "CIDFontType0C" || len(pdfData) == 0 || pdfData[0] != 1 {
+		t.Fatalf("PDFSubset subtype=%q bytes=%d", subtype, len(pdfData))
 	}
 }
 

@@ -33,6 +33,51 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 	return font.subsetTrueType(glyphIDs)
 }
 
+// PDFSubset adapts the normal OpenType subset to PDF's embedding rules. A
+// CID-keyed CFF program must be embedded as raw CFF with /CIDFontType0C so PDF
+// readers interpret its charset as CID mappings; wrapping it in OpenType can
+// cause readers to treat those values as glyph names or assume Identity.
+func (font *Font) PDFSubset(glyphIDs []uint16) ([]byte, string, error) {
+	data, err := font.Subset(glyphIDs)
+	if err != nil {
+		return nil, "", err
+	}
+	if font.cffCID == nil {
+		return data, "", nil
+	}
+	cff, err := sfntTableData(data, "CFF ")
+	if err != nil {
+		return nil, "", err
+	}
+	return cff, "CIDFontType0C", nil
+}
+
+// sfntTableData extracts one table from a generated sfnt after validating the
+// directory and table bounds. It returns a copy because the enclosing subset
+// buffer is not part of the PDF stream's contract.
+func sfntTableData(data []byte, tag string) ([]byte, error) {
+	if len(data) < 12 || len(tag) != 4 {
+		return nil, fmt.Errorf("subset: malformed sfnt data")
+	}
+	nTables := int(binary.BigEndian.Uint16(data[4:]))
+	if 12+nTables*16 > len(data) {
+		return nil, fmt.Errorf("subset: truncated sfnt directory")
+	}
+	for i := 0; i < nTables; i++ {
+		record := data[12+i*16 : 12+(i+1)*16]
+		if string(record[:4]) != tag {
+			continue
+		}
+		offset := int(binary.BigEndian.Uint32(record[8:]))
+		length := int(binary.BigEndian.Uint32(record[12:]))
+		if offset < 0 || length < 0 || offset+length > len(data) {
+			return nil, fmt.Errorf("subset: invalid %s table bounds", tag)
+		}
+		return append([]byte(nil), data[offset:offset+length]...), nil
+	}
+	return nil, fmt.Errorf("subset: sfnt has no %s table", tag)
+}
+
 func (font *Font) subsetTrueType(glyphIDs []uint16) ([]byte, error) {
 	raw, err := os.ReadFile(font.filename)
 	if err != nil {
