@@ -58,6 +58,31 @@ func newFlowPageDoc(page *StdPage) *StdDocument {
 	return doc
 }
 
+func TestStdPage_AvailableHeightForChildReservesFooterPadding(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	page.layout.vpadding = 10
+	page.ResolveWidth(200)
+	page.ResolveHeight(200)
+
+	body := &flowTestWidget{}
+	body.SetTop(100)
+	body.SetVisible(true)
+	_ = body.SetContainer(page)
+	page.AddChild(body)
+
+	footer := &flowTestWidget{}
+	footer.SetTop(180)
+	footer.SetVisible(true)
+	footer.SetAttrs(map[string]string{"align": "bottom"})
+	_ = footer.SetContainer(page)
+	page.AddChild(footer)
+
+	if got, want := page.availableHeightForChild(body), 70.0; got != want {
+		t.Fatalf("available height = %v, want %v", got, want)
+	}
+}
+
 func TestContainerHasEffectiveContinuation(t *testing.T) {
 	newPage := func(manager, overflow string) *StdPage {
 		page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}

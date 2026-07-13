@@ -765,13 +765,20 @@ func (p *StdPage) pageItemForCurrent(widget Widget) *pageItem {
 
 func (p *StdPage) availableHeightForChild(child Widget) float64 {
 	limit := ContentBottom(p)
+	footerReserved := false
 	for _, sibling := range p.Widgets() {
 		if sibling == child || !sibling.Visible() || sibling.Disabled() {
 			continue
 		}
 		if sibling.Align() == AlignBottom {
-			limit = min(limit, sibling.Top())
+			if sibling.Top() < limit {
+				limit = sibling.Top()
+				footerReserved = true
+			}
 		}
+	}
+	if footerReserved {
+		limit -= p.LayoutStyle().VPadding()
 	}
 	avail := limit - child.Top()
 	if avail < 0 {

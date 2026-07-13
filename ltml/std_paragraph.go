@@ -255,7 +255,11 @@ func (p *StdParagraph) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 		}
 		break
 	}
-	if fit < p.orphanCount() || len(lines)-fit < p.widowCount() {
+	if fit == len(lines) {
+		return nil, nil
+	}
+	fit = min(fit, len(lines)-p.widowCount())
+	if fit < p.orphanCount() {
 		return nil, nil
 	}
 	head := p.cloneForSplit(lines[:fit], p.suppressBullet, p.continuationIndent)

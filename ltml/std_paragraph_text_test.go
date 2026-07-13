@@ -575,6 +575,39 @@ func TestStdParagraph_SplitForHeight_RespectsDefaultsAndSuppressesBullet(t *test
 	}
 }
 
+func TestStdParagraph_SplitForHeight_BacksOffToPreserveWidows(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
+	p := &StdParagraph{}
+	_ = p.SetContainer(page)
+	p.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	p.orphans = 2
+	p.widows = 2
+	p.SetWidth(90)
+	p.AddText("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.")
+
+	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+	lines := p.Lines(w, p.lineWidth())
+	if len(lines) < 4 {
+		t.Fatalf("wrapped line count = %d, want at least 4", len(lines))
+	}
+
+	result, err := p.SplitForHeight(p.heightForLines(lines[:len(lines)-1], w), w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("expected paragraph to split by moving an extra line to the continuation")
+	}
+	head := result.Head.(*StdParagraph)
+	tail := result.Tail.(*StdParagraph)
+	if got, want := len(head.splitLines), len(lines)-2; got != want {
+		t.Fatalf("head line count = %d, want %d", got, want)
+	}
+	if got := len(tail.splitLines); got != 2 {
+		t.Fatalf("tail line count = %d, want 2", got)
+	}
+}
+
 func TestStdParagraph_SplitForHeight_PreservesMultipleBulletIndent(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
 	page.layout = defaultLayouts["vbox"].Clone()
