@@ -151,13 +151,7 @@ func (l *StdLabel) SetAttrs(attrs map[string]string) {
 	}
 	if textAlign, ok := attrs["text-align"]; ok {
 		l.textAlignSet = true
-		l.textAlign = HAlignLeft
-		switch textAlign {
-		case "center":
-			l.textAlign = HAlignCenter
-		case "right":
-			l.textAlign = HAlignRight
-		}
+		l.textAlign = parseTextAlign(textAlign, false)
 	}
 	if textVAlign, ok := attrs["text-valign"]; ok {
 		l.textVAlign = parseLabelTextVAlign(textVAlign)
@@ -255,12 +249,9 @@ func parseLabelTextVAlign(value string) VAlign {
 
 func (l *StdLabel) resolvedTextAlign() HAlign {
 	if l.textAlignSet {
-		return l.textAlign
+		return resolveTextAlign(l.textAlign, l)
 	}
-	if l.container != nil && IsRTL(l.container) {
-		return HAlignRight
-	}
-	return HAlignLeft
+	return resolveTextAlign(textAlignStart, l)
 }
 
 func (l *StdLabel) String() string {

@@ -28,16 +28,7 @@ func (ts *TextStyle) SetAttrs(attrs map[string]string) {
 	}
 	if textAlign, ok := attrs["text-align"]; ok {
 		ts.textAlignSet = true
-		switch textAlign {
-		case "left":
-			ts.textAlign = HAlignLeft
-		case "center":
-			ts.textAlign = HAlignCenter
-		case "right":
-			ts.textAlign = HAlignRight
-		case "justify":
-			ts.textAlign = HAlignJustify
-		}
+		ts.textAlign = parseTextAlign(textAlign, true)
 	}
 	if vAlign, ok := attrs["valign"]; ok {
 		switch vAlign {
@@ -55,12 +46,9 @@ func (ts *TextStyle) SetAttrs(attrs map[string]string) {
 
 func (ts *TextStyle) ResolvedTextAlign(c Container) HAlign {
 	if ts != nil && ts.textAlignSet {
-		return ts.textAlign
+		return resolveTextAlign(ts.textAlign, c)
 	}
-	if c != nil && IsRTL(c) {
-		return HAlignRight
-	}
-	return HAlignLeft
+	return resolveTextAlign(textAlignStart, c)
 }
 
 func (ts *TextStyle) String() string {

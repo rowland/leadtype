@@ -313,7 +313,7 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `font.line-height` | Line spacing multiplier (e.g., `1.5`). |
 | `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the paragraph text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
 | `style`            | Reference to a named `<para>` style. |
-| `style.text-align` | Text alignment: `left`, `center`, `right`, `justify`. |
+| `style.text-align` | Text alignment: logical `start`/`end`, physical `left`/`right`, `center`, or `justify`. Defaults to `start`. |
 | `style.valign`     | Vertical alignment: `top`, `middle`, `bottom`, `baseline`. |
 | `bullet`           | Reference to one or more named `<bullet>` styles. Multiple names are whitespace-separated and each reserves its configured width before the paragraph text. |
 | `width`, `height`  | Explicit dimensions. |
@@ -555,7 +555,7 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 |-----------|-------------|
 | `font` / `font.*` | Same font attributes supported by `<p>`. |
 | `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the label text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
-| `text-align` | Label text alignment: `left`, `center`, `right`. Affects the text anchor inside the label box. |
+| `text-align` | Label text alignment: logical `start`/`end`, physical `left`/`right`, or `center`. Defaults to `start`. Affects the text anchor inside the label box. |
 | `text-valign` | Label vertical text alignment: `top` (default), `middle`, or `bottom`. |
 | `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |
@@ -1018,7 +1018,7 @@ overridden inline with `fill.*` attributes on a widget.
 | Attribute    | Description |
 |--------------|-------------|
 | `id`         | Name used to reference this style. |
-| `text-align` | `left`, `center`, `right`, `justify`. |
+| `text-align` | Logical `start`/`end`, physical `left`/`right`, `center`, or `justify`. Defaults to `start`. |
 | `valign`     | `top`, `middle`, `bottom`, `baseline`. |
 | `bullet`     | Reference to one or more named `<bullet>` styles. Multiple names are whitespace-separated and each reserves its configured width before the paragraph text. |
 
@@ -1371,9 +1371,23 @@ Set via the `layout` attribute on any container element or via `<layout id="..."
 All layout managers except `absolute` and `relative` honor the `dir` attribute.
 When `dir="rtl"` is set on a container (or inherited from a parent), horizontal
 placement is mirrored so that content flows from the right edge.
-This mirrors layout placement and also changes the default horizontal alignment of
-paragraphs and labels to the right unless `text-align` is set explicitly. It does
-not automatically change paragraph shaping or bidi behavior inside text widgets.
+This mirrors layout placement. Paragraph and label `text-align` defaults to the
+logical `start` edge, which is left in LTR and right in RTL. Explicit `start` and
+`end` values follow the effective inherited `dir`; physical `left` and `right`
+values are not mirrored.
+
+| `text-align` | `dir="ltr"` | `dir="rtl"` |
+|--------------|-------------|-------------|
+| omitted / `start` | left | right |
+| `end` | right | left |
+| `left` | left | left |
+| `right` | right | right |
+| `center` | center | center |
+| `justify` | justify | justify |
+
+Direction-aware alignment does not automatically change paragraph shaping,
+glyph ordering, or bidi behavior inside text widgets. Sector `text-align` keeps
+its separate angular-anchor semantics.
 
 ### VBox Details
 

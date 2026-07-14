@@ -699,6 +699,61 @@ func TestStdLabel_DrawContent_DefaultsToRightAlignInRTLContainer(t *testing.T) {
 	}
 }
 
+func TestStdLabel_LogicalAndPhysicalTextAlignment(t *testing.T) {
+	tests := []struct {
+		name  string
+		dir   string
+		align string
+		want  HAlign
+	}{
+		{name: "LTR start", dir: "ltr", align: "start", want: HAlignLeft},
+		{name: "LTR end", dir: "ltr", align: "end", want: HAlignRight},
+		{name: "RTL start", dir: "rtl", align: "start", want: HAlignRight},
+		{name: "RTL end", dir: "rtl", align: "end", want: HAlignLeft},
+		{name: "RTL physical left", dir: "rtl", align: "left", want: HAlignLeft},
+		{name: "RTL physical right", dir: "rtl", align: "right", want: HAlignRight},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parent := positionedContainer(0, 0, 200, 100)
+			parent.SetAttrs(map[string]string{"dir": tt.dir})
+			label := &StdLabel{}
+			if err := label.SetContainer(parent); err != nil {
+				t.Fatal(err)
+			}
+			label.SetAttrs(map[string]string{"text-align": tt.align})
+			label.SetLeft(10)
+			label.SetWidth(100)
+
+			if got := label.resolvedTextAlign(); got != tt.want {
+				t.Fatalf("resolved alignment = %s, want %s", got, tt.want)
+			}
+			wantX := ContentLeft(label)
+			if tt.want == HAlignRight {
+				wantX = ContentRight(label)
+			}
+			if got := label.textAnchorX(); got != wantX {
+				t.Fatalf("text anchor x = %v, want %v", got, wantX)
+			}
+		})
+	}
+}
+
+func TestStdLabel_LogicalAlignmentUsesExplicitLabelDirection(t *testing.T) {
+	parent := positionedContainer(0, 0, 200, 100)
+	parent.SetAttrs(map[string]string{"dir": "rtl"})
+	label := &StdLabel{}
+	if err := label.SetContainer(parent); err != nil {
+		t.Fatal(err)
+	}
+	label.SetAttrs(map[string]string{"dir": "ltr", "text-align": "start"})
+
+	if got := label.resolvedTextAlign(); got != HAlignLeft {
+		t.Fatalf("explicit LTR label alignment = %s, want left", got)
+	}
+}
+
 func TestStdParagraph_DrawContent_DefaultsToRightAlignInRTLContainer(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 100)
 	container.dirExplicit = true

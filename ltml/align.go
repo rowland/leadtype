@@ -85,15 +85,58 @@ const (
 	HAlignCenter
 	HAlignRight
 	HAlignJustify
+	textAlignStart
+	textAlignEnd
 )
 
-var hAlignStrings = []string{"left", "center", "right", "justify"}
+var hAlignStrings = []string{"left", "center", "right", "justify", "start", "end"}
 
 func (ha HAlign) String() string {
 	if int(ha) < len(hAlignStrings) {
 		return hAlignStrings[ha]
 	}
 	return "unknown"
+}
+
+// parseTextAlign retains logical start/end values until the text is rendered.
+// Invalid values intentionally fall back to physical left, matching the
+// historical paragraph and label parsers.
+func parseTextAlign(value string, allowJustify bool) HAlign {
+	switch value {
+	case "start":
+		return textAlignStart
+	case "end":
+		return textAlignEnd
+	case "center":
+		return HAlignCenter
+	case "right":
+		return HAlignRight
+	case "justify":
+		if allowJustify {
+			return HAlignJustify
+		}
+	}
+	return HAlignLeft
+}
+
+// resolveTextAlign converts logical alignment to the physical alignment used
+// by the PDF writer. Physical left/right values are never mirrored.
+func resolveTextAlign(align HAlign, c Container) HAlign {
+	rtl := c != nil && IsRTL(c)
+	switch align {
+	case textAlignStart:
+		if rtl {
+			return HAlignRight
+		}
+		return HAlignLeft
+	case textAlignEnd:
+		if rtl {
+			return HAlignLeft
+		}
+		return HAlignRight
+	default:
+		return align
+	}
 }
 
 type VAlign int8
