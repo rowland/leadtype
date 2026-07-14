@@ -112,20 +112,75 @@ func NewFromSystemFonts() (*TtfFonts, error) {
 	return &fc, nil
 }
 
-// NewFromDirsAndSystemFonts creates a TtfFonts collection loaded from dirs
-// first, followed by all standard font directories for the current platform.
-// Fonts added earlier win when multiple fonts expose the same identifiers.
-func NewFromDirsAndSystemFonts(dirs []string) (*TtfFonts, error) {
+// NewFromDirs creates a TtfFonts collection loaded only from dirs, in the
+// order supplied. Earlier directories win when multiple files expose the same
+// font identifiers. No system directories are added implicitly.
+func NewFromDirs(dirs []string) (*TtfFonts, error) {
 	var fc TtfFonts
 	for _, dir := range dirs {
 		if err := fc.AddDir(dir); err != nil {
 			return nil, err
 		}
 	}
-	if err := fc.AddSystemFonts(); err != nil {
-		return nil, err
-	}
 	return &fc, nil
+}
+
+// ResolveFontDirs parses an ordered, comma-delimited font search path. The
+// token "auto" expands in place to the current platform's standard font
+// directories. Missing automatic directories are ignored because not every
+// standard location exists on every host; explicit directories remain strict.
+func ResolveFontDirs(spec string) ([]string, error) {
+	return resolveFontDirs(spec, SystemFontDirs())
+}
+
+func resolveFontDirs(spec string, systemDirs []string) ([]string, error) {
+	parts := strings.Split(spec, ",")
+	dirs := make([]string, 0, len(parts)+len(systemDirs))
+	seen := make(map[string]struct{})
+	add := func(dir string, automatic bool) error {
+		info, err := os.Stat(dir)
+		if err != nil {
+			if automatic {
+				return nil
+			}
+			return fmt.Errorf("font directory %q: %w", dir, err)
+		}
+		if !info.IsDir() {
+			if automatic {
+				return nil
+			}
+			return fmt.Errorf("font directory %q is not a directory", dir)
+		}
+		key, err := filepath.Abs(filepath.Clean(dir))
+		if err != nil {
+			key = filepath.Clean(dir)
+		}
+		if _, ok := seen[key]; ok {
+			return nil
+		}
+		seen[key] = struct{}{}
+		dirs = append(dirs, dir)
+		return nil
+	}
+
+	for _, part := range parts {
+		entry := strings.TrimSpace(part)
+		if entry == "" {
+			return nil, fmt.Errorf("font directory list contains an empty entry")
+		}
+		if entry == "auto" {
+			for _, dir := range systemDirs {
+				if err := add(dir, true); err != nil {
+					return nil, err
+				}
+			}
+			continue
+		}
+		if err := add(entry, false); err != nil {
+			return nil, err
+		}
+	}
+	return dirs, nil
 }
 
 // AddDir adds all TTF, TTC, and OTF fonts found in dir. It returns an error if dir

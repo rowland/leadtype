@@ -79,20 +79,28 @@ func (dw *DocWriter) DrawCanvas(key string, x, y, width, height, canvasWidth, ca
 }
 
 func NewDocWriter() *DocWriter {
-	dw, err := NewDocWriterWithFontDirs(nil)
+	ttFonts, err := ttf_fonts.NewFromSystemFonts()
+	if err != nil {
+		panic(err)
+	}
+	dw, err := newDocWriterWithTTFonts(ttFonts)
 	if err != nil {
 		panic(err)
 	}
 	return dw
 }
 
-// NewDocWriterWithFontDirs creates a DocWriter that searches each directory in
-// dirs before system fonts. It returns an error if any entry in dirs is invalid.
+// NewDocWriterWithFontDirs creates a DocWriter that searches exactly the
+// supplied directories in order. It does not add system font directories.
 func NewDocWriterWithFontDirs(dirs []string) (*DocWriter, error) {
-	ttFonts, err := ttf_fonts.NewFromDirsAndSystemFonts(dirs)
+	ttFonts, err := ttf_fonts.NewFromDirs(dirs)
 	if err != nil {
 		return nil, err
 	}
+	return newDocWriterWithTTFonts(ttFonts)
+}
+
+func newDocWriterWithTTFonts(ttFonts *ttf_fonts.TtfFonts) (*DocWriter, error) {
 	afmFonts, err := afm_fonts.Default()
 	if err != nil {
 		return nil, err

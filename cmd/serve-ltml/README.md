@@ -18,11 +18,18 @@ Every flag can also be set via the corresponding environment variable.
 |------|----------------------|---------|-------------|
 | `-listen <addr>` | `LISTEN` | `:8080` | Address to listen on |
 | `-assets <dir>` / `-a <dir>` | `ASSETS` | *(required)* | Directory of static assets available to all requests |
+| `-font-dir <dirs>` | `FONT_DIR` | `auto` | Ordered comma-delimited font directories; `auto` inserts system directories |
 | `-max-upload-bytes <n>` | `MAX_UPLOAD_BYTES` | `33554432` (32 MiB) | Maximum request body size |
 | `-read-timeout <duration>` | `READ_TIMEOUT` | none | HTTP server read timeout (e.g. `30s`) |
 | `-write-timeout <duration>` | `WRITE_TIMEOUT` | none | HTTP server write timeout (e.g. `60s`) |
 
 `ASSETS` must exist and be a directory; the server refuses to start otherwise.
+
+Font directories are searched in the order configured. Use `./fonts` for a
+deterministic custom-only inventory, `./fonts,auto` to prefer custom fonts and
+then use system fonts, or `auto,./fonts` to prefer system fonts. Explicit
+directories must exist; unavailable directories introduced by `auto` are
+ignored.
 
 ## API
 
@@ -59,12 +66,15 @@ Start the server:
 
 ```sh
 serve-ltml -assets /var/lib/ltml/assets
+
+# Container-friendly: search only the bundled inventory.
+serve-ltml -assets /var/lib/ltml/assets -font-dir /var/lib/ltml/fonts
 ```
 
 Or with environment variables:
 
 ```sh
-ASSETS=/var/lib/ltml/assets READ_TIMEOUT=30s WRITE_TIMEOUT=60s serve-ltml
+ASSETS=/var/lib/ltml/assets FONT_DIR=/var/lib/ltml/fonts READ_TIMEOUT=30s WRITE_TIMEOUT=60s serve-ltml
 ```
 
 Render a document with no uploaded assets:

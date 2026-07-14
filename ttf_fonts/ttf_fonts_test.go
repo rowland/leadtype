@@ -190,6 +190,84 @@ func TestTtfFonts_AddDirLoadsOpenTypeFonts(t *testing.T) {
 	}
 }
 
+func TestResolveFontDirsExpandsAutoInOrderAndDeduplicates(t *testing.T) {
+	customBefore := t.TempDir()
+	systemOne := t.TempDir()
+	systemTwo := t.TempDir()
+	customAfter := t.TempDir()
+
+	got, err := resolveFontDirs(
+		"  "+customBefore+", auto, "+systemOne+", "+customAfter,
+		[]string{systemOne, filepath.Join(t.TempDir(), "missing"), systemTwo},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{customBefore, systemOne, systemTwo, customAfter}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("resolved directories = %#v, want %#v", got, want)
+	}
+}
+
+func TestResolveFontDirsRejectsEmptyAndInvalidExplicitEntries(t *testing.T) {
+	dir := t.TempDir()
+	for _, spec := range []string{"", dir + ",," + dir, dir + ", "} {
+		if _, err := resolveFontDirs(spec, nil); err == nil || !strings.Contains(err.Error(), "empty entry") {
+			t.Fatalf("resolveFontDirs(%q) error = %v, want empty-entry error", spec, err)
+		}
+	}
+	if _, err := resolveFontDirs(filepath.Join(dir, "missing"), nil); err == nil {
+		t.Fatal("missing explicit directory unexpectedly accepted")
+	}
+	file := filepath.Join(dir, "font.ttf")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := resolveFontDirs(file, nil); err == nil || !strings.Contains(err.Error(), "not a directory") {
+		t.Fatalf("file entry error = %v, want not-a-directory error", err)
+	}
+}
+
+func TestResolveFontDirsTreatsRelativeAutoAsDirectory(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "auto")
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	got, err := resolveFontDirs(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != dir {
+		t.Fatalf("resolved directories = %#v, want [%q]", got, dir)
+	}
+}
+
+func TestNewFromDirsPreservesDirectoryPriority(t *testing.T) {
+	first := t.TempDir()
+	second := t.TempDir()
+	fontBytes, err := os.ReadFile("../ttf/testdata/minimal.ttf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []string{filepath.Join(first, "first.ttf"), filepath.Join(second, "second.ttf")} {
+		if err := os.WriteFile(target, fontBytes, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fc, err := NewFromDirs([]string{first, second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	selected, err := fc.Select("Minimal", "", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := selected.Filename(); got != filepath.Join(first, "first.ttf") {
+		t.Fatalf("selected file = %q, want first directory", got)
+	}
+}
+
 func TestTtfFonts_AddLoadsCFFOpenTypeFonts(t *testing.T) {
 	fc, err := New("../ttf/testdata/minimal-cff.otf")
 	if err != nil {

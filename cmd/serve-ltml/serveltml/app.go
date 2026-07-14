@@ -18,6 +18,7 @@
 //
 //	LISTEN / -listen                      address to listen on (default :8080)
 //	ASSETS / -assets / -a                path to static asset directory (required)
+//	FONT_DIR / -font-dir                 ordered font directories (default auto)
 //	MAX_UPLOAD_BYTES / -max-upload-bytes request size cap (default 32 MiB)
 //	READ_TIMEOUT / -read-timeout         HTTP read timeout (default none)
 //	WRITE_TIMEOUT / -write-timeout       HTTP write timeout (default none)

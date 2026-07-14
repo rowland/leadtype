@@ -196,12 +196,8 @@ func (h *renderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	overlay := newOverlayFS(uploadFSys, baseFSys)
 	requestLogf(requestID, "rendering ltml: bytes=%d uploads=%d", len(ltmlBytes), uploadCount)
 
-	var fontDirs []string
-	if h.cfg.FontDir != "" {
-		fontDirs = []string{h.cfg.FontDir}
-	}
 	renderStart := time.Now()
-	pdfFile, err := renderLTML(ltmlBytes, overlay, tmpDir, fontDirs)
+	pdfFile, err := renderLTML(ltmlBytes, overlay, tmpDir, h.cfg.FontDirs)
 	if err != nil {
 		elapsedMs := time.Since(renderStart).Milliseconds()
 		requestLogf(requestID, "render: %v", err)

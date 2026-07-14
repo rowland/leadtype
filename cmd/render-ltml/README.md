@@ -60,9 +60,21 @@ If the same virtual asset path is given more than once via `-extra`, the last oc
 
 ### Font diagnostics
 
-Use `-list-fonts` with `-font-dir` to catalog the family, style, full name, and
-PostScript identifiers that CSS font rules can request. The catalog also shows
-the outline type, CID-keyed status, and glyph count:
+`-font-dir` is an ordered, comma-delimited font search path. The special entry
+`auto` expands in place to the current platform's standard font directories.
+Omitting the flag is equivalent to `-font-dir auto`; supplying only explicit
+directories excludes system fonts. Earlier directories take priority:
+
+```sh
+render-ltml -font-dir auto report.ltml
+render-ltml -font-dir ./assets report.ltml
+render-ltml -font-dir ./assets,auto report.ltml
+render-ltml -font-dir auto,./assets report.ltml
+```
+
+Use `-list-fonts` with the same search path to catalog the family, style, full
+name, and PostScript identifiers that CSS font rules can request. The catalog
+also shows the outline type, CID-keyed status, and glyph count:
 
 ```sh
 render-ltml -font-dir ./assets -list-fonts

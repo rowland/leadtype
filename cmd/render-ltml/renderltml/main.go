@@ -54,6 +54,7 @@ func (m *multiFlag) Set(v string) error {
 type runConfig struct {
 	assetsDir    string
 	fontDir      string
+	fontDirs     []string
 	outputPath   string
 	submitURL    string
 	extraFiles   []extraAsset
@@ -140,7 +141,7 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	fs.SetOutput(stderr)
 	fs.StringVar(&cfg.assetsDir, "assets", "", "path to asset `directory`")
 	fs.StringVar(&cfg.assetsDir, "a", "", "path to asset `directory` (shorthand)")
-	fs.StringVar(&cfg.fontDir, "font-dir", "", "additional font `directory`")
+	fs.StringVar(&cfg.fontDir, "font-dir", "auto", "ordered comma-delimited font `directories`; auto adds system directories")
 	fs.StringVar(&cfg.outputPath, "output", "", "output `file` or batch output `directory`")
 	fs.StringVar(&cfg.outputPath, "o", "", "output `file` or batch output `directory` (shorthand)")
 	fs.StringVar(&cfg.submitURL, "submit", "", "submit to remote render `url` instead of rendering locally")
@@ -185,9 +186,16 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 		fmt.Fprintf(stderr, "\nrender-ltml: %v\n", err)
 		return 2
 	}
+	if cfg.submitURL == "" {
+		cfg.fontDirs, err = ttf_fonts.ResolveFontDirs(cfg.fontDir)
+		if err != nil {
+			fmt.Fprintf(stderr, "render-ltml: invalid -font-dir: %v\n", err)
+			return 2
+		}
+	}
 
 	if cfg.listFonts {
-		if err := listFonts(cfg.fontDir, stderr); err != nil {
+		if err := listFonts(cfg.fontDirs, stderr); err != nil {
 			fmt.Fprintf(stderr, "render-ltml: %v\n", err)
 			return 1
 		}
@@ -244,12 +252,8 @@ func validateArgs(cfg runConfig, inputFiles []string) error {
 	return nil
 }
 
-func listFonts(fontDir string, out io.Writer) error {
-	var fontDirs []string
-	if fontDir != "" {
-		fontDirs = []string{fontDir}
-	}
-	fc, err := ttf_fonts.NewFromDirsAndSystemFonts(fontDirs)
+func listFonts(fontDirs []string, out io.Writer) error {
+	fc, err := ttf_fonts.NewFromDirs(fontDirs)
 	if err != nil {
 		return fmt.Errorf("initializing font catalog: %w", err)
 	}
@@ -520,7 +524,7 @@ func renderJobToFile(cfg runConfig, job renderJob) (err error) {
 		if cfg.profile {
 			profiler = profile.New()
 		}
-		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDir, cfg.ua, cfg.traceFonts, cfg.extraFiles, out, cfg.stderr, profiler)
+		err = renderLocal(job.inputPath, cfg.assetsDir, cfg.fontDirs, cfg.ua, cfg.traceFonts, cfg.extraFiles, out, cfg.stderr, profiler)
 		if cfg.profile {
 			cfg.logf("profile for %s", displayPath(job.inputPath))
 			if writeErr := profiler.WriteText(cfg.stderr); writeErr != nil && err == nil {
@@ -761,7 +765,7 @@ func dirToken(root string) (string, error) {
 	return b.String(), nil
 }
 
-func renderLocal(absInput, assetsDir, fontDir string, ua, traceFonts bool, extraFiles []extraAsset, out, traceOut io.Writer, profiler *profile.Profiler) error {
+func renderLocal(absInput, assetsDir string, fontDirs []string, ua, traceFonts bool, extraFiles []extraAsset, out, traceOut io.Writer, profiler *profile.Profiler) error {
 	assetFS, cleanup, err := buildOptionalAssetFS(assetsDir, extraFiles)
 	if err != nil {
 		return err
@@ -782,10 +786,6 @@ func renderLocal(absInput, assetsDir, fontDir string, ua, traceFonts bool, extra
 		return fmt.Errorf("parsing %s: %w", displayPath(absInput), err)
 	}
 
-	var fontDirs []string
-	if fontDir != "" {
-		fontDirs = []string{fontDir}
-	}
 	span := profiler.Begin("render_ltml.font_sources")
 	w, err := ltpdf.NewDocWriterWithFontDirs(fontDirs)
 	span.End()

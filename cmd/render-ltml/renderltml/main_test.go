@@ -202,7 +202,7 @@ func TestRenderLocal_SetsParserAssetFSForComponentSrc(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, assetsDir, "", false, false, nil, &out, nil, nil); err != nil {
+	if err := renderLocal(inputFile, assetsDir, nil, false, false, nil, &out, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if out.Len() == 0 {
@@ -228,7 +228,7 @@ func TestRenderLocal_UADefaultEnablesTaggedPDF(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := renderLocal(inputFile, "", "", true, false, nil, &out, nil, nil); err != nil {
+	if err := renderLocal(inputFile, "", nil, true, false, nil, &out, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -266,7 +266,7 @@ func TestRenderLocal_TraceFonts(t *testing.T) {
 	}
 
 	var out, trace bytes.Buffer
-	if err := renderLocal(inputFile, "", fontDir, false, true, nil, &out, &trace, nil); err != nil {
+	if err := renderLocal(inputFile, "", []string{fontDir}, false, true, nil, &out, &trace, nil); err != nil {
 		t.Fatal(err)
 	}
 	got := trace.String()
@@ -280,6 +280,85 @@ func TestRenderLocal_TraceFonts(t *testing.T) {
 	}
 	if count := strings.Count(got, `font selected match=exact family="Minimal"`); count != 1 {
 		t.Fatalf("selected trace count = %d, want 1:\n%s", count, got)
+	}
+}
+
+func TestMain_ListFontsUsesOnlyConfiguredDirectories(t *testing.T) {
+	first := t.TempDir()
+	second := t.TempDir()
+	fontBytes, err := os.ReadFile(filepath.Join("..", "..", "..", "ttf", "testdata", "minimal.ttf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstFont := filepath.Join(first, "first.ttf")
+	secondFont := filepath.Join(second, "second.ttf")
+	for _, target := range []string{firstFont, secondFont} {
+		if err := os.WriteFile(target, fontBytes, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var output bytes.Buffer
+	code := Main(context.Background(), []string{"-font-dir", first + ", " + second, "-list-fonts"}, &output, nil)
+	if code != 0 {
+		t.Fatalf("Main exit code = %d; output:\n%s", code, output.String())
+	}
+	got := output.String()
+	if !strings.Contains(got, firstFont) || !strings.Contains(got, secondFont) {
+		t.Fatalf("font catalog does not contain both configured directories:\n%s", got)
+	}
+	if strings.Contains(got, "/System/Library/Fonts") || strings.Contains(got, "/usr/share/fonts") {
+		t.Fatalf("custom-only font catalog contains system fonts:\n%s", got)
+	}
+}
+
+func TestRenderLocal_FontDirectoryOrderControlsSelection(t *testing.T) {
+	inputFile := filepath.Join(t.TempDir(), "report.ltml")
+	if err := os.WriteFile(inputFile, []byte(`<ltml><font id="body" name="Minimal" size="12"/><page font="body"><p>Hello</p></page></ltml>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	first := t.TempDir()
+	second := t.TempDir()
+	fontBytes, err := os.ReadFile(filepath.Join("..", "..", "..", "ttf", "testdata", "minimal.ttf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstFont := filepath.Join(first, "z-first.ttf")
+	secondFont := filepath.Join(second, "a-second.ttf")
+	for _, target := range []string{firstFont, secondFont} {
+		if err := os.WriteFile(target, fontBytes, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var output, trace bytes.Buffer
+	if err := renderLocal(inputFile, "", []string{first, second}, false, true, nil, &output, &trace, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(trace.String(), firstFont) || strings.Contains(trace.String(), secondFont) {
+		t.Fatalf("font trace did not select from the first directory:\n%s", trace.String())
+	}
+}
+
+func TestMain_ListFontsDefaultMatchesAuto(t *testing.T) {
+	var omitted, explicit bytes.Buffer
+	if code := Main(context.Background(), []string{"-list-fonts"}, &omitted, nil); code != 0 {
+		t.Fatalf("omitted -font-dir exit code = %d; output:\n%s", code, omitted.String())
+	}
+	if code := Main(context.Background(), []string{"-font-dir", "auto", "-list-fonts"}, &explicit, nil); code != 0 {
+		t.Fatalf("explicit auto exit code = %d; output:\n%s", code, explicit.String())
+	}
+	if omitted.String() != explicit.String() {
+		t.Fatal("omitted -font-dir catalog differs from explicit auto catalog")
+	}
+}
+
+func TestMain_RejectsEmptyFontDirectoryEntry(t *testing.T) {
+	dir := t.TempDir()
+	var output bytes.Buffer
+	code := Main(context.Background(), []string{"-font-dir", dir + ",,auto", "-list-fonts"}, &output, nil)
+	if code != 2 || !strings.Contains(output.String(), "empty entry") {
+		t.Fatalf("Main exit code = %d, output = %q; want usage error for empty entry", code, output.String())
 	}
 }
 

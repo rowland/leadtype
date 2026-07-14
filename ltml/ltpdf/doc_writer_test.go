@@ -51,6 +51,39 @@ func TestDocWriter_LayoutProbeWriterPreservesFontSourcesAndAssetFS(t *testing.T)
 	}
 }
 
+func TestNewDocWriterWithFontDirsUsesOnlyExplicitDirectories(t *testing.T) {
+	w, err := ltpdf.NewDocWriterWithFontDirs(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sources := w.FontSources()
+	if len(sources) == 0 {
+		t.Fatal("writer has no TrueType font source")
+	}
+	ttFonts, ok := sources[0].(*ttf_fonts.TtfFonts)
+	if !ok {
+		t.Fatalf("first font source = %T, want *ttf_fonts.TtfFonts", sources[0])
+	}
+	if ttFonts.Len() != 0 {
+		t.Fatalf("explicit empty directory list loaded %d fonts", ttFonts.Len())
+	}
+}
+
+func TestNewDocWriterUsesSystemFontDirectories(t *testing.T) {
+	w := ltpdf.NewDocWriter()
+	sources := w.FontSources()
+	if len(sources) == 0 {
+		t.Fatal("writer has no TrueType font source")
+	}
+	ttFonts, ok := sources[0].(*ttf_fonts.TtfFonts)
+	if !ok {
+		t.Fatalf("first font source = %T, want *ttf_fonts.TtfFonts", sources[0])
+	}
+	if ttFonts.Len() == 0 {
+		t.Skip("no fonts found in this host's system font directories")
+	}
+}
+
 func TestDocWriter_Print_UsesLTMLPageStyleForPhysicalPageSize(t *testing.T) {
 	doc, err := ltml.Parse([]byte(`
 <ltml>
