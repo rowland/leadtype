@@ -84,10 +84,10 @@ func TestStdImage_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
 	img.SetDoc(newDocWithOptions(WithAssetFS(testingMapFS("fixture.jpg", "image-data"))))
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}
 
-	if got := img.PreferredWidth(w); got != 144 {
+	if got := mustPreferredWidth(t, img, w); got != 144 {
 		t.Fatalf("PreferredWidth() = %v, want 144", got)
 	}
-	if got := img.PreferredHeight(w); got != 96 {
+	if got := mustPreferredHeight(t, img, w); got != 96 {
 		t.Fatalf("PreferredHeight() = %v, want 96", got)
 	}
 }
@@ -98,7 +98,7 @@ func TestStdImage_PreferredHeight_InfersAspectRatioFromWidth(t *testing.T) {
 	img.SetWidth(72)
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}
 
-	if got := img.PreferredHeight(w); got != 48 {
+	if got := mustPreferredHeight(t, img, w); got != 48 {
 		t.Fatalf("PreferredHeight() = %v, want 48", got)
 	}
 }
@@ -109,7 +109,7 @@ func TestStdImage_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
 	img.SetHeight(48)
 	w := &imageTestWriter{dimensions: map[string][2]int{"fixture.jpg": {144, 96}}}
 
-	if got := img.PreferredWidth(w); got != 72 {
+	if got := mustPreferredWidth(t, img, w); got != 72 {
 		t.Fatalf("PreferredWidth() = %v, want 72", got)
 	}
 }
@@ -121,10 +121,10 @@ func TestStdImage_MaxHeightFitsSliverAspectRatio(t *testing.T) {
 	w := &imageTestWriter{dimensions: map[string][2]int{"sliver.jpg": {38, 1080}}}
 
 	wantWidth := 100.0 * 38.0 / 1080.0
-	if got := img.PreferredHeight(w); got != 100 {
+	if got := mustPreferredHeight(t, img, w); got != 100 {
 		t.Fatalf("PreferredHeight() = %v, want 100", got)
 	}
-	if got := img.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+	if got := mustPreferredWidth(t, img, w); got < wantWidth-0.001 || got > wantWidth+0.001 {
 		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
 	}
 }
@@ -137,10 +137,10 @@ func TestStdImage_MaxWidthAndMaxHeightUseDominantCap(t *testing.T) {
 	w := &imageTestWriter{dimensions: map[string][2]int{"sliver.jpg": {38, 1080}}}
 
 	wantWidth := 100.0 * 38.0 / 1080.0
-	if got := img.PreferredHeight(w); got != 100 {
+	if got := mustPreferredHeight(t, img, w); got != 100 {
 		t.Fatalf("PreferredHeight() = %v, want height cap 100", got)
 	}
-	if got := img.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+	if got := mustPreferredWidth(t, img, w); got < wantWidth-0.001 || got > wantWidth+0.001 {
 		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
 	}
 }

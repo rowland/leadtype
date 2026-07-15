@@ -142,7 +142,7 @@ func (doc *Doc) parseReader(r io.Reader) error {
 		doc.applyPseudoRules()
 		span.End()
 	}
-	return nil
+	return validateDocumentLayouts(doc.root)
 }
 
 func (doc *Doc) SetAssetFS(assetFS fs.FS) {
@@ -163,6 +163,9 @@ func (doc *Doc) Page(i int) *StdPage {
 func (doc *Doc) Print(w Writer) (err error) {
 	if doc.root == nil {
 		return nil
+	}
+	if err := validateDocumentLayouts(doc.root); err != nil {
+		return err
 	}
 	profiler := doc.profiler
 	if profiler == nil {

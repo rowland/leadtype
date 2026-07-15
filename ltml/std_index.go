@@ -21,30 +21,28 @@ func (i *StdIndex) BeforePrint(w Writer) error {
 	return i.StdContainer.BeforePrint(w)
 }
 
-func (i *StdIndex) LayoutWidget(w Writer) {
+func (i *StdIndex) LayoutWidget(w Writer) error {
 	if err := i.ensureExpanded(); err != nil {
-		debugf("StdIndex.LayoutWidget: %v", err)
-		return
+		return err
 	}
-	i.StdContainer.LayoutWidget(w)
+	return i.StdContainer.LayoutWidget(w)
 }
 
-func (i *StdIndex) PreferredHeight(w Writer) float64 {
+func (i *StdIndex) PreferredHeight(w Writer) (float64, error) {
 	if i.HeightIsSet() {
-		return i.Height()
+		return i.Height(), nil
 	}
 	if err := i.ensureExpanded(); err != nil {
-		debugf("StdIndex.PreferredHeight: %v", err)
-		return NonContentHeight(i)
+		return 0, err
 	}
 	return i.StdContainer.PreferredHeight(w)
 }
 
-func (i *StdIndex) PreferredWidth(Writer) float64 {
+func (i *StdIndex) PreferredWidth(Writer) (float64, error) {
 	if i.WidthIsSet() {
-		return i.Width()
+		return i.Width(), nil
 	}
-	return 0
+	return 0, nil
 }
 
 func (i *StdIndex) DrawContent(w Writer) error {
@@ -85,8 +83,14 @@ func (i *StdIndex) SplitForHeight(avail float64, w Writer) (*SplitResult, error)
 	if err != nil || result == nil {
 		return result, err
 	}
-	head := i.wrapSplitFragment(result.Head)
-	tail := i.wrapSplitFragment(result.Tail)
+	head, err := i.wrapSplitFragment(result.Head)
+	if err != nil {
+		return nil, err
+	}
+	tail, err := i.wrapSplitFragment(result.Tail)
+	if err != nil {
+		return nil, err
+	}
 	if head == nil {
 		return nil, nil
 	}
@@ -172,7 +176,10 @@ func (i *StdIndex) defaultTemplateWidget() Widget {
 }
 
 func (i *StdIndex) cloneTemplateWidget(widget Widget, entry resolvedIndexEntry) (Widget, error) {
-	clone := cloneWidgetShallow(widget)
+	clone, err := cloneWidgetShallow(widget)
+	if err != nil {
+		return nil, err
+	}
 	clone.SetPrinted(false)
 	clone.SetVisible(true)
 	clone.SetDisabled(false)
@@ -246,13 +253,13 @@ func indexPieceFont(piece textPiece) *FontStyle {
 	return content.Font()
 }
 
-func (i *StdIndex) wrapSplitFragment(fragment Widget) *StdIndex {
+func (i *StdIndex) wrapSplitFragment(fragment Widget) (*StdIndex, error) {
 	if fragment == nil {
-		return nil
+		return nil, nil
 	}
 	fragmentContainer, ok := fragment.(*StdContainer)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	targets := i.targetsForChildren(fragmentContainer.Widgets())
 	clone := *i
@@ -266,10 +273,12 @@ func (i *StdIndex) wrapSplitFragment(fragment Widget) *StdIndex {
 	clone.path = ""
 	for _, child := range clone.activeChildren {
 		if wc, ok := child.(WantsContainer); ok {
-			_ = wc.SetContainer(&clone)
+			if err := wc.SetContainer(&clone); err != nil {
+				return nil, err
+			}
 		}
 	}
-	return &clone
+	return &clone, nil
 }
 
 func (i *StdIndex) targetsForChildren(children []Widget) []string {

@@ -91,10 +91,9 @@ func (s *StdSector) DrawContent(w Writer) error {
 	})
 }
 
-func (s *StdSector) LayoutWidget(w Writer) {
+func (s *StdSector) LayoutWidget(w Writer) error {
 	if s.layout != nil {
-		LayoutContainer(s, w)
-		return
+		return LayoutContainer(s, w)
 	}
 
 	static := make([]Widget, 0, len(s.Widgets()))
@@ -117,7 +116,10 @@ func (s *StdSector) LayoutWidget(w Writer) {
 					if _, ok := child.(*StdParagraph); ok {
 						child.SetWidth(seedWidth)
 					} else {
-						pw := child.PreferredWidth(w)
+						pw, err := child.PreferredWidth(w)
+						if err != nil {
+							return err
+						}
 						if pw == 0 {
 							pw = seedWidth
 						}
@@ -125,7 +127,11 @@ func (s *StdSector) LayoutWidget(w Writer) {
 					}
 				}
 				if !child.HeightIsSet() || pass > 0 {
-					child.SetHeight(child.PreferredHeight(w))
+					height, err := child.PreferredHeight(w)
+					if err != nil {
+						return err
+					}
+					child.SetHeight(height)
 				}
 				totalHeight += child.Height()
 				if i > 0 {
@@ -149,7 +155,9 @@ func (s *StdSector) LayoutWidget(w Writer) {
 				}
 				child.SetLeft(left)
 				child.SetTop(y)
-				child.LayoutWidget(w)
+				if err := child.LayoutWidget(w); err != nil {
+					return err
+				}
 				y += child.Height() + gap
 			}
 			if !changed {
@@ -161,7 +169,7 @@ func (s *StdSector) LayoutWidget(w Writer) {
 			s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
 		}
 	}
-	layoutPositionedChildren(s, w)
+	return layoutPositionedChildren(s, w)
 }
 
 func (s *StdSector) PaintBackground(w Writer) error {
@@ -175,22 +183,22 @@ func (s *StdSector) PaintBackground(w Writer) error {
 	return w.Pie(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.StartAngle, s.geometry.EndAngle, false, true, false)
 }
 
-func (s *StdSector) PreferredHeight(w Writer) float64 {
+func (s *StdSector) PreferredHeight(w Writer) (float64, error) {
 	if s.height != 0 {
-		return float64(s.height)
+		return float64(s.height), nil
 	}
 	if len(s.localPolygon) > 0 {
-		return (s.localBounds.MaxY - s.localBounds.MinY) + NonContentHeight(s)
+		return (s.localBounds.MaxY - s.localBounds.MinY) + NonContentHeight(s), nil
 	}
 	return s.StdContainer.PreferredHeight(w)
 }
 
-func (s *StdSector) PreferredWidth(w Writer) float64 {
+func (s *StdSector) PreferredWidth(w Writer) (float64, error) {
 	if s.width != 0 {
-		return float64(s.width)
+		return float64(s.width), nil
 	}
 	if len(s.localPolygon) > 0 {
-		return (s.localBounds.MaxX - s.localBounds.MinX) + NonContentWidth(s)
+		return (s.localBounds.MaxX - s.localBounds.MinX) + NonContentWidth(s), nil
 	}
 	return s.StdContainer.PreferredWidth(w)
 }

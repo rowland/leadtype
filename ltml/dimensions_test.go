@@ -179,7 +179,10 @@ func TestDetectTableColumnTracks_PreservesPercentClassification(t *testing.T) {
 	specified.SetWidth(80)
 	grid.SetCell(1, 0, specified)
 
-	tracks := detectTableColumnTracks(grid, nil)
+	tracks, err := detectTableColumnTracks(grid, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if got := tracks[0].kind; got != tableTrackPercent {
 		t.Fatalf("tracks[0].kind = %v, want %v", got, tableTrackPercent)
 	}
@@ -203,7 +206,10 @@ func TestDetectTableColumnTracks_ClassifiesAuto(t *testing.T) {
 	auto.SetWidthAuto()
 	grid.SetCell(0, 0, auto)
 
-	tracks := detectTableColumnTracks(grid, nil)
+	tracks, err := detectTableColumnTracks(grid, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if got := tracks[0].kind; got != tableTrackAuto {
 		t.Fatalf("tracks[0].kind = %v, want %v", got, tableTrackAuto)
 	}

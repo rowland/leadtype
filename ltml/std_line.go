@@ -45,18 +45,18 @@ func (l *StdLine) Length() float64 {
 	return l.calcLength()
 }
 
-func (l *StdLine) PreferredHeight(Writer) float64 {
+func (l *StdLine) PreferredHeight(Writer) (float64, error) {
 	if l.height != 0 {
-		return float64(l.height)
+		return float64(l.height), nil
 	}
-	return math.Abs(math.Sin(degreesToRadians(l.Angle())))*l.Length() + NonContentHeight(l)
+	return math.Abs(math.Sin(degreesToRadians(l.Angle())))*l.Length() + NonContentHeight(l), nil
 }
 
-func (l *StdLine) PreferredWidth(Writer) float64 {
+func (l *StdLine) PreferredWidth(Writer) (float64, error) {
 	if l.width != 0 {
-		return float64(l.width)
+		return float64(l.width), nil
 	}
-	return math.Abs(math.Cos(degreesToRadians(l.Angle())))*l.Length() + NonContentWidth(l)
+	return math.Abs(math.Cos(degreesToRadians(l.Angle())))*l.Length() + NonContentWidth(l), nil
 }
 
 func (l *StdLine) SetAttrs(attrs map[string]string) {

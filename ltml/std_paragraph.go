@@ -63,9 +63,10 @@ func (p *StdParagraph) BeforePrint(w Writer) error {
 	return nil
 }
 
-func (p *StdParagraph) LayoutWidget(Writer) {
+func (p *StdParagraph) LayoutWidget(Writer) error {
 	// Paragraphs are text leaf widgets. Inline descendants contribute rich text
 	// rather than participating in container child layout.
+	return nil
 }
 
 func (p *StdParagraph) Bullet() *BulletStyle {
@@ -147,34 +148,34 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 	return rt.WrapToWidth(width, flags, false)
 }
 
-func (p *StdParagraph) PreferredHeight(w Writer) float64 {
+func (p *StdParagraph) PreferredHeight(w Writer) (float64, error) {
 	if profiler := profilerForWidget(w, p); profiler != nil {
 		defer beginWidgetProfileSpan(profiler, "preferred_height", p).End()
 	}
 	if p.height != 0 {
-		return float64(p.height)
+		return float64(p.height), nil
 	}
 	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
-		return NonContentHeight(p) + provider.sectorParagraphLayoutFor(p, w).total
+		return NonContentHeight(p) + provider.sectorParagraphLayoutFor(p, w).total, nil
 	}
-	return p.heightForLines(p.Lines(w, p.lineWidth()), w)
+	return p.heightForLines(p.Lines(w, p.lineWidth()), w), nil
 }
 
 func (p *StdParagraph) AccessibilityText() string {
 	return resolvedTextPieces(p.textPieces, documentForContainer(p))
 }
 
-func (p *StdParagraph) PreferredWidth(w Writer) float64 {
+func (p *StdParagraph) PreferredWidth(w Writer) (float64, error) {
 	if profiler := profilerForWidget(w, p); profiler != nil {
 		defer beginWidgetProfileSpan(profiler, "preferred_width", p).End()
 	}
 	if p.width != 0 {
-		return float64(p.width)
+		return float64(p.width), nil
 	}
 	if lines, ok := prepareLeaderLines(w, p, p.textPieces, ContentWidth(p.container), true); ok {
-		return lineMaxWidth(lines) + p.bulletWidth() + NonContentWidth(p) + 1
+		return lineMaxWidth(lines) + p.bulletWidth() + NonContentWidth(p) + 1, nil
 	}
-	return p.RichText(w).Width() + p.bulletWidth() + NonContentWidth(p) + 1
+	return p.RichText(w).Width() + p.bulletWidth() + NonContentWidth(p) + 1, nil
 }
 
 func (p *StdParagraph) RichText(w Writer) *rich_text.RichText {

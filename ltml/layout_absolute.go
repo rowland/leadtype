@@ -8,23 +8,33 @@ const (
 	Absolute
 )
 
-func LayoutAbsolute(container Container, style *LayoutStyle, writer Writer) {
-	layoutWidgetsWithPosition(writer, container.Widgets(), Absolute)
+func LayoutAbsolute(container Container, style *LayoutStyle, writer Writer) (err error) {
+	defer func() { err = wrapLayoutError("absolute", containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
+	return layoutWidgetsWithPosition(writer, container.Widgets(), Absolute)
 }
 
-func LayoutRelative(container Container, style *LayoutStyle, writer Writer) {
-	layoutWidgetsWithPosition(writer, container.Widgets(), Relative)
+func LayoutRelative(container Container, style *LayoutStyle, writer Writer) (err error) {
+	defer func() { err = wrapLayoutError("relative", containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
+	return layoutWidgetsWithPosition(writer, container.Widgets(), Relative)
 }
 
-func layoutPositionedChildren(container Container, writer Writer) {
+func layoutPositionedChildren(container Container, writer Writer) error {
 	absolute, _ := printableWidgets(container, Absolute)
-	layoutWidgetsWithPosition(writer, absolute, Absolute)
+	if err := layoutWidgetsWithPosition(writer, absolute, Absolute); err != nil {
+		return err
+	}
 
 	relative, _ := printableWidgets(container, Relative)
-	layoutWidgetsWithPosition(writer, relative, Relative)
+	return layoutWidgetsWithPosition(writer, relative, Relative)
 }
 
-func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Position) {
+func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Position) error {
 	for _, widget := range widgets {
 		if widget.Printed() {
 			widget.SetVisible(false)
@@ -39,13 +49,24 @@ func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Positio
 			widget.SetTop(0)
 		}
 		if !widget.WidthIsSet() {
-			widget.ResolveWidth(widget.PreferredWidth(writer))
+			width, err := widget.PreferredWidth(writer)
+			if err != nil {
+				return err
+			}
+			widget.ResolveWidth(width)
 		}
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 		if !widget.HeightIsSet() {
-			widget.ResolveHeight(widget.PreferredHeight(writer))
+			height, err := widget.PreferredHeight(writer)
+			if err != nil {
+				return err
+			}
+			widget.ResolveHeight(height)
 		}
 	}
+	return nil
 }
 
 func printableWidgets(c Container, p Position) (widgets, remaining []Widget) {

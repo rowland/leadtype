@@ -357,7 +357,7 @@ func TestStdLabel_PreferredHeight_EmptyLabelUsesFontLineHeight(t *testing.T) {
 	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 	w := &labelTestWriter{t: t, lineSpacing: 1.25}
 
-	got := l.PreferredHeight(w)
+	got := mustPreferredHeight(t, l, w)
 	want := 15.0
 	if got != want {
 		t.Fatalf("PreferredHeight() = %v, want %v", got, want)
@@ -902,7 +902,7 @@ func TestStdLabel_PreferredHeight_UsesShrunkTextHeight(t *testing.T) {
 
 	w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
 
-	got := l.PreferredHeight(w)
+	got := mustPreferredHeight(t, l, w)
 	unshrunk := l.RichText(w).Leading()*w.LineSpacing() + NonContentHeight(l)
 	if got >= unshrunk {
 		t.Fatalf("PreferredHeight() = %v, want less than unshrunk %v", got, unshrunk)

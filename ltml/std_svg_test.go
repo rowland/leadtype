@@ -75,10 +75,10 @@ func TestStdSVG_PreferredWidthAndHeight_UseIntrinsicSize(t *testing.T) {
 	svg.body = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"></svg>`
 	w := &svgTestWriter{inlineDimensions: [2]int{160, 100}}
 
-	if got := svg.PreferredWidth(w); got != 160 {
+	if got := mustPreferredWidth(t, svg, w); got != 160 {
 		t.Fatalf("PreferredWidth() = %v, want 160", got)
 	}
-	if got := svg.PreferredHeight(w); got != 100 {
+	if got := mustPreferredHeight(t, svg, w); got != 100 {
 		t.Fatalf("PreferredHeight() = %v, want 100", got)
 	}
 }
@@ -89,7 +89,7 @@ func TestStdSVG_PreferredHeight_InfersAspectRatioFromWidth(t *testing.T) {
 	svg.SetWidth(80)
 	w := &svgTestWriter{inlineDimensions: [2]int{160, 100}}
 
-	if got := svg.PreferredHeight(w); got != 50 {
+	if got := mustPreferredHeight(t, svg, w); got != 50 {
 		t.Fatalf("PreferredHeight() = %v, want 50", got)
 	}
 }
@@ -100,7 +100,7 @@ func TestStdSVG_PreferredWidth_InfersAspectRatioFromHeight(t *testing.T) {
 	svg.SetHeight(30)
 	w := &svgTestWriter{inlineDimensions: [2]int{80, 40}}
 
-	if got := svg.PreferredWidth(w); got != 60 {
+	if got := mustPreferredWidth(t, svg, w); got != 60 {
 		t.Fatalf("PreferredWidth() = %v, want 60", got)
 	}
 }
@@ -112,10 +112,10 @@ func TestStdSVG_MaxHeightFitsAspectRatio(t *testing.T) {
 	w := &svgTestWriter{inlineDimensions: [2]int{38, 1080}}
 
 	wantWidth := 100.0 * 38.0 / 1080.0
-	if got := svg.PreferredHeight(w); got != 100 {
+	if got := mustPreferredHeight(t, svg, w); got != 100 {
 		t.Fatalf("PreferredHeight() = %v, want 100", got)
 	}
-	if got := svg.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+	if got := mustPreferredWidth(t, svg, w); got < wantWidth-0.001 || got > wantWidth+0.001 {
 		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
 	}
 }

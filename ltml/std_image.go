@@ -13,14 +13,18 @@ type StdImage struct {
 	src string
 }
 
-func (img *StdImage) LayoutWidget(w Writer) {
+func (img *StdImage) LayoutWidget(w Writer) error {
 	infoWidth, infoHeight, err := img.imageDimensions(w)
-	if err != nil || infoWidth <= 0 || infoHeight <= 0 {
-		return
+	if err != nil {
+		return err
+	}
+	if infoWidth <= 0 || infoHeight <= 0 {
+		return nil
 	}
 	width, height := imageLikeLayoutSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
 	img.ResolveWidth(width)
 	img.ResolveHeight(height)
+	return nil
 }
 
 func (img *StdImage) DrawContent(w Writer) error {
@@ -38,22 +42,28 @@ func (img *StdImage) DrawContent(w Writer) error {
 	})
 }
 
-func (img *StdImage) PreferredHeight(w Writer) float64 {
+func (img *StdImage) PreferredHeight(w Writer) (float64, error) {
 	infoWidth, infoHeight, err := img.imageDimensions(w)
-	if err != nil || infoWidth == 0 {
-		return NonContentHeight(img)
+	if err != nil {
+		return 0, err
+	}
+	if infoWidth == 0 {
+		return NonContentHeight(img), nil
 	}
 	_, height := imageLikeLayoutSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
-	return height
+	return height, nil
 }
 
-func (img *StdImage) PreferredWidth(w Writer) float64 {
+func (img *StdImage) PreferredWidth(w Writer) (float64, error) {
 	infoWidth, infoHeight, err := img.imageDimensions(w)
-	if err != nil || infoHeight == 0 {
-		return NonContentWidth(img)
+	if err != nil {
+		return 0, err
+	}
+	if infoHeight == 0 {
+		return NonContentWidth(img), nil
 	}
 	width, _ := imageLikeLayoutSize(&img.StdWidget, float64(infoWidth), float64(infoHeight))
-	return width
+	return width, nil
 }
 
 func (img *StdImage) IntrinsicAspectRatio(w Writer) (float64, bool) {

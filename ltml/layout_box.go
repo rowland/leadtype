@@ -20,7 +20,11 @@ const layoutFitEpsilon = 0.001
 // The algorithm deliberately separates "resolve size" from "place children".
 // Later layout managers and split logic depend on being able to understand
 // exactly when a child became fixed to a concrete width or height.
-func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
+func LayoutHBox(container Container, style *LayoutStyle, writer Writer) (err error) {
+	defer func() { err = wrapLayoutError("hbox", containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
 	containerFull := false
 
 	// Static children participate in the box algorithm. Everything else is
@@ -44,7 +48,9 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 		widget.ResolveHeight(0)
 		widget.SetLeft(ContentLeft(container))
 		widget.SetTop(ContentTop(container))
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 	}
 	static = participating
 
@@ -134,8 +140,14 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	// so reserve their preferred widths before omitted/auto center children are
 	// sized. Otherwise a wide center child can consume the space that a
 	// right-aligned image or panel will later claim during placement.
-	widthAvail = reserveHBoxEdgeFlexibleWidths(omitted, style, writer, widthAvail, &containerFull)
-	widthAvail = reserveHBoxEdgeFlexibleWidths(auto, style, writer, widthAvail, &containerFull)
+	widthAvail, err = reserveHBoxEdgeFlexibleWidths(omitted, style, writer, widthAvail, &containerFull)
+	if err != nil {
+		return err
+	}
+	widthAvail, err = reserveHBoxEdgeFlexibleWidths(auto, style, writer, widthAvail, &containerFull)
+	if err != nil {
+		return err
+	}
 	omitted = filterHBoxCenterFlexible(omitted)
 	auto = filterHBoxCenterFlexible(auto)
 
@@ -153,24 +165,39 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 		paddingCost := float64(len(remaining)-1) * style.HPadding()
 		omittedPreferredTotal := 0.0
 		for _, widget := range omitted {
-			omittedPreferredTotal += widget.PreferredWidth(writer)
+			width, err := widget.PreferredWidth(writer)
+			if err != nil {
+				return err
+			}
+			omittedPreferredTotal += width
 		}
 		autoPreferredTotal := 0.0
 		for _, widget := range auto {
-			autoPreferredTotal += widget.PreferredWidth(writer)
+			width, err := widget.PreferredWidth(writer)
+			if err != nil {
+				return err
+			}
+			autoPreferredTotal += width
 		}
 		preferredTotal := omittedPreferredTotal + autoPreferredTotal
 		if widthAvail+layoutFitEpsilon >= preferredTotal+paddingCost {
 			widthAvail -= paddingCost
 			for _, widget := range omitted {
-				pw := widget.PreferredWidth(writer)
+				pw, err := widget.PreferredWidth(writer)
+				if err != nil {
+					return err
+				}
 				widget.ResolveWidth(pw)
 				widthAvail -= pw
 			}
 			surplus := widthAvail - autoPreferredTotal
 			autoExtra := surplus / float64(len(auto))
 			for _, widget := range auto {
-				widget.ResolveWidth(widget.PreferredWidth(writer) + autoExtra)
+				width, err := widget.PreferredWidth(writer)
+				if err != nil {
+					return err
+				}
+				widget.ResolveWidth(width + autoExtra)
 			}
 		} else if widthAvail+layoutFitEpsilon >= paddingCost {
 			widthAvail -= paddingCost
@@ -188,10 +215,18 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 			} else {
 				ratio := min(widthAvail/preferredTotal, 1)
 				for _, widget := range omitted {
-					widget.ResolveWidth(widget.PreferredWidth(writer) * ratio)
+					width, err := widget.PreferredWidth(writer)
+					if err != nil {
+						return err
+					}
+					widget.ResolveWidth(width * ratio)
 				}
 				for _, widget := range auto {
-					widget.ResolveWidth(widget.PreferredWidth(writer) * ratio)
+					width, err := widget.PreferredWidth(writer)
+					if err != nil {
+						return err
+					}
+					widget.ResolveWidth(width * ratio)
 				}
 			}
 		} else {
@@ -220,7 +255,11 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	// container's cross axis.
 	for _, widget := range static {
 		if widgetAutoHeight(widget) || !widgetHeightSpecified(widget) {
-			widget.ResolveHeight(widget.PreferredHeight(writer))
+			height, err := widget.PreferredHeight(writer)
+			if err != nil {
+				return err
+			}
+			widget.ResolveHeight(height)
 		}
 		widget.SetTop(hboxCrossAxisTop(container, widget))
 	}
@@ -296,10 +335,12 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	}
 	for _, widget := range static {
 		if widget.Visible() && !widget.Disabled() {
-			widget.LayoutWidget(writer)
+			if err := widget.LayoutWidget(writer); err != nil {
+				return err
+			}
 		}
 	}
-	layoutPositionedChildren(container, writer)
+	return layoutPositionedChildren(container, writer)
 }
 
 // LayoutVBox performs vertical stacking with separate treatment for headers,
@@ -316,7 +357,11 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 //
 // As in hbox, the function first resolves the child sizes it needs, then
 // performs placement with explicit overflow checks.
-func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
+func LayoutVBox(container Container, style *LayoutStyle, writer Writer) (err error) {
+	defer func() { err = wrapLayoutError("vbox", containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
 	// Only static children are part of the vertical flow. Positioned children are
 	// laid out afterward in their own coordinate system.
 	static, remaining := printableWidgets(container, Static)
@@ -339,12 +384,17 @@ func LayoutVBox(container Container, style *LayoutStyle, writer Writer) {
 		}
 	}
 
-	fragment := measureVBoxFragment(container, style, writer, headers, unaligned, footers)
-	layoutVBoxFragment(container, style, writer, fragment)
+	fragment, err := measureVBoxFragment(container, style, writer, headers, unaligned, footers)
+	if err != nil {
+		return err
+	}
+	if err := layoutVBoxFragment(container, style, writer, fragment); err != nil {
+		return err
+	}
 
 	// Positioned children are intentionally outside the static stacking
 	// algorithm, so they are laid out after the vbox flow has settled.
-	layoutPositionedChildren(container, writer)
+	return layoutPositionedChildren(container, writer)
 }
 
 type vboxMeasuredWidget struct {
@@ -358,7 +408,7 @@ type vboxFragment struct {
 	footers []vboxMeasuredWidget
 }
 
-func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer, headers, body, footers []Widget) vboxFragment {
+func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer, headers, body, footers []Widget) (vboxFragment, error) {
 	constrained := container.Height() != 0
 	continues := containerHasEffectiveContinuation(container)
 	bottom := math.Inf(1)
@@ -369,7 +419,10 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 	fragment := vboxFragment{}
 	top := ContentTop(container)
 	for _, widget := range headers {
-		entry := measureVBoxChild(container, writer, widget)
+		entry, err := measureVBoxChild(container, writer, widget)
+		if err != nil {
+			return vboxFragment{}, err
+		}
 		widget.SetTop(top)
 		if widgetZeroFootprint(widget) {
 			widget.SetVisible(!continues || widget.Top() <= bottom)
@@ -390,7 +443,10 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 		footerBottom := bottom
 		for i := len(footers) - 1; i >= 0; i-- {
 			widget := footers[i]
-			entry := measureVBoxChild(container, writer, widget)
+			entry, err := measureVBoxChild(container, writer, widget)
+			if err != nil {
+				return vboxFragment{}, err
+			}
 			widget.SetBottom(footerBottom)
 			if widgetZeroFootprint(widget) {
 				widget.SetVisible(!continues || widget.Top() >= top)
@@ -416,7 +472,10 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 		if containerFull {
 			continue
 		}
-		entry := measureVBoxChild(container, writer, widget)
+		entry, err := measureVBoxChild(container, writer, widget)
+		if err != nil {
+			return vboxFragment{}, err
+		}
 		widget.SetTop(top)
 		if isPageBreak(widget) {
 			// The marker belongs to this vbox fragment but consumes no stack
@@ -452,33 +511,43 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 
 	if !constrained {
 		container.ResolveHeight(vboxFragmentStackHeight(style, fragment.headers, fragment.body, fragment.footers) + NonContentHeight(container))
-		return fragment
+		return fragment, nil
 	}
 	distributeVBoxAutoHeight(container, style, &fragment)
-	return fragment
+	return fragment, nil
 }
 
-func measureVBoxChild(container Container, writer Writer, widget Widget) vboxMeasuredWidget {
-	resolveVBoxChildWidth(container, writer, widget)
+func measureVBoxChild(container Container, writer Writer, widget Widget) (vboxMeasuredWidget, error) {
+	if err := resolveVBoxChildWidth(container, writer, widget); err != nil {
+		return vboxMeasuredWidget{}, err
+	}
 	height := widget.Height()
 	if !widgetHeightSpecified(widget) {
-		height = widget.PreferredHeight(writer)
+		var err error
+		height, err = widget.PreferredHeight(writer)
+		if err != nil {
+			return vboxMeasuredWidget{}, err
+		}
 	}
 	if !widgetHeightSpecified(widget) {
 		widget.ResolveHeight(height)
 		height = widget.Height()
 	}
-	return vboxMeasuredWidget{widget: widget, height: height}
+	return vboxMeasuredWidget{widget: widget, height: height}, nil
 }
 
-func resolveVBoxChildWidth(container Container, writer Writer, widget Widget) {
+func resolveVBoxChildWidth(container Container, writer Writer, widget Widget) error {
 	if widgetAutoWidth(widget) || !widgetWidthSpecified(widget) {
 		cw := ContentWidth(container)
 		pw := 0.0
 		if _, ok := widget.(*StdParagraph); ok {
 			pw = cw
 		} else {
-			pw = widget.PreferredWidth(writer)
+			var err error
+			pw, err = widget.PreferredWidth(writer)
+			if err != nil {
+				return err
+			}
 		}
 		if pw == 0 {
 			pw = cw
@@ -486,6 +555,7 @@ func resolveVBoxChildWidth(container Container, writer Writer, widget Widget) {
 		widget.ResolveWidth(min(pw, cw))
 	}
 	widget.SetLeft(vboxCrossAxisLeft(container, widget, vboxChildCrossAxisRTL(container, widget)))
+	return nil
 }
 
 func distributeVBoxAutoHeight(container Container, style *LayoutStyle, fragment *vboxFragment) {
@@ -511,7 +581,7 @@ func distributeVBoxAutoHeight(container Container, style *LayoutStyle, fragment 
 	}
 }
 
-func layoutVBoxFragment(container Container, style *LayoutStyle, writer Writer, fragment vboxFragment) {
+func layoutVBoxFragment(container Container, style *LayoutStyle, writer Writer, fragment vboxFragment) error {
 	top := ContentTop(container)
 	bottom := ContentTop(container) + MaxContentHeight(container)
 	for _, entry := range fragment.headers {
@@ -521,7 +591,9 @@ func layoutVBoxFragment(container Container, style *LayoutStyle, writer Writer, 
 		if !widgetZeroFootprint(widget) {
 			top += entry.height + style.VPadding()
 		}
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 	}
 	footerBottom := bottom
 	for i := len(fragment.footers) - 1; i >= 0; i-- {
@@ -532,7 +604,9 @@ func layoutVBoxFragment(container Container, style *LayoutStyle, writer Writer, 
 		if !widgetZeroFootprint(widget) {
 			footerBottom = widget.Top() - style.VPadding()
 		}
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 	}
 	for _, entry := range fragment.body {
 		widget := entry.widget
@@ -541,8 +615,11 @@ func layoutVBoxFragment(container Container, style *LayoutStyle, writer Writer, 
 		if !widgetZeroFootprint(widget) {
 			top += entry.height + style.VPadding()
 		}
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func vboxFragmentStackHeight(style *LayoutStyle, groups ...[]vboxMeasuredWidget) float64 {
@@ -617,19 +694,22 @@ func widgetAutoHeight(widget Widget) bool {
 	return widget.HeightMode() == DimAuto && !(widget.TopIsSet() && widget.BottomIsSet())
 }
 
-func reserveHBoxEdgeFlexibleWidths(widgets []Widget, style *LayoutStyle, writer Writer, widthAvail float64, containerFull *bool) float64 {
+func reserveHBoxEdgeFlexibleWidths(widgets []Widget, style *LayoutStyle, writer Writer, widthAvail float64, containerFull *bool) (float64, error) {
 	for _, widget := range widgets {
 		if widget.Align() != AlignLeft && widget.Align() != AlignRight {
 			continue
 		}
-		width := widget.PreferredWidth(writer)
+		width, err := widget.PreferredWidth(writer)
+		if err != nil {
+			return 0, err
+		}
 		widget.ResolveWidth(width)
 		widthAvail -= width
 		*containerFull = widthAvail+layoutFitEpsilon < 0
 		widget.SetDisabled(*containerFull)
 		widthAvail -= style.HPadding()
 	}
-	return widthAvail
+	return widthAvail, nil
 }
 
 func filterHBoxCenterFlexible(widgets []Widget) []Widget {

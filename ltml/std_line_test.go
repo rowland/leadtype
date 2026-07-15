@@ -31,10 +31,10 @@ func (w *lineTestWriter) SetLineCapStyle(style string) (prev string) {
 func TestStdLine_PreferredDimensions_FromExplicitLength(t *testing.T) {
 	line := &StdLine{length: 100, angle: 0}
 
-	if got := line.PreferredWidth(nil); got != 100 {
+	if got := mustPreferredWidth(t, line, nil); got != 100 {
 		t.Fatalf("PreferredWidth() = %v, want 100", got)
 	}
-	if got := line.PreferredHeight(nil); got != 0 {
+	if got := mustPreferredHeight(t, line, nil); got != 0 {
 		t.Fatalf("PreferredHeight() = %v, want 0", got)
 	}
 }

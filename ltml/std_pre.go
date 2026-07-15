@@ -78,33 +78,33 @@ func (p *StdPre) Font() *FontStyle {
 	return defaultFont
 }
 
-func (p *StdPre) PreferredHeight(w Writer) float64 {
+func (p *StdPre) PreferredHeight(w Writer) (float64, error) {
 	if p.height != 0 {
-		return float64(p.height)
+		return float64(p.height), nil
 	}
 	lines := p.Lines()
 	if len(lines) == 0 {
 		lines = []string{""}
 	}
-	return float64(len(lines))*p.lineHeight(w) + NonContentHeight(p)
+	return float64(len(lines))*p.lineHeight(w) + NonContentHeight(p), nil
 }
 
-func (p *StdPre) PreferredWidth(w Writer) float64 {
+func (p *StdPre) PreferredWidth(w Writer) (float64, error) {
 	if p.width != 0 {
-		return float64(p.width)
+		return float64(p.width), nil
 	}
 	applyWidgetFont(w, p)
 	maxWidth := 0.0
 	for _, line := range p.Lines() {
 		rt, err := p.richTextForLine(line, w)
 		if err != nil {
-			continue
+			return 0, err
 		}
 		if width := rt.Width(); width > maxWidth {
 			maxWidth = width
 		}
 	}
-	return maxWidth + NonContentWidth(p)
+	return maxWidth + NonContentWidth(p), nil
 }
 
 func (p *StdPre) AccessibilityText() string {

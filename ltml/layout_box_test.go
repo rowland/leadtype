@@ -158,7 +158,7 @@ func TestStdContainer_PreferredWidthForVBoxUsesChildren(t *testing.T) {
 	}
 	c.AddChild(p)
 
-	if got := c.PreferredWidth(&labelTestWriter{t: t}); got <= 180 {
+	if got := mustPreferredWidth(t, c, &labelTestWriter{t: t}); got <= 180 {
 		t.Fatalf("vbox PreferredWidth() = %v, want greater than heading width 180", got)
 	}
 }
@@ -218,7 +218,7 @@ func TestLayoutHBox_SpecifiedWidthsFitWhenContainerMatchesPreferredSum(t *testin
 
 	writer := &labelTestWriter{t: t}
 	wantWidth := childW + hpad + childW
-	if got := hbox.PreferredWidth(writer); math.Abs(got-wantWidth) > layoutFitEpsilon {
+	if got := mustPreferredWidth(t, hbox, writer); math.Abs(got-wantWidth) > layoutFitEpsilon {
 		t.Fatalf("PreferredWidth() = %v, want %v", got, wantWidth)
 	}
 	hbox.SetWidth(wantWidth)

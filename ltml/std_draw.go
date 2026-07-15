@@ -18,14 +18,15 @@ type StdDraw struct {
 	key string
 }
 
-func (d *StdDraw) LayoutWidget(Writer) {
+func (d *StdDraw) LayoutWidget(Writer) error {
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalWidth <= 0 || naturalHeight <= 0 {
-		return
+		return nil
 	}
 	width, height := imageLikeLayoutSize(&d.StdWidget, naturalWidth, naturalHeight)
 	d.ResolveWidth(width)
 	d.ResolveHeight(height)
+	return nil
 }
 
 func (d *StdDraw) DrawContent(w Writer) error {
@@ -61,22 +62,22 @@ func (d *StdDraw) DrawContent(w Writer) error {
 	})
 }
 
-func (d *StdDraw) PreferredHeight(Writer) float64 {
+func (d *StdDraw) PreferredHeight(Writer) (float64, error) {
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalWidth <= 0 {
-		return NonContentHeight(d)
+		return NonContentHeight(d), nil
 	}
 	_, height := imageLikeLayoutSize(&d.StdWidget, naturalWidth, naturalHeight)
-	return height
+	return height, nil
 }
 
-func (d *StdDraw) PreferredWidth(Writer) float64 {
+func (d *StdDraw) PreferredWidth(Writer) (float64, error) {
 	naturalWidth, naturalHeight, ok := d.naturalSize()
 	if !ok || naturalHeight <= 0 {
-		return NonContentWidth(d)
+		return NonContentWidth(d), nil
 	}
 	width, _ := imageLikeLayoutSize(&d.StdWidget, naturalWidth, naturalHeight)
-	return width
+	return width, nil
 }
 
 func (d *StdDraw) IntrinsicAspectRatio(Writer) (float64, bool) {

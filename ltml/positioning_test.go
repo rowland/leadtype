@@ -9,16 +9,17 @@ type positionedTestWidget struct {
 	layoutCalls     int
 }
 
-func (w *positionedTestWidget) PreferredWidth(Writer) float64 {
-	return w.preferredWidth
+func (w *positionedTestWidget) PreferredWidth(Writer) (float64, error) {
+	return w.preferredWidth, nil
 }
 
-func (w *positionedTestWidget) PreferredHeight(Writer) float64 {
-	return w.preferredHeight
+func (w *positionedTestWidget) PreferredHeight(Writer) (float64, error) {
+	return w.preferredHeight, nil
 }
 
-func (w *positionedTestWidget) LayoutWidget(Writer) {
+func (w *positionedTestWidget) LayoutWidget(Writer) error {
 	w.layoutCalls++
+	return nil
 }
 
 func positionedContainer(left, top, width, height float64) *StdContainer {

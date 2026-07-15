@@ -20,8 +20,8 @@ type Widget interface {
 	PaddingBottom() float64
 	PaddingLeft() float64
 
-	PreferredHeight(writer Writer) float64
-	PreferredWidth(writer Writer) float64
+	PreferredHeight(writer Writer) (float64, error)
+	PreferredWidth(writer Writer) (float64, error)
 
 	SetTop(value float64)
 	SetRight(value float64)
@@ -64,7 +64,7 @@ type Widget interface {
 	WidthRelIsSet() bool
 	WidthIsSet() bool
 
-	LayoutWidget(writer Writer)
+	LayoutWidget(writer Writer) error
 
 	BeforePrint(writer Writer) error
 	DrawBorder(writer Writer) error
@@ -202,7 +202,7 @@ func ContentWidth(widget Widget) float64 {
 
 func ContentTop(widget Widget) float64 {
 	if widget == nil {
-		panic("ouch")
+		return 0
 	}
 	return widget.Top() + widget.MarginTop() + widget.PaddingTop()
 }

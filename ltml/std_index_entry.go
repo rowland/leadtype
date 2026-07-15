@@ -28,12 +28,12 @@ func (e *StdIndexEntry) AddText(text string) {
 	e.text += text
 }
 
-func (e *StdIndexEntry) PreferredHeight(Writer) float64 {
-	return 0
+func (e *StdIndexEntry) PreferredHeight(Writer) (float64, error) {
+	return 0, nil
 }
 
-func (e *StdIndexEntry) PreferredWidth(Writer) float64 {
-	return 0
+func (e *StdIndexEntry) PreferredWidth(Writer) (float64, error) {
+	return 0, nil
 }
 
 func (e *StdIndexEntry) ResolveText(*StdDocument) string {

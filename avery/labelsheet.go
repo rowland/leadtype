@@ -229,10 +229,10 @@ func (ls *LabelSheet) DrawContent(w ltml.Writer) error {
 	return nil
 }
 
-func (ls *LabelSheet) LayoutWidget(w ltml.Writer) {
+func (ls *LabelSheet) LayoutWidget(w ltml.Writer) error {
 	stock, ok := LookupStock(ls.stockID)
 	if !ok {
-		return
+		return nil
 	}
 	ls.applySheetGeometry(stock)
 	for i, child := range ls.Widgets() {
@@ -243,30 +243,33 @@ func (ls *LabelSheet) LayoutWidget(w ltml.Writer) {
 		child.SetTop(ls.Top() + stock.TopMargin + float64(row)*stock.VerticalPitch)
 		child.SetWidth(stock.LabelWidth)
 		child.SetHeight(stock.LabelHeight)
-		child.LayoutWidget(w)
+		if err := child.LayoutWidget(w); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (ls *LabelSheet) PreferredHeight(ltml.Writer) float64 {
+func (ls *LabelSheet) PreferredHeight(ltml.Writer) (float64, error) {
 	if ls.HeightIsSet() {
-		return ls.Height()
+		return ls.Height(), nil
 	}
 	stock, ok := LookupStock(ls.stockID)
 	if !ok {
-		return 0
+		return 0, nil
 	}
-	return stock.SheetHeight
+	return stock.SheetHeight, nil
 }
 
-func (ls *LabelSheet) PreferredWidth(ltml.Writer) float64 {
+func (ls *LabelSheet) PreferredWidth(ltml.Writer) (float64, error) {
 	if ls.WidthIsSet() {
-		return ls.Width()
+		return ls.Width(), nil
 	}
 	stock, ok := LookupStock(ls.stockID)
 	if !ok {
-		return 0
+		return 0, nil
 	}
-	return stock.SheetWidth
+	return stock.SheetWidth, nil
 }
 
 func (ls *LabelSheet) SetAttrs(attrs map[string]string) {

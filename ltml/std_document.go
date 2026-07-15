@@ -52,7 +52,7 @@ func (d *StdDocument) PageStyle() *PageStyle {
 	if d.pageStyle == nil {
 		style := PageStyleFor("letter", d.scope)
 		if style == nil {
-			panic("default page style missing")
+			return &PageStyle{}
 		}
 		return style
 	}

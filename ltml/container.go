@@ -3,6 +3,8 @@
 
 package ltml
 
+import "fmt"
+
 type TableOrder int
 
 const (
@@ -28,11 +30,25 @@ type Container interface {
 	Widgets() []Widget
 }
 
-func LayoutContainer(c Container, w Writer) {
+func LayoutContainer(c Container, w Writer) error {
+	if c == nil {
+		return wrapLayoutError("", "", fmt.Errorf("container is nil"))
+	}
 	if preparer, ok := c.(interface{ prepareForLayout(Writer) }); ok {
 		preparer.prepareForLayout(w)
 	}
-	c.LayoutStyle().Layout(c, w)
+	style := c.LayoutStyle()
+	if style == nil {
+		return wrapLayoutError("", c.Path(), fmt.Errorf("layout style is nil"))
+	}
+	return style.Layout(c, w)
+}
+
+func containerPath(c Container) string {
+	if c == nil {
+		return ""
+	}
+	return c.Path()
 }
 
 func MaxContentHeight(c Container) float64 {

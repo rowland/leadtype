@@ -13,14 +13,18 @@ type StdSVG struct {
 	style string
 }
 
-func (svg *StdSVG) LayoutWidget(w Writer) {
+func (svg *StdSVG) LayoutWidget(w Writer) error {
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
-	if err != nil || infoWidth <= 0 || infoHeight <= 0 {
-		return
+	if err != nil {
+		return err
+	}
+	if infoWidth <= 0 || infoHeight <= 0 {
+		return nil
 	}
 	width, height := imageLikeLayoutSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
 	svg.ResolveWidth(width)
 	svg.ResolveHeight(height)
+	return nil
 }
 
 func (svg *StdSVG) DrawContent(w Writer) error {
@@ -55,22 +59,28 @@ func (svg *StdSVG) DrawContent(w Writer) error {
 	})
 }
 
-func (svg *StdSVG) PreferredHeight(w Writer) float64 {
+func (svg *StdSVG) PreferredHeight(w Writer) (float64, error) {
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
-	if err != nil || infoWidth == 0 {
-		return NonContentHeight(svg)
+	if err != nil {
+		return 0, err
+	}
+	if infoWidth == 0 {
+		return NonContentHeight(svg), nil
 	}
 	_, height := imageLikeLayoutSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
-	return height
+	return height, nil
 }
 
-func (svg *StdSVG) PreferredWidth(w Writer) float64 {
+func (svg *StdSVG) PreferredWidth(w Writer) (float64, error) {
 	infoWidth, infoHeight, err := svg.svgDimensions(w)
-	if err != nil || infoHeight == 0 {
-		return NonContentWidth(svg)
+	if err != nil {
+		return 0, err
+	}
+	if infoHeight == 0 {
+		return NonContentWidth(svg), nil
 	}
 	width, _ := imageLikeLayoutSize(&svg.StdComponent.StdWidget, float64(infoWidth), float64(infoHeight))
-	return width
+	return width, nil
 }
 
 func (svg *StdSVG) IntrinsicAspectRatio(w Writer) (float64, bool) {

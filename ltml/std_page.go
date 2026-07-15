@@ -486,14 +486,26 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 
 	if force && !p.displayLastPresent {
 		p.displayLastState = displayLastHidden
-		p.rebuildActiveChildren()
+		if err := p.rebuildActiveChildren(); err != nil {
+			return err
+		}
 		p.newPhysicalPage(w)
-		LayoutContainer(p, w)
+		if err := LayoutContainer(p, w); err != nil {
+			return err
+		}
 	} else {
-		p.displayLastState = p.chooseDisplayLastState(w)
+		state, err := p.chooseDisplayLastState(w)
+		if err != nil {
+			return err
+		}
+		p.displayLastState = state
 		probe := newLayoutProbeWriter(w)
-		p.rebuildActiveChildren()
-		LayoutContainer(p, probe)
+		if err := p.rebuildActiveChildren(); err != nil {
+			return err
+		}
+		if err := LayoutContainer(p, probe); err != nil {
+			return err
+		}
 		if !force || p.displayLastState == displayLastReserved {
 			if p.countVisibleOnceChildren() == 0 && !p.hasSplittableOnceProgress(probe) {
 				if doc != nil {
@@ -508,9 +520,13 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 				return err
 			}
 		}
-		p.rebuildActiveChildren()
+		if err := p.rebuildActiveChildren(); err != nil {
+			return err
+		}
 		p.newPhysicalPage(w)
-		LayoutContainer(p, w)
+		if err := LayoutContainer(p, w); err != nil {
+			return err
+		}
 	}
 	if doc != nil {
 		if reset, ok := p.firstPageNoResetForRender(); ok {
@@ -520,29 +536,37 @@ func (p *StdPage) preparePhysicalPage(w Writer, force bool) error {
 	return nil
 }
 
-func (p *StdPage) chooseDisplayLastState(w Writer) displayLastState {
+func (p *StdPage) chooseDisplayLastState(w Writer) (displayLastState, error) {
 	if !p.displayLastPresent {
-		return displayLastHidden
+		return displayLastHidden, nil
 	}
 	if len(p.flowItems) == 0 {
-		return displayLastVisible
+		return displayLastVisible, nil
 	}
 	p.displayLastState = displayLastHidden
-	p.rebuildActiveChildren()
+	if err := p.rebuildActiveChildren(); err != nil {
+		return displayLastHidden, err
+	}
 	hiddenProbe := newLayoutProbeWriter(w)
-	LayoutContainer(p, hiddenProbe)
+	if err := LayoutContainer(p, hiddenProbe); err != nil {
+		return displayLastHidden, err
+	}
 	if !p.pendingOnceChildrenCompleteOnPage(hiddenProbe) {
-		return displayLastHidden
+		return displayLastHidden, nil
 	}
 
 	p.displayLastState = displayLastVisible
-	p.rebuildActiveChildren()
-	visibleProbe := newLayoutProbeWriter(w)
-	LayoutContainer(p, visibleProbe)
-	if p.pendingOnceChildrenCompleteOnPage(visibleProbe) {
-		return displayLastVisible
+	if err := p.rebuildActiveChildren(); err != nil {
+		return displayLastHidden, err
 	}
-	return displayLastReserved
+	visibleProbe := newLayoutProbeWriter(w)
+	if err := LayoutContainer(p, visibleProbe); err != nil {
+		return displayLastHidden, err
+	}
+	if p.pendingOnceChildrenCompleteOnPage(visibleProbe) {
+		return displayLastVisible, nil
+	}
+	return displayLastReserved, nil
 }
 
 func (p *StdPage) containsDisplayLastWidget() bool {
@@ -706,7 +730,11 @@ func (p *StdPage) newLayoutOverflowError(w Writer) error {
 		available := p.availableHeightForChild(child)
 		required := child.Height()
 		if required == 0 || !child.HeightIsSet() {
-			required = child.PreferredHeight(w)
+			var err error
+			required, err = child.PreferredHeight(w)
+			if err != nil {
+				return err
+			}
 		}
 		if required <= available+layoutFitEpsilon {
 			continue
@@ -721,10 +749,10 @@ func (p *StdPage) newLayoutOverflowError(w Writer) error {
 	return nil
 }
 
-func (p *StdPage) rebuildActiveChildren() {
+func (p *StdPage) rebuildActiveChildren() error {
 	if len(p.flowItems) == 0 {
 		p.activeChildren = nil
-		return
+		return nil
 	}
 	items := make(map[Widget]*pageItem, len(p.flowItems))
 	for _, item := range p.flowItems {
@@ -743,11 +771,14 @@ func (p *StdPage) rebuildActiveChildren() {
 		}
 		p.resetWidgetRenderState(item.Current)
 		if wc, ok := item.Current.(WantsContainer); ok {
-			_ = wc.SetContainer(p)
+			if err := wc.SetContainer(p); err != nil {
+				return err
+			}
 		}
 		active = append(active, item.Current)
 	}
 	p.activeChildren = active
+	return nil
 }
 
 func (p *StdPage) resetWidgetRenderState(widget Widget) {
@@ -833,20 +864,30 @@ func (p *StdPage) trySplitChild(item *pageItem, child Widget, w Writer) (bool, e
 		return false, err
 	}
 	if wc, ok := result.Head.(WantsContainer); ok {
-		_ = wc.SetContainer(p)
+		if err := wc.SetContainer(p); err != nil {
+			return false, err
+		}
 	}
 	p.resetWidgetRenderState(result.Head)
 	p.copySplitGeometry(result.Head, child)
 	if widgetAutoHeight(child) || widgetHeightSpecified(child) {
 		result.Head.ResolveHeight(p.availableHeightForChild(child))
 	}
-	result.Head.LayoutWidget(w)
+	if err := result.Head.LayoutWidget(w); err != nil {
+		return false, err
+	}
 	if !result.Head.HeightIsSet() {
-		result.Head.ResolveHeight(result.Head.PreferredHeight(w))
+		height, err := result.Head.PreferredHeight(w)
+		if err != nil {
+			return false, err
+		}
+		result.Head.ResolveHeight(height)
 	}
 	if result.Tail != nil {
 		if wc, ok := result.Tail.(WantsContainer); ok {
-			_ = wc.SetContainer(p)
+			if err := wc.SetContainer(p); err != nil {
+				return false, err
+			}
 		}
 		item.Current = result.Tail
 	} else {

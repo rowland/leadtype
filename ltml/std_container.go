@@ -141,9 +141,9 @@ func (c *StdContainer) LayoutStyle() *LayoutStyle {
 	return c.layout
 }
 
-func (c *StdContainer) LayoutWidget(w Writer) {
+func (c *StdContainer) LayoutWidget(w Writer) error {
 	c.prepareForLayout(w)
-	LayoutContainer(c, w)
+	return LayoutContainer(c, w)
 }
 
 func (c *StdContainer) Widgets() []Widget {
@@ -153,21 +153,24 @@ func (c *StdContainer) Widgets() []Widget {
 	return c.children
 }
 
-func (c *StdContainer) PreferredHeight(w Writer) float64 {
+func (c *StdContainer) PreferredHeight(w Writer) (float64, error) {
 	if profiler := profilerForWidget(w, c); profiler != nil {
 		defer beginWidgetProfileSpan(profiler, "preferred_height", c).End()
 	}
 	if c.HeightIsSet() {
-		return c.Height()
+		return c.Height(), nil
 	}
 	c.prepareForLayout(w)
 	if isRadialLayoutStyle(c.layout) {
 		if height, ok := c.radialInferredHeight(); ok {
-			return height
+			return height, nil
 		}
 	}
 	saved := c.SaveState()
-	LayoutContainer(c, newLayoutProbeWriter(w))
+	if err := LayoutContainer(c, newLayoutProbeWriter(w)); err != nil {
+		c.RestoreState(saved)
+		return 0, err
+	}
 	height := c.Height()
 	walkWidgets(c, func(widget Widget) bool {
 		if widget != c {
@@ -177,19 +180,19 @@ func (c *StdContainer) PreferredHeight(w Writer) float64 {
 		return true
 	})
 	c.RestoreState(saved)
-	return height
+	return height, nil
 }
 
-func (c *StdContainer) PreferredWidth(w Writer) float64 {
+func (c *StdContainer) PreferredWidth(w Writer) (float64, error) {
 	if profiler := profilerForWidget(w, c); profiler != nil {
 		defer beginWidgetProfileSpan(profiler, "preferred_width", c).End()
 	}
 	if c.WidthIsSet() {
-		return c.Width()
+		return c.Width(), nil
 	}
 	if isRadialLayoutStyle(c.layout) {
 		if width, ok := c.radialInferredWidth(); ok {
-			return width
+			return width, nil
 		}
 	}
 	c.prepareForLayout(w)
@@ -205,19 +208,27 @@ func (c *StdContainer) PreferredWidth(w Writer) float64 {
 			if !first {
 				width += c.LayoutStyle().HPadding()
 			}
-			width += widget.PreferredWidth(w)
+			preferred, err := widget.PreferredWidth(w)
+			if err != nil {
+				return 0, err
+			}
+			width += preferred
 			first = false
 		}
-		return width
+		return width, nil
 	default:
 		width := 0.0
 		for _, widget := range static {
 			if widgetZeroFootprint(widget) {
 				continue
 			}
-			width = max(width, widget.PreferredWidth(w))
+			preferred, err := widget.PreferredWidth(w)
+			if err != nil {
+				return 0, err
+			}
+			width = max(width, preferred)
 		}
-		return width + NonContentWidth(c)
+		return width + NonContentWidth(c), nil
 	}
 }
 
@@ -333,6 +344,9 @@ func (c *StdContainer) setResourceAttrs(attrs map[string]string, units Units) {
 func (c *StdContainer) setContainerResourceAttrs(attrs map[string]string, units Units) {
 	if layout, ok := attrs["layout"]; ok {
 		c.layout = LayoutStyleFor(layout, c.scope)
+		if c.layout == nil {
+			c.layout = &LayoutStyle{id: layout, manager: layout}
+		}
 	}
 	if MapHasKeyPrefix(attrs, "layout.") {
 		c.layout = c.LayoutStyle().Clone()
@@ -411,7 +425,12 @@ func (c *StdContainer) String() string {
 
 var errTableSplitUnsupportedRowSpan = errors.New("table splitting does not support rowspan > 1")
 
-func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, error) {
+func (c *StdContainer) SplitForHeight(avail float64, w Writer) (result *SplitResult, err error) {
+	manager := ""
+	if style := c.LayoutStyle(); style != nil {
+		manager = style.manager
+	}
+	defer func() { err = wrapLayoutError(manager, c.Path(), err) }()
 	if profiler := profilerForWidget(w, c); profiler != nil {
 		defer beginWidgetProfileSpan(profiler, "split", c).End()
 	}
@@ -443,7 +462,10 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 				rows = append(rows, r)
 			}
 			rows = append(rows, metrics.footerRows...)
-			head := c.cloneTableFragment(metrics, rows, nil)
+			head, err := c.cloneTableFragment(metrics, rows, nil)
+			if err != nil {
+				return nil, err
+			}
 			if forcedBreak < 0 {
 				return &SplitResult{Head: head, Tail: nil}, nil
 			}
@@ -453,7 +475,11 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 			}
 			tailRows = append(tailRows, metrics.footerRows...)
 			tailBreaks := c.remainingTableBreaks(metrics, forcedBreak, forcedBreak)
-			return &SplitResult{Head: head, Tail: c.cloneTableFragment(metrics, tailRows, tailBreaks)}, nil
+			tail, err := c.cloneTableFragment(metrics, tailRows, tailBreaks)
+			if err != nil {
+				return nil, err
+			}
+			return &SplitResult{Head: head, Tail: tail}, nil
 		}
 		if bodyCount < 2 {
 			return nil, nil
@@ -481,10 +507,16 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 		}
 		tailRows = append(tailRows, metrics.footerRows...)
 
-		head := c.cloneTableFragment(metrics, headRows, nil)
+		head, err := c.cloneTableFragment(metrics, headRows, nil)
+		if err != nil {
+			return nil, err
+		}
 		tailStart := metrics.bodyStart + fitBodies
 		tailBreaks := c.remainingTableBreaks(metrics, tailStart, -1)
-		tail := c.cloneTableFragment(metrics, tailRows, tailBreaks)
+		tail, err := c.cloneTableFragment(metrics, tailRows, tailBreaks)
+		if err != nil {
+			return nil, err
+		}
 		return &SplitResult{Head: head, Tail: tail}, nil
 	case "vbox":
 		if !c.overflowAllowed() {
@@ -548,7 +580,11 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 			return nil, errTableSplitUnsupportedRowSpan
 		}
 	}
-	widths := planTableColumnWidths(grid, c, c.LayoutStyle(), w).resolvedSizes()
+	tracks, err := planTableColumnWidths(grid, c, c.LayoutStyle(), w)
+	if err != nil {
+		return nil, err
+	}
+	widths := tracks.resolvedSizes()
 
 	rowHeights := make([]float64, grid.Rows())
 	for r := 0; r < grid.Rows(); r++ {
@@ -564,7 +600,10 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 			widget.ResolveWidth(tableCellWidth(widths, col, widget.ColSpan(), c.LayoutStyle().HPadding()))
 			height := widget.Height()
 			if !widgetHeightSpecified(widget) {
-				height = widget.PreferredHeight(w)
+				height, err = widget.PreferredHeight(w)
+				if err != nil {
+					return nil, err
+				}
 			}
 			if height > maxHeight {
 				maxHeight = height
@@ -612,9 +651,13 @@ func (c *StdContainer) tableFragmentHeight(metrics *tableSplitMetrics, bodyStart
 	return height
 }
 
-func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int, breaks []tablePageBreak) *StdContainer {
+func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int, breaks []tablePageBreak) (*StdContainer, error) {
 	clone := *c
-	clone.activeChildren = c.cloneTableWidgetsForRows(metrics.grid, rows, breaks, &clone)
+	children, err := c.cloneTableWidgetsForRows(metrics.grid, rows, breaks, &clone)
+	if err != nil {
+		return nil, err
+	}
+	clone.activeChildren = children
 	clone.ClearResolvedWidth()
 	clone.ClearResolvedHeight()
 	clone.printed = false
@@ -626,10 +669,10 @@ func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int
 		child.SetVisible(true)
 		child.SetDisabled(false)
 	}
-	return &clone
+	return &clone, nil
 }
 
-func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, breaks []tablePageBreak, parent Container) []Widget {
+func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, breaks []tablePageBreak, parent Container) ([]Widget, error) {
 	var widgets []Widget
 	seen := map[Widget]bool{}
 	for _, r := range rows {
@@ -637,9 +680,14 @@ func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, br
 			if pageBreak.row != r {
 				continue
 			}
-			clone := cloneWidgetShallow(pageBreak.widget)
+			clone, err := cloneWidgetShallow(pageBreak.widget)
+			if err != nil {
+				return nil, err
+			}
 			if wc, ok := clone.(WantsContainer); ok {
-				_ = wc.SetContainer(parent)
+				if err := wc.SetContainer(parent); err != nil {
+					return nil, err
+				}
 			}
 			widgets = append(widgets, clone)
 		}
@@ -649,14 +697,19 @@ func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, br
 				continue
 			}
 			seen[widget] = true
-			clone := cloneWidgetShallow(widget)
+			clone, err := cloneWidgetShallow(widget)
+			if err != nil {
+				return nil, err
+			}
 			if wc, ok := clone.(WantsContainer); ok {
-				_ = wc.SetContainer(parent)
+				if err := wc.SetContainer(parent); err != nil {
+					return nil, err
+				}
 			}
 			widgets = append(widgets, clone)
 		}
 	}
-	return widgets
+	return widgets, nil
 }
 
 func (c *StdContainer) remainingTableBreaks(metrics *tableSplitMetrics, bodyStart, consumedRow int) []tablePageBreak {
@@ -788,7 +841,10 @@ func (c *StdContainer) formattedListMarkerWidth(w Writer, para *StdParagraph, te
 }
 
 func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult, error) {
-	metrics := c.vboxSplitMetrics(w)
+	metrics, err := c.vboxSplitMetrics(w)
+	if err != nil {
+		return nil, err
+	}
 	if len(metrics.body) == 0 {
 		return nil, nil
 	}
@@ -832,7 +888,9 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 			tailStart = i + 1
 			break
 		}
-		c.measureVBoxSplitChild(metrics, child, w)
+		if err := c.measureVBoxSplitChild(metrics, child, w); err != nil {
+			return nil, err
+		}
 		candidate := append(append([]Widget(nil), headBody...), child)
 		if c.vboxFragmentHeight(metrics, candidate) <= avail {
 			headWhole[child] = true
@@ -882,7 +940,10 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 	if splitSource != nil && splitHead != nil {
 		headReplacements[splitSource] = splitHead
 	}
-	head := c.cloneVBoxFragment(headWhole, headReplacements)
+	head, err := c.cloneVBoxFragment(headWhole, headReplacements)
+	if err != nil {
+		return nil, err
+	}
 	if !tailHasBody {
 		return &SplitResult{Head: head, Tail: nil}, nil
 	}
@@ -890,11 +951,14 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 	if splitSource != nil && splitTail != nil {
 		tailReplacements[splitSource] = splitTail
 	}
-	tail := c.cloneVBoxFragment(tailWhole, tailReplacements)
+	tail, err := c.cloneVBoxFragment(tailWhole, tailReplacements)
+	if err != nil {
+		return nil, err
+	}
 	return &SplitResult{Head: head, Tail: tail}, nil
 }
 
-func (c *StdContainer) vboxSplitMetrics(w Writer) *vboxSplitMetrics {
+func (c *StdContainer) vboxSplitMetrics(w Writer) (*vboxSplitMetrics, error) {
 	static, _ := printableWidgets(c, Static)
 	absolute, _ := printableWidgets(c, Absolute)
 	relative, _ := printableWidgets(c, Relative)
@@ -911,24 +975,32 @@ func (c *StdContainer) vboxSplitMetrics(w Writer) *vboxSplitMetrics {
 	for _, child := range static {
 		switch child.Align() {
 		case AlignTop:
-			c.measureVBoxSplitChild(metrics, child, w)
+			if err := c.measureVBoxSplitChild(metrics, child, w); err != nil {
+				return nil, err
+			}
 			metrics.headers = append(metrics.headers, child)
 		case AlignBottom:
-			c.measureVBoxSplitChild(metrics, child, w)
+			if err := c.measureVBoxSplitChild(metrics, child, w); err != nil {
+				return nil, err
+			}
 			metrics.footers = append(metrics.footers, child)
 		default:
 			metrics.body = append(metrics.body, child)
 		}
 	}
-	return metrics
+	return metrics, nil
 }
 
-func (c *StdContainer) measureVBoxSplitChild(metrics *vboxSplitMetrics, child Widget, w Writer) {
+func (c *StdContainer) measureVBoxSplitChild(metrics *vboxSplitMetrics, child Widget, w Writer) error {
 	if _, ok := metrics.heights[child]; ok {
-		return
+		return nil
 	}
-	entry := measureVBoxChild(c, w, child)
+	entry, err := measureVBoxChild(c, w, child)
+	if err != nil {
+		return err
+	}
 	metrics.heights[child] = entry.height
+	return nil
 }
 
 func (c *StdContainer) vboxFragmentHeight(metrics *vboxSplitMetrics, body []Widget) float64 {
@@ -992,7 +1064,7 @@ func (c *StdContainer) vboxHasVisibleWidget(groups ...[]Widget) bool {
 	return false
 }
 
-func (c *StdContainer) cloneVBoxFragment(included map[Widget]bool, replacements map[Widget]Widget) *StdContainer {
+func (c *StdContainer) cloneVBoxFragment(included map[Widget]bool, replacements map[Widget]Widget) (*StdContainer, error) {
 	clone := *c
 	clone.activeChildren = make([]Widget, 0, len(included)+len(replacements))
 	clone.ClearResolvedWidth()
@@ -1011,23 +1083,29 @@ func (c *StdContainer) cloneVBoxFragment(included map[Widget]bool, replacements 
 		}
 		next := replacement
 		if !replaced {
-			next = cloneWidgetShallow(child)
+			var err error
+			next, err = cloneWidgetShallow(child)
+			if err != nil {
+				return nil, err
+			}
 		}
 		if wc, ok := next.(WantsContainer); ok {
-			_ = wc.SetContainer(&clone)
+			if err := wc.SetContainer(&clone); err != nil {
+				return nil, err
+			}
 		}
 		next.SetPrinted(false)
 		next.SetVisible(true)
 		next.SetDisabled(false)
 		clone.activeChildren = append(clone.activeChildren, next)
 	}
-	return &clone
+	return &clone, nil
 }
 
-func cloneWidgetShallow(widget Widget) Widget {
+func cloneWidgetShallow(widget Widget) (Widget, error) {
 	value := reflect.ValueOf(widget)
 	if value.Kind() != reflect.Pointer || value.IsNil() {
-		panic("cloneWidgetShallow expects non-nil pointer widget")
+		return nil, fmt.Errorf("cannot clone widget %T: expected a non-nil pointer", widget)
 	}
 	if accessible, ok := widget.(interface{ AccessibilityLogicalID() string }); ok {
 		accessible.AccessibilityLogicalID()
@@ -1036,14 +1114,14 @@ func cloneWidgetShallow(widget Widget) Widget {
 	clone.Elem().Set(value.Elem())
 	w, ok := clone.Interface().(Widget)
 	if !ok {
-		panic("cloneWidgetShallow produced non-widget clone")
+		return nil, fmt.Errorf("cannot clone widget %T: clone does not implement Widget", widget)
 	}
 	w.ClearResolvedWidth()
 	w.ClearResolvedHeight()
 	w.SetPrinted(false)
 	w.SetVisible(true)
 	w.SetDisabled(false)
-	return w
+	return w, nil
 }
 
 func init() {

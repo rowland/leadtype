@@ -2,7 +2,11 @@ package ltml
 
 import "math"
 
-func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
+func LayoutFlow(container Container, style *LayoutStyle, writer Writer) (err error) {
+	defer func() { err = wrapLayoutError("flow", containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
 	var cx, cy, maxY float64
 	rtl := IsRTL(container)
 	containerFull := false
@@ -29,7 +33,9 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 			widget.ResolveHeight(0)
 			widget.SetLeft(ContentLeft(container) + cx)
 			widget.SetTop(ContentTop(container) + cy)
-			widget.LayoutWidget(writer)
+			if err := widget.LayoutWidget(writer); err != nil {
+				return err
+			}
 			if continues && contentPlaced && hasOrdinaryFlowContentAfter(widgets, i+1) {
 				containerFull = true
 			}
@@ -44,12 +50,17 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 				widget.SetLeft(ContentLeft(container) + cx)
 			}
 			widget.SetTop(ContentTop(container) + cy)
-			widget.LayoutWidget(writer)
+			if err := widget.LayoutWidget(writer); err != nil {
+				return err
+			}
 			widget.SetVisible(!continues || widget.Top() <= bottom)
 			continue
 		}
 		if widgetAutoWidth(widget) || !widgetWidthSpecified(widget) {
-			pw := widget.PreferredWidth(writer)
+			pw, err := widget.PreferredWidth(writer)
+			if err != nil {
+				return err
+			}
 			cw := ContentWidth(container)
 			if pw == 0 {
 				pw = cw
@@ -68,9 +79,15 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 		}
 		widget.SetTop(ContentTop(container) + cy)
 		if widgetAutoHeight(widget) || !widgetHeightSpecified(widget) {
-			widget.ResolveHeight(widget.PreferredHeight(writer))
+			height, err := widget.PreferredHeight(writer)
+			if err != nil {
+				return err
+			}
+			widget.ResolveHeight(height)
 		}
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 		// As with vbox, a nested continuing child may need splitting because of
 		// its own pgbr even though its outer dimensions fit this flow fragment.
 		if continues && (widgetHasActionablePageBreak(widget) || widget.Bottom() > bottom) {
@@ -87,7 +104,7 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 	if container.Height() == 0 && maxY > 0 {
 		container.ResolveHeight(cy + maxY + NonContentHeight(container))
 	}
-	layoutPositionedChildren(container, writer)
+	return layoutPositionedChildren(container, writer)
 }
 
 func hasOrdinaryFlowContentAfter(widgets []Widget, start int) bool {

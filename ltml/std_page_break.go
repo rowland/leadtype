@@ -51,7 +51,10 @@ func widgetHasActionablePageBreak(widget Widget) bool {
 		if err != nil {
 			return false
 		}
-		bodyStart, bodyEnd := tableBodyRange(container, info.grid.Rows())
+		bodyStart, bodyEnd, err := tableBodyRange(container, info.grid.Rows())
+		if err != nil {
+			return false
+		}
 		return firstActionableTableBreak(info.breaks, bodyStart, bodyEnd) >= 0
 	}
 	return false

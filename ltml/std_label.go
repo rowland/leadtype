@@ -60,9 +60,10 @@ func normalizeLabelXMLText(text string) string {
 	return b.String()
 }
 
-func (l *StdLabel) LayoutWidget(Writer) {
+func (l *StdLabel) LayoutWidget(Writer) error {
 	// Labels are leaf widgets even though they embed StdContainer to collect
 	// inline children like <span> and <pageno>.
+	return nil
 }
 
 func (l *StdLabel) DrawContent(w Writer) error {
@@ -115,23 +116,23 @@ func (l *StdLabel) DrawContent(w Writer) error {
 	})
 }
 
-func (l *StdLabel) PreferredHeight(w Writer) float64 {
+func (l *StdLabel) PreferredHeight(w Writer) (float64, error) {
 	if l.height != 0 {
-		return float64(l.height)
+		return float64(l.height), nil
 	}
 	rt := l.layoutRichText(w)
 	if rt.Len() == 0 {
-		return effectiveFontSizeForContainer(l)*w.LineSpacing() + NonContentHeight(l)
+		return effectiveFontSizeForContainer(l)*w.LineSpacing() + NonContentHeight(l), nil
 	}
-	return rt.Leading()*w.LineSpacing() + NonContentHeight(l)
+	return rt.Leading()*w.LineSpacing() + NonContentHeight(l), nil
 }
 
-func (l *StdLabel) PreferredWidth(w Writer) float64 {
+func (l *StdLabel) PreferredWidth(w Writer) (float64, error) {
 	if l.width != 0 {
-		return float64(l.width)
+		return float64(l.width), nil
 	}
 	rt := l.layoutRichText(w)
-	return rt.Width() + NonContentWidth(l)
+	return rt.Width() + NonContentWidth(l), nil
 }
 
 func (l *StdLabel) AccessibilityText() string {

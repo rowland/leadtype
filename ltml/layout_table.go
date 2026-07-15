@@ -141,7 +141,7 @@ func colGrid(container Container) (*WidgetGrid, error) {
 	return grid, nil
 }
 
-func detectTableColumnTracks(grid *WidgetGrid, writer Writer) tableTrackPlan {
+func detectTableColumnTracks(grid *WidgetGrid, writer Writer) (tableTrackPlan, error) {
 	tracks := make(tableTrackPlan, grid.Cols())
 	for c := 0; c < grid.Cols(); c++ {
 		var specifiedWidget Widget
@@ -153,7 +153,11 @@ func detectTableColumnTracks(grid *WidgetGrid, writer Writer) tableTrackPlan {
 					specifiedWidget = w
 				}
 				if !widgetWidthSpecified(w) && !w.WidthPctIsSet() {
-					preferred = max(preferred, w.PreferredWidth(writer))
+					width, err := w.PreferredWidth(writer)
+					if err != nil {
+						return nil, err
+					}
+					preferred = max(preferred, width)
 				}
 				if widgetAutoWidth(w) {
 					auto = true
@@ -170,7 +174,7 @@ func detectTableColumnTracks(grid *WidgetGrid, writer Writer) tableTrackPlan {
 			tracks[c] = tableTrackSize{kind: tableTrackOmitted, preferred: preferred}
 		}
 	}
-	return tracks
+	return tracks, nil
 }
 
 func (tracks tableTrackPlan) resolvedSizes() []float64 {
@@ -283,10 +287,13 @@ func allocateTableColumnTracks(widthAvail float64, tracks tableTrackPlan, style 
 	}
 }
 
-func planTableColumnWidths(grid *WidgetGrid, container Container, style *LayoutStyle, writer Writer) tableTrackPlan {
-	tracks := detectTableColumnTracks(grid, writer)
+func planTableColumnWidths(grid *WidgetGrid, container Container, style *LayoutStyle, writer Writer) (tableTrackPlan, error) {
+	tracks, err := detectTableColumnTracks(grid, writer)
+	if err != nil {
+		return nil, err
+	}
 	allocateTableColumnTracks(ContentWidth(container), tracks, style)
-	return tracks
+	return tracks, nil
 }
 
 func tableCellWidth(widths []float64, startCol, colSpan int, hpadding float64) float64 {
@@ -297,7 +304,7 @@ func tableCellWidth(widths []float64, startCol, colSpan int, hpadding float64) f
 	return width + float64(colSpan-1)*hpadding
 }
 
-func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, writer Writer) (*SpanSizeGrid, []bool) {
+func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, writer Writer) (*SpanSizeGrid, []bool, error) {
 	heights := NewSpanSizeGrid(grid.Cols(), grid.Rows())
 	autoRows := make([]bool, grid.Rows())
 	for c := 0; c < grid.Cols(); c++ {
@@ -315,7 +322,11 @@ func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, wr
 			if widget.HeightIsSet() {
 				height = widget.Height()
 			} else {
-				height = widget.PreferredHeight(writer)
+				var err error
+				height, err = widget.PreferredHeight(writer)
+				if err != nil {
+					return nil, nil, err
+				}
 				if widgetAutoHeight(widget) && widget.RowSpan() == 1 {
 					autoRows[r] = true
 				}
@@ -346,7 +357,7 @@ func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, wr
 			heights.SetCell(c, r, ss)
 		}
 	}
-	return heights, autoRows
+	return heights, autoRows, nil
 }
 
 func applyTableAutoRowHeights(container Container, style *LayoutStyle, heights *SpanSizeGrid, autoRows []bool) {
@@ -384,19 +395,30 @@ func applyTableAutoRowHeights(container Container, style *LayoutStyle, heights *
 	}
 }
 
-func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
+func LayoutTable(container Container, style *LayoutStyle, writer Writer) (err error) {
+	defer func() { err = wrapLayoutError("table", containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
 	info, err := tableGridFor(container)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	grid := info.grid
 
 	containerFull := false
 	if container.Width() <= 0 {
-		panic("container width not set")
+		return errors.New("container width not set")
 	}
-	widths := planTableColumnWidths(grid, container, style, writer).resolvedSizes()
-	heights, autoRows := tableBaseHeights(grid, widths, style, writer)
+	tracks, err := planTableColumnWidths(grid, container, style, writer)
+	if err != nil {
+		return err
+	}
+	widths := tracks.resolvedSizes()
+	heights, autoRows, err := tableBaseHeights(grid, widths, style, writer)
+	if err != nil {
+		return err
+	}
 	applyTableAutoRowHeights(container, style, heights, autoRows)
 
 	top := ContentTop(container)
@@ -404,7 +426,10 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 	continues := containerHasEffectiveContinuation(container)
 	_, pageOwnsContinuation := container.(*StdPage)
 	enforceFit := continues && pageOwnsContinuation
-	bodyStart, bodyEnd := tableBodyRange(container, grid.Rows())
+	bodyStart, bodyEnd, err := tableBodyRange(container, grid.Rows())
+	if err != nil {
+		return err
+	}
 	forcedBreakRow := -1
 	if enforceFit {
 		forcedBreakRow = firstActionableTableBreak(info.breaks, bodyStart, bodyEnd)
@@ -472,12 +497,14 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		widget.SetVisible(false)
 	}
 	for _, widget := range static {
-		widget.LayoutWidget(writer)
+		if err := widget.LayoutWidget(writer); err != nil {
+			return err
+		}
 	}
-	layoutPositionedChildren(container, writer)
+	return layoutPositionedChildren(container, writer)
 }
 
-func tableBodyRange(container Container, rows int) (int, int) {
+func tableBodyRange(container Container, rows int) (int, int, error) {
 	headerRows, footerRows := 0, 0
 	switch value := container.(type) {
 	case *StdPage:
@@ -485,11 +512,11 @@ func tableBodyRange(container Container, rows int) (int, int) {
 	case *StdContainer:
 		headerRows, footerRows = value.headerRows, value.footerRows
 	default:
-		panic(fmt.Sprintf("unsupported table container %T", container))
+		return 0, 0, fmt.Errorf("unsupported table container %T", container)
 	}
 	bodyStart := min(headerRows, rows)
 	bodyEnd := rows - min(footerRows, max(0, rows-bodyStart))
-	return bodyStart, bodyEnd
+	return bodyStart, bodyEnd, nil
 }
 
 func firstActionableTableBreak(breaks []tablePageBreak, bodyStart, bodyEnd int) int {

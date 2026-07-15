@@ -28,14 +28,23 @@ func (ls *LayoutStyle) HPadding() float64 {
 	return ls.hpadding
 }
 
-func (ls *LayoutStyle) Layout(c Container, w Writer) {
+func (ls *LayoutStyle) Layout(c Container, w Writer) error {
+	if ls == nil {
+		return wrapLayoutError("", containerPath(c), fmt.Errorf("layout style is nil"))
+	}
+	if c == nil {
+		return wrapLayoutError(ls.manager, "", fmt.Errorf("container is nil"))
+	}
 	// fmt.Println("In Layout")
 	if profiler := profilerForContainer(w, c); profiler != nil {
 		span := profiler.Begin("ltml.layout." + ls.manager)
 		defer span.End()
 	}
-	f := LayoutManagerFor(ls.manager)
-	f(c, ls, w)
+	f, err := LayoutManagerFor(ls.manager)
+	if err != nil {
+		return wrapLayoutError(ls.manager, containerPath(c), err)
+	}
+	return wrapLayoutError(ls.manager, containerPath(c), f(c, ls, w))
 }
 
 func (ls *LayoutStyle) SetAttrs(attrs map[string]string) {

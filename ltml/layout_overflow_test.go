@@ -21,21 +21,22 @@ type flowTestWidget struct {
 	preferredHeights int
 }
 
-func (w *flowTestWidget) PreferredWidth(Writer) float64 {
+func (w *flowTestWidget) PreferredWidth(Writer) (float64, error) {
 	w.preferredWidths++
 	if w.preferredWidth != 0 {
-		return w.preferredWidth
+		return w.preferredWidth, nil
 	}
-	return 100
+	return 100, nil
 }
 
-func (w *flowTestWidget) PreferredHeight(Writer) float64 {
+func (w *flowTestWidget) PreferredHeight(Writer) (float64, error) {
 	w.preferredHeights++
-	return w.preferredHeight
+	return w.preferredHeight, nil
 }
 
-func (w *flowTestWidget) LayoutWidget(Writer) {
+func (w *flowTestWidget) LayoutWidget(Writer) error {
 	w.layoutCalls++
+	return nil
 }
 
 func (w *flowTestWidget) DrawContent(Writer) error {
@@ -245,8 +246,11 @@ func TestParse_PageBreakIsZeroFootprintWidget(t *testing.T) {
 	if !ok {
 		t.Fatalf("page child = %T, want *StdPageBreak", doc.Page(0).Widgets()[0])
 	}
-	if !pageBreak.ZeroFootprint() || pageBreak.PreferredHeight(&labelTestWriter{t: t}) != 0 || pageBreak.PreferredWidth(&labelTestWriter{t: t}) != 0 {
-		t.Fatalf("pgbr footprint = preferred %vx%v zero=%v, want 0x0 true", pageBreak.PreferredWidth(&labelTestWriter{t: t}), pageBreak.PreferredHeight(&labelTestWriter{t: t}), pageBreak.ZeroFootprint())
+	writer := &labelTestWriter{t: t}
+	preferredHeight := mustPreferredHeight(t, pageBreak, writer)
+	preferredWidth := mustPreferredWidth(t, pageBreak, writer)
+	if !pageBreak.ZeroFootprint() || preferredHeight != 0 || preferredWidth != 0 {
+		t.Fatalf("pgbr footprint = preferred %vx%v zero=%v, want 0x0 true", preferredWidth, preferredHeight, pageBreak.ZeroFootprint())
 	}
 }
 

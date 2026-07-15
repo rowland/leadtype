@@ -104,10 +104,10 @@ func TestStdDraw_MaxHeightFitsAspectRatio(t *testing.T) {
 	w := &canvasTestWriter{labelTestWriter: labelTestWriter{t: t}}
 
 	wantWidth := 100.0 * 38.0 / 1080.0
-	if got := draw.PreferredHeight(w); got != 100 {
+	if got := mustPreferredHeight(t, draw, w); got != 100 {
 		t.Fatalf("PreferredHeight() = %v, want 100", got)
 	}
-	if got := draw.PreferredWidth(w); got < wantWidth-0.001 || got > wantWidth+0.001 {
+	if got := mustPreferredWidth(t, draw, w); got < wantWidth-0.001 || got > wantWidth+0.001 {
 		t.Fatalf("PreferredWidth() = %v, want approx %v", got, wantWidth)
 	}
 }

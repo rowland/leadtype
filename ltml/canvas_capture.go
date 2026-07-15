@@ -23,7 +23,9 @@ func renderCanvasCapture(canvas *StdCanvas, w Writer) error {
 
 	resetCanvasWidgetRenderState(canvas)
 	return withDocumentVisualCapture(doc, func() error {
-		canvas.LayoutWidget(w)
+		if err := canvas.LayoutWidget(w); err != nil {
+			return err
+		}
 		return Print(canvas, w)
 	})
 }

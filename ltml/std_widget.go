@@ -157,8 +157,9 @@ func (widget *StdWidget) explicitFont() *FontStyle {
 	return widget.font
 }
 
-func (widget *StdWidget) LayoutWidget(w Writer) {
+func (widget *StdWidget) LayoutWidget(w Writer) error {
 	// to be overridden
+	return nil
 }
 
 func (widget *StdWidget) PaintBackground(w Writer) error {
@@ -214,12 +215,12 @@ func (widget *StdWidget) SetPosition(value Position) {
 	widget.position = value
 }
 
-func (widget *StdWidget) PreferredHeight(Writer) float64 {
-	return widget.Height()
+func (widget *StdWidget) PreferredHeight(Writer) (float64, error) {
+	return widget.Height(), nil
 }
 
-func (widget *StdWidget) PreferredWidth(Writer) float64 {
-	return widget.Width()
+func (widget *StdWidget) PreferredWidth(Writer) (float64, error) {
+	return widget.Width(), nil
 }
 
 func (widget *StdWidget) Print(w Writer) error {

@@ -14,34 +14,41 @@ func radialRowsGrowOutward(style *LayoutStyle) bool {
 	return style != nil && style.manager == "radial-out"
 }
 
-func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
+func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) (err error) {
+	manager := layoutManagerName(style, "radial")
+	defer func() { err = wrapLayoutError(manager, containerPath(container), err) }()
+	if err := validateLayoutInputs(container, style); err != nil {
+		return err
+	}
+	if err := validateRadialStructure(container); err != nil {
+		return err
+	}
 	inferRadialContainerDimensions(container)
 	cells := radialCellWidgets(container)
 	if len(cells) == 0 {
-		return
+		return nil
 	}
 
 	rowsHint, colsHint := container.Rows(), container.Cols()
 	if base, ok := container.(*StdContainer); ok && len(base.Angles()) > 0 {
 		colsFromAngles := radialExplicitSectorCount(base.Angles())
 		if colsHint > 0 && colsHint != colsFromAngles {
-			panic(fmt.Errorf("radial cols=%d conflicts with %d normalized angle spans", colsHint, colsFromAngles))
+			return fmt.Errorf("radial cols=%d conflicts with %d normalized angle spans", colsHint, colsFromAngles)
 		}
 		colsHint = colsFromAngles
 	}
 
 	grid, rows, cols, err := deriveRadialGrid(cells, container.Order(), rowsHint, colsHint)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	spans, err := radialAngleSpans(container, cols)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	centerX, centerY, innerRadius, outerRadius := radialContainerGeometry(container)
 	if outerRadius <= innerRadius {
-		debugf("invalid radial geometry: outer radius %g must be greater than inner radius %g\n", outerRadius, innerRadius)
-		return
+		return fmt.Errorf("invalid radial geometry: outer radius %g must be greater than inner radius %g", outerRadius, innerRadius)
 	}
 
 	rowsGrowOutward := radialRowsGrowOutward(style)
@@ -53,7 +60,7 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 			}
 			sector, ok := widget.(radialCell)
 			if !ok {
-				panic(fmt.Errorf("radial layout child %T is not a sector", widget))
+				return fmt.Errorf("radial layout child %T is not a sector", widget)
 			}
 			rowSpan := sector.RowSpan()
 			colSpan := sector.ColSpan()
@@ -71,7 +78,9 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 			}
 			geometry.AnchorX, geometry.AnchorY = radialPointAt(centerX, centerY, (geometry.InnerRadius+geometry.OuterRadius)/2, geometry.AnchorAngle)
 			sector.setGeometry(geometry)
-			sector.LayoutWidget(writer)
+			if err := sector.LayoutWidget(writer); err != nil {
+				return err
+			}
 		}
 	}
 	if !container.HeightIsSet() {
@@ -80,6 +89,7 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) {
 	if !container.WidthIsSet() {
 		container.ResolveWidth((outerRadius * 2) + NonContentWidth(container))
 	}
+	return nil
 }
 
 func inferRadialContainerDimensions(container Container) {

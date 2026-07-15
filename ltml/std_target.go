@@ -4,12 +4,12 @@ type StdTarget struct {
 	StdWidget
 }
 
-func (t *StdTarget) PreferredHeight(Writer) float64 {
-	return 0
+func (t *StdTarget) PreferredHeight(Writer) (float64, error) {
+	return 0, nil
 }
 
-func (t *StdTarget) PreferredWidth(Writer) float64 {
-	return 0
+func (t *StdTarget) PreferredWidth(Writer) (float64, error) {
+	return 0, nil
 }
 
 func (t *StdTarget) SetAttrs(attrs map[string]string) {
