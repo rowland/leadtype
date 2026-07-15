@@ -25,9 +25,9 @@ type compiledSelectorList struct {
 }
 
 type compiledSelector struct {
-	parts      []selectorPart
+	parts       []selectorPart
 	specificity Specificity
-	hasPseudo  bool
+	hasPseudo   bool
 }
 
 type selectorPart struct {
@@ -94,6 +94,12 @@ type pathSelectorNode struct {
 type pseudoMatcher func(ctx selectorPseudoContext, pseudo selectorPseudo) bool
 
 var pseudoMatchers = map[string]pseudoMatcher{
+	"dir(ltr)": func(ctx selectorPseudoContext, pseudo selectorPseudo) bool {
+		return selectorDirection(ctx) == DirLTR
+	},
+	"dir(rtl)": func(ctx selectorPseudoContext, pseudo selectorPseudo) bool {
+		return selectorDirection(ctx) == DirRTL
+	},
 	"first-child": func(ctx selectorPseudoContext, pseudo selectorPseudo) bool {
 		index, count, ok := ctx.resolver.childPosition(ctx.widget)
 		return ok && index == 0 && count > 0
@@ -142,6 +148,22 @@ var pseudoMatchers = map[string]pseudoMatcher{
 		_, col, _, _, ok := ctx.resolver.tablePosition(ctx.widget)
 		return ok && col == pseudo.value
 	},
+}
+
+// selectorDirection returns the effective direction of the matched element.
+// Containers may override inherited direction themselves; leaf widgets inherit
+// it from their structural parent. An unattached widget follows LTML's LTR
+// default.
+func selectorDirection(ctx selectorPseudoContext) Dir {
+	if container, ok := ctx.widget.(Container); ok {
+		return container.Dir()
+	}
+	if ctx.resolver != nil {
+		if parent := ctx.resolver.structuralParent(ctx.widget); parent != nil {
+			return parent.Dir()
+		}
+	}
+	return DirLTR
 }
 
 // compileSelectorList parses a possibly grouped selector string into compiled

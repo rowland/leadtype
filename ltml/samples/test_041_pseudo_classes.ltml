@@ -11,6 +11,11 @@
     .demo-card:first-child { fill: HoneyDew; font.weight: Bold; }
     .demo-card:last-child { fill: MistyRose; font.style: Italic; }
 
+    .dir-row { width: 100%; border: thin; }
+    .dir-panel { width: 50%; padding: 8pt; }
+    .dir-row:dir(ltr) > .dir-first { border-right: edge; }
+    .dir-row:dir(rtl) > .dir-first { border-left: edge; }
+
     .demo-cell:first-row { fill: AliceBlue; }
     .demo-cell:last-row { fill: LemonChiffon; }
     .demo-cell:first-col { border-left: edge; }
@@ -58,5 +63,22 @@
       <cell class="demo-cell">r3 c2</cell>
       <cell class="demo-cell">r3 c3</cell>
     </table>
+  </page>
+
+  <page>
+    <label font.size="18" font.weight="Bold">Direction Pseudo-Classes</label>
+    <p>The same first logical child receives the divider. <b>:dir(ltr)</b> places it on the right; <b>:dir(rtl)</b> places it on the left.</p>
+
+    <label font.weight="Bold">Left-to-right hbox</label>
+    <hbox class="dir-row" dir="ltr">
+      <vbox class="dir-panel dir-first"><label>First logical child</label><p>The divider follows this panel on its right edge.</p></vbox>
+      <vbox class="dir-panel"><label>Second logical child</label><p>This panel appears on the physical right.</p></vbox>
+    </hbox>
+
+    <label font.weight="Bold">Right-to-left hbox</label>
+    <hbox class="dir-row" dir="rtl">
+      <vbox class="dir-panel dir-first"><label>First logical child</label><p>The divider follows this panel on its left edge.</p></vbox>
+      <vbox class="dir-panel"><label>Second logical child</label><p>This panel appears on the physical left.</p></vbox>
+    </hbox>
   </page>
 </ltml>

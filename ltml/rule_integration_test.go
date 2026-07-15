@@ -454,6 +454,51 @@ func TestRules_integration_first_and_last_child_pseudos_apply(t *testing.T) {
 	}
 }
 
+func TestRules_integration_direction_pseudos_match_effective_direction(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>
+				page.ar { dir: rtl; }
+				page:dir(rtl) > .outer { alt: rtl-parent; }
+				.outer:dir(rtl) > label:dir(rtl) { alt: inherited-rtl; z-index: 2; }
+				.override:dir(ltr) > label:dir(ltr) { alt: nested-ltr; z-index: 3; }
+			</style>
+			<page class="ar">
+				<div class="outer">
+					<label>rtl leaf</label>
+					<div class="override" dir="ltr"><label>ltr leaf</label></div>
+				</div>
+			</page>
+		</ltml>`)
+
+	page := firstPage(t, doc)
+	outer, ok := page.children[0].(*StdContainer)
+	if !ok {
+		t.Fatalf("outer child = %T, want *StdContainer", page.children[0])
+	}
+	if page.Dir() != DirRTL || outer.Dir() != DirRTL || outer.alt != "rtl-parent" {
+		t.Fatalf("page/outer direction and match = %s/%s/%q, want rtl/rtl/rtl-parent", page.Dir(), outer.Dir(), outer.alt)
+	}
+	rtlLeaf, ok := outer.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("RTL leaf = %T, want *StdLabel", outer.children[0])
+	}
+	if rtlLeaf.alt != "inherited-rtl" || rtlLeaf.zIndex != 2 {
+		t.Fatalf("RTL leaf match = %q/%d, want inherited-rtl/2", rtlLeaf.alt, rtlLeaf.zIndex)
+	}
+	override, ok := outer.children[1].(*StdContainer)
+	if !ok {
+		t.Fatalf("override child = %T, want *StdContainer", outer.children[1])
+	}
+	ltrLeaf, ok := override.children[0].(*StdLabel)
+	if !ok {
+		t.Fatalf("LTR leaf = %T, want *StdLabel", override.children[0])
+	}
+	if override.Dir() != DirLTR || ltrLeaf.alt != "nested-ltr" || ltrLeaf.zIndex != 3 {
+		t.Fatalf("LTR override match = %s/%q/%d, want ltr/nested-ltr/3", override.Dir(), ltrLeaf.alt, ltrLeaf.zIndex)
+	}
+}
+
 func TestRules_integration_table_row_and_col_pseudos_apply(t *testing.T) {
 	doc := parseDoc(t, `
 		<ltml>

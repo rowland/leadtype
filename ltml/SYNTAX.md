@@ -1332,6 +1332,8 @@ LTML supports these pseudo-classes:
 
 | Pseudo-class | Matches |
 |--------------|---------|
+| `:dir(ltr)` | Widgets whose effective inherited layout direction is left-to-right. |
+| `:dir(rtl)` | Widgets whose effective inherited layout direction is right-to-left. |
 | `:first-child` | The first direct child widget of a container. |
 | `:last-child` | The last direct child widget of a container. |
 | `:first-row` | Widgets anchored in row `0` of a `layout="table"` container. |
@@ -1345,6 +1347,10 @@ LTML supports these pseudo-classes:
 
 Notes:
 
+- Direction pseudo-classes use the effective `dir`, including inheritance and
+  local container overrides; they do not require a `dir` attribute on the
+  matched widget. Only the exact `:dir(ltr)` and `:dir(rtl)` spellings are
+  supported.
 - Row and column pseudo-classes apply only to direct children of a
   `layout="table"` container.
 - Row and column numbering is zero-based.

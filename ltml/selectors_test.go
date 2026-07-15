@@ -48,6 +48,35 @@ func TestCompileSelectorList_rejects_unknown_pseudo_class(t *testing.T) {
 	}
 }
 
+func TestCompileSelectorList_accepts_opaque_direction_pseudos(t *testing.T) {
+	resolver := newSelectorStructureResolver()
+	for _, tt := range []struct {
+		selector string
+		widget   Widget
+		want     bool
+	}{
+		{selector: ":dir(ltr)", widget: &StdLabel{}, want: true},
+		{selector: ":dir(rtl)", widget: &StdLabel{}, want: false},
+		{selector: ":dir(rtl)", widget: &StdContainer{dir: DirRTL, dirExplicit: true}, want: true},
+	} {
+		compiled, err := compileSelectorList(tt.selector)
+		if err != nil {
+			t.Fatalf("compileSelectorList(%q): %v", tt.selector, err)
+		}
+		if got := compiled.MatchesWidget(tt.widget, resolver); got != tt.want {
+			t.Errorf("%s match = %v, want %v", tt.selector, got, tt.want)
+		}
+	}
+}
+
+func TestCompileSelectorList_rejects_noncanonical_direction_pseudos(t *testing.T) {
+	for _, selector := range []string{"p:dir", "p:dir()", "p:dir(auto)", "p:dir( rtl )"} {
+		if _, err := compileSelectorList(selector); err == nil {
+			t.Errorf("compileSelectorList(%q) succeeded, want an error", selector)
+		}
+	}
+}
+
 func TestCompileSelectorList_accepts_hyphenated_class_and_id_names(t *testing.T) {
 	compiled, err := compileSelectorList("div#hero-panel.demo-card")
 	if err != nil {
@@ -67,8 +96,8 @@ func TestCompileSelectorList_rejects_malformed_row_and_col_pseudos(t *testing.T)
 }
 
 func TestSpecificityForSelector_counts_pseudo_classes_as_classes(t *testing.T) {
-	got := specificityForSelector("div.notice:first-child > p:row-0")
-	want := Specificity{IDs: 0, Classes: 3, Tags: 2}
+	got := specificityForSelector("div.notice:first-child > p:row-0:dir(rtl)")
+	want := Specificity{IDs: 0, Classes: 4, Tags: 2}
 	if got != want {
 		t.Fatalf("specificity = %+v, want %+v", got, want)
 	}
