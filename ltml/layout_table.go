@@ -2,6 +2,7 @@ package ltml
 
 import (
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -32,15 +33,63 @@ func markGrid(grid *BoolGrid, a, b, c, d int, value bool) {
 	}
 }
 
+type tablePageBreak struct {
+	widget Widget
+	row    int
+}
+
+type tableGridInfo struct {
+	grid   *WidgetGrid
+	breaks []tablePageBreak
+}
+
+func tableGridFor(container Container) (*tableGridInfo, error) {
+	if container.Order() == TableOrderRows {
+		return rowGridInfo(container)
+	}
+	static, _ := printableWidgets(container, Static)
+	for _, widget := range static {
+		if isPageBreak(widget) {
+			return nil, errors.New("pgbr is only supported in tables with order=rows")
+		}
+	}
+	grid, err := colGrid(container)
+	return &tableGridInfo{grid: grid}, err
+}
+
 func rowGrid(container Container) (*WidgetGrid, error) {
+	info, err := rowGridInfo(container)
+	if err != nil {
+		return nil, err
+	}
+	return info.grid, nil
+}
+
+func rowGridInfo(container Container) (*tableGridInfo, error) {
 	if container.Cols() < 1 {
 		return nil, errors.New("cols must be specified")
 	}
 	static, _ := printableWidgets(container, Static)
 	used := NewBoolGrid(container.Cols(), 0)
 	grid := NewWidgetGrid(container.Cols(), 0)
+	var breaks []tablePageBreak
 	row, col := 0, 0
 	for _, widget := range static {
+		if isPageBreak(widget) {
+			// A row-major pgbr denotes a boundary, not a grid cell. Refuse it
+			// until the current row (including rowspans from earlier rows) is
+			// complete so a forced break can never tear a logical row apart.
+			if col != 0 {
+				return nil, errors.New("pgbr must appear between complete table rows")
+			}
+			for c := 0; c < container.Cols(); c++ {
+				if used.Cell(c, row) {
+					return nil, errors.New("pgbr cannot split a table rowspan")
+				}
+			}
+			breaks = append(breaks, tablePageBreak{widget: widget, row: row})
+			continue
+		}
 		for used.Cell(col, row) {
 			col += 1
 			if col >= container.Cols() {
@@ -59,7 +108,7 @@ func rowGrid(container Container) (*WidgetGrid, error) {
 			col = 0
 		}
 	}
-	return grid, nil
+	return &tableGridInfo{grid: grid, breaks: breaks}, nil
 }
 
 func colGrid(container Container) (*WidgetGrid, error) {
@@ -336,19 +385,11 @@ func applyTableAutoRowHeights(container Container, style *LayoutStyle, heights *
 }
 
 func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
-	var grid *WidgetGrid
-	var err error
-
-	if container.Order() == TableOrderRows {
-		grid, err = rowGrid(container)
-	} else if container.Order() == TableOrderCols {
-		grid, err = colGrid(container)
-	} else {
-		panic("invalid order")
-	}
+	info, err := tableGridFor(container)
 	if err != nil {
 		panic(err)
 	}
+	grid := info.grid
 
 	containerFull := false
 	if container.Width() <= 0 {
@@ -363,8 +404,23 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 	continues := containerHasEffectiveContinuation(container)
 	_, pageOwnsContinuation := container.(*StdPage)
 	enforceFit := continues && pageOwnsContinuation
+	bodyStart, bodyEnd := tableBodyRange(container, grid.Rows())
+	forcedBreakRow := -1
+	if enforceFit {
+		forcedBreakRow = firstActionableTableBreak(info.breaks, bodyStart, bodyEnd)
+	}
+	// Only a marker strictly inside the current body range forces this
+	// fragment. Markers adjacent to repeated headers/footers are edge markers
+	// and remain consumable without creating a header/footer-only page.
+	for _, pageBreak := range info.breaks {
+		visible := !enforceFit || pageBreak.row <= bodyStart || pageBreak.row >= bodyEnd || pageBreak.row == forcedBreakRow
+		pageBreak.widget.SetVisible(visible)
+	}
 	rtl := IsRTL(container)
 	for r := 0; r < grid.Rows(); r++ {
+		if enforceFit && r == forcedBreakRow {
+			containerFull = true
+		}
 		maxHeight := 0.0
 		left := ContentLeft(container)
 		right := ContentRight(container)
@@ -419,4 +475,28 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) {
 		widget.LayoutWidget(writer)
 	}
 	layoutPositionedChildren(container, writer)
+}
+
+func tableBodyRange(container Container, rows int) (int, int) {
+	headerRows, footerRows := 0, 0
+	switch value := container.(type) {
+	case *StdPage:
+		headerRows, footerRows = value.headerRows, value.footerRows
+	case *StdContainer:
+		headerRows, footerRows = value.headerRows, value.footerRows
+	default:
+		panic(fmt.Sprintf("unsupported table container %T", container))
+	}
+	bodyStart := min(headerRows, rows)
+	bodyEnd := rows - min(footerRows, max(0, rows-bodyStart))
+	return bodyStart, bodyEnd
+}
+
+func firstActionableTableBreak(breaks []tablePageBreak, bodyStart, bodyEnd int) int {
+	for _, pageBreak := range breaks {
+		if pageBreak.row > bodyStart && pageBreak.row < bodyEnd {
+			return pageBreak.row
+		}
+	}
+	return -1
 }

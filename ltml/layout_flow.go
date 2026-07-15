@@ -15,9 +15,24 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 	for _, widget := range remaining {
 		widget.SetVisible(false)
 	}
-	for _, widget := range widgets {
+	contentPlaced := false
+	for i, widget := range widgets {
 		widget.SetVisible(!containerFull)
 		if containerFull {
+			continue
+		}
+		if isPageBreak(widget) {
+			// Flow consumes pgbr at the current cursor without advancing it. A
+			// break is only actionable between ordinary one-time items, which
+			// prevents edge markers from creating empty pages.
+			widget.ResolveWidth(0)
+			widget.ResolveHeight(0)
+			widget.SetLeft(ContentLeft(container) + cx)
+			widget.SetTop(ContentTop(container) + cy)
+			widget.LayoutWidget(writer)
+			if continues && contentPlaced && hasOrdinaryFlowContentAfter(widgets, i+1) {
+				containerFull = true
+			}
 			continue
 		}
 		if widgetZeroFootprint(widget) {
@@ -56,10 +71,15 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 			widget.ResolveHeight(widget.PreferredHeight(writer))
 		}
 		widget.LayoutWidget(writer)
-		if continues && widget.Bottom() > bottom {
+		// As with vbox, a nested continuing child may need splitting because of
+		// its own pgbr even though its outer dimensions fit this flow fragment.
+		if continues && (widgetHasActionablePageBreak(widget) || widget.Bottom() > bottom) {
 			containerFull = true
 			widget.SetVisible(false)
 			continue
+		}
+		if widget.Display() == DisplayOnce {
+			contentPlaced = true
 		}
 		cx += widget.Width() + style.HPadding()
 		maxY = max(maxY, widget.Height())
@@ -68,4 +88,16 @@ func LayoutFlow(container Container, style *LayoutStyle, writer Writer) {
 		container.ResolveHeight(cy + maxY + NonContentHeight(container))
 	}
 	layoutPositionedChildren(container, writer)
+}
+
+func hasOrdinaryFlowContentAfter(widgets []Widget, start int) bool {
+	for _, widget := range widgets[start:] {
+		if isPageBreak(widget) || widgetZeroFootprint(widget) {
+			continue
+		}
+		if widget.Display() == DisplayOnce {
+			return true
+		}
+	}
+	return false
 }

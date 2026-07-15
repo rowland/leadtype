@@ -1,0 +1,19 @@
+<ltml units="in" margin="0.65" font.name="Helvetica" font.size="11">
+  <pen id="card-border" color="#0f766e" width="1pt" />
+  <brush id="card-fill" color="#f0fdfa" />
+
+  <style>
+    label.banner { width: 100%; font.size: 20; font.weight: Bold; color: #134e4a; display: always; }
+    vbox.card { width: 2.2in; height: 1.25in; border: card-border; fill: card-fill; padding: 10pt; }
+    vbox.card label { font.size: 15; font.weight: Bold; }
+  </style>
+
+  <page layout="flow" layout.hpadding="12pt" layout.vpadding="16pt">
+    <label class="banner">Flow layout pgbr</label>
+    <vbox class="card"><label>Card 1</label><p>Printed before the forced break.</p></vbox>
+    <vbox class="card"><label>Card 2</label><p>Also printed on the first physical page.</p></vbox>
+    <pgbr/>
+    <vbox class="card"><label>Card 3</label><p>Starts the second physical page.</p></vbox>
+    <vbox class="card"><label>Card 4</label><p>Flows beside card 3 after the break.</p></vbox>
+  </page>
+</ltml>

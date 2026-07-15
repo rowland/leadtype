@@ -236,6 +236,210 @@ func TestContainerHasEffectiveContinuation(t *testing.T) {
 	}
 }
 
+func TestParse_PageBreakIsZeroFootprintWidget(t *testing.T) {
+	doc, err := Parse([]byte(`<ltml><page><pgbr/></page></ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pageBreak, ok := doc.Page(0).Widgets()[0].(*StdPageBreak)
+	if !ok {
+		t.Fatalf("page child = %T, want *StdPageBreak", doc.Page(0).Widgets()[0])
+	}
+	if !pageBreak.ZeroFootprint() || pageBreak.PreferredHeight(&labelTestWriter{t: t}) != 0 || pageBreak.PreferredWidth(&labelTestWriter{t: t}) != 0 {
+		t.Fatalf("pgbr footprint = preferred %vx%v zero=%v, want 0x0 true", pageBreak.PreferredWidth(&labelTestWriter{t: t}), pageBreak.PreferredHeight(&labelTestWriter{t: t}), pageBreak.ZeroFootprint())
+	}
+}
+
+func TestStdPage_PageBreakForcesVBoxAndFlowContinuation(t *testing.T) {
+	for _, manager := range []string{"vbox", "flow"} {
+		t.Run(manager, func(t *testing.T) {
+			page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+			page.layout = defaultLayouts[manager].Clone()
+			doc := newFlowPageDoc(page)
+
+			var firstPages, secondPages []int
+			first := &flowTestWidget{name: "first", preferredWidth: 80, preferredHeight: 10, printedOn: &firstPages}
+			_ = first.SetContainer(page)
+			page.AddChild(first)
+			pageBreak := &StdPageBreak{}
+			_ = pageBreak.SetContainer(page)
+			page.AddChild(pageBreak)
+			second := &flowTestWidget{name: "second", preferredWidth: 80, preferredHeight: 10, printedOn: &secondPages}
+			_ = second.SetContainer(page)
+			page.AddChild(second)
+
+			w := &labelTestWriter{t: t}
+			if err := doc.Print(w); err != nil {
+				t.Fatal(err)
+			}
+			if w.pageCount != 2 || !slices.Equal(firstPages, []int{1}) || !slices.Equal(secondPages, []int{2}) {
+				t.Fatalf("page count/first/second = %d/%v/%v, want 2/[1]/[2]", w.pageCount, firstPages, secondPages)
+			}
+		})
+	}
+}
+
+func TestSample_PageBreakFlowDoesNotSplitFirstHiddenFollower(t *testing.T) {
+	doc, err := ParseFile(sampleFile("test_068_pgbr_flow.ltml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	pageTexts := map[int]string{}
+	for i, text := range w.printed {
+		pageTexts[w.printedPages[i]] += text.String() + "\n"
+	}
+	if w.pageCount != 2 || !strings.Contains(pageTexts[1], "Card 1") || strings.Contains(pageTexts[1], "Card 3") || !strings.Contains(pageTexts[2], "Card 3") || !strings.Contains(pageTexts[2], "Card 4") {
+		t.Fatalf("page count/text = %d/%q/%q, want cards 1-2 then 3-4", w.pageCount, pageTexts[1], pageTexts[2])
+	}
+}
+
+func TestStdPage_PageBreakCollapsesAtFragmentEdgesAndWhenOverflowDisabled(t *testing.T) {
+	t.Run("fragment edges", func(t *testing.T) {
+		page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+		page.layout = defaultLayouts["vbox"].Clone()
+		doc := newFlowPageDoc(page)
+		for range 2 {
+			pageBreak := &StdPageBreak{}
+			_ = pageBreak.SetContainer(page)
+			page.AddChild(pageBreak)
+		}
+		var bodyPages []int
+		body := &flowTestWidget{name: "body", preferredHeight: 10, printedOn: &bodyPages}
+		_ = body.SetContainer(page)
+		page.AddChild(body)
+		for range 2 {
+			trailing := &StdPageBreak{}
+			_ = trailing.SetContainer(page)
+			page.AddChild(trailing)
+		}
+
+		w := &labelTestWriter{t: t}
+		if err := doc.Print(w); err != nil {
+			t.Fatal(err)
+		}
+		if w.pageCount != 1 || !slices.Equal(bodyPages, []int{1}) {
+			t.Fatalf("page count/body = %d/%v, want 1/[1]", w.pageCount, bodyPages)
+		}
+	})
+
+	t.Run("overflow disabled", func(t *testing.T) {
+		page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+		page.layout = defaultLayouts["vbox"].Clone()
+		page.SetAttrs(map[string]string{"overflow": "false"})
+		doc := newFlowPageDoc(page)
+		var firstPages, secondPages []int
+		for i, pages := range []*[]int{&firstPages, &secondPages} {
+			if i == 1 {
+				pageBreak := &StdPageBreak{}
+				_ = pageBreak.SetContainer(page)
+				page.AddChild(pageBreak)
+			}
+			body := &flowTestWidget{preferredHeight: 10, printedOn: pages}
+			_ = body.SetContainer(page)
+			page.AddChild(body)
+		}
+
+		w := &labelTestWriter{t: t}
+		if err := doc.Print(w); err != nil {
+			t.Fatal(err)
+		}
+		if w.pageCount != 1 || !slices.Equal(firstPages, []int{1}) || !slices.Equal(secondPages, []int{1}) {
+			t.Fatalf("page count/first/second = %d/%v/%v, want 1/[1]/[1]", w.pageCount, firstPages, secondPages)
+		}
+	})
+}
+
+func TestStdPage_PageBreakSplitsNestedVBoxEvenWhenItWouldFit(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+	box := &StdContainer{}
+	box.layout = defaultLayouts["vbox"].Clone()
+	_ = box.SetContainer(page)
+	page.AddChild(box)
+
+	var firstPages, secondPages []int
+	first := &flowTestWidget{name: "first", preferredHeight: 10, printedOn: &firstPages}
+	_ = first.SetContainer(box)
+	box.AddChild(first)
+	pageBreak := &StdPageBreak{}
+	_ = pageBreak.SetContainer(box)
+	box.AddChild(pageBreak)
+	second := &flowTestWidget{name: "second", preferredHeight: 10, printedOn: &secondPages}
+	_ = second.SetContainer(box)
+	box.AddChild(second)
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 || !slices.Equal(firstPages, []int{1}) || !slices.Equal(secondPages, []int{2}) {
+		t.Fatalf("page count/first/second = %d/%v/%v, want 2/[1]/[2]", w.pageCount, firstPages, secondPages)
+	}
+}
+
+func TestStdContainer_PageBreakSplitsRowMajorTableAndValidatesPlacement(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 100}}
+	page.layout = defaultLayouts["vbox"].Clone()
+	doc := newFlowPageDoc(page)
+	table := &StdContainer{}
+	table.layout = defaultLayouts["table"].Clone()
+	table.SetAttrs(map[string]string{"cols": "2", "header-rows": "1", "footer-rows": "1"})
+	_ = table.SetContainer(page)
+	page.AddChild(table)
+
+	var headerPages, firstPages, secondPages, footerPages []int
+	addRow := func(name string, pages *[]int, display string) {
+		for range 2 {
+			cell := &flowTestWidget{name: name, preferredHeight: 10, printedOn: pages}
+			if display != "" {
+				cell.SetAttrs(map[string]string{"display": display})
+			}
+			_ = cell.SetContainer(table)
+			table.AddChild(cell)
+		}
+	}
+	addRow("header", &headerPages, "always")
+	addRow("first", &firstPages, "")
+	pageBreak := &StdPageBreak{}
+	_ = pageBreak.SetContainer(table)
+	table.AddChild(pageBreak)
+	addRow("second", &secondPages, "")
+	addRow("footer", &footerPages, "always")
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pageCount != 2 || !slices.Equal(firstPages, []int{1, 1}) || !slices.Equal(secondPages, []int{2, 2}) {
+		t.Fatalf("page count/first/second = %d/%v/%v, want 2/[1 1]/[2 2]", w.pageCount, firstPages, secondPages)
+	}
+	if !slices.Equal(headerPages, []int{1, 1, 2, 2}) || !slices.Equal(footerPages, []int{1, 1, 2, 2}) {
+		t.Fatalf("header/footer pages = %v/%v, want [1 1 2 2] each", headerPages, footerPages)
+	}
+
+	midRow := &StdContainer{}
+	midRow.layout = defaultLayouts["table"].Clone()
+	midRow.SetAttrs(map[string]string{"cols": "2"})
+	midRow.AddChild(&flowTestWidget{})
+	midRow.AddChild(&StdPageBreak{})
+	if _, err := rowGrid(midRow); err == nil || !strings.Contains(err.Error(), "complete table rows") {
+		t.Fatalf("mid-row pgbr error = %v, want complete-row error", err)
+	}
+
+	columnMajor := &StdContainer{}
+	columnMajor.layout = defaultLayouts["table"].Clone()
+	columnMajor.SetAttrs(map[string]string{"cols": "2", "rows": "2", "order": "cols"})
+	columnMajor.AddChild(&StdPageBreak{})
+	if _, err := tableGridFor(columnMajor); err == nil || !strings.Contains(err.Error(), "order=rows") {
+		t.Fatalf("column-major pgbr error = %v, want order=rows error", err)
+	}
+}
+
 func TestLayoutVBox_TopAndBottomChildrenPreserveSourceOrder(t *testing.T) {
 	page := &StdPage{pageStyle: &PageStyle{width: 200, height: 200}}
 	page.layout = defaultLayouts["vbox"].Clone()

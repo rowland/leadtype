@@ -377,7 +377,7 @@ func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 	})
 	for _, child := range children {
 		if !child.Visible() || child.Disabled() {
-			if item := p.pageItemForCurrent(child); item != nil && !item.Done && !splitAttempted {
+			if item := p.pageItemForCurrent(child); item != nil && !item.Done && !splitAttempted && !p.hiddenAfterVisiblePageBreak(child) {
 				splitAttempted = true
 				progress, err := p.trySplitChild(item, child, w)
 				if err != nil {
@@ -402,6 +402,21 @@ func (p *StdPage) drawVisibleChildren(w Writer) (int, error) {
 		}
 	}
 	return printedOnce, nil
+}
+
+func (p *StdPage) hiddenAfterVisiblePageBreak(target Widget) bool {
+	// Layout deliberately hides siblings following an actionable pgbr. They
+	// are not height failures, so do not try to split the first hidden sibling;
+	// leave it pending for the next physical page instead.
+	for _, child := range p.Widgets() {
+		if child == target {
+			return false
+		}
+		if isPageBreak(child) && child.Visible() && !child.Disabled() {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *StdPage) hasPendingOnceChildren() bool {

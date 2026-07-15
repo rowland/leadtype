@@ -1,0 +1,26 @@
+<ltml units="in" margin="0.65" font.name="Helvetica" font.size="11">
+  <pen id="panel-border" color="#2563eb" width="1pt" />
+  <brush id="panel-fill" color="#eff6ff" />
+
+  <style>
+    label.title { font.size: 20; font.weight: Bold; color: #1e3a8a; display: always; }
+    p.note { padding: 10pt; border: panel-border; fill: panel-fill; }
+    vbox.demo { width: 100%; overflow: true; border: panel-border; padding: 12pt; layout.vpadding: 10pt; }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt">
+    <label class="title" align="top">Direct vbox page break</label>
+    <p class="note">This short block is on physical page one.</p>
+    <pgbr/>
+    <p class="note">This block starts physical page two because of pgbr, even though both blocks would fit together.</p>
+  </page>
+
+  <page layout="vbox" layout.vpadding="14pt">
+    <label class="title" align="top">Nested overflowing vbox</label>
+    <vbox class="demo">
+      <p class="note">The nested container prints this fragment first.</p>
+      <pgbr/>
+      <p class="note">The nested container resumes here on the next physical page.</p>
+    </vbox>
+  </page>
+</ltml>

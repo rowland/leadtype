@@ -20,7 +20,8 @@ Doc                      — top-level parser; holds a stack and scope stack
   └─ StdDocument         — root <ltml> element; embeds StdPage
        └─ StdPage        — <page>; has a Scope for style lookup
             └─ StdContainer — <div>, <table>, etc.; manages children
-                 └─ StdWidget — base for all visual elements
+                 ├─ StdWidget — base for all visual elements
+                 └─ StdPageBreak — zero-footprint <pgbr> continuation marker
 ```
 
 **Key interfaces** (all in `package ltml`):

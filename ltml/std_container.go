@@ -428,14 +428,32 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 		if err != nil {
 			return nil, err
 		}
-		bodyCount := metrics.bodyEnd - metrics.bodyStart
-		if c.tableFragmentHeight(metrics, metrics.bodyStart, metrics.bodyEnd) <= avail {
+		forcedBreak := firstActionableTableBreak(metrics.breaks, metrics.bodyStart, metrics.bodyEnd)
+		targetEnd := metrics.bodyEnd
+		if forcedBreak >= 0 {
+			// Treat the marker as a stricter boundary than available height.
+			// Repeated chrome is cloned onto both sides below, while the marker
+			// itself is consumed and only later markers survive in the tail.
+			targetEnd = forcedBreak
+		}
+		bodyCount := targetEnd - metrics.bodyStart
+		if c.tableFragmentHeight(metrics, metrics.bodyStart, targetEnd) <= avail {
 			rows := append([]int{}, metrics.headerRows...)
-			for r := metrics.bodyStart; r < metrics.bodyEnd; r++ {
+			for r := metrics.bodyStart; r < targetEnd; r++ {
 				rows = append(rows, r)
 			}
 			rows = append(rows, metrics.footerRows...)
-			return &SplitResult{Head: c.cloneTableFragment(metrics, rows), Tail: nil}, nil
+			head := c.cloneTableFragment(metrics, rows, nil)
+			if forcedBreak < 0 {
+				return &SplitResult{Head: head, Tail: nil}, nil
+			}
+			tailRows := append([]int{}, metrics.headerRows...)
+			for r := forcedBreak; r < metrics.bodyEnd; r++ {
+				tailRows = append(tailRows, r)
+			}
+			tailRows = append(tailRows, metrics.footerRows...)
+			tailBreaks := c.remainingTableBreaks(metrics, forcedBreak, forcedBreak)
+			return &SplitResult{Head: head, Tail: c.cloneTableFragment(metrics, tailRows, tailBreaks)}, nil
 		}
 		if bodyCount < 2 {
 			return nil, nil
@@ -463,8 +481,10 @@ func (c *StdContainer) SplitForHeight(avail float64, w Writer) (*SplitResult, er
 		}
 		tailRows = append(tailRows, metrics.footerRows...)
 
-		head := c.cloneTableFragment(metrics, headRows)
-		tail := c.cloneTableFragment(metrics, tailRows)
+		head := c.cloneTableFragment(metrics, headRows, nil)
+		tailStart := metrics.bodyStart + fitBodies
+		tailBreaks := c.remainingTableBreaks(metrics, tailStart, -1)
+		tail := c.cloneTableFragment(metrics, tailRows, tailBreaks)
 		return &SplitResult{Head: head, Tail: tail}, nil
 	case "vbox":
 		if !c.overflowAllowed() {
@@ -509,6 +529,7 @@ func containerLayoutContinuesByDefault(style *LayoutStyle) bool {
 
 type tableSplitMetrics struct {
 	grid       *WidgetGrid
+	breaks     []tablePageBreak
 	rowHeights []float64
 	headerRows []int
 	footerRows []int
@@ -517,16 +538,11 @@ type tableSplitMetrics struct {
 }
 
 func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
-	var grid *WidgetGrid
-	var err error
-	if c.Order() == TableOrderRows {
-		grid, err = rowGrid(c)
-	} else {
-		grid, err = colGrid(c)
-	}
+	info, err := tableGridFor(c)
 	if err != nil {
 		return nil, err
 	}
+	grid := info.grid
 	for _, widget := range c.Widgets() {
 		if widget.RowSpan() > 1 {
 			return nil, errTableSplitUnsupportedRowSpan
@@ -570,6 +586,7 @@ func (c *StdContainer) tableSplitMetrics(w Writer) (*tableSplitMetrics, error) {
 	}
 	return &tableSplitMetrics{
 		grid:       grid,
+		breaks:     info.breaks,
 		rowHeights: rowHeights,
 		headerRows: headerRows,
 		footerRows: footerRows,
@@ -595,9 +612,9 @@ func (c *StdContainer) tableFragmentHeight(metrics *tableSplitMetrics, bodyStart
 	return height
 }
 
-func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int) *StdContainer {
+func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int, breaks []tablePageBreak) *StdContainer {
 	clone := *c
-	clone.activeChildren = c.cloneTableWidgetsForRows(metrics.grid, rows, &clone)
+	clone.activeChildren = c.cloneTableWidgetsForRows(metrics.grid, rows, breaks, &clone)
 	clone.ClearResolvedWidth()
 	clone.ClearResolvedHeight()
 	clone.printed = false
@@ -612,10 +629,20 @@ func (c *StdContainer) cloneTableFragment(metrics *tableSplitMetrics, rows []int
 	return &clone
 }
 
-func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, parent Container) []Widget {
+func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, breaks []tablePageBreak, parent Container) []Widget {
 	var widgets []Widget
 	seen := map[Widget]bool{}
 	for _, r := range rows {
+		for _, pageBreak := range breaks {
+			if pageBreak.row != r {
+				continue
+			}
+			clone := cloneWidgetShallow(pageBreak.widget)
+			if wc, ok := clone.(WantsContainer); ok {
+				_ = wc.SetContainer(parent)
+			}
+			widgets = append(widgets, clone)
+		}
 		for col := 0; col < grid.Cols(); col++ {
 			widget := grid.Cell(col, r)
 			if widget == nil || seen[widget] {
@@ -630,6 +657,17 @@ func (c *StdContainer) cloneTableWidgetsForRows(grid *WidgetGrid, rows []int, pa
 		}
 	}
 	return widgets
+}
+
+func (c *StdContainer) remainingTableBreaks(metrics *tableSplitMetrics, bodyStart, consumedRow int) []tablePageBreak {
+	var breaks []tablePageBreak
+	for _, pageBreak := range metrics.breaks {
+		if pageBreak.row < bodyStart || pageBreak.row >= metrics.bodyEnd || pageBreak.row == consumedRow {
+			continue
+		}
+		breaks = append(breaks, pageBreak)
+	}
+	return breaks
 }
 
 const (
@@ -776,16 +814,33 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 	var splitSource Widget
 	var splitHead Widget
 	var splitTail Widget
+	consumedBreaks := make(map[Widget]bool)
+	headBody := make([]Widget, 0, len(metrics.body))
+	tailStart := len(metrics.body)
 	bodyIncluded := 0
 	for i, child := range metrics.body {
+		if isPageBreak(child) {
+			// Consume markers rather than cloning them into the head. Leading,
+			// consecutive, and trailing markers are skipped; the first marker
+			// between real body children fixes the tail boundary regardless of
+			// how much vertical space remains.
+			if bodyIncluded == 0 || !hasOrdinaryVBoxBodyAfter(metrics.body, i+1) {
+				consumedBreaks[child] = true
+				continue
+			}
+			consumedBreaks[child] = true
+			tailStart = i + 1
+			break
+		}
 		c.measureVBoxSplitChild(metrics, child, w)
-		candidate := append([]Widget(nil), metrics.body[:i+1]...)
+		candidate := append(append([]Widget(nil), headBody...), child)
 		if c.vboxFragmentHeight(metrics, candidate) <= avail {
 			headWhole[child] = true
+			headBody = append(headBody, child)
 			bodyIncluded++
 			continue
 		}
-		availForChild := c.vboxSplitAvailableForChild(metrics, metrics.body[:i], child, avail)
+		availForChild := c.vboxSplitAvailableForChild(metrics, headBody, child, avail)
 		if splittable, ok := child.(Splittable); ok && availForChild > 0 {
 			result, err := splittable.SplitForHeight(availForChild, w)
 			if err != nil {
@@ -798,35 +853,29 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 				bodyIncluded++
 			}
 		}
+		tailStart = i
 		break
 	}
 	if bodyIncluded == 0 {
 		return nil, nil
 	}
 
-	for i, child := range metrics.body {
-		if splitSource != nil && child == splitSource {
-			if splitTail != nil {
-				tailWhole[child] = false
-			}
-			for _, remaining := range metrics.body[i+1:] {
-				tailWhole[remaining] = true
-			}
-			break
+	tailHasBody := splitTail != nil
+	for i := tailStart; i < len(metrics.body); i++ {
+		child := metrics.body[i]
+		if consumedBreaks[child] {
+			continue
 		}
-		if headWhole[child] {
+		if child == splitSource {
+			if splitTail != nil {
+				tailWhole[child] = true
+			}
 			continue
 		}
 		tailWhole[child] = true
-	}
-	if splitSource == nil {
-		for _, child := range metrics.body {
-			if !headWhole[child] {
-				tailWhole[child] = true
-			}
+		if !isPageBreak(child) {
+			tailHasBody = true
 		}
-	} else if splitTail == nil {
-		delete(tailWhole, splitSource)
 	}
 
 	headReplacements := map[Widget]Widget{}
@@ -834,14 +883,14 @@ func (c *StdContainer) splitVBoxForHeight(avail float64, w Writer) (*SplitResult
 		headReplacements[splitSource] = splitHead
 	}
 	head := c.cloneVBoxFragment(headWhole, headReplacements)
+	if !tailHasBody {
+		return &SplitResult{Head: head, Tail: nil}, nil
+	}
 	tailReplacements := map[Widget]Widget{}
 	if splitSource != nil && splitTail != nil {
 		tailReplacements[splitSource] = splitTail
 	}
 	tail := c.cloneVBoxFragment(tailWhole, tailReplacements)
-	if len(tail.Widgets()) == 0 {
-		return &SplitResult{Head: head, Tail: nil}, nil
-	}
 	return &SplitResult{Head: head, Tail: tail}, nil
 }
 

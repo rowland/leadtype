@@ -30,6 +30,23 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) {
 	for _, widget := range remaining {
 		widget.SetVisible(false)
 	}
+	// An hbox does not propagate continuation, so pgbr is inert here. Still lay
+	// the marker out at zero size so normal printed-state bookkeeping consumes
+	// it; leaving it in the horizontal runs would also distort alignment counts.
+	participating := static[:0]
+	for _, widget := range static {
+		if !isPageBreak(widget) {
+			participating = append(participating, widget)
+			continue
+		}
+		widget.SetVisible(true)
+		widget.ResolveWidth(0)
+		widget.ResolveHeight(0)
+		widget.SetLeft(ContentLeft(container))
+		widget.SetTop(ContentTop(container))
+		widget.LayoutWidget(writer)
+	}
+	static = participating
 
 	// Alignment affects placement order, not sizing. We first split the static
 	// widgets into the three horizontal runs the hbox knows how to place:
@@ -393,13 +410,25 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 		bodyBottom = footerTop - style.VPadding()
 	}
 	containerFull := false
-	for _, widget := range body {
+	bodyPlaced := false
+	for i, widget := range body {
 		widget.SetVisible(!containerFull)
 		if containerFull {
 			continue
 		}
 		entry := measureVBoxChild(container, writer, widget)
 		widget.SetTop(top)
+		if isPageBreak(widget) {
+			// The marker belongs to this vbox fragment but consumes no stack
+			// height. Once real body content precedes it, hide later content so
+			// the page retry/split machinery advances to another fragment.
+			widget.SetVisible(true)
+			fragment.body = append(fragment.body, entry)
+			if continues && bodyPlaced && hasOrdinaryVBoxBodyAfter(body, i+1) {
+				containerFull = true
+			}
+			continue
+		}
 		if widgetZeroFootprint(widget) {
 			widget.SetVisible(!continues || widget.Top() <= bodyBottom)
 			if widget.Visible() {
@@ -407,12 +436,17 @@ func measureVBoxFragment(container Container, style *LayoutStyle, writer Writer,
 			}
 			continue
 		}
-		if constrained && continues && top+entry.height > bodyBottom+layoutFitEpsilon {
+		// A continuing child with an internal pgbr must be split even when its
+		// measured height fits in the remaining space.
+		if constrained && continues && (widgetHasActionablePageBreak(widget) || top+entry.height > bodyBottom+layoutFitEpsilon) {
 			containerFull = true
 			widget.SetVisible(false)
 			continue
 		}
 		fragment.body = append(fragment.body, entry)
+		if widget.Display() == DisplayOnce {
+			bodyPlaced = true
+		}
 		top += entry.height + style.VPadding()
 	}
 

@@ -1,0 +1,27 @@
+<ltml units="in" margin="0.65" font.name="Helvetica" font.size="11">
+  <pen id="table-border" color="#7c3aed" width="1pt" />
+  <brush id="header-fill" color="#ede9fe" />
+  <brush id="body-fill" color="#faf5ff" />
+  <brush id="footer-fill" color="#f3e8ff" />
+
+  <style>
+    label.title { font.size: 20; font.weight: Bold; color: #581c87; display: always; }
+    table.demo { width: 100%; layout: table; cols: 2; order: rows; overflow: true; header-rows: 1; footer-rows: 1; border: table-border; padding: 8pt; layout.hpadding: 8pt; layout.vpadding: 8pt; }
+    table.demo p { height: 0.7in; border: table-border; padding: 8pt; fill: body-fill; }
+    table.demo p.header { height: 0.5in; fill: header-fill; font.weight: Bold; display: always; }
+    table.demo p.footer { height: 0.45in; fill: footer-fill; font.style: Italic; display: always; }
+  </style>
+
+  <page layout="vbox" layout.vpadding="14pt">
+    <label class="title" align="top">Row-major table pgbr</label>
+    <table class="demo">
+      <p class="header">Column A</p><p class="header">Column B</p>
+      <p>Row 1A — before break</p><p>Row 1B — before break</p>
+      <p>Row 2A — before break</p><p>Row 2B — before break</p>
+      <pgbr/>
+      <p>Row 3A — after break</p><p>Row 3B — after break</p>
+      <p>Row 4A — after break</p><p>Row 4B — after break</p>
+      <p class="footer">Repeated footer A</p><p class="footer">Repeated footer B</p>
+    </table>
+  </page>
+</ltml>

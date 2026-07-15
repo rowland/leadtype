@@ -291,6 +291,9 @@ func TestSamples(t *testing.T) {
 		"test_064_list_bullet_templates",
 		"test_065_injectable_svg_styles",
 		"test_066_display_last",
+		"test_067_pgbr_vbox",
+		"test_068_pgbr_flow",
+		"test_069_pgbr_table",
 	}
 
 	for _, sample := range samples {
