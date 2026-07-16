@@ -195,6 +195,55 @@ func TestLayoutHBox_UsesAspectRatioProviderForThirdPartyWidgets(t *testing.T) {
 	}
 }
 
+func TestLayoutHBox_ConstrainedAutoVBoxPropagatesWidthToNestedLabel(t *testing.T) {
+	hbox := positionedContainer(0, 0, 500, 100)
+	hbox.layout = &LayoutStyle{manager: "hbox", hpadding: 20}
+
+	outer := &StdContainer{}
+	outer.layout = &LayoutStyle{manager: "vbox"}
+	outer.SetWidthAuto()
+	if err := outer.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(outer)
+
+	inner := &StdContainer{}
+	inner.layout = &LayoutStyle{manager: "vbox"}
+	if err := inner.SetContainer(outer); err != nil {
+		t.Fatal(err)
+	}
+	outer.AddChild(inner)
+
+	title := testHBoxLabel(t, "A deliberately long heading that is much wider than the available header track and must shrink")
+	title.shrinkToFit = true
+	if err := title.SetContainer(inner); err != nil {
+		t.Fatal(err)
+	}
+	inner.AddChild(title)
+
+	logo := &positionedTestWidget{preferredWidth: 40, preferredHeight: 40}
+	logo.align = AlignRight
+	if err := logo.SetContainer(hbox); err != nil {
+		t.Fatal(err)
+	}
+	hbox.AddChild(logo)
+
+	writer := &labelTestWriter{t: t}
+	if err := LayoutHBox(hbox, hbox.layout, writer); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := outer.Width(); got != 440 {
+		t.Fatalf("outer.Width() = %v, want 440", got)
+	}
+	if got := inner.Width(); got != 440 {
+		t.Fatalf("inner.Width() = %v, want 440", got)
+	}
+	if got := title.Width(); got != 440 {
+		t.Fatalf("title.Width() = %v, want 440", got)
+	}
+}
+
 func TestLayoutHBox_SpecifiedWidthsFitWhenContainerMatchesPreferredSum(t *testing.T) {
 	const childW = 72.0
 	const hpad = 25.2
@@ -436,8 +485,8 @@ func TestLayoutHBox_AutoWidthsFitAfterSpecifiedWidthsWithoutPercentGroup(t *test
 		if widget.Disabled() {
 			t.Fatalf("auto[%d] disabled, want it fitted into the remaining width", i)
 		}
-		if got := widget.Width(); got <= 0 {
-			t.Fatalf("auto[%d].Width() = %v, want a visible width", i, got)
+		if got := widget.Width(); got != 5 {
+			t.Fatalf("auto[%d].Width() = %v, want 5", i, got)
 		}
 	}
 }

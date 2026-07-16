@@ -115,31 +115,29 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) (err err
 	// commitments above. If the requested percents over-allocate, they are scaled
 	// down proportionally instead of being treated as independent hard failures.
 	// If even the padding gaps cannot fit, the whole percent group is disabled.
-	if widthAvail-float64(len(percents)-1)*style.HPadding() >= float64(len(percents)) {
-		widthAvail -= float64(len(percents)-1) * style.HPadding()
-		totalPercents := 0.0
-		for _, widget := range percents {
-			totalPercents += widget.Width()
-		}
-		ratio := widthAvail / totalPercents
-		for _, widget := range percents {
-			if ratio < 1.0 {
-				widget.ResolveWidth(widget.Width() * ratio)
-			}
-			widthAvail -= widget.Width()
-		}
-	} else {
-		containerFull = true
-		for _, widget := range percents {
-			widget.SetDisabled(true)
-		}
-	}
-	// A non-empty percent group reserves one trailing gap before the flexible
-	// groups. When the group is empty, the specified-width loop has already
-	// reserved the boundary gap (if any), and the flexible group accounts for
-	// its own internal gaps. Charging a gap here unconditionally can disable
-	// otherwise fitting auto-width children.
 	if len(percents) > 0 {
+		if widthAvail-float64(len(percents)-1)*style.HPadding() >= float64(len(percents)) {
+			widthAvail -= float64(len(percents)-1) * style.HPadding()
+			totalPercents := 0.0
+			for _, widget := range percents {
+				totalPercents += widget.Width()
+			}
+			ratio := widthAvail / totalPercents
+			for _, widget := range percents {
+				if ratio < 1.0 {
+					widget.ResolveWidth(widget.Width() * ratio)
+				}
+				widthAvail -= widget.Width()
+			}
+		} else {
+			containerFull = true
+			for _, widget := range percents {
+				widget.SetDisabled(true)
+			}
+		}
+		// A non-empty percent group reserves one trailing gap before the flexible
+		// groups. Empty groups must not run the internal-gap calculation above:
+		// len(percents)-1 would otherwise add one padding unit to widthAvail.
 		widthAvail -= style.HPadding()
 	}
 
