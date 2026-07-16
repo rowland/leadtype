@@ -170,7 +170,7 @@ func (widget *StdWidget) PaintBackground(w Writer) error {
 	if width <= 0 || height <= 0 {
 		return nil
 	}
-	return widget.paintBrushInRect(w, widget.fill, x, y, width, height)
+	return widget.PaintBrushInRect(w, widget.fill, x, y, width, height)
 }
 
 func (widget *StdWidget) Path() string {
@@ -349,11 +349,13 @@ func (widget *StdWidget) backgroundRect() (x, y, width, height float64) {
 		widget.Height() - widget.MarginTop() - widget.MarginBottom()
 }
 
-// paintBrushInRect is the shared widget-box brush painter used by standard
-// widgets that rely on StdWidget.PaintBackground. Widgets with custom fill
-// geometry, such as sectors or shape primitives, continue to own their own
-// background logic.
-func (widget *StdWidget) paintBrushInRect(w Writer, brush *BrushStyle, x, y, width, height float64) error {
+// PaintBrushInRect paints brush into the rectangle, including solid, gradient,
+// and image kinds. Custom widgets embedded in other packages should use this
+// instead of BrushStyle.Apply (which only handles solid fills). It is the
+// shared widget-box brush painter used by standard widgets that rely on
+// StdWidget.PaintBackground. Widgets with custom fill geometry, such as
+// sectors or shape primitives, continue to own their own background logic.
+func (widget *StdWidget) PaintBrushInRect(w Writer, brush *BrushStyle, x, y, width, height float64) error {
 	if brush == nil {
 		return nil
 	}

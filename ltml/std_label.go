@@ -81,7 +81,7 @@ func (l *StdLabel) DrawContent(w Writer) error {
 				w.MoveTo(startX, anchorY)
 				var paintErr error
 				if err := w.ClipRichText(rt, func() {
-					paintErr = l.paintBrushInRect(w, l.textFill, x, y, width, height)
+					paintErr = l.PaintBrushInRect(w, l.textFill, x, y, width, height)
 				}); err != nil {
 					return err
 				}

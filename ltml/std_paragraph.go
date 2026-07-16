@@ -216,7 +216,7 @@ func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, start
 		w.MoveTo(startX+xOffset, currentY)
 		var paintErr error
 		if err := w.ClipRichText(clipped, func() {
-			paintErr = p.paintBrushInRect(w, p.textFill, x, y, fillWidth, fillHeight)
+			paintErr = p.PaintBrushInRect(w, p.textFill, x, y, fillWidth, fillHeight)
 		}); err != nil {
 			return err
 		}

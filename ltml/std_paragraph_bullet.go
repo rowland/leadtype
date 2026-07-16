@@ -136,7 +136,7 @@ func (p *StdParagraph) paintBulletShapeBrush(w Writer, layout paragraphBulletLay
 	}
 	var paintErr error
 	if err := w.ClipClosedShape(*layout.shape, func() {
-		paintErr = p.paintBrushInRect(w, brush, layout.shapeBounds.MinX, layout.shapeBounds.MinY, layout.shapeBounds.Width(), layout.shapeBounds.Height())
+		paintErr = p.PaintBrushInRect(w, brush, layout.shapeBounds.MinX, layout.shapeBounds.MinY, layout.shapeBounds.Width(), layout.shapeBounds.Height())
 	}); err != nil {
 		return err
 	}

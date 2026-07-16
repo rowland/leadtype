@@ -203,6 +203,14 @@ func (ps *PenStyle) Cap() string {
 	return ps.cap
 }
 
+// Width returns the pen stroke width in points.
+func (ps *PenStyle) Width() float64 {
+	if ps == nil {
+		return 0
+	}
+	return ps.width
+}
+
 func PenStyleFor(id string, scope HasScope) *PenStyle {
 	if scope == nil {
 		return &PenStyle{id: "pen_" + id, color: NamedColor(id), pattern: defaultPenPattern, cap: defaultPenCap}
