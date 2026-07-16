@@ -134,7 +134,14 @@ func LayoutHBox(container Container, style *LayoutStyle, writer Writer) (err err
 			widget.SetDisabled(true)
 		}
 	}
-	widthAvail -= style.HPadding()
+	// A non-empty percent group reserves one trailing gap before the flexible
+	// groups. When the group is empty, the specified-width loop has already
+	// reserved the boundary gap (if any), and the flexible group accounts for
+	// its own internal gaps. Charging a gap here unconditionally can disable
+	// otherwise fitting auto-width children.
+	if len(percents) > 0 {
+		widthAvail -= style.HPadding()
+	}
 
 	// Edge-aligned flexible panels are placed outside the ordinary center run,
 	// so reserve their preferred widths before omitted/auto center children are

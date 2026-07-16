@@ -405,6 +405,43 @@ func TestLayoutHBox_AutoWidthAbsorbsOnlySurplusSpace(t *testing.T) {
 	}
 }
 
+func TestLayoutHBox_AutoWidthsFitAfterSpecifiedWidthsWithoutPercentGroup(t *testing.T) {
+	c := positionedContainer(0, 0, 400, 100)
+	style := &LayoutStyle{hpadding: 30}
+
+	for i := 0; i < 2; i++ {
+		fixed := &positionedTestWidget{preferredWidth: 150, preferredHeight: 20}
+		fixed.SetWidth(150)
+		if err := fixed.SetContainer(c); err != nil {
+			t.Fatal(err)
+		}
+		c.AddChild(fixed)
+	}
+
+	auto := make([]*positionedTestWidget, 2)
+	for i := range auto {
+		auto[i] = &positionedTestWidget{preferredWidth: 10, preferredHeight: 20}
+		auto[i].SetWidthAuto()
+		if err := auto[i].SetContainer(c); err != nil {
+			t.Fatal(err)
+		}
+		c.AddChild(auto[i])
+	}
+
+	if err := LayoutHBox(c, style, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, widget := range auto {
+		if widget.Disabled() {
+			t.Fatalf("auto[%d] disabled, want it fitted into the remaining width", i)
+		}
+		if got := widget.Width(); got <= 0 {
+			t.Fatalf("auto[%d].Width() = %v, want a visible width", i, got)
+		}
+	}
+}
+
 func TestLayoutHBox_AutoWidthScalesPreferredWidthsWhenConstrained(t *testing.T) {
 	c := positionedContainer(0, 0, 340, 100)
 	style := &LayoutStyle{hpadding: 10}
