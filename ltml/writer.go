@@ -53,6 +53,7 @@ type Writer interface {
 	PaintImageFile(filename string, x, y, width, height, opacity float64) error
 	PaintLinearGradient(lg *pdf.LinearGradient) error
 	PaintRadialGradient(rg *pdf.RadialGradient) error
+	PaintSweepBand(sb *pdf.SweepBand) error
 	PrintParagraph(para []*rich_text.RichText, options options.Options)
 	PrintRichText(text *rich_text.RichText)
 	Path(fn func()) error

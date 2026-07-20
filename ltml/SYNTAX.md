@@ -415,6 +415,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `header-rows`    | Number of leading table rows that repeat on every fragment page. Defaults to `0`. |
 | `footer-rows`    | Number of trailing table rows that repeat on every fragment page. Defaults to `0`. |
 | `base-angle`     | Base angle in degrees for radial sector boundaries. Default: `0`. |
+| `row-angle-offsets` | Optional comma-separated angular offsets added to `base-angle` by logical radial row. Missing row values default to `0`. |
 | `angles`         | Comma-separated angular boundary bearings relative to `base-angle`. LTML normalizes, sorts, and deduplicates them before building sectors. |
 | `sweep`          | Radial sector sweep direction: `ccw` (default) or `cw`. This changes how sectors span between boundaries without changing what the angle numbers mean. |
 | `center-x`, `center-y` | Optional radial center coordinates in the container's content box. |
@@ -454,6 +455,16 @@ implicit sector and to the original child widget.
 | `text-align` | For inline sector text, anchor to the sector `left`/`start`, `center`, or `right`/`end`. |
 | `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` anchor to the sector start angle, midpoint angle, and end angle. |
 | `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` anchor to the inner radius, midpoint radius, and outer radius. |
+| `border-outer`, `border-inner` | Physical aliases for the sector's `border-top` outer arc and `border-bottom` inner arc. |
+| `border-start`, `border-end` | Physical aliases for the radial edges at the sector's start and end angles. These map to `border-left` and `border-right` according to the parent's sweep direction. |
+
+An aggregate `border` strokes the sector as one closed shape, including both
+radial edges. When `border` is omitted, individually configured borders are
+stroked separately: `border-top`/`border-outer` paints the outer arc,
+`border-bottom`/`border-inner` paints the inner arc, and the left/right borders
+paint the two radial edges. For `sweep="ccw"`, left is start and right is end;
+for `sweep="cw"`, right is start and left is end. A full-circle sector can
+therefore use only `border-outer` and `border-inner` to avoid a radial seam.
 
 When `origin-x` or `origin-y` is omitted for a positioned child inside a
 sector, LTML defaults to the sector midpoint: anchor angle for `origin-x` and
@@ -993,17 +1004,35 @@ auto-generated solid pen for that color:
 | Attribute | Description |
 |-----------|-------------|
 | `id`      | Name used to reference this style. |
-| `kind`    | Brush type: `solid` (default), `linear-gradient`, `radial-gradient`, or `image`. |
+| `kind`    | Brush type: `solid` (default), `linear-gradient`, `radial-gradient`, `sweep-gradient`, or `image`. |
 | `color`   | Fill color for solid brushes. |
 | `stops`   | Comma-separated gradient stops like `0:#112233,0.5:Gold,1:#445566`. |
 | `x0`, `y0`, `x1`, `y1` | Gradient coordinates. Accept LTML measurements, and also accept percentages like `50%` resolved against the painted box width or height. Used by linear gradients and the center points of radial gradients. |
 | `r0`, `r1` | Radial gradient start and end radii. Accept LTML measurements, and also accept percentages resolved against the painted box's smaller dimension. |
+| `steps` | Number of equal-angle subdivisions used for each adjacent stop interval of a `sweep-gradient`. Values less than or equal to zero default to `1`. |
 | `src` | Image source for `kind="image"`. Supports the same asset resolution rules as `<image>`. |
 | `fit` | Image brush sizing mode: `stretch`, `contain`, `cover`, or `tile`. |
 | `anchor` | Image brush alignment inside the painted box: `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`. |
 | `repeat` | Image repetition mode: `no-repeat` (default), `repeat`, `repeat-x`, or `repeat-y`. |
 | `opacity` | Uniform opacity for gradient and image brushes. Accepts `0` to `1` values or percentages like `60%`. Default: `1`. |
 | `tile-width`, `tile-height` | Explicit rendered tile size for `fit="tile"`. Accept LTML measurements, and also accept percentages like `50%` or `100%` resolved against the painted box. If only one side is specified, LTML preserves the source aspect ratio. |
+
+`sweep-gradient` brushes are currently supported only as sector fills. The
+sector supplies the center, inner and outer radii, and angular span; gradient
+stops map from the sector's start angle (`0`) to its end angle (`1`), including
+clockwise spans. PDF has no native sweep shading, so LTML approximates each
+interval with clipped, chord-aligned linear gradients. Increase `steps` for a
+smoother curved appearance at the cost of additional PDF shading operations.
+
+```xml
+<brush id="rainbow" kind="sweep-gradient" steps="12"
+  stops="0:Red,0.25:Blue,0.5:Green,0.75:Gold,1:Red" />
+
+<div layout="radial-out" rows="1" cols="1" r0="0.6in"
+  width="2in" height="2in">
+  <sector fill="rainbow"></sector>
+</div>
+```
 
 Image brushes default to the source asset's intrinsic size when `fit="tile"` and
 no explicit tile size is provided. That means very large source images may clip
@@ -1498,12 +1527,19 @@ its separate angular-anchor semantics.
   normalizes, sorts, deduplicates, and closes the circle automatically.
 - At least one of `rows` or `cols` must be specified unless `angles` supplies
   the columns and the missing dimension can be derived from the children.
-- `sweep="ccw"` (default) spans each sector to the next boundary in ascending
-  order; `sweep="cw"` spans each sector to the previous boundary in the cycle.
+- `sweep="ccw"` (default) advances grid columns counterclockwise;
+  `sweep="cw"` advances them clockwise. In either direction, a colspan keeps
+  the first column's starting boundary and extends through subsequent columns.
 - `order="rows"` fills sectors around the circle before moving inward.
 - `order="cols"` fills sectors inward before advancing to the next angular slot.
 - Row `0` is the outermost track; higher row numbers move inward.
 - `base-angle` rotates the whole radial grid.
+- `row-angle-offsets` rotates individual rows relative to `base-angle`, for
+  example `row-angle-offsets="22.5,0,0,0,22.5"`. Missing values default to
+  zero; trailing values beyond the rows populated by the dataset are ignored.
+- A sector may span multiple rows only when those rows have equivalent angular
+  offsets. Differently offset rows cannot share the current annular-sector
+  geometry.
 - A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
 - Inline text written directly in `<sector>` follows the arc.
@@ -1519,12 +1555,18 @@ its separate angular-anchor semantics.
   normalizes, sorts, deduplicates, and closes the circle automatically.
 - At least one of `rows` or `cols` must be specified unless `angles` supplies
   the columns and the missing dimension can be derived from the children.
-- `sweep="ccw"` (default) spans each sector to the next boundary in ascending
-  order; `sweep="cw"` spans each sector to the previous boundary in the cycle.
+- `sweep="ccw"` (default) advances grid columns counterclockwise;
+  `sweep="cw"` advances them clockwise. In either direction, a colspan keeps
+  the first column's starting boundary and extends through subsequent columns.
 - `order="rows"` fills sectors around the circle before moving outward.
 - `order="cols"` fills sectors outward before advancing to the next angular slot.
 - Row `0` is the innermost track; higher row numbers move outward.
 - `base-angle` rotates the whole radial grid.
+- `row-angle-offsets` rotates individual logical rows relative to `base-angle`.
+  Missing values default to zero; trailing values beyond the rows populated by
+  the dataset are ignored.
+- A sector may span multiple rows only when those rows have equivalent angular
+  offsets.
 - A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
 - Inline text written directly inside `<sector>` follows the arc.

@@ -155,6 +155,7 @@ func (w *sampleTestWriter) PaintImageFile(filename string, x, y, width, height, 
 }
 func (w *sampleTestWriter) PaintLinearGradient(lg *pdf.LinearGradient) error { return nil }
 func (w *sampleTestWriter) PaintRadialGradient(rg *pdf.RadialGradient) error { return nil }
+func (w *sampleTestWriter) PaintSweepBand(sb *pdf.SweepBand) error           { return nil }
 func (w *sampleTestWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {
 }
 func (w *sampleTestWriter) PrintRichText(text *rich_text.RichText) {}

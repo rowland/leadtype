@@ -191,6 +191,27 @@ func TestStdWidgetPaintBackground_GradientOpacityZeroSkipsPainting(t *testing.T)
 	}
 }
 
+func TestStdWidgetPaintBackground_SweepGradientRejectsNonSector(t *testing.T) {
+	widget := &StdWidget{
+		fill: &BrushStyle{
+			kind: BrushKindSweepGradient,
+			sweepGradient: &sweepGradientStyle{
+				Stops: []pdf.GradientStop{
+					{Position: 0, Color: NamedColor("Red")},
+					{Position: 1, Color: NamedColor("Blue")},
+				},
+			},
+		},
+	}
+	widget.SetWidth(40)
+	widget.SetHeight(40)
+
+	err := widget.PaintBackground(&backgroundFillTestWriter{})
+	if err == nil || !strings.Contains(err.Error(), "supported only on sectors") {
+		t.Fatalf("error = %v, want sector-only error", err)
+	}
+}
+
 func TestStdWidgetPaintBackground_RadialGradientUsesBoxLocalCoordinates(t *testing.T) {
 	widget := &StdWidget{}
 	widget.SetLeft(100)

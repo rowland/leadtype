@@ -299,6 +299,7 @@ func (m *mockWriter) PaintImageFile(filename string, x, y, width, height, opacit
 }
 func (m *mockWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                { return nil }
 func (m *mockWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                { return nil }
+func (m *mockWriter) PaintSweepBand(sb *pdf.SweepBand) error                          { return nil }
 func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
 func (m *mockWriter) PrintRichText(text *rich_text.RichText)                          {}
 

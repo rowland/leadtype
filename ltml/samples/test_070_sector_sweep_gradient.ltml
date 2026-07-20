@@ -1,0 +1,44 @@
+<ltml>
+  <pen id="ring" width="1.2pt" color="#5b6470" />
+  <pen id="test-021-ring" width="2pt" color="Gray" />
+  <brush id="rainbow" kind="sweep-gradient" steps="8"
+         stops="0:#c92a2a,0.125:#c92a2a,0.25:#364fc7,0.375:#364fc7,0.5:#2b8a3e,0.625:#2b8a3e,0.75:#f08c00,0.875:#f08c00,1:#c92a2a" />
+  <brush id="sunset" kind="sweep-gradient" steps="12" opacity="85%"
+         stops="0:#7c2d12,0.45:#f97316,0.72:#facc15,1:#7c3aed" />
+  <brush id="test-021-band" kind="sweep-gradient" steps="12"
+         stops="0:#E06556,0.125:#E06556,0.25:#608FAA,0.375:#608FAA,0.5:#8DB967,0.625:#8DB967,0.75:#EDD468,0.875:#EDD468,1:#E06556" />
+
+  <page units="in" margin="0.55in" layout="vbox" layout.vpadding="18pt">
+    <label font.size="20pt" font.weight="Bold">Sector Sweep Gradient</label>
+    <p>
+      Sweep-gradient brushes map color stops across a sector's angular span.
+      Each curved blend is approximated by clipped, chord-aligned linear gradients.
+    </p>
+
+    <div layout="hbox" layout.hpadding="0.45in">
+      <div layout="vbox" layout.vpadding="8pt" width="3.1in">
+        <label width="100%" text-align="center" font.weight="Bold">Full annular sector</label>
+        <div layout="radial-out" rows="1" cols="1" base-angle="22.5"
+             r0="0.72in" width="3in" height="3in" align-self="center">
+          <sector fill="rainbow" border-outer="ring" border-inner="ring"></sector>
+        </div>
+      </div>
+
+      <div layout="vbox" layout.vpadding="8pt" width="3.1in">
+        <label width="100%" text-align="center" font.weight="Bold">Partial annular sector</label>
+        <div layout="radial-out" rows="1" cols="4" base-angle="-45"
+             r0="0.72in" width="3in" height="3in" align-self="center">
+          <sector colspan="2" fill="sunset" border="ring"></sector>
+        </div>
+      </div>
+    </div>
+
+    <div layout="vbox" layout.vpadding="8pt" align-self="center" width="100%">
+      <label width="100%" text-align="center" font.weight="Bold">Pseudo-sweep annular band</label>
+      <div layout="radial-out" rows="1" cols="1" base-angle="22.5"
+           r0="0.72in" width="3in" height="3in" align-self="center">
+        <sector fill="test-021-band" border-outer="test-021-ring" border-inner="test-021-ring"></sector>
+      </div>
+    </div>
+  </page>
+</ltml>

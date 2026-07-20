@@ -53,6 +53,7 @@ type labelTestWriter struct {
 	fillRectPages  []int
 	linearPaints   []*pdf.LinearGradient
 	radialPaints   []*pdf.RadialGradient
+	sweepPaints    []*pdf.SweepBand
 	lineColors     []colors.Color
 	lineWidths     []float64
 	lineLinear     []*pdf.LinearGradient
@@ -220,6 +221,10 @@ func (w *labelTestWriter) PaintLinearGradient(lg *pdf.LinearGradient) error {
 }
 func (w *labelTestWriter) PaintRadialGradient(rg *pdf.RadialGradient) error {
 	w.radialPaints = append(w.radialPaints, rg)
+	return nil
+}
+func (w *labelTestWriter) PaintSweepBand(sb *pdf.SweepBand) error {
+	w.sweepPaints = append(w.sweepPaints, sb)
 	return nil
 }
 func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {

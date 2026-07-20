@@ -312,6 +312,55 @@ func TestBrushStyleSetAttrsGradientOpacityPercent(t *testing.T) {
 	}
 }
 
+func TestBrushStyleSetAttrsSweepGradient(t *testing.T) {
+	var bs BrushStyle
+	bs.SetAttrs(map[string]string{
+		"kind":    "sweep-gradient",
+		"stops":   "0:#112233,0.4:Gold,1:#445566",
+		"steps":   "12",
+		"opacity": "60%",
+	})
+
+	if bs.Kind() != BrushKindSweepGradient {
+		t.Fatalf("kind = %q, want sweep-gradient", bs.Kind())
+	}
+	if bs.sweepGradient == nil {
+		t.Fatal("expected sweep gradient to be parsed")
+	}
+	if got := len(bs.sweepGradient.Stops); got != 3 {
+		t.Fatalf("len(stops) = %d, want 3", got)
+	}
+	if bs.sweepGradient.Steps != 12 {
+		t.Fatalf("steps = %d, want 12", bs.sweepGradient.Steps)
+	}
+	if bs.opacity == nil || *bs.opacity != 0.6 {
+		t.Fatalf("opacity = %v, want 0.6", bs.opacity)
+	}
+	if bs.linearGradient != nil || bs.radialGradient != nil {
+		t.Fatalf("sweep brush should not create axial or radial gradient state: %#v", bs)
+	}
+}
+
+func TestBrushStyleCloneDeepCopiesSweepGradient(t *testing.T) {
+	original := &BrushStyle{}
+	original.SetAttrs(map[string]string{
+		"kind":  "sweep-gradient",
+		"stops": "0:#111111,1:#999999",
+		"steps": "8",
+	})
+
+	clone := original.Clone()
+	clone.sweepGradient.Stops[0].Position = 0.25
+	clone.sweepGradient.Steps = 2
+
+	if original.sweepGradient.Stops[0].Position != 0 {
+		t.Fatalf("original stop position mutated to %v", original.sweepGradient.Stops[0].Position)
+	}
+	if original.sweepGradient.Steps != 8 {
+		t.Fatalf("original steps mutated to %d", original.sweepGradient.Steps)
+	}
+}
+
 func TestBrushStyleCloneDeepCopiesNestedBrushData(t *testing.T) {
 	original := &BrushStyle{}
 	original.SetAttrs(map[string]string{

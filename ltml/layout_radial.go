@@ -42,6 +42,7 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) (
 	if err != nil {
 		return err
 	}
+	rowAngleOffsets := radialRowAngleOffsets(container)
 	spans, err := radialAngleSpans(container, cols)
 	if err != nil {
 		return err
@@ -64,9 +65,16 @@ func LayoutRadialTable(container Container, style *LayoutStyle, writer Writer) (
 			}
 			rowSpan := sector.RowSpan()
 			colSpan := sector.ColSpan()
+			rowOffset := radialRowAngleOffset(rowAngleOffsets, row)
+			for spannedRow := row + 1; spannedRow < row+rowSpan; spannedRow++ {
+				spannedOffset := radialRowAngleOffset(rowAngleOffsets, spannedRow)
+				if !radialAnglesEquivalent(rowOffset, spannedOffset) {
+					return fmt.Errorf("radial rowspan at row %d crosses row %d with different angle offsets %g and %g", row, spannedRow, rowOffset, spannedOffset)
+				}
+			}
 			inner, outer := radialTrackBounds(innerRadius, outerRadius, rows, row, rowSpan, rowsGrowOutward)
-			startAngle := spans[col].StartAngle
-			endAngle := spans[col+colSpan-1].EndAngle
+			startAngle := spans[col].StartAngle + rowOffset
+			endAngle := spans[col+colSpan-1].EndAngle + rowOffset
 			geometry := radialSectorGeometry{
 				CenterX:     centerX,
 				CenterY:     centerY,
@@ -255,12 +263,11 @@ func radialColGrid(widgets []Widget, rows int) (*WidgetGrid, error) {
 func radialAngleSpans(container Container, cols int) ([]radialAngleSpan, error) {
 	baseAngle := 0.0
 	explicit := []float64(nil)
-	sweep := radialSweepCCW
 	if base, ok := container.(*StdContainer); ok {
 		baseAngle = base.BaseAngle()
 		explicit = append(explicit, base.Angles()...)
-		sweep = base.RadialSweep()
 	}
+	sweep := radialSweepForContainer(container)
 	if len(explicit) > 0 {
 		boundaries := radialNormalizedBoundaries(explicit)
 		if len(boundaries) == 0 {
@@ -277,6 +284,32 @@ func radialAngleSpans(container Container, cols int) ([]radialAngleSpan, error) 
 		boundaries[i] = step * float64(i)
 	}
 	return radialSpansFromBoundaries(boundaries, baseAngle, sweep), nil
+}
+
+func radialSweepForContainer(container Container) radialSweep {
+	if base, ok := container.(*StdContainer); ok {
+		return base.RadialSweep()
+	}
+	return radialSweepCCW
+}
+
+func radialRowAngleOffsets(container Container) []float64 {
+	if base, ok := container.(*StdContainer); ok {
+		return base.RowAngleOffsets()
+	}
+	return nil
+}
+
+func radialRowAngleOffset(offsets []float64, row int) float64 {
+	if row < 0 || row >= len(offsets) {
+		return 0
+	}
+	return offsets[row]
+}
+
+func radialAnglesEquivalent(a, b float64) bool {
+	delta := math.Abs(math.Mod(a-b, 360))
+	return delta <= radialAngleEpsilon || math.Abs(delta-360) <= radialAngleEpsilon
 }
 
 func radialExplicitSectorCount(explicit []float64) int {
@@ -326,17 +359,21 @@ func radialSpansFromBoundaries(boundaries []float64, baseAngle float64, sweep ra
 	}
 
 	spans := make([]radialAngleSpan, len(boundaries))
-	for i, boundary := range boundaries {
-		start := baseAngle + boundary
-		if sweep == radialSweepCW {
-			prev := boundaries[(i+len(boundaries)-1)%len(boundaries)]
-			end := baseAngle + prev
-			if prev >= boundary-radialAngleEpsilon {
+	if sweep == radialSweepCW {
+		start := baseAngle + boundaries[0]
+		for i := range boundaries {
+			previousIndex := (len(boundaries) - 1 - i + len(boundaries)) % len(boundaries)
+			end := baseAngle + boundaries[previousIndex]
+			for end >= start-radialAngleEpsilon {
 				end -= 360
 			}
 			spans[i] = radialAngleSpan{StartAngle: start, EndAngle: end}
-			continue
+			start = end
 		}
+		return spans
+	}
+	for i, boundary := range boundaries {
+		start := baseAngle + boundary
 		next := boundaries[(i+1)%len(boundaries)]
 		end := baseAngle + next
 		if next <= boundary+radialAngleEpsilon {

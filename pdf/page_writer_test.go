@@ -2442,6 +2442,25 @@ func TestPageWriter_PaintSweepBandGradientSegment(t *testing.T) {
 	check(t, strings.Contains(s, "sh\nQ\n"), "gradient segment should paint shading and restore graphics state")
 }
 
+func TestPageWriter_PaintSweepBandOpacity(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Opacity:     0.6,
+		Segments: []SweepBandSegment{
+			{StartAngle: 45, EndAngle: 135, StartColor: colors.Red, EndColor: colors.Blue},
+		},
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+	s := pw.stream.String()
+	check(t, strings.Contains(s, "/GS0 gs\n/Sh0 sh\nQ\n"), "sweep segment should paint shading inside opacity graphics state")
+	check(t, len(dw.extGStates) == 1, "should register one ExtGState")
+}
+
 func TestPageWriter_PaintSweepBandDoesNotLeakState(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

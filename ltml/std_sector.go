@@ -31,6 +31,13 @@ type sectorParagraphLayoutProvider interface {
 	drawSectorParagraph(p *StdParagraph, w Writer, layout *sectorParagraphLayout) error
 }
 
+const (
+	sectorBorderOuter = iota
+	sectorBorderEnd
+	sectorBorderInner
+	sectorBorderStart
+)
+
 type StdSector struct {
 	StdContainer
 	textPieces       []textPiece
@@ -45,6 +52,7 @@ type StdSector struct {
 	localPolygon     []radialPoint
 	contentRotation  float64
 	paragraphLayouts map[*StdParagraph]*sectorParagraphLayout
+	sectorBorders    [4]*PenStyle
 }
 
 func (s *StdSector) AddText(text string) {
@@ -64,18 +72,103 @@ func (s *StdSector) AccessibilityText() string {
 }
 
 func (s *StdSector) DrawBorder(w Writer) error {
-	if s.border == nil {
-		return nil
-	}
 	x := s.geometry.CenterX - s.geometry.OuterRadius
 	y := s.geometry.CenterY - s.geometry.OuterRadius
-	if err := s.border.ApplyInRect(w, x, y, s.geometry.OuterRadius*2, s.geometry.OuterRadius*2); err != nil {
+	size := s.geometry.OuterRadius * 2
+	if s.border != nil {
+		if err := s.border.ApplyInRect(w, x, y, size, size); err != nil {
+			return err
+		}
+		if s.geometry.InnerRadius > 0 {
+			return w.Arch(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.InnerRadius, s.geometry.StartAngle, s.geometry.EndAngle, true, false, false)
+		}
+		return w.Pie(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.StartAngle, s.geometry.EndAngle, true, false, false)
+	}
+
+	outer, inner, start, end := s.resolvedSectorBorders()
+	if err := s.strokeSectorArc(w, outer, s.geometry.OuterRadius, x, y, size); err != nil {
 		return err
 	}
 	if s.geometry.InnerRadius > 0 {
-		return w.Arch(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.InnerRadius, s.geometry.StartAngle, s.geometry.EndAngle, true, false, false)
+		if err := s.strokeSectorArc(w, inner, s.geometry.InnerRadius, x, y, size); err != nil {
+			return err
+		}
 	}
-	return w.Pie(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.StartAngle, s.geometry.EndAngle, true, false, false)
+	if err := s.strokeSectorRadius(w, start, s.geometry.StartAngle, x, y, size); err != nil {
+		return err
+	}
+	return s.strokeSectorRadius(w, end, s.geometry.EndAngle, x, y, size)
+}
+
+func (s *StdSector) resolvedSectorBorders() (outer, inner, start, end *PenStyle) {
+	outer = s.sectorBorders[sectorBorderOuter]
+	if outer == nil {
+		outer = s.borders[topSide]
+	}
+	inner = s.sectorBorders[sectorBorderInner]
+	if inner == nil {
+		inner = s.borders[bottomSide]
+	}
+	if s.radialSweep() == radialSweepCW {
+		start = s.borders[rightSide]
+		end = s.borders[leftSide]
+	} else {
+		start = s.borders[leftSide]
+		end = s.borders[rightSide]
+	}
+	if s.sectorBorders[sectorBorderStart] != nil {
+		start = s.sectorBorders[sectorBorderStart]
+	}
+	if s.sectorBorders[sectorBorderEnd] != nil {
+		end = s.sectorBorders[sectorBorderEnd]
+	}
+	return
+}
+
+func (s *StdSector) radialSweep() radialSweep {
+	if container, ok := s.Container().(*StdContainer); ok {
+		return container.RadialSweep()
+	}
+	return radialSweepCCW
+}
+
+func (s *StdSector) strokeSectorArc(w Writer, pen *PenStyle, radius, x, y, size float64) error {
+	if pen == nil || radius <= 0 {
+		return nil
+	}
+	if err := pen.ApplyInRect(w, x, y, size, size); err != nil {
+		return err
+	}
+	var strokeErr error
+	if err := w.Path(func() {
+		if strokeErr = w.Arc(s.geometry.CenterX, s.geometry.CenterY, radius, s.geometry.StartAngle, s.geometry.EndAngle, true); strokeErr != nil {
+			return
+		}
+		strokeErr = w.Stroke()
+	}); err != nil {
+		return err
+	}
+	return strokeErr
+}
+
+func (s *StdSector) strokeSectorRadius(w Writer, pen *PenStyle, angle, x, y, size float64) error {
+	if pen == nil {
+		return nil
+	}
+	if err := pen.ApplyInRect(w, x, y, size, size); err != nil {
+		return err
+	}
+	innerX, innerY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, s.geometry.InnerRadius, angle)
+	outerX, outerY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, angle)
+	var strokeErr error
+	if err := w.Path(func() {
+		w.MoveTo(innerX, innerY)
+		w.LineTo(outerX, outerY)
+		strokeErr = w.Stroke()
+	}); err != nil {
+		return err
+	}
+	return strokeErr
 }
 
 func (s *StdSector) DrawContent(w Writer) error {
@@ -176,6 +269,13 @@ func (s *StdSector) PaintBackground(w Writer) error {
 	if s.fill == nil {
 		return nil
 	}
+	if s.fill.Kind() == BrushKindSweepGradient {
+		band, err := resolveSectorSweepBand(s.fill, s.geometry)
+		if err != nil || band == nil {
+			return err
+		}
+		return w.PaintSweepBand(band)
+	}
 	s.fill.Apply(w)
 	if s.geometry.InnerRadius > 0 {
 		return w.Arch(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.InnerRadius, s.geometry.StartAngle, s.geometry.EndAngle, false, true, false)
@@ -219,6 +319,10 @@ func (s *StdSector) RichText(w Writer) *rich_text.RichText {
 
 func (s *StdSector) SetAttrs(attrs map[string]string) {
 	s.StdContainer.SetAttrs(attrs)
+	s.setSectorBorderStyle(sectorBorderOuter, "border-outer", attrs)
+	s.setSectorBorderStyle(sectorBorderEnd, "border-end", attrs)
+	s.setSectorBorderStyle(sectorBorderInner, "border-inner", attrs)
+	s.setSectorBorderStyle(sectorBorderStart, "border-start", attrs)
 	s.facing = sectorFacingAuto
 	switch attrs["facing"] {
 	case "upright":
@@ -244,6 +348,27 @@ func (s *StdSector) SetAttrs(attrs map[string]string) {
 			s.textAlign = HAlignCenter
 		}
 	}
+}
+
+func (s *StdSector) setSectorBorderStyle(index int, attrName string, attrs map[string]string) {
+	field := &s.sectorBorders[index]
+	if id, ok := attrs[attrName]; ok {
+		*field = PenStyleFor(id, s.Scope())
+	}
+	prefix := attrName + "."
+	if !MapHasKeyPrefix(attrs, prefix) {
+		return
+	}
+	base := *field
+	if base == nil {
+		base = s.border
+	}
+	if base == nil {
+		*field = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+	} else {
+		*field = base.Clone()
+	}
+	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), s.Units()))
 }
 
 func (s *StdSector) SetContainer(container Container) error {

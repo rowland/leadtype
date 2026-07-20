@@ -28,6 +28,7 @@ type SweepBand struct {
 	X, Y                     float64
 	InnerRadius, OuterRadius float64
 	Segments                 []SweepBandSegment
+	Opacity                  float64 // optional uniform paint opacity; zero means opaque
 }
 
 type sweepAngleInterval struct {
@@ -147,7 +148,7 @@ func (pw *PageWriter) PaintSweepBand(sb *SweepBand) error {
 		return err
 	}
 	for _, seg := range expandSweepBandSegments(sb.Segments) {
-		if err := pw.paintSweepBandSegment(sb.X, sb.Y, sb.InnerRadius, sb.OuterRadius, seg); err != nil {
+		if err := pw.paintSweepBandSegment(sb.X, sb.Y, sb.InnerRadius, sb.OuterRadius, sb.Opacity, seg); err != nil {
 			return err
 		}
 	}
@@ -264,7 +265,7 @@ func (pw *PageWriter) PaintSweepArc(x, y, innerRadius, outerRadius float64, segm
 	})
 }
 
-func (pw *PageWriter) paintSweepBandSegment(x, y, innerRadius, outerRadius float64, seg SweepBandSegment) (err error) {
+func (pw *PageWriter) paintSweepBandSegment(x, y, innerRadius, outerRadius, opacity float64, seg SweepBandSegment) (err error) {
 	pw.flushText()
 	savedState := pw.drawState
 	savedLast := pw.last
@@ -291,10 +292,11 @@ func (pw *PageWriter) paintSweepBandSegment(x, y, innerRadius, outerRadius float
 		err = pw.Clip(func() {
 			p0, p1 := sweepBandGradientAxis(x, y, innerRadius, outerRadius, seg.StartAngle, seg.EndAngle)
 			err = pw.PaintLinearGradient(&LinearGradient{
-				X0: p0.X,
-				Y0: p0.Y,
-				X1: p1.X,
-				Y1: p1.Y,
+				X0:      p0.X,
+				Y0:      p0.Y,
+				X1:      p1.X,
+				Y1:      p1.Y,
+				Opacity: opacity,
 				Stops: []GradientStop{
 					{Position: 0, Color: seg.StartColor},
 					{Position: 1, Color: seg.EndColor},

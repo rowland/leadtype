@@ -97,6 +97,7 @@ func (w *testWriter) PaintImageFile(filename string, x, y, width, height, opacit
 }
 func (w *testWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                   { return nil }
 func (w *testWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                   { return nil }
+func (w *testWriter) PaintSweepBand(sb *pdf.SweepBand) error                             { return nil }
 func (w *testWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {}
 func (w *testWriter) PrintRichText(text *rich_text.RichText)                             {}
 func (w *testWriter) Path(fn func()) error {

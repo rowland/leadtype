@@ -294,6 +294,7 @@ func TestSamples(t *testing.T) {
 		"test_067_pgbr_vbox",
 		"test_068_pgbr_flow",
 		"test_069_pgbr_table",
+		"test_070_sector_sweep_gradient",
 	}
 
 	for _, sample := range samples {

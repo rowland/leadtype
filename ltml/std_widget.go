@@ -386,6 +386,8 @@ func (widget *StdWidget) PaintBrushInRect(w Writer, brush *BrushStyle, x, y, wid
 		return widget.paintClippedRect(w, x, y, width, height, func() error {
 			return w.PaintRadialGradient(gradient)
 		})
+	case BrushKindSweepGradient:
+		return fmt.Errorf("sweep-gradient brushes are supported only on sectors")
 	case BrushKindImage:
 		return widget.paintImageBrushInRect(w, brush.image, x, y, width, height)
 	default:

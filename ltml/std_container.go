@@ -35,6 +35,7 @@ type StdContainer struct {
 	footerRows       int
 	baseAngle        float64
 	angles           []float64
+	rowAngleOffsets  []float64
 	radialSweep      radialSweep
 	centerX          float64
 	centerXSet       bool
@@ -299,6 +300,18 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 			}
 		}
 	}
+	if offsets, ok := attrs["row-angle-offsets"]; ok {
+		c.rowAngleOffsets = c.rowAngleOffsets[:0]
+		for _, part := range strings.Split(offsets, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			if value, err := strconv.ParseFloat(part, 64); err == nil {
+				c.rowAngleOffsets = append(c.rowAngleOffsets, value)
+			}
+		}
+	}
 	if centerX, ok := attrs["center-x"]; ok {
 		c.centerX = ParseMeasurement(centerX, c.Units())
 		c.centerXSet = true
@@ -361,6 +374,10 @@ func (c *StdContainer) BaseAngle() float64 {
 
 func (c *StdContainer) Angles() []float64 {
 	return c.angles
+}
+
+func (c *StdContainer) RowAngleOffsets() []float64 {
+	return c.rowAngleOffsets
 }
 
 func (c *StdContainer) RadialSweep() radialSweep {

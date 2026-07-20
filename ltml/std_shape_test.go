@@ -148,6 +148,20 @@ func TestStdCircle_DrawContent_UsesContentBoxCenterAndRadius(t *testing.T) {
 	}
 }
 
+func TestStdCircle_DrawContent_RejectsSweepGradientFill(t *testing.T) {
+	circle := &StdCircle{}
+	circle.SetWidth(40)
+	circle.SetHeight(40)
+	circle.fill = &BrushStyle{
+		kind:          BrushKindSweepGradient,
+		sweepGradient: &sweepGradientStyle{},
+	}
+
+	if err := circle.DrawContent(&shapeTestWriter{}); err == nil {
+		t.Fatal("expected sector-only sweep-gradient error")
+	}
+}
+
 func TestStdCircle_RadiusMatchesExplicitDiameterInHBox(t *testing.T) {
 	hbox := &StdContainer{}
 	hbox.SetWidth(200)

@@ -12,6 +12,122 @@ func testSectorFont() *FontStyle {
 	return &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
 }
 
+func TestStdSectorResolvedBordersFollowSweepDirection(t *testing.T) {
+	outer := &PenStyle{id: "outer"}
+	inner := &PenStyle{id: "inner"}
+	left := &PenStyle{id: "left"}
+	right := &PenStyle{id: "right"}
+	sector := &StdSector{}
+	sector.borders[topSide] = outer
+	sector.borders[bottomSide] = inner
+	sector.borders[leftSide] = left
+	sector.borders[rightSide] = right
+	parent := &StdContainer{}
+	sector.container = parent
+
+	gotOuter, gotInner, gotStart, gotEnd := sector.resolvedSectorBorders()
+	if gotOuter != outer || gotInner != inner || gotStart != left || gotEnd != right {
+		t.Fatalf("ccw borders = %#v/%#v/%#v/%#v, want outer/inner/left/right", gotOuter, gotInner, gotStart, gotEnd)
+	}
+
+	parent.radialSweep = radialSweepCW
+	gotOuter, gotInner, gotStart, gotEnd = sector.resolvedSectorBorders()
+	if gotOuter != outer || gotInner != inner || gotStart != right || gotEnd != left {
+		t.Fatalf("cw borders = %#v/%#v/%#v/%#v, want outer/inner/right/left", gotOuter, gotInner, gotStart, gotEnd)
+	}
+}
+
+func TestStdSectorBorderAliasesOverrideLogicalSides(t *testing.T) {
+	sector := &StdSector{}
+	sector.SetAttrs(map[string]string{
+		"border-top":   "Red",
+		"border-left":  "Blue",
+		"border-outer": "Gold",
+		"border-start": "Green",
+	})
+
+	outer, _, start, _ := sector.resolvedSectorBorders()
+	if outer == nil || outer.color != NamedColor("Gold") {
+		t.Fatalf("outer border = %#v, want Gold alias", outer)
+	}
+	if start == nil || start.color != NamedColor("Green") {
+		t.Fatalf("start border = %#v, want Green alias", start)
+	}
+}
+
+func TestStdSectorDrawBorderStrokesIndividualArcsWithoutRadialSeam(t *testing.T) {
+	sector := &StdSector{}
+	sector.geometry = radialSectorGeometry{
+		CenterX: 20, CenterY: 30,
+		InnerRadius: 5, OuterRadius: 10,
+		StartAngle: 22.5, EndAngle: 382.5,
+	}
+	sector.borders[topSide] = &PenStyle{color: NamedColor("Red"), width: 1}
+	sector.borders[bottomSide] = &PenStyle{color: NamedColor("Blue"), width: 2}
+	writer := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := sector.DrawBorder(writer); err != nil {
+		t.Fatal(err)
+	}
+	if writer.pathRuns != 2 || writer.strokes != 2 {
+		t.Fatalf("paths/strokes = %d/%d, want 2/2", writer.pathRuns, writer.strokes)
+	}
+	if len(writer.calls) != 2 || writer.calls[0].name != "arc" || writer.calls[1].name != "arc" {
+		t.Fatalf("calls = %#v, want two arcs", writer.calls)
+	}
+	if writer.calls[0].a != 10 || writer.calls[1].a != 5 {
+		t.Fatalf("arc radii = %v/%v, want 10/5", writer.calls[0].a, writer.calls[1].a)
+	}
+}
+
+func TestStdSectorDrawBorderStrokesFourIndividuallyStyledEdges(t *testing.T) {
+	sector := &StdSector{}
+	sector.geometry = radialSectorGeometry{
+		CenterX: 20, CenterY: 30,
+		InnerRadius: 5, OuterRadius: 10,
+		StartAngle: 0, EndAngle: 90,
+	}
+	for i := range sector.borders {
+		sector.borders[i] = &PenStyle{color: NamedColor(sideNames[i]), width: float64(i + 1)}
+	}
+	writer := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := sector.DrawBorder(writer); err != nil {
+		t.Fatal(err)
+	}
+	if writer.pathRuns != 4 || writer.strokes != 4 {
+		t.Fatalf("paths/strokes = %d/%d, want 4/4", writer.pathRuns, writer.strokes)
+	}
+	if len(writer.calls) != 2 {
+		t.Fatalf("arc calls = %d, want 2", len(writer.calls))
+	}
+	if len(writer.moves) != 2 {
+		t.Fatalf("radial move count = %d, want 2", len(writer.moves))
+	}
+}
+
+func TestStdSectorDrawBorderUsesClosedShapeForAggregateBorder(t *testing.T) {
+	sector := &StdSector{}
+	sector.geometry = radialSectorGeometry{
+		CenterX: 20, CenterY: 30,
+		InnerRadius: 5, OuterRadius: 10,
+		StartAngle: 0, EndAngle: 90,
+	}
+	sector.border = &PenStyle{color: NamedColor("Red"), width: 1}
+	sector.borders[topSide] = &PenStyle{color: NamedColor("Blue"), width: 2}
+	writer := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := sector.DrawBorder(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.calls) != 1 || writer.calls[0].name != "arch" {
+		t.Fatalf("calls = %#v, want one aggregate arch", writer.calls)
+	}
+	if writer.pathRuns != 0 {
+		t.Fatalf("individual path runs = %d, want 0", writer.pathRuns)
+	}
+}
+
 func TestStdSector_RichText_ReappliesFontsWhenUsingCachedRichText(t *testing.T) {
 	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
 	sector.font = testSectorFont()
@@ -199,6 +315,172 @@ func TestLayoutRadialTable_UsesExplicitAnglesAndBaseAngle(t *testing.T) {
 	}
 }
 
+func TestLayoutRadialTable_RowAngleOffsetsStaggerConcentricRows(t *testing.T) {
+	container := positionedContainer(0, 0, 240, 240)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":            "radial",
+		"rows":              "3",
+		"cols":              "4",
+		"base-angle":        "10",
+		"row-angle-offsets": "45,0,45",
+	})
+
+	outer := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	middle := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	inner := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	for _, sector := range append(append(outer, middle...), inner...) {
+		sector.font = testSectorFont()
+		if sector == outer[0] || sector == outer[1] || sector == inner[0] || sector == inner[1] {
+			sector.SetAttrs(map[string]string{"colspan": "2"})
+		}
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := outer[0].geometry.StartAngle, 55.0; !floatEquals(got, want) {
+		t.Fatalf("outer start angle = %v, want %v", got, want)
+	}
+	if got, want := outer[0].geometry.EndAngle, 235.0; !floatEquals(got, want) {
+		t.Fatalf("outer end angle = %v, want %v", got, want)
+	}
+	if got, want := middle[0].geometry.StartAngle, 10.0; !floatEquals(got, want) {
+		t.Fatalf("middle start angle = %v, want %v", got, want)
+	}
+	if got, want := middle[0].geometry.EndAngle, 100.0; !floatEquals(got, want) {
+		t.Fatalf("middle end angle = %v, want %v", got, want)
+	}
+	if got, want := inner[0].geometry.StartAngle, 55.0; !floatEquals(got, want) {
+		t.Fatalf("inner start angle = %v, want %v", got, want)
+	}
+	if got, want := inner[0].geometry.EndAngle, 235.0; !floatEquals(got, want) {
+		t.Fatalf("inner end angle = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutRadialTable_CWColspanIncludesRowAngleOffset(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":            "radial",
+		"rows":              "1",
+		"cols":              "4",
+		"sweep":             "cw",
+		"row-angle-offsets": "22.5",
+	})
+
+	merged := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	merged.font = testSectorFont()
+	merged.SetAttrs(map[string]string{"colspan": "2"})
+	if err := merged.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(merged)
+	for i := 0; i < 2; i++ {
+		sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := merged.geometry.StartAngle, 22.5; !floatEquals(got, want) {
+		t.Fatalf("merged start angle = %v, want %v", got, want)
+	}
+	if got, want := merged.geometry.EndAngle, -157.5; !floatEquals(got, want) {
+		t.Fatalf("merged end angle = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutRadialTable_RowspanRejectsDifferentRowAngleOffsets(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":            "radial",
+		"rows":              "2",
+		"cols":              "1",
+		"row-angle-offsets": "0,22.5",
+	})
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	sector.SetAttrs(map[string]string{"rowspan": "2"})
+	if err := sector.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(sector)
+
+	err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t})
+	if err == nil || !strings.Contains(err.Error(), "different angle offsets") {
+		t.Fatalf("error = %v, want mismatched row-angle-offset error", err)
+	}
+}
+
+func TestLayoutRadialTable_RowspanAllowsEquivalentRowAngleOffsets(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":            "radial",
+		"rows":              "2",
+		"cols":              "1",
+		"row-angle-offsets": "0,360",
+	})
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	sector.SetAttrs(map[string]string{"rowspan": "2"})
+	if err := sector.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(sector)
+
+	if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLayoutRadialTable_RowAngleOffsetsIgnoreUnusedTrailingValues(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":            "radial",
+		"rows":              "1",
+		"cols":              "1",
+		"row-angle-offsets": "22.5,90",
+	})
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(sector)
+
+	if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := sector.geometry.StartAngle, 22.5; !floatEquals(got, want) {
+		t.Fatalf("start angle = %v, want %v", got, want)
+	}
+}
+
 func TestLayoutRadialTable_CWSweepUsesClockwiseQuarterSectors(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 200)
 	container.SetScope(&defaultScope)
@@ -230,9 +512,9 @@ func TestLayoutRadialTable_CWSweepUsesClockwiseQuarterSectors(t *testing.T) {
 		end   float64
 	}{
 		{0, -90},
-		{90, 0},
-		{180, 90},
-		{270, 180},
+		{-90, -180},
+		{-180, -270},
+		{-270, -360},
 	}
 	for i, want := range expectations {
 		if got := sectors[i].geometry.StartAngle; !floatEquals(got, want.start) {
@@ -241,6 +523,44 @@ func TestLayoutRadialTable_CWSweepUsesClockwiseQuarterSectors(t *testing.T) {
 		if got := sectors[i].geometry.EndAngle; !floatEquals(got, want.end) {
 			t.Fatalf("sector %d end angle = %v, want %v", i+1, got, want.end)
 		}
+	}
+}
+
+func TestLayoutRadialTable_CWColspanMergesClockwiseSectors(t *testing.T) {
+	container := positionedContainer(0, 0, 200, 200)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":     "radial",
+		"rows":       "1",
+		"cols":       "4",
+		"base-angle": "180",
+		"sweep":      "cw",
+	})
+
+	merged := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	merged.font = testSectorFont()
+	merged.SetAttrs(map[string]string{"colspan": "2"})
+	remaining := []*StdSector{
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+		{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}},
+	}
+	sectors := append([]*StdSector{merged}, remaining...)
+	for _, sector := range sectors {
+		sector.font = testSectorFont()
+		if err := sector.SetContainer(container); err != nil {
+			t.Fatal(err)
+		}
+		container.AddChild(sector)
+	}
+
+	if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := merged.geometry.StartAngle, 180.0; !floatEquals(got, want) {
+		t.Fatalf("merged start angle = %v, want %v", got, want)
+	}
+	if got, want := merged.geometry.EndAngle, 0.0; !floatEquals(got, want) {
+		t.Fatalf("merged end angle = %v, want %v", got, want)
 	}
 }
 
@@ -276,9 +596,9 @@ func TestLayoutRadialTable_CWSweepNormalizesSortsAndDedupesExplicitAngles(t *tes
 		end   float64
 	}{
 		{0, -90},
-		{90, 0},
-		{180, 90},
-		{270, 180},
+		{-90, -180},
+		{-180, -270},
+		{-270, -360},
 	}
 	for i, want := range expectations {
 		if got := sectors[i].geometry.StartAngle; !floatEquals(got, want.start) {

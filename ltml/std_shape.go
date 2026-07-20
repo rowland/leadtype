@@ -39,6 +39,9 @@ func (s *StdShape) applyBorderAndFill(w Writer) error {
 		}
 	}
 	if s.fill != nil {
+		if s.fill.Kind() == BrushKindSweepGradient {
+			return fmt.Errorf("sweep-gradient brushes are supported only on sectors")
+		}
 		s.fill.Apply(w)
 	}
 	return nil

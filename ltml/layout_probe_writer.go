@@ -140,6 +140,7 @@ func (w *layoutProbeWriter) PaintImageFile(filename string, x, y, width, height,
 }
 func (w *layoutProbeWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                { return nil }
 func (w *layoutProbeWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                { return nil }
+func (w *layoutProbeWriter) PaintSweepBand(sb *pdf.SweepBand) error                          { return nil }
 func (w *layoutProbeWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
 func (w *layoutProbeWriter) PrintRichText(text *rich_text.RichText)                          {}
 func (w *layoutProbeWriter) Rectangle(x, y, width, height float64, border bool, fill bool)   {}

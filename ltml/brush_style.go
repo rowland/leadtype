@@ -18,6 +18,7 @@ const (
 	BrushKindSolid          BrushKind = "solid"
 	BrushKindLinearGradient BrushKind = "linear-gradient"
 	BrushKindRadialGradient BrushKind = "radial-gradient"
+	BrushKindSweepGradient  BrushKind = "sweep-gradient"
 	BrushKindImage          BrushKind = "image"
 )
 
@@ -49,6 +50,11 @@ type radialGradientPct struct {
 	R1 *float64
 }
 
+type sweepGradientStyle struct {
+	Stops []pdf.GradientStop
+	Steps int
+}
+
 type BrushStyle struct {
 	id             string
 	kind           BrushKind
@@ -57,6 +63,7 @@ type BrushStyle struct {
 	linearPct      *linearGradientPct
 	radialGradient *pdf.RadialGradient
 	radialPct      *radialGradientPct
+	sweepGradient  *sweepGradientStyle
 	image          *BrushImageStyle
 	opacity        *float64
 }
@@ -98,6 +105,11 @@ func (bs *BrushStyle) Clone() *BrushStyle {
 		pctClone.R1 = cloneFloat64Ptr(bs.radialPct.R1)
 		clone.radialPct = &pctClone
 	}
+	if bs.sweepGradient != nil {
+		gradientClone := *bs.sweepGradient
+		gradientClone.Stops = append([]pdf.GradientStop(nil), bs.sweepGradient.Stops...)
+		clone.sweepGradient = &gradientClone
+	}
 	if bs.image != nil {
 		imageClone := *bs.image
 		clone.image = &imageClone
@@ -116,6 +128,9 @@ func (bs *BrushStyle) Kind() BrushKind {
 	}
 	if bs.kind != "" {
 		return bs.kind
+	}
+	if bs.sweepGradient != nil {
+		return BrushKindSweepGradient
 	}
 	if bs.radialGradient != nil {
 		return BrushKindRadialGradient
@@ -143,15 +158,24 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 	}
 	if stops, ok := attrs["stops"]; ok {
 		parsedStops := parseGradientStops(stops)
-		if bs.Kind() == BrushKindRadialGradient {
+		switch bs.Kind() {
+		case BrushKindRadialGradient:
 			gradient := bs.ensureRadialGradient()
 			gradient.Stops = parsedStops
-		} else {
+		case BrushKindSweepGradient:
+			gradient := bs.ensureSweepGradient()
+			gradient.Stops = parsedStops
+		default:
 			gradient := bs.ensureLinearGradient()
 			gradient.Stops = parsedStops
 			if bs.kind == "" {
 				bs.kind = BrushKindLinearGradient
 			}
+		}
+	}
+	if value, ok := attrs["steps"]; ok && bs.Kind() == BrushKindSweepGradient {
+		if steps, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
+			bs.ensureSweepGradient().Steps = steps
 		}
 	}
 	if hasAnyAttr(attrs,
@@ -170,6 +194,8 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 			parseGradientMeasurementOrPctAttr(attrs, "y1", units, &gradient.Y1, &pct.Y1)
 		case BrushKindImage:
 			// Ignore gradient geometry when explicitly configured as an image brush.
+		case BrushKindSweepGradient:
+			// Sector geometry supplies the center, radii, and angular span.
 		default:
 			gradient := bs.ensureLinearGradient()
 			pct := bs.ensureLinearPct()
@@ -183,15 +209,17 @@ func (bs *BrushStyle) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if hasAnyAttr(attrs, "r0", "r1") {
-		gradient := bs.ensureRadialGradient()
-		pct := bs.ensureRadialPct()
-		parseGradientMeasurementOrPctAttr(attrs, "r0", units, &gradient.R0, &pct.R0)
-		parseGradientMeasurementOrPctAttr(attrs, "r1", units, &gradient.R1, &pct.R1)
-		if bs.kind == "" {
-			bs.kind = BrushKindRadialGradient
+		if bs.Kind() != BrushKindSweepGradient {
+			gradient := bs.ensureRadialGradient()
+			pct := bs.ensureRadialPct()
+			parseGradientMeasurementOrPctAttr(attrs, "r0", units, &gradient.R0, &pct.R0)
+			parseGradientMeasurementOrPctAttr(attrs, "r1", units, &gradient.R1, &pct.R1)
+			if bs.kind == "" {
+				bs.kind = BrushKindRadialGradient
+			}
 		}
 	}
-	if value, ok := attrs["opacity"]; ok && (bs.Kind() == BrushKindLinearGradient || bs.Kind() == BrushKindRadialGradient) {
+	if value, ok := attrs["opacity"]; ok && (bs.Kind() == BrushKindLinearGradient || bs.Kind() == BrushKindRadialGradient || bs.Kind() == BrushKindSweepGradient) {
 		opacity := parseOpacityValue(value, 1)
 		bs.opacity = &opacity
 	}
@@ -297,6 +325,13 @@ func (bs *BrushStyle) ensureRadialGradient() *pdf.RadialGradient {
 		bs.radialGradient = &pdf.RadialGradient{}
 	}
 	return bs.radialGradient
+}
+
+func (bs *BrushStyle) ensureSweepGradient() *sweepGradientStyle {
+	if bs.sweepGradient == nil {
+		bs.sweepGradient = &sweepGradientStyle{Steps: 1}
+	}
+	return bs.sweepGradient
 }
 
 func (bs *BrushStyle) ensureLinearPct() *linearGradientPct {
