@@ -15,7 +15,7 @@ func TestParse_RejectsSpanDirectChildOfDiv(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected invalid span parent error")
 	}
-	if !strings.Contains(err.Error(), "span must be child of p, label, sector, a or another span") {
+	if !strings.Contains(err.Error(), "span must be child of p, label, a or another span") {
 		t.Fatalf("Parse error = %q, want invalid span parent error", err)
 	}
 }

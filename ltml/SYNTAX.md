@@ -436,7 +436,9 @@ behavior for that region.
 
 ```xml
 <div layout="radial" rows="2" cols="6">
-  <sector colspan="2" fill="AliceBlue" border="solid">Curved arc text</sector>
+  <sector colspan="2" fill="AliceBlue" border="solid">
+    <label>Curved arc text</label>
+  </sector>
   <sector rowspan="2" colspan="2">
     <p>Paragraphs wrap to the changing line width of the sector.</p>
   </sector>
@@ -444,38 +446,61 @@ behavior for that region.
 ```
 
 Direct non-`<sector>` children of a radial container are wrapped in an
-implicit sector automatically. Their XML attributes are applied both to the
-implicit sector and to the original child widget.
+implicit sector automatically. Cell attributes (`colspan`, `rowspan`, `fill`,
+borders, `padding`, `display`, and `z-index`) belong to that wrapper; ordinary widget
+attributes remain on the source child. `units` applies to both. The transparent
+wrapper does not copy the child's identity, classes, role, or alternative text.
+For example, a `border` on a direct radial label borders its sector. To border
+both, write an explicit sector containing a separately bordered label.
 
 | Attribute | Description |
 |-----------|-------------|
 | `colspan`, `rowspan` | Span multiple radial slots, just like table cells. |
-| `facing` | Curved-text/content facing: `auto` (default), `upright`, or `upside-down`. |
-| `angle` | Absolute angle in degrees for sector content. Overrides the default tangent-based orientation. |
-| `text-align` | For inline sector text, anchor to the sector `left`/`start`, `center`, or `right`/`end`. |
 | `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` anchor to the sector start angle, midpoint angle, and end angle. |
 | `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` anchor to the inner radius, midpoint radius, and outer radius. |
 | `border-outer`, `border-inner` | Physical aliases for the sector's `border-top` outer arc and `border-bottom` inner arc. |
 | `border-start`, `border-end` | Physical aliases for the radial edges at the sector's start and end angles. These map to `border-left` and `border-right` according to the parent's sweep direction. |
+| `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Insets sector content. Top/bottom mean outer/inner; left/right mean start/end according to sweep. Start/end padding is a constant physical distance from each radial edge. |
+| `layout.hpadding`, `layout.vpadding` | Horizontal item and vertical row gaps for the sector's shape-aware flow. |
 
-An aggregate `border` strokes the sector as one closed shape, including both
-radial edges. When `border` is omitted, individually configured borders are
-stroked separately: `border-top`/`border-outer` paints the outer arc,
+An aggregate `border` supplies all four edges. Edge declarations override it:
+physical sector aliases take precedence over mapped logical sides, which take
+precedence over the aggregate border. `border-top`/`border-outer` paints the outer arc,
 `border-bottom`/`border-inner` paints the inner arc, and the left/right borders
 paint the two radial edges. For `sweep="ccw"`, left is start and right is end;
 for `sweep="cw"`, right is start and left is end. A full-circle sector can
 therefore use only `border-outer` and `border-inner` to avoid a radial seam.
 
-When `origin-x` or `origin-y` is omitted for a positioned child inside a
-sector, LTML defaults to the sector midpoint: anchor angle for `origin-x` and
-midpoint radius for `origin-y`.
+An explicit sector contains widgets, not text. Nonblank text and inline-only
+elements directly inside `<sector>` are errors; wrap them in `<label>`.
+Sector attributes are not label defaults. Font, direction, and units retain
+their normal container inheritance, while label angle, facing, alignment,
+origins, and placement must be authored or styled on the label.
 
-Sector text comes in two flavors:
+Static sector children participate in a compact shape-aware flow. LTML
+preserves source order, chooses row breaks to fit the padded wedge, centers the
+packed group, and honors `dir`. Paragraphs consume a full flow band and retain
+sector-shaped line widths. Curved labels use arc-length footprints; straight
+labels and other widgets use their ordinary boxes. A sector always uses this
+special flow for static children even if another `layout` manager is parsed;
+wrap children in a nested container to request a vbox, hbox, table, or ordinary
+flow.
 
-- Inline text written directly inside `<sector>` paints as curved text on the
-  sector's midpoint arc.
-- Nested widgets such as `<label>` and `<p>` use ordinary LTML paint/layout,
-  but the sector can rotate and clip them to the wedge.
+Set `position="relative"` or `position="absolute"` to remove a child from
+sector flow. Existing positional side attributes still imply relative
+positioning. Positioned children use sector references; omitted label origins
+default to midpoint angle and radius. `origin-x="start|center|end"` pairs with
+left/center/right glyph alignment unless `text-align` overrides it.
+
+Labels without an effective `angle` follow their resolved circular arc with
+automatic readable orientation. Any effective angle, including `angle="0"`,
+renders the label as straight text at that absolute page angle. Straight
+sector labels retain ordinary rectangular label boxes. Curved labels are text
+overlays: width/height constraints, margin, padding, fill, border, text-fill,
+and full-widget `rotate` remain parsed but are ignored while the label is
+curved. They become active if an `angle` makes the label straight.
+`fit="shrink"` fits curved text to the available sector arc down to the normal
+6pt floor.
 
 Paragraphs placed in a sector use true sector-aware wrapping. LTML computes
 the usable line width from the actual wedge shape for each line instead of
@@ -569,6 +594,7 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | `text-align` | Label text alignment: logical `start`/`end`, physical `left`/`right`, or `center`. Defaults to `start`. Affects the text anchor inside the label box. |
 | `text-valign` | Label vertical text alignment: `top` (default), `middle`, or `bottom`. |
 | `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
+| `facing` | Inside a sector, curved-text facing: `auto`, `upright`, or `upside-down`. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |
 | `width`, `height` | Optional explicit dimensions. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the label. |
@@ -618,9 +644,9 @@ marker is inert.
 
 ### Curved Text Roadmap
 
-Curved text is available today for inline text written directly inside
-`<sector>` elements. LTML still does not have a general-purpose curved-text
-widget for arbitrary circular or path-based text outside radial sectors.
+Curved text is available for labels inside `<sector>` elements. LTML still does
+not have a general-purpose curved-text widget for arbitrary circular or
+path-based text outside radial sectors.
 
 The current direction is to add a dedicated curved-text element, likely
 `<textpath>`, after the PDF API for circle and ellipse text has stabilized.
@@ -1542,11 +1568,12 @@ its separate angular-anchor semantics.
   geometry.
 - A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
-- Inline text written directly in `<sector>` follows the arc.
+- Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
-- When omitted, sector child origins default to midpoint angle and midpoint radius.
+- Static sector children participate in shape-aware source-order flow.
+- Non-static children are overlays; omitted origins use midpoint angle and radius.
 
 ### Radial-Out Details
 
@@ -1569,19 +1596,23 @@ its separate angular-anchor semantics.
   offsets.
 - A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
-- Inline text written directly inside `<sector>` follows the arc.
+- Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Positioned children inside a sector may use `origin-x="start|center|end"` and
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
-- When omitted, sector child origins default to midpoint angle and midpoint radius.
+- Static sector children participate in shape-aware source-order flow.
+- Non-static children are overlays; omitted origins use midpoint angle and radius.
 
 Example:
 
 ```xml
 <div layout="radial" rows="3" angles="0,45,90,135,225,315,360" base-angle="-90" width="4in" height="4in">
-  <sector colspan="2">Curved title</sector>
+  <sector colspan="2">
+    <label>Curved title</label>
+    <label angle="90" position="relative" origin-x="end" origin-y="outer">12</label>
+  </sector>
   <p colspan="2">This paragraph is wrapped by an implicit sector.</p>
-  <sector angle="0"><label>12</label></sector>
+  <sector><label angle="0">Horizontal</label></sector>
 </div>
 ```
 

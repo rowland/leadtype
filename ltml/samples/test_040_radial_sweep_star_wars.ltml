@@ -2,7 +2,7 @@
   <pen id="ring" width="0.6pt" color="#5b6470" />
   <define id="h1" tag="label" font.size="19" font.weight="Bold" />
   <style>
-    label { align-self: center; font.size: 12; font.weight: Bold; }
+    label.subtitle { align-self: center; font.size: 12; font.weight: Bold; }
     sector { border: ring; font.weight: Bold; }
     sector.1 { fill: Lavender; }
     sector.2 { fill: HoneyDew; }
@@ -14,52 +14,52 @@
     <h1>Radial Sweep Comparison</h1>
     <p>These two radial-out wheels use the same source-order Star Wars names. Only the sweep direction changes.</p>
 
-    <label>Sweep = ccw</label>
+    <label class="subtitle">Sweep = ccw</label>
     <disc>
-      <sector class="1">Luke</sector>
-      <sector class="1">Leia</sector>
-      <sector class="1">Han</sector>
-      <sector class="1">Chewie</sector>
-      <sector class="1">Yoda</sector>
-      <sector class="1">Vader</sector>
+      <sector class="1"><label>Luke</label></sector>
+      <sector class="1"><label>Leia</label></sector>
+      <sector class="1"><label>Han</label></sector>
+      <sector class="1"><label>Chewie</label></sector>
+      <sector class="1"><label>Yoda</label></sector>
+      <sector class="1"><label>Vader</label></sector>
 
-      <sector class="2">R2-D2</sector>
-      <sector class="2">C-3PO</sector>
-      <sector class="2">Rey</sector>
-      <sector class="2">Finn</sector>
-      <sector class="2">Poe</sector>
-      <sector class="2">BB-8</sector>
+      <sector class="2"><label>R2-D2</label></sector>
+      <sector class="2"><label>C-3PO</label></sector>
+      <sector class="2"><label>Rey</label></sector>
+      <sector class="2"><label>Finn</label></sector>
+      <sector class="2"><label>Poe</label></sector>
+      <sector class="2"><label>BB-8</label></sector>
 
-      <sector class="3">Lando</sector>
-      <sector class="3">Jyn</sector>
-      <sector class="3">Cassian</sector>
-      <sector class="3">Grogu</sector>
-      <sector class="3">Ahsoka</sector>
-      <sector class="3">Mando</sector>
+      <sector class="3"><label>Lando</label></sector>
+      <sector class="3"><label>Jyn</label></sector>
+      <sector class="3"><label>Cassian</label></sector>
+      <sector class="3"><label>Grogu</label></sector>
+      <sector class="3"><label>Ahsoka</label></sector>
+      <sector class="3"><label>Mando</label></sector>
     </disc>
 
-    <label>Sweep = cw</label>
+    <label class="subtitle">Sweep = cw</label>
     <disc sweep="cw">
-      <sector class="1">Luke</sector>
-      <sector class="1">Leia</sector>
-      <sector class="1">Han</sector>
-      <sector class="1">Chewie</sector>
-      <sector class="1">Yoda</sector>
-      <sector class="1">Vader</sector>
+      <sector class="1"><label>Luke</label></sector>
+      <sector class="1"><label>Leia</label></sector>
+      <sector class="1"><label>Han</label></sector>
+      <sector class="1"><label>Chewie</label></sector>
+      <sector class="1"><label>Yoda</label></sector>
+      <sector class="1"><label>Vader</label></sector>
 
-      <sector class="2">R2-D2</sector>
-      <sector class="2">C-3PO</sector>
-      <sector class="2">Rey</sector>
-      <sector class="2">Finn</sector>
-      <sector class="2">Poe</sector>
-      <sector class="2">BB-8</sector>
+      <sector class="2"><label>R2-D2</label></sector>
+      <sector class="2"><label>C-3PO</label></sector>
+      <sector class="2"><label>Rey</label></sector>
+      <sector class="2"><label>Finn</label></sector>
+      <sector class="2"><label>Poe</label></sector>
+      <sector class="2"><label>BB-8</label></sector>
 
-      <sector class="3">Lando</sector>
-      <sector class="3">Jyn</sector>
-      <sector class="3">Cassian</sector>
-      <sector class="3">Grogu</sector>
-      <sector class="3">Ahsoka</sector>
-      <sector class="3">Mando</sector>
+      <sector class="3"><label>Lando</label></sector>
+      <sector class="3"><label>Jyn</label></sector>
+      <sector class="3"><label>Cassian</label></sector>
+      <sector class="3"><label>Grogu</label></sector>
+      <sector class="3"><label>Ahsoka</label></sector>
+      <sector class="3"><label>Mando</label></sector>
     </disc>
   </page>
 </ltml>

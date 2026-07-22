@@ -76,9 +76,8 @@ func (a *StdA) SetContainer(container Container) error {
 	case *StdSpan:
 	case *StdParagraph:
 	case *StdLabel:
-	case *StdSector:
 	default:
-		return fmt.Errorf("a must be child of p, label, sector, span or another a")
+		return fmt.Errorf("a must be child of p, label, span or another a")
 	}
 	a.container = container
 	return nil
@@ -91,7 +90,6 @@ func normalizeLinkedText(container Container, text string) string {
 	root := inlineRootContainer(container)
 	switch root.(type) {
 	case *StdLabel:
-	case *StdSector:
 		text = normalizeLabelXMLText(text)
 	default:
 		text = normalizeXMLText(text)
@@ -131,11 +129,6 @@ func lastInlineResolvedText(container Container) string {
 		}
 		return value.textPieces[len(value.textPieces)-1].ResolvedText(nil)
 	case *StdLabel:
-		if len(value.textPieces) == 0 {
-			return ""
-		}
-		return value.textPieces[len(value.textPieces)-1].ResolvedText(nil)
-	case *StdSector:
 		if len(value.textPieces) == 0 {
 			return ""
 		}

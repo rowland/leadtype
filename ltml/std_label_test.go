@@ -46,6 +46,9 @@ type labelTestWriter struct {
 	plainPages     []int
 	rotations      []rotationCall
 	curvedCount    int
+	curvedXs       []float64
+	curvedYs       []float64
+	curvedRadii    []float64
 	curvedStarts   []float64
 	curvedOpts     []pdf.CurvedTextOptions
 	pageCount      int
@@ -112,6 +115,9 @@ func (w *labelTestWriter) CompressPages(bool) *pdf.DocWriter         { return ni
 func (w *labelTestWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++
+	w.curvedXs = append(w.curvedXs, x)
+	w.curvedYs = append(w.curvedYs, y)
+	w.curvedRadii = append(w.curvedRadii, r)
 	w.curvedStarts = append(w.curvedStarts, startAngle)
 	w.curvedOpts = append(w.curvedOpts, opts)
 	w.printed = append(w.printed, text)

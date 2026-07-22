@@ -6,26 +6,27 @@
     <p left="0.7" top="0.82" width="6.2">A radial container behaves like a table wrapped around a circle. Some children below are explicit sectors, while direct labels and paragraphs are wrapped into implicit sectors at parse time.</p>
 
     <disc left="1.0" top="1.55" width="5.6" height="5.6" rows="3" angles="0,40,85,130,180,230,285,330,360" base-angle="-90" r0="0.8">
-      <sector colspan="2" fill="AliceBlue" border="ring" padding="0.08" text-align="center" font.size="9" font.weight="Bold">Auto below midline</sector>
+      <sector colspan="2" fill="AliceBlue" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center">Auto below midline</label></sector>
       <p colspan="3" padding="0.08" font.size="8.5">This paragraph is a direct child of the radial container, so LTML wraps it in an implicit sector and shapes its lines to the changing width of the wedge.</p>
-      <sector angle="0" fill="Cornsilk" border="ring"><label font.weight="Bold">01</label></sector>
+      <sector fill="Cornsilk" border="ring"><label angle="0" font.weight="Bold">01</label></sector>
       <label angle="0" font.weight="Bold">02</label>
-      <sector facing="upside-down" fill="LavenderBlush" border="ring" padding="0.08">Facing override</sector>
+      <sector fill="LavenderBlush" border="ring" padding="0.08"><label facing="upside-down">Facing override</label></sector>
 
       <sector rowspan="2" colspan="3" fill="HoneyDew" border="ring" padding="0.08">
         <p style.text-align="center">Merged sectors can host longer copy. This paragraph uses variable line widths that follow the sector instead of a rectangular frame.</p>
       </sector>
       <label angle="0" font.weight="Bold" font.size="16">03</label>
       <sector colspan="2" fill="MistyRose" border="ring">
-        <label position="relative" origin-x="start" origin-y="inner" left="0.05" top="0.02" font.size="7">start / inner</label>
-        <label position="relative" origin-x="end" origin-y="outer" right="-0.05" bottom="-0.02" font.size="7">end / outer</label>
+        <label>Curved center</label>
+        <label angle="90" position="relative" origin-x="end" origin-y="middle" right="0.35" top="0" font.size="11">07</label>
       </sector>
       <p colspan="2" padding="0.08" font.size="8">Another implicit sector paragraph keeps ordinary LTML widgets but inherits sector geometry from the wrapper.</p>
 
-      <sector colspan="2" fill="Lavender" border="ring" text-align="center" padding="0.08" font.size="9" font.weight="Bold">Auto above midline</sector>
+      <sector colspan="2" fill="Lavender" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center">Auto above midline</label></sector>
       <label angle="0" font.weight="Bold">04</label>
-      <sector colspan="2" fill="LightYellow" border="ring" padding="0.08">
-        <p style.text-align="center">Explicit sectors can hold nested paragraphs, labels, and positioned children.</p>
+      <sector colspan="2" fill="LightYellow" border="ring" padding="0.08" layout.hpadding="0.08">
+        <label angle="0" font.size="9">A</label>
+        <label angle="0" font.size="9">B</label>
       </sector>
     </disc>
   </page>
@@ -36,16 +37,16 @@
 
     <disc left="1.4" top="1.7" width="4.8" height="4.8" sweep="cw"
           rows="3" cols="4" base-angle="180" row-angle-offsets="0,-45,0" r0="0.55">
-      <sector colspan="2" fill="LightSkyBlue" border="ring">Outer A</sector>
-      <sector colspan="2" fill="LightSalmon" border="ring">Outer B</sector>
+      <sector colspan="2" fill="LightSkyBlue" border="ring"><label>Outer A</label></sector>
+      <sector colspan="2" fill="LightSalmon" border="ring"><label>Outer B</label></sector>
 
-      <sector fill="AliceBlue" border="ring">1</sector>
-      <sector fill="HoneyDew" border="ring">2</sector>
-      <sector fill="Cornsilk" border="ring">3</sector>
-      <sector fill="LavenderBlush" border="ring">4</sector>
+      <sector fill="AliceBlue" border="ring"><label>1</label></sector>
+      <sector fill="HoneyDew" border="ring"><label>2</label></sector>
+      <sector fill="Cornsilk" border="ring"><label>3</label></sector>
+      <sector fill="LavenderBlush" border="ring"><label>4</label></sector>
 
-      <sector colspan="2" fill="Lavender" border="ring">Inner A</sector>
-      <sector colspan="2" fill="MistyRose" border="ring">Inner B</sector>
+      <sector colspan="2" fill="Lavender" border="ring"><label>Inner A</label></sector>
+      <sector colspan="2" fill="MistyRose" border="ring"><label>Inner B</label></sector>
     </disc>
   </page>
 </ltml>

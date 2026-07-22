@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/rowland/leadtype/pdf"
@@ -26,6 +25,26 @@ type sectorParagraphLayout struct {
 	total     float64
 }
 
+type sectorLabelPlacement struct {
+	anchorX   float64
+	anchorY   float64
+	radius    float64
+	angle     float64
+	boxLeft   float64
+	boxTop    float64
+	boxWidth  float64
+	boxHeight float64
+	straight  bool
+	textAngle float64
+	arcWidth  float64
+}
+
+type sectorFlowLabelAnchor struct {
+	x        float64
+	y        float64
+	arcWidth float64
+}
+
 type sectorParagraphLayoutProvider interface {
 	sectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorParagraphLayout
 	drawSectorParagraph(p *StdParagraph, w Writer, layout *sectorParagraphLayout) error
@@ -40,42 +59,29 @@ const (
 
 type StdSector struct {
 	StdContainer
-	textPieces       []textPiece
-	richText         *rich_text.RichText
-	facing           sectorFacing
-	angle            float64
-	angleSet         bool
-	textAlign        HAlign
-	textAlignSet     bool
 	geometry         radialSectorGeometry
 	localBounds      radialBounds
 	localPolygon     []radialPoint
+	contentBounds    radialBounds
+	contentPolygon   []radialPoint
 	contentRotation  float64
 	paragraphLayouts map[*StdParagraph]*sectorParagraphLayout
 	sectorBorders    [4]*PenStyle
-}
-
-func (s *StdSector) AddText(text string) {
-	s.AddTextWithFont(text, s.explicitFont())
-}
-
-func (s *StdSector) AddTextWithFont(text string, font *FontStyle) {
-	addNormalizedTextPiece(&s.textPieces, &s.richText, text, font, normalizeLabelXMLText)
-}
-
-func (s *StdSector) AddInlineWithFont(content inlineText, font *FontStyle) {
-	addInlineTextPiece(&s.textPieces, &s.richText, content, font)
-}
-
-func (s *StdSector) AccessibilityText() string {
-	return resolvedTextPieces(s.textPieces, documentForContainer(s))
+	sectorBorderSet  [4]bool
+	logicalBorderSet [4]bool
+	flowSlots        map[Widget]radialBounds
+	flowLabelAnchors map[*StdLabel]sectorFlowLabelAnchor
 }
 
 func (s *StdSector) DrawBorder(w Writer) error {
 	x := s.geometry.CenterX - s.geometry.OuterRadius
 	y := s.geometry.CenterY - s.geometry.OuterRadius
 	size := s.geometry.OuterRadius * 2
-	if s.border != nil {
+	hasEdgeOverrides := false
+	for i := range s.sectorBorders {
+		hasEdgeOverrides = hasEdgeOverrides || s.sectorBorderSet[i] || s.logicalBorderSet[i] || s.sectorBorders[i] != nil || s.borders[i] != nil
+	}
+	if s.border != nil && !hasEdgeOverrides {
 		if err := s.border.ApplyInRect(w, x, y, size, size); err != nil {
 			return err
 		}
@@ -101,25 +107,38 @@ func (s *StdSector) DrawBorder(w Writer) error {
 }
 
 func (s *StdSector) resolvedSectorBorders() (outer, inner, start, end *PenStyle) {
-	outer = s.sectorBorders[sectorBorderOuter]
-	if outer == nil {
+	outer, inner, start, end = s.border, s.border, s.border, s.border
+	if s.logicalBorderSet[topSide] || s.borders[topSide] != nil {
 		outer = s.borders[topSide]
 	}
-	inner = s.sectorBorders[sectorBorderInner]
-	if inner == nil {
+	if s.logicalBorderSet[bottomSide] || s.borders[bottomSide] != nil {
 		inner = s.borders[bottomSide]
 	}
 	if s.radialSweep() == radialSweepCW {
-		start = s.borders[rightSide]
-		end = s.borders[leftSide]
+		if s.logicalBorderSet[rightSide] || s.borders[rightSide] != nil {
+			start = s.borders[rightSide]
+		}
+		if s.logicalBorderSet[leftSide] || s.borders[leftSide] != nil {
+			end = s.borders[leftSide]
+		}
 	} else {
-		start = s.borders[leftSide]
-		end = s.borders[rightSide]
+		if s.logicalBorderSet[leftSide] || s.borders[leftSide] != nil {
+			start = s.borders[leftSide]
+		}
+		if s.logicalBorderSet[rightSide] || s.borders[rightSide] != nil {
+			end = s.borders[rightSide]
+		}
 	}
-	if s.sectorBorders[sectorBorderStart] != nil {
+	if s.sectorBorderSet[sectorBorderOuter] || s.sectorBorders[sectorBorderOuter] != nil {
+		outer = s.sectorBorders[sectorBorderOuter]
+	}
+	if s.sectorBorderSet[sectorBorderInner] || s.sectorBorders[sectorBorderInner] != nil {
+		inner = s.sectorBorders[sectorBorderInner]
+	}
+	if s.sectorBorderSet[sectorBorderStart] || s.sectorBorders[sectorBorderStart] != nil {
 		start = s.sectorBorders[sectorBorderStart]
 	}
-	if s.sectorBorders[sectorBorderEnd] != nil {
+	if s.sectorBorderSet[sectorBorderEnd] || s.sectorBorders[sectorBorderEnd] != nil {
 		end = s.sectorBorders[sectorBorderEnd]
 	}
 	return
@@ -172,95 +191,21 @@ func (s *StdSector) strokeSectorRadius(w Writer, pen *PenStyle, angle, x, y, siz
 }
 
 func (s *StdSector) DrawContent(w Writer) error {
-	return withWidgetRoleAccessibility(w, &s.StdWidget, "TD", s.AccessibilityText(), func() error {
+	return withWidgetRoleAccessibility(w, &s.StdWidget, "TD", "", func() error {
 		return s.withSectorClip(w, func() error {
-			if rt := s.RichText(w); rt != nil && rt.Len() > 0 {
-				if err := s.drawInlineText(w, rt); err != nil {
-					return err
-				}
-			}
 			return s.drawChildrenWithRotation(w)
 		})
 	})
 }
 
 func (s *StdSector) LayoutWidget(w Writer) error {
-	if s.layout != nil {
-		return LayoutContainer(s, w)
+	s.rebuildContentGeometry()
+	if len(s.contentPolygon) < 3 {
+		s.flowSlots = nil
+		return nil
 	}
-
-	static := make([]Widget, 0, len(s.Widgets()))
-	for _, child := range s.Widgets() {
-		if child.Position() == Static {
-			static = append(static, child)
-		}
-	}
-	if len(static) > 0 {
-		seedWidth := s.seedContentWidth()
-		gap := s.LayoutStyle().VPadding()
-		centerX, centerY := s.contentLocalCenter()
-		stable := false
-		for pass := 0; pass < 6; pass++ {
-			s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
-			totalHeight := 0.0
-			totalHeight = 0.0
-			for i, child := range static {
-				if !child.WidthIsSet() {
-					if _, ok := child.(*StdParagraph); ok {
-						child.SetWidth(seedWidth)
-					} else {
-						pw, err := child.PreferredWidth(w)
-						if err != nil {
-							return err
-						}
-						if pw == 0 {
-							pw = seedWidth
-						}
-						child.SetWidth(min(pw, seedWidth))
-					}
-				}
-				if !child.HeightIsSet() || pass > 0 {
-					height, err := child.PreferredHeight(w)
-					if err != nil {
-						return err
-					}
-					child.SetHeight(height)
-				}
-				totalHeight += child.Height()
-				if i > 0 {
-					totalHeight += gap
-				}
-			}
-			bounds := s.contentLocalBounds()
-			y := clampFloat(
-				s.geometry.AnchorY+centerY-(totalHeight/2),
-				s.geometry.AnchorY+bounds.MinY,
-				s.geometry.AnchorY+bounds.MaxY-totalHeight,
-			)
-			changed := false
-			for _, child := range static {
-				centerLocalY := (y + child.Height()/2) - s.geometry.AnchorY
-				interval := s.contentLineIntervalAt(centerLocalY)
-				localLeft := clampFloat(centerX-child.Width()/2, interval.MinX, interval.MaxX-child.Width())
-				left := s.geometry.AnchorX + localLeft
-				if !floatEquals(child.Left(), left) || !floatEquals(child.Top(), y) {
-					changed = true
-				}
-				child.SetLeft(left)
-				child.SetTop(y)
-				if err := child.LayoutWidget(w); err != nil {
-					return err
-				}
-				y += child.Height() + gap
-			}
-			if !changed {
-				stable = true
-				break
-			}
-		}
-		if !stable {
-			s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
-		}
+	if err := s.layoutStaticFlow(w); err != nil {
+		return err
 	}
 	return layoutPositionedChildren(s, w)
 }
@@ -313,52 +258,55 @@ func (s *StdSector) ResolveSectorReferenceY(widget Widget) float64 {
 	return s.geometry.AnchorY + y
 }
 
-func (s *StdSector) RichText(w Writer) *rich_text.RichText {
-	return richTextForTextPieces(w, s, s.textPieces, &s.richText, s.Font())
-}
-
 func (s *StdSector) SetAttrs(attrs map[string]string) {
 	s.StdContainer.SetAttrs(attrs)
+	if value, ok := attrs["border"]; ok {
+		if strings.EqualFold(strings.TrimSpace(value), "none") {
+			s.border = nil
+		}
+	}
+	for i, side := range sideNames {
+		name := "border-" + side
+		if value, ok := attrs[name]; ok {
+			s.logicalBorderSet[i] = true
+			if strings.EqualFold(strings.TrimSpace(value), "none") {
+				s.borders[i] = nil
+			}
+		}
+		if MapHasKeyPrefix(attrs, name+".") {
+			s.logicalBorderSet[i] = true
+		}
+	}
 	s.setSectorBorderStyle(sectorBorderOuter, "border-outer", attrs)
 	s.setSectorBorderStyle(sectorBorderEnd, "border-end", attrs)
 	s.setSectorBorderStyle(sectorBorderInner, "border-inner", attrs)
 	s.setSectorBorderStyle(sectorBorderStart, "border-start", attrs)
-	s.facing = sectorFacingAuto
-	switch attrs["facing"] {
-	case "upright":
-		s.facing = sectorFacingUpright
-	case "upside-down":
-		s.facing = sectorFacingUpsideDown
-	}
-	if angle, ok := attrs["angle"]; ok {
-		if value, err := strconv.ParseFloat(strings.TrimSpace(angle), 64); err == nil {
-			s.angle = value
-			s.angleSet = true
-		}
-	}
-	s.textAlign = HAlignCenter
-	if textAlign, ok := attrs["text-align"]; ok {
-		s.textAlignSet = true
-		switch textAlign {
-		case "left":
-			s.textAlign = HAlignLeft
-		case "right":
-			s.textAlign = HAlignRight
-		default:
-			s.textAlign = HAlignCenter
-		}
+}
+
+func isInlineOnlyWidget(widget Widget) bool {
+	switch widget.(type) {
+	case *StdA, *StdIndexPage, *StdIndexTitle, *StdLeader, *StdPageNo, *StdSpan:
+		return true
+	default:
+		return false
 	}
 }
 
 func (s *StdSector) setSectorBorderStyle(index int, attrName string, attrs map[string]string) {
 	field := &s.sectorBorders[index]
 	if id, ok := attrs[attrName]; ok {
-		*field = PenStyleFor(id, s.Scope())
+		s.sectorBorderSet[index] = true
+		if strings.EqualFold(strings.TrimSpace(id), "none") {
+			*field = nil
+		} else {
+			*field = PenStyleFor(id, s.Scope())
+		}
 	}
 	prefix := attrName + "."
 	if !MapHasKeyPrefix(attrs, prefix) {
 		return
 	}
+	s.sectorBorderSet[index] = true
 	base := *field
 	if base == nil {
 		base = s.border
@@ -391,59 +339,271 @@ func (s *StdSector) drawChildrenWithRotation(w Writer) error {
 	if len(s.Widgets()) == 0 {
 		return nil
 	}
-	var renderErr error
-	draw := func() {
-		renderErr = s.StdContainer.drawChildren(w)
+	children := slices.Clone(s.Widgets())
+	slices.SortStableFunc(children, func(a, b Widget) int { return a.ZIndex() - b.ZIndex() })
+	for _, child := range children {
+		if !child.Visible() || child.Disabled() {
+			continue
+		}
+		if _, ok := child.(*StdLabel); ok || s.contentRotation == 0 {
+			if err := Print(child, w); err != nil {
+				return err
+			}
+			continue
+		}
+		var renderErr error
+		if err := w.Rotate(s.contentRotation, s.geometry.AnchorX, s.geometry.AnchorY, func() {
+			renderErr = Print(child, w)
+		}); err != nil {
+			return err
+		}
+		if renderErr != nil {
+			return renderErr
+		}
 	}
-	if s.contentRotation == 0 {
-		draw()
-		return renderErr
-	}
-	if err := w.Rotate(s.contentRotation, s.geometry.AnchorX, s.geometry.AnchorY, draw); err != nil {
-		return err
-	}
-	return renderErr
+	return nil
 }
 
-func (s *StdSector) drawInlineText(w Writer, rt *rich_text.RichText) error {
-	if s.angleSet {
-		return s.drawStraightText(w, rt)
+func (s *StdSector) layoutSectorLabel(label *StdLabel, w Writer) error {
+	textAngle, straight := label.sectorTextAngle()
+	boxWidth, boxHeight := label.Width(), label.Height()
+	if straight {
+		if !label.WidthIsSet() {
+			width, err := label.PreferredWidth(w)
+			if err != nil {
+				return err
+			}
+			label.ResolveWidth(width)
+		}
+		if !label.HeightIsSet() {
+			height, err := label.PreferredHeight(w)
+			if err != nil {
+				return err
+			}
+			label.ResolveHeight(height)
+		}
+		boxWidth, boxHeight = label.Width(), label.Height()
+	} else {
+		rt := label.RichText(w)
+		if rt != nil {
+			boxWidth = rt.Width()
+			boxHeight = rt.Leading() * w.LineSpacing()
+		}
+		if boxHeight <= 0 {
+			boxHeight = effectiveFontSizeForContainer(label) * w.LineSpacing()
+		}
 	}
-	opts := pdf.CurvedTextOptions{
-		Align:       s.curvedTextAlign(),
-		VAlign:      pdf.VTextAlignMiddle,
-		Direction:   s.curvedTextDirection(),
-		Orientation: pdf.CurvedTextOrientationOutside,
-		Facing:      s.curvedTextFacing(),
-	}
-	return w.DrawRichTextOnCircle(rt, s.geometry.CenterX, s.geometry.CenterY, (s.geometry.InnerRadius+s.geometry.OuterRadius)/2, s.inlineStartAngle(), opts)
-}
 
-func (s *StdSector) drawStraightText(w Writer, rt *rich_text.RichText) error {
-	applyContainerFont(w, s)
-	anchorX, anchorY := s.geometry.AnchorX, s.geometry.AnchorY
-	startX := anchorX
-	switch s.resolvedTextAlign() {
-	case HAlignCenter:
-		startX -= rt.Width() / 2
+	align := label.sectorTextAlign()
+	xFactor := 0.5
+	switch align {
+	case HAlignLeft:
+		xFactor = 0
 	case HAlignRight:
-		startX -= rt.Width()
+		xFactor = 1
 	}
-	var renderErr error
-	if err := w.Rotate(s.angle, anchorX, anchorY, func() {
-		w.MoveTo(startX, anchorY+rt.Ascent()/2)
-		w.PrintRichText(rt)
-	}); err != nil {
-		return err
+	anchorXFactor := 0.5
+	switch label.sectorAnchorOriginX() {
+	case OriginXStart:
+		anchorXFactor = 0
+	case OriginXEnd:
+		anchorXFactor = 1
 	}
-	return renderErr
+	yFactor := 0.5
+	switch label.sectorOriginY() {
+	case OriginYTop:
+		yFactor = 0
+	case OriginYBottom:
+		yFactor = 1
+	}
+
+	var anchorX, anchorY, boxLeft, boxTop, arcWidth float64
+	if flowAnchor, flowing := s.flowLabelAnchors[label]; flowing && label.Position() == Static && !straight {
+		anchorX, anchorY, arcWidth = flowAnchor.x, flowAnchor.y, flowAnchor.arcWidth
+		boxLeft, boxTop = anchorX-boxWidth*xFactor, anchorY-boxHeight*yFactor
+	} else if slot, flowing := s.flowSlots[label]; flowing && label.Position() == Static {
+		localAnchorX := slot.MinX + (slot.MaxX-slot.MinX)*anchorXFactor
+		localAnchorY := slot.MinY + (slot.MaxY-slot.MinY)*yFactor
+		anchorX, anchorY = rotatePagePoint(s.geometry.AnchorX+localAnchorX, s.geometry.AnchorY+localAnchorY,
+			s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		centerX, centerY := rotatePagePoint(s.geometry.AnchorX+(slot.MinX+slot.MaxX)/2, s.geometry.AnchorY+(slot.MinY+slot.MaxY)/2,
+			s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		boxLeft, boxTop = centerX-boxWidth/2, centerY-boxHeight/2
+		band := s.contentBandForHeight(slot.MinY, slot.MaxY-slot.MinY)
+		arcWidth = max(min(slot.MaxX, band.MaxX)-max(slot.MinX, band.MinX), 0)
+	} else {
+		localX := s.ResolveSectorReferenceX(label) + s.labelOffsetX(label)
+		localY := s.ResolveSectorReferenceY(label) + s.labelOffsetY(label)
+		anchorX, anchorY = rotatePagePoint(localX, localY, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		boxLeft, boxTop = anchorX-boxWidth*xFactor, anchorY-boxHeight*yFactor
+	}
+	dx := anchorX - s.geometry.CenterX
+	dy := s.geometry.CenterY - anchorY
+	radius := math.Hypot(dx, dy)
+	angle := math.Atan2(dy, dx) * 180 / math.Pi
+	if !straight && (radius <= radialAngleEpsilon || math.IsNaN(radius) || math.IsInf(radius, 0)) {
+		return fmt.Errorf("%s: curved sector label requires a positive finite radius", label.Path())
+	}
+
+	if arcWidth <= 0 {
+		arcWidth = s.availableArcWidth(radius, angle, align)
+	}
+	label.sectorPlacement = &sectorLabelPlacement{
+		anchorX:   anchorX,
+		anchorY:   anchorY,
+		radius:    radius,
+		angle:     angle,
+		boxLeft:   boxLeft,
+		boxTop:    boxTop,
+		boxWidth:  boxWidth,
+		boxHeight: boxHeight,
+		straight:  straight,
+		textAngle: textAngle,
+		arcWidth:  arcWidth,
+	}
+	return nil
+}
+
+func (s *StdSector) drawSectorLabel(label *StdLabel, w Writer) error {
+	placement := label.sectorPlacement
+	textAngle, straight := label.sectorTextAngle()
+	if placement == nil || placement.straight != straight || (straight && !floatEquals(placement.textAngle, textAngle)) {
+		if err := s.layoutSectorLabel(label, w); err != nil {
+			return err
+		}
+		placement = label.sectorPlacement
+	}
+	if placement.straight {
+		return label.drawBoxLabelContent(w, placement.textAngle)
+	}
+	return withWidgetRoleAccessibility(w, &label.StdWidget, "P", label.AccessibilityText(), func() error {
+		rt := label.RichText(w)
+		if rt == nil || rt.Len() == 0 {
+			return nil
+		}
+		if label.shrinkToFit {
+			arcWidth := placement.arcWidth
+			if arcWidth > 0 && rt.Width() > arcWidth {
+				rt = rt.Scale(arcWidth/rt.Width(), 6.0)
+			}
+		}
+		opts := pdf.CurvedTextOptions{
+			Align:       s.labelCurvedTextAlign(label),
+			VAlign:      s.labelCurvedTextVAlign(label),
+			Direction:   s.labelCurvedTextDirection(placement),
+			Orientation: pdf.CurvedTextOrientationOutside,
+			Facing:      s.labelCurvedTextFacing(label, placement),
+		}
+		return w.DrawRichTextOnCircle(rt, s.geometry.CenterX, s.geometry.CenterY, placement.radius, placement.angle, opts)
+	})
+}
+
+func (s *StdSector) availableArcWidth(radius, anchorAngle float64, align HAlign) float64 {
+	if radius <= 0 {
+		return 0
+	}
+	start := s.contentBoundaryAngle(true, radius)
+	end := s.contentBoundaryAngle(false, radius)
+	startDistance := s.angularDistanceAlongSweep(start, anchorAngle)
+	endDistance := s.angularDistanceAlongSweep(anchorAngle, end)
+	degrees := startDistance + endDistance
+	switch align {
+	case HAlignLeft:
+		degrees = endDistance
+	case HAlignRight:
+		degrees = startDistance
+	default:
+		degrees = 2 * min(startDistance, endDistance)
+	}
+	return radius * degrees * math.Pi / 180
+}
+
+func (s *StdSector) angularDistanceAlongSweep(from, to float64) float64 {
+	span := s.geometry.EndAngle - s.geometry.StartAngle
+	distance := to - from
+	if span < 0 {
+		distance = -distance
+	}
+	for distance < 0 {
+		distance += 360
+	}
+	return min(distance, math.Abs(span))
+}
+
+func (s *StdSector) labelCurvedTextAlign(label *StdLabel) pdf.CurvedTextHAlign {
+	switch label.sectorTextAlign() {
+	case HAlignLeft:
+		return pdf.CurvedTextAlignLeft
+	case HAlignRight:
+		return pdf.CurvedTextAlignRight
+	default:
+		return pdf.CurvedTextAlignCenter
+	}
+}
+
+func (s *StdSector) labelCurvedTextVAlign(label *StdLabel) pdf.VerticalTextAlign {
+	switch label.sectorTextVAlign() {
+	case VAlignTop:
+		return pdf.VTextAlignTop
+	case VAlignBottom:
+		return pdf.VTextAlignBelow
+	case VAlignBaseline:
+		return pdf.VTextAlignBase
+	default:
+		return pdf.VTextAlignMiddle
+	}
+}
+
+func (s *StdSector) labelCurvedTextDirection(placement *sectorLabelPlacement) pdf.CurvedTextDirection {
+	if placement.anchorY > s.geometry.CenterY {
+		return pdf.CurvedTextCounterClockwise
+	}
+	return pdf.CurvedTextClockwise
+}
+
+func (s *StdSector) labelCurvedTextFacing(label *StdLabel, placement *sectorLabelPlacement) pdf.CurvedTextFacing {
+	facing := label.sectorTextFacing()
+	switch facing {
+	case sectorFacingUpright:
+		return pdf.CurvedTextFacingUpright
+	case sectorFacingUpsideDown:
+		return pdf.CurvedTextFacingUpsideDown
+	default:
+		if placement.anchorY > s.geometry.CenterY {
+			return pdf.CurvedTextFacingUpsideDown
+		}
+		return pdf.CurvedTextFacingUpright
+	}
+}
+
+func (s *StdSector) labelOffsetX(label *StdLabel) float64 {
+	offset := 0.0
+	if label.sides[leftSide].IsSet {
+		offset = label.sides[leftSide].Float64()
+	} else if label.sides[rightSide].IsSet {
+		offset = label.sides[rightSide].Float64()
+	}
+	return offset + label.shiftXOffset()
+}
+
+func (s *StdSector) labelOffsetY(label *StdLabel) float64 {
+	offset := 0.0
+	if label.sides[topSide].IsSet {
+		offset = label.sides[topSide].Float64()
+	} else if label.sides[bottomSide].IsSet {
+		offset = label.sides[bottomSide].Float64()
+	}
+	return offset + label.shiftYOffset()
 }
 
 func (s *StdSector) withSectorClip(w Writer, fn func() error) error {
+	if len(s.contentPolygon) < 3 {
+		return nil
+	}
 	var clipErr error
 	var renderErr error
 	err := w.Path(func() {
-		if clipErr = s.buildSectorPath(w); clipErr != nil {
+		if clipErr = s.buildContentPath(w); clipErr != nil {
 			return
 		}
 		clipErr = w.Clip(func() {
@@ -459,91 +619,33 @@ func (s *StdSector) withSectorClip(w Writer, fn func() error) error {
 	return renderErr
 }
 
-func (s *StdSector) buildSectorPath(w Writer) error {
-	if s.geometry.InnerRadius > 0 {
-		startX, startY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.StartAngle)
-		endInnerX, endInnerY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, s.geometry.InnerRadius, s.geometry.EndAngle)
-		w.MoveTo(startX, startY)
-		if err := w.Arc(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, s.geometry.StartAngle, s.geometry.EndAngle, false); err != nil {
-			return err
+func (s *StdSector) buildContentPath(w Writer) error {
+	for i, point := range s.contentPolygon {
+		x, y := rotatePagePoint(s.geometry.AnchorX+point.X, s.geometry.AnchorY+point.Y,
+			s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		if i == 0 {
+			w.MoveTo(x, y)
+		} else {
+			w.LineTo(x, y)
 		}
-		w.LineTo(endInnerX, endInnerY)
-		if err := w.Arc(s.geometry.CenterX, s.geometry.CenterY, s.geometry.InnerRadius, s.geometry.EndAngle, s.geometry.StartAngle, false); err != nil {
-			return err
-		}
-		w.LineTo(startX, startY)
-		return nil
 	}
-	centerX, centerY := s.geometry.CenterX, s.geometry.CenterY
-	startX, startY := radialPointAt(centerX, centerY, s.geometry.OuterRadius, s.geometry.StartAngle)
-	w.MoveTo(centerX, centerY)
-	w.LineTo(startX, startY)
-	if err := w.Arc(centerX, centerY, s.geometry.OuterRadius, s.geometry.StartAngle, s.geometry.EndAngle, false); err != nil {
-		return err
-	}
-	w.LineTo(centerX, centerY)
+	first := s.contentPolygon[0]
+	x, y := rotatePagePoint(s.geometry.AnchorX+first.X, s.geometry.AnchorY+first.Y,
+		s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+	w.LineTo(x, y)
 	return nil
-}
-
-func (s *StdSector) curvedTextAlign() pdf.CurvedTextHAlign {
-	switch s.resolvedTextAlign() {
-	case HAlignLeft:
-		return pdf.CurvedTextAlignLeft
-	case HAlignRight:
-		return pdf.CurvedTextAlignRight
-	default:
-		return pdf.CurvedTextAlignCenter
-	}
-}
-
-func (s *StdSector) curvedTextDirection() pdf.CurvedTextDirection {
-	if s.geometry.AnchorY > s.geometry.CenterY {
-		return pdf.CurvedTextCounterClockwise
-	}
-	return pdf.CurvedTextClockwise
-}
-
-func (s *StdSector) curvedTextFacing() pdf.CurvedTextFacing {
-	switch s.facing {
-	case sectorFacingUpright:
-		return pdf.CurvedTextFacingUpright
-	case sectorFacingUpsideDown:
-		return pdf.CurvedTextFacingUpsideDown
-	default:
-		if s.geometry.AnchorY > s.geometry.CenterY {
-			return pdf.CurvedTextFacingUpsideDown
-		}
-		return pdf.CurvedTextFacingUpright
-	}
-}
-
-func (s *StdSector) inlineStartAngle() float64 {
-	switch s.resolvedTextAlign() {
-	case HAlignLeft:
-		return s.geometry.StartAngle
-	case HAlignRight:
-		return s.geometry.EndAngle
-	default:
-		return s.geometry.AnchorAngle
-	}
-}
-
-func (s *StdSector) resolvedTextAlign() HAlign {
-	if s.textAlignSet {
-		return s.textAlign
-	}
-	return HAlignCenter
 }
 
 func (s *StdSector) resolveSectorReference(widget Widget) (float64, float64) {
 	xOrigin, yOrigin := widget.OriginX(), widget.OriginY()
-	midRadius := (s.geometry.InnerRadius + s.geometry.OuterRadius) / 2
-	angleForOrigin := func(origin OriginX) float64 {
+	innerRadius, outerRadius := s.contentRadii()
+	midRadius := (innerRadius + outerRadius) / 2
+	angleForOrigin := func(origin OriginX, radius float64) float64 {
 		switch origin {
 		case OriginXStart:
-			return s.geometry.StartAngle
+			return s.contentBoundaryAngle(true, radius)
 		case OriginXEnd:
-			return s.geometry.EndAngle
+			return s.contentBoundaryAngle(false, radius)
 		default:
 			return s.geometry.AnchorAngle
 		}
@@ -551,28 +653,29 @@ func (s *StdSector) resolveSectorReference(widget Widget) (float64, float64) {
 	radiusForOrigin := func(origin OriginY) float64 {
 		switch origin {
 		case OriginYTop:
-			return s.geometry.InnerRadius
+			return innerRadius
 		case OriginYBottom:
-			return s.geometry.OuterRadius
+			return outerRadius
 		default:
 			return midRadius
 		}
 	}
 	if xOrigin != OriginXCustom && yOrigin != OriginYCustom {
-		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radiusForOrigin(yOrigin), angleForOrigin(xOrigin))
+		radius := radiusForOrigin(yOrigin)
+		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, angleForOrigin(xOrigin, radius))
 		return s.toLocal(actualX, actualY)
 	}
 
-	localX := s.localBounds.MinX
+	localX := s.contentBounds.MinX
 	if xOrigin == OriginXCustom {
 		localX += widget.OriginXValue()
 	}
 	if xOrigin != OriginXCustom {
-		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, midRadius, angleForOrigin(xOrigin))
+		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, midRadius, angleForOrigin(xOrigin, midRadius))
 		localX, _ = s.toLocal(actualX, actualY)
 	}
 
-	localY := s.localBounds.MinY
+	localY := s.contentBounds.MinY
 	if yOrigin == OriginYCustom {
 		localY += widget.OriginYValue()
 	}
@@ -659,27 +762,34 @@ func (s *StdSector) paragraphIntervalsForLines(p *StdParagraph, w Writer, lines 
 	intervals := make([]radialInterval, 0, len(lines))
 	y := ContentTop(p)
 	for _, line := range lines {
-		centerY := y + (line.Leading()*w.LineSpacing())/2
-		localY := centerY - s.geometry.AnchorY
-		intervals = append(intervals, s.contentLineIntervalAt(localY))
-		y += line.Leading() * w.LineSpacing()
+		lineHeight := line.Leading() * w.LineSpacing()
+		localTop := y - s.geometry.AnchorY
+		// A centerline chord can be wider than the sector both above and below
+		// it. Use the intersection across the complete line box so ascenders,
+		// descenders, fills, and accessibility clipping stay inside the padded
+		// sector shape.
+		intervals = append(intervals, s.contentBandForHeight(localTop, lineHeight))
+		y += lineHeight
 	}
 	return intervals
 }
 
-func (s *StdSector) lineIntervalAt(localY float64) radialInterval {
+func polygonLineIntervalAt(polygon []radialPoint, bounds radialBounds, localY, preferredX float64) radialInterval {
+	if len(polygon) < 3 || localY < bounds.MinY-radialAngleEpsilon || localY > bounds.MaxY+radialAngleEpsilon {
+		return radialInterval{MinX: preferredX, MaxX: preferredX}
+	}
 	xs := make([]float64, 0, 8)
-	for i := 0; i < len(s.localPolygon); i++ {
-		a := s.localPolygon[i]
-		b := s.localPolygon[(i+1)%len(s.localPolygon)]
-		if (localY < min(a.Y, b.Y)) || (localY > max(a.Y, b.Y)) || a.Y == b.Y {
+	for i := 0; i < len(polygon); i++ {
+		a := polygon[i]
+		b := polygon[(i+1)%len(polygon)]
+		if a.Y == b.Y || !((a.Y <= localY && localY < b.Y) || (b.Y <= localY && localY < a.Y)) {
 			continue
 		}
 		t := (localY - a.Y) / (b.Y - a.Y)
 		xs = append(xs, a.X+t*(b.X-a.X))
 	}
 	if len(xs) < 2 {
-		return radialInterval{MinX: s.localBounds.MinX, MaxX: s.localBounds.MaxX}
+		return radialInterval{MinX: preferredX, MaxX: preferredX}
 	}
 	slices.Sort(xs)
 	intervals := make([]radialInterval, 0, len(xs)/2)
@@ -687,16 +797,18 @@ func (s *StdSector) lineIntervalAt(localY float64) radialInterval {
 		intervals = append(intervals, radialInterval{MinX: xs[i], MaxX: xs[i+1]})
 	}
 	for _, interval := range intervals {
-		if interval.MinX <= 0 && 0 <= interval.MaxX {
+		if interval.MinX <= preferredX && preferredX <= interval.MaxX {
 			return interval
 		}
 	}
 	best := intervals[0]
-	bestWidth := best.MaxX - best.MinX
+	bestDistance := min(math.Abs(preferredX-best.MinX), math.Abs(preferredX-best.MaxX))
 	for _, interval := range intervals[1:] {
-		if width := interval.MaxX - interval.MinX; width > bestWidth {
+		distance := min(math.Abs(preferredX-interval.MinX), math.Abs(preferredX-interval.MaxX))
+		if distance < bestDistance-radialAngleEpsilon ||
+			(math.Abs(distance-bestDistance) <= radialAngleEpsilon && interval.MaxX-interval.MinX > best.MaxX-best.MinX) {
 			best = interval
-			bestWidth = width
+			bestDistance = distance
 		}
 	}
 	return best
@@ -707,39 +819,147 @@ func (s *StdSector) setGeometry(geometry radialSectorGeometry) {
 	s.contentRotation = s.contentRotationAngle()
 	s.localPolygon = s.buildLocalPolygon()
 	s.localBounds = boundsForPoints(s.localPolygon)
+	s.rebuildContentGeometry()
 	s.SetLeft(s.geometry.AnchorX + s.localBounds.MinX)
 	s.SetTop(s.geometry.AnchorY + s.localBounds.MinY)
 	s.SetWidth(s.localBounds.MaxX - s.localBounds.MinX)
 	s.SetHeight(s.localBounds.MaxY - s.localBounds.MinY)
+	for _, child := range s.Widgets() {
+		if label, ok := child.(*StdLabel); ok {
+			label.sectorPlacement = nil
+		}
+	}
+	s.flowSlots = nil
+	s.flowLabelAnchors = nil
 }
 
 func (s *StdSector) buildLocalPolygon() []radialPoint {
-	points := make([]radialPoint, 0, 48)
+	return s.localizePolygon(s.buildPagePolygon(s.geometry.InnerRadius, s.geometry.OuterRadius))
+}
+
+func (s *StdSector) buildPagePolygon(innerRadius, outerRadius float64) []radialPoint {
+	if outerRadius <= innerRadius || outerRadius <= 0 {
+		return nil
+	}
+	points := make([]radialPoint, 0, 370)
 	span := s.geometry.EndAngle - s.geometry.StartAngle
-	steps := max(int(math.Ceil(math.Abs(span)/15)), 4)
+	steps := max(int(math.Ceil(math.Abs(span)/2)), 4)
 	for i := 0; i <= steps; i++ {
 		angle := s.geometry.StartAngle + (span * float64(i) / float64(steps))
-		x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, s.geometry.OuterRadius, angle)
-		lx, ly := s.toLocal(x, y)
-		points = append(points, radialPoint{X: lx, Y: ly})
+		x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, outerRadius, angle)
+		points = append(points, radialPoint{X: x, Y: y})
 	}
-	if s.geometry.InnerRadius > 0 {
+	if innerRadius > 0 {
 		for i := steps; i >= 0; i-- {
 			angle := s.geometry.StartAngle + (span * float64(i) / float64(steps))
-			x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, s.geometry.InnerRadius, angle)
-			lx, ly := s.toLocal(x, y)
-			points = append(points, radialPoint{X: lx, Y: ly})
+			x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, innerRadius, angle)
+			points = append(points, radialPoint{X: x, Y: y})
 		}
 	} else {
-		points = append(points, radialPoint{0, 0})
+		points = append(points, radialPoint{X: s.geometry.CenterX, Y: s.geometry.CenterY})
 	}
 	return points
 }
 
-func (s *StdSector) contentRotationAngle() float64 {
-	if s.angleSet {
-		return s.angle
+func (s *StdSector) localizePolygon(points []radialPoint) []radialPoint {
+	result := make([]radialPoint, 0, len(points))
+	for _, point := range points {
+		x, y := s.toLocal(point.X, point.Y)
+		result = append(result, radialPoint{X: x, Y: y})
 	}
+	return result
+}
+
+func (s *StdSector) rebuildContentGeometry() {
+	innerRadius, outerRadius := s.contentRadii()
+	points := s.buildPagePolygon(innerRadius, outerRadius)
+	if len(points) > 0 && math.Abs(s.geometry.EndAngle-s.geometry.StartAngle) < 360-radialAngleEpsilon {
+		startPadding, endPadding := s.radialSidePadding()
+		points = clipPolygonToRadialEdge(points, s.geometry, s.geometry.StartAngle, startPadding)
+		points = clipPolygonToRadialEdge(points, s.geometry, s.geometry.EndAngle, endPadding)
+	}
+	s.contentPolygon = s.localizePolygon(points)
+	s.contentBounds = boundsForPoints(s.contentPolygon)
+	s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+}
+
+func (s *StdSector) contentRadii() (inner, outer float64) {
+	inner = s.geometry.InnerRadius + s.PaddingBottom()
+	outer = s.geometry.OuterRadius - s.PaddingTop()
+	inner = max(inner, 0)
+	outer = max(outer, 0)
+	if outer < inner {
+		outer = inner
+	}
+	return inner, outer
+}
+
+func (s *StdSector) radialSidePadding() (start, end float64) {
+	if s.radialSweep() == radialSweepCW {
+		return s.PaddingRight(), s.PaddingLeft()
+	}
+	return s.PaddingLeft(), s.PaddingRight()
+}
+
+func (s *StdSector) contentBoundaryAngle(start bool, radius float64) float64 {
+	angle := s.geometry.EndAngle
+	paddingStart, paddingEnd := s.radialSidePadding()
+	padding := paddingEnd
+	direction := -1.0
+	if start {
+		angle = s.geometry.StartAngle
+		padding = paddingStart
+		direction = 1
+	}
+	span := s.geometry.EndAngle - s.geometry.StartAngle
+	if span < 0 {
+		direction = -direction
+	}
+	if radius <= radialAngleEpsilon || padding <= 0 || math.Abs(span) >= 360-radialAngleEpsilon {
+		return angle
+	}
+	delta := math.Asin(min(padding/radius, 1)) * 180 / math.Pi
+	return angle + direction*delta
+}
+
+func clipPolygonToRadialEdge(points []radialPoint, geometry radialSectorGeometry, edgeAngle, padding float64) []radialPoint {
+	if len(points) == 0 || padding <= 0 {
+		return points
+	}
+	theta := edgeAngle * math.Pi / 180
+	dx, dy := math.Cos(theta), -math.Sin(theta)
+	midRadius := (geometry.InnerRadius + geometry.OuterRadius) / 2
+	midX, midY := radialPointAt(geometry.CenterX, geometry.CenterY, midRadius, geometry.AnchorAngle)
+	signedDistance := func(point radialPoint) float64 {
+		return dx*(point.Y-geometry.CenterY) - dy*(point.X-geometry.CenterX)
+	}
+	sign := 1.0
+	if signedDistance(radialPoint{X: midX, Y: midY}) < 0 {
+		sign = -1
+	}
+	distance := func(point radialPoint) float64 { return sign*signedDistance(point) - padding }
+	result := make([]radialPoint, 0, len(points)+2)
+	previous := points[len(points)-1]
+	previousDistance := distance(previous)
+	for _, current := range points {
+		currentDistance := distance(current)
+		previousInside, currentInside := previousDistance >= -radialAngleEpsilon, currentDistance >= -radialAngleEpsilon
+		if previousInside != currentInside {
+			t := previousDistance / (previousDistance - currentDistance)
+			result = append(result, radialPoint{
+				X: previous.X + t*(current.X-previous.X),
+				Y: previous.Y + t*(current.Y-previous.Y),
+			})
+		}
+		if currentInside {
+			result = append(result, current)
+		}
+		previous, previousDistance = current, currentDistance
+	}
+	return result
+}
+
+func (s *StdSector) contentRotationAngle() float64 {
 	if s.hasParagraphChild() {
 		return 0
 	}
@@ -750,14 +970,6 @@ func (s *StdSector) contentRotationAngle() float64 {
 		tangentX = -math.Sin(theta)
 		tangentY = -math.Cos(theta)
 	}
-	if s.facing == sectorFacingUpsideDown {
-		tangentX = -tangentX
-		tangentY = -tangentY
-	}
-	if s.facing == sectorFacingUpright && s.geometry.AnchorY > s.geometry.CenterY {
-		tangentX = -tangentX
-		tangentY = -tangentY
-	}
 	return math.Atan2(tangentY, tangentX) * 180 / math.Pi
 }
 
@@ -767,35 +979,22 @@ func (s *StdSector) toLocal(x, y float64) (float64, float64) {
 }
 
 func (s *StdSector) contentLocalBounds() radialBounds {
-	bounds := s.localBounds
-	bounds.MinX += s.PaddingLeft()
-	bounds.MaxX -= s.PaddingRight()
-	bounds.MinY += s.PaddingTop()
-	bounds.MaxY -= s.PaddingBottom()
-	if bounds.MaxX < bounds.MinX {
-		midX := (bounds.MinX + bounds.MaxX) / 2
-		bounds.MinX, bounds.MaxX = midX, midX
-	}
-	if bounds.MaxY < bounds.MinY {
-		midY := (bounds.MinY + bounds.MaxY) / 2
-		bounds.MinY, bounds.MaxY = midY, midY
-	}
-	return bounds
+	return s.contentBounds
 }
 
 func (s *StdSector) contentLineIntervalAt(localY float64) radialInterval {
-	interval := s.lineIntervalAt(localY)
-	interval.MinX += s.PaddingLeft()
-	interval.MaxX -= s.PaddingRight()
-	if interval.MaxX < interval.MinX {
-		midX := (interval.MinX + interval.MaxX) / 2
-		interval.MinX, interval.MaxX = midX, midX
+	if len(s.contentPolygon) < 3 {
+		return radialInterval{}
 	}
-	return interval
+	centerX, _, ok := polygonCentroid(s.contentPolygon)
+	if !ok {
+		centerX = (s.contentBounds.MinX + s.contentBounds.MaxX) / 2
+	}
+	return polygonLineIntervalAt(s.contentPolygon, s.contentBounds, localY, centerX)
 }
 
 func (s *StdSector) contentLocalCenter() (float64, float64) {
-	centroidX, centroidY, ok := polygonCentroid(s.localPolygon)
+	centroidX, centroidY, ok := polygonCentroid(s.contentPolygon)
 	if !ok {
 		bounds := s.contentLocalBounds()
 		return (bounds.MinX + bounds.MaxX) / 2, (bounds.MinY + bounds.MaxY) / 2
@@ -895,11 +1094,8 @@ func init() {
 	registerTag(DefaultSpace, "sector", func() any { return &StdSector{} })
 }
 
-var _ AddInlineWithFonter = (*StdSector)(nil)
-var _ AddTextWithFonter = (*StdSector)(nil)
 var _ Container = (*StdSector)(nil)
 var _ HasAttrs = (*StdSector)(nil)
-var _ HasText = (*StdSector)(nil)
 var _ Identifier = (*StdSector)(nil)
 var _ Printer = (*StdSector)(nil)
 var _ WantsContainer = (*StdSector)(nil)

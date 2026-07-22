@@ -247,6 +247,12 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	var wrapper *StdSector
 	var parent Container
 	if parentCurrent, ok := doc.current().(Container); ok && err == nil {
+		if sector, ok := parentCurrent.(*StdSector); ok {
+			if widget, ok := e.(Widget); ok && isInlineOnlyWidget(widget) {
+				doc.parseErr = fmt.Errorf("%s: <sector> cannot directly contain <%s>; wrap inline content in <label>", sector.Path(), elem.Name.Local)
+				return e, capturesBody
+			}
+		}
 		parent = parentCurrent
 		if widget, ok := e.(Widget); ok {
 			if canvas, ok := widget.(*StdCanvas); ok {
@@ -263,6 +269,9 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 					wrapper = &StdSector{}
 					if ws, ok := any(wrapper).(WantsScope); ok {
 						ws.SetScope(doc.scope())
+					}
+					if wd, ok := any(wrapper).(WantsDoc); ok {
+						wd.SetDoc(doc)
 					}
 					if err = attachWidgetToContainer(wrapper, widget); err != nil {
 						doc.parseErr = err
@@ -320,9 +329,6 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 	}
 	attrLayers := applyElementAttrs(doc.scope(), e, defaultAttrs, attrs, sourcePath)
 	doc.captureScopeOwnerAttrs(e, attrLayers)
-	if wrapper != nil {
-		applyElementAttrs(doc.scope(), wrapper, defaultAttrs, attrs, sourcePath)
-	}
 	switch value := e.(type) {
 	case *StdCanvas:
 		if doc.root == nil {
@@ -492,7 +498,7 @@ func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[strin
 	owner, captureAttrs := target.(scopeResourceOwner)
 	if e, ok := target.(HasAttrs); ok {
 		apply := func(values map[string]string) {
-			e.SetAttrs(values)
+			applyAttrs(target, e, values)
 			if captureAttrs {
 				if resourceAttrs := scopeOwnerResourceAttrs(values); len(resourceAttrs) > 0 {
 					applied = append(applied, scopeAttrLayer{
@@ -517,6 +523,53 @@ func applyElementAttrs(scope HasScope, target any, defaultAttrs, attrs map[strin
 		apply(attrs)
 	}
 	return applied
+}
+
+// applyAttrs routes cell presentation from a direct radial child to its
+// transparent sector wrapper. Keeping this at the attribute-layer boundary
+// makes defaults, selector rules, pseudo rules, and direct attrs obey the same
+// ownership rules.
+func applyAttrs(target any, receiver HasAttrs, attrs map[string]string) {
+	widget, ok := target.(Widget)
+	if !ok {
+		receiver.SetAttrs(attrs)
+		return
+	}
+	parented, ok := widget.(interface{ Container() Container })
+	if !ok {
+		receiver.SetAttrs(attrs)
+		return
+	}
+	sector, ok := parented.Container().(*StdSector)
+	if !ok || sector.Tag != "" {
+		receiver.SetAttrs(attrs)
+		return
+	}
+	cellAttrs, childAttrs := splitImplicitSectorAttrs(attrs)
+	sector.SetAttrs(cellAttrs)
+	receiver.SetAttrs(childAttrs)
+}
+
+func splitImplicitSectorAttrs(attrs map[string]string) (cell, child map[string]string) {
+	for name, value := range attrs {
+		cellOwned := name == "colspan" || name == "rowspan" || name == "display" || name == "z-index" ||
+			name == "fill" || strings.HasPrefix(name, "fill.") ||
+			name == "border" || strings.HasPrefix(name, "border.") || strings.HasPrefix(name, "border-") ||
+			name == "padding" || strings.HasPrefix(name, "padding-")
+		if cellOwned || name == "units" {
+			if cell == nil {
+				cell = make(map[string]string)
+			}
+			cell[name] = value
+		}
+		if !cellOwned || name == "units" {
+			if child == nil {
+				child = make(map[string]string)
+			}
+			child[name] = value
+		}
+	}
+	return cell, child
 }
 
 func scopeOwnerResourceAttrs(attrs map[string]string) map[string]string {
@@ -560,10 +613,10 @@ func applyPseudoRuleAttrs(scope HasScope, target Widget, resolver *selectorStruc
 	if e, ok := any(target).(HasAttrs); ok {
 		pseudoScope.EachPseudoRuleForWidget(target, resolver, func(rule *Rule) {
 			matched = true
-			e.SetAttrs(rule.Attrs)
+			applyAttrs(target, e, rule.Attrs)
 		})
 		if matched {
-			e.SetAttrs(rawAttrs)
+			applyAttrs(target, e, rawAttrs)
 		}
 	}
 }
@@ -576,6 +629,12 @@ func (doc *Doc) endElement(_ xml.EndElement) {
 }
 
 func (doc *Doc) charData(data xml.CharData) {
+	if sector, ok := doc.current().(*StdSector); ok {
+		if strings.TrimSpace(string(data)) != "" && doc.parseErr == nil {
+			doc.parseErr = fmt.Errorf("%s: <sector> cannot directly contain text; wrap it in <label>", sector.Path())
+		}
+		return
+	}
 	if widget, ok := doc.current().(HasText); ok {
 		widget.AddText(string(data))
 	}

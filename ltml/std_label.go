@@ -14,14 +14,19 @@ import (
 
 type StdLabel struct {
 	StdContainer
-	textPieces   []textPiece
-	richText     *rich_text.RichText
-	textFill     *BrushStyle
-	shrinkToFit  bool
-	angle        float64
-	textAlign    HAlign
-	textAlignSet bool
-	textVAlign   VAlign
+	textPieces      []textPiece
+	richText        *rich_text.RichText
+	textFill        *BrushStyle
+	shrinkToFit     bool
+	angle           float64
+	angleSet        bool
+	facing          sectorFacing
+	facingSet       bool
+	textAlign       HAlign
+	textAlignSet    bool
+	textVAlign      VAlign
+	textVAlignSet   bool
+	sectorPlacement *sectorLabelPlacement
 }
 
 func (l *StdLabel) AddText(text string) {
@@ -60,13 +65,23 @@ func normalizeLabelXMLText(text string) string {
 	return b.String()
 }
 
-func (l *StdLabel) LayoutWidget(Writer) error {
+func (l *StdLabel) LayoutWidget(w Writer) error {
 	// Labels are leaf widgets even though they embed StdContainer to collect
 	// inline children like <span> and <pageno>.
+	if sector, ok := l.Container().(*StdSector); ok {
+		return sector.layoutSectorLabel(l, w)
+	}
 	return nil
 }
 
 func (l *StdLabel) DrawContent(w Writer) error {
+	if sector, ok := l.Container().(*StdSector); ok {
+		return sector.drawSectorLabel(l, w)
+	}
+	return l.drawBoxLabelContent(w, l.angle)
+}
+
+func (l *StdLabel) drawBoxLabelContent(w Writer, angle float64) error {
 	return withWidgetRoleAccessibility(w, &l.StdWidget, "P", l.AccessibilityText(), func() error {
 		rt := l.layoutRichText(w)
 		if rt.Len() == 0 {
@@ -90,23 +105,23 @@ func (l *StdLabel) DrawContent(w Writer) error {
 				}
 				return nil
 			}
-			if l.angle == 0 {
+			if angle == 0 {
 				return paintFill()
 			}
 			var paintErr error
-			if err := w.Rotate(l.angle, anchorX, anchorY, func() {
+			if err := w.Rotate(angle, anchorX, anchorY, func() {
 				paintErr = paintFill()
 			}); err != nil {
 				return err
 			}
 			return paintErr
 		}
-		if l.angle == 0 {
+		if angle == 0 {
 			w.MoveTo(startX, anchorY)
 			w.PrintRichText(rt)
 			return nil
 		}
-		if err := w.Rotate(l.angle, anchorX, anchorY, func() {
+		if err := w.Rotate(angle, anchorX, anchorY, func() {
 			w.MoveTo(startX, anchorY)
 			w.PrintRichText(rt)
 		}); err != nil {
@@ -139,22 +154,250 @@ func (l *StdLabel) AccessibilityText() string {
 	return resolvedTextPieces(l.textPieces, documentForContainer(l))
 }
 
+func (l *StdLabel) sectorTextAngle() (float64, bool) {
+	return l.angle, l.angleSet
+}
+
+func (l *StdLabel) sectorOriginX() OriginX {
+	if l.StdWidget.originX != OriginXUnspecified {
+		return l.StdWidget.originX
+	}
+	return OriginXUnspecified
+}
+
+func (l *StdLabel) sectorAnchorOriginX() OriginX {
+	if origin := l.sectorOriginX(); origin != OriginXUnspecified {
+		return origin
+	}
+	if l.textAlignSet {
+		return originXForTextAlign(resolveTextAlign(l.textAlign, l))
+	}
+	return OriginXCenter
+}
+
+func originXForTextAlign(align HAlign) OriginX {
+	switch align {
+	case HAlignLeft:
+		return OriginXStart
+	case HAlignRight:
+		return OriginXEnd
+	default:
+		return OriginXCenter
+	}
+}
+
+func (l *StdLabel) sectorOriginY() OriginY {
+	if l.StdWidget.originY != OriginYUnspecified {
+		return l.StdWidget.originY
+	}
+	return OriginYUnspecified
+}
+
+func (l *StdLabel) sectorTextAlign() HAlign {
+	if l.textAlignSet {
+		return resolveTextAlign(l.textAlign, l)
+	}
+	switch l.sectorOriginX() {
+	case OriginXStart:
+		return HAlignLeft
+	case OriginXEnd:
+		return HAlignRight
+	default:
+		return HAlignCenter
+	}
+}
+
+func (l *StdLabel) sectorTextVAlign() VAlign {
+	if l.textVAlignSet {
+		return l.textVAlign
+	}
+	return VAlignMiddle
+}
+
+func (l *StdLabel) sectorTextFacing() sectorFacing {
+	if l.facingSet {
+		return l.facing
+	}
+	return sectorFacingAuto
+}
+
+func (l *StdLabel) OriginX() OriginX {
+	if _, ok := l.Container().(*StdSector); ok {
+		return l.sectorAnchorOriginX()
+	}
+	return l.StdWidget.originX
+}
+
+func (l *StdLabel) OriginY() OriginY {
+	if _, ok := l.Container().(*StdSector); ok {
+		return l.sectorOriginY()
+	}
+	return l.StdWidget.originY
+}
+
+func (l *StdLabel) Left() float64 {
+	if l.sectorPlacement != nil {
+		return l.sectorPlacement.boxLeft
+	}
+	return l.StdWidget.Left()
+}
+
+func (l *StdLabel) Right() float64 {
+	if l.sectorPlacement != nil {
+		return l.sectorPlacement.boxLeft + l.sectorPlacement.boxWidth
+	}
+	return l.StdWidget.Right()
+}
+
+func (l *StdLabel) Top() float64 {
+	if l.sectorPlacement != nil {
+		return l.sectorPlacement.boxTop
+	}
+	return l.StdWidget.Top()
+}
+
+func (l *StdLabel) Bottom() float64 {
+	if l.sectorPlacement != nil {
+		return l.sectorPlacement.boxTop + l.sectorPlacement.boxHeight
+	}
+	return l.StdWidget.Bottom()
+}
+
+func (l *StdLabel) OriginXValue() float64 {
+	if l.sectorPlacement != nil {
+		return l.sectorPlacement.anchorX
+	}
+	return l.StdWidget.OriginXValue()
+}
+
+func (l *StdLabel) OriginYValue() float64 {
+	if l.sectorPlacement != nil {
+		return l.sectorPlacement.anchorY
+	}
+	return l.StdWidget.OriginYValue()
+}
+
+func (l *StdLabel) paintWithTransform(w Writer, fn func() error) error {
+	if sector, ok := l.Container().(*StdSector); ok && l.sectorPlacement == nil {
+		if err := sector.layoutSectorLabel(l, w); err != nil {
+			return err
+		}
+	}
+	if l.sectorPlacement == nil {
+		return l.StdWidget.paintWithTransform(w, fn)
+	}
+	if !l.sectorPlacement.straight || l.rotate == 0 {
+		return fn()
+	}
+	var renderErr error
+	if err := w.Rotate(float64(l.rotate), l.OriginXValue(), l.OriginYValue(), func() {
+		renderErr = fn()
+	}); err != nil {
+		return err
+	}
+	return renderErr
+}
+
+func (l *StdLabel) PaintBackground(w Writer) error {
+	if l.sectorPlacement == nil {
+		return l.StdWidget.PaintBackground(w)
+	}
+	if !l.sectorPlacement.straight || l.fill == nil {
+		return nil
+	}
+	x, y, width, height := l.sectorBackgroundRect()
+	if width <= 0 || height <= 0 {
+		return nil
+	}
+	return l.PaintBrushInRect(w, l.fill, x, y, width, height)
+}
+
+func (l *StdLabel) DrawBorder(w Writer) error {
+	if l.sectorPlacement == nil {
+		return l.StdWidget.DrawBorder(w)
+	}
+	if !l.sectorPlacement.straight {
+		return nil
+	}
+	x1, y1, width, height := l.sectorBackgroundRect()
+	x2, y2 := x1+width, y1+height
+	if l.border != nil {
+		if err := l.border.ApplyInRect(w, x1, y1, width, height); err != nil {
+			return err
+		}
+		w.Rectangle2(x1, y1, width, height, true, false, l.corners.Float64sFor(width, height), false, false)
+	}
+	if l.borders[topSide] != nil {
+		if err := l.borders[topSide].ApplyInRect(w, x1, y1, width, height); err != nil {
+			return err
+		}
+		w.MoveTo(x1, y1)
+		w.LineTo(x2, y1)
+	}
+	if l.borders[rightSide] != nil {
+		if err := l.borders[rightSide].ApplyInRect(w, x1, y1, width, height); err != nil {
+			return err
+		}
+		w.MoveTo(x2, y1)
+		w.LineTo(x2, y2)
+	}
+	if l.borders[bottomSide] != nil {
+		if err := l.borders[bottomSide].ApplyInRect(w, x1, y1, width, height); err != nil {
+			return err
+		}
+		w.MoveTo(x2, y2)
+		w.LineTo(x1, y2)
+	}
+	if l.borders[leftSide] != nil {
+		if err := l.borders[leftSide].ApplyInRect(w, x1, y1, width, height); err != nil {
+			return err
+		}
+		w.MoveTo(x1, y2)
+		w.LineTo(x1, y1)
+	}
+	return nil
+}
+
+func (l *StdLabel) sectorBackgroundRect() (x, y, width, height float64) {
+	return l.Left() + l.MarginLeft(),
+		l.Top() + l.MarginTop(),
+		l.Width() - l.MarginLeft() - l.MarginRight(),
+		l.Height() - l.MarginTop() - l.MarginBottom()
+}
+
 func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 	return richTextForTextPieces(w, l, l.textPieces, &l.richText, l.Font())
 }
 
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
+	l.sectorPlacement = nil
 	l.StdContainer.SetAttrs(attrs)
 	SetBrushStyle(&l.textFill, "text-fill", attrs, l.scope, l.Units())
-	l.shrinkToFit = attrs["fit"] == "shrink"
+	if fit, ok := attrs["fit"]; ok {
+		l.shrinkToFit = fit == "shrink"
+	}
 	if angle, ok := attrs["angle"]; ok {
-		l.angle, _ = strconv.ParseFloat(angle, 64)
+		if value, err := strconv.ParseFloat(strings.TrimSpace(angle), 64); err == nil {
+			l.angle = value
+			l.angleSet = true
+		}
+	}
+	if facing, ok := attrs["facing"]; ok {
+		l.facingSet = true
+		l.facing = sectorFacingAuto
+		switch facing {
+		case "upright":
+			l.facing = sectorFacingUpright
+		case "upside-down":
+			l.facing = sectorFacingUpsideDown
+		}
 	}
 	if textAlign, ok := attrs["text-align"]; ok {
 		l.textAlignSet = true
 		l.textAlign = parseTextAlign(textAlign, false)
 	}
 	if textVAlign, ok := attrs["text-valign"]; ok {
+		l.textVAlignSet = true
 		l.textVAlign = parseLabelTextVAlign(textVAlign)
 	}
 }
@@ -213,7 +456,11 @@ func (l *StdLabel) textAnchor(rt *rich_text.RichText) (x, y float64) {
 	textHeight := ascent - descent
 	contentTop := ContentTop(l)
 	contentHeight := ContentHeight(l)
-	switch l.textVAlign {
+	textVAlign := l.textVAlign
+	if _, ok := l.Container().(*StdSector); ok {
+		textVAlign = l.sectorTextVAlign()
+	}
+	switch textVAlign {
 	case VAlignMiddle:
 		y = contentTop + max((contentHeight-textHeight)/2, 0) + ascent
 	case VAlignBottom:
@@ -249,6 +496,9 @@ func parseLabelTextVAlign(value string) VAlign {
 }
 
 func (l *StdLabel) resolvedTextAlign() HAlign {
+	if _, ok := l.Container().(*StdSector); ok {
+		return l.sectorTextAlign()
+	}
 	if l.textAlignSet {
 		return resolveTextAlign(l.textAlign, l)
 	}
