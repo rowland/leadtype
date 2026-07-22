@@ -10,7 +10,7 @@
       <p colspan="3" angle="0" padding="0.08" font.size="8.5">With angle zero, this direct paragraph keeps horizontal wedge-aware wrapping inside its implicit sector.</p>
       <sector fill="Cornsilk" border="ring"><label angle="0" font.weight="Bold">01</label></sector>
       <label angle="0" font.weight="Bold">02</label>
-      <sector fill="LavenderBlush" border="ring" padding="0.08"><label facing="upside-down">Facing override</label></sector>
+      <sector fill="LavenderBlush" border="ring" padding="0.08"><label facing="upright">Facing override</label></sector>
 
       <sector rowspan="2" colspan="3" fill="HoneyDew" border="ring" padding="0.08">
         <p style.text-align="center">Curved paragraphs wrap each line to its own padded arc. Successive lines pack radially and share one readable facing.</p>

@@ -495,12 +495,13 @@ func (s *StdSector) drawSectorLabel(label *StdLabel, w Writer) error {
 				rt = rt.Scale(arcWidth/rt.Width(), 6.0)
 			}
 		}
+		direction, facing := sectorCurvedTextOrientation(label.sectorTextFacing(), placement.anchorY > s.geometry.CenterY)
 		opts := pdf.CurvedTextOptions{
 			Align:       s.labelCurvedTextAlign(label),
 			VAlign:      s.labelCurvedTextVAlign(label),
-			Direction:   s.labelCurvedTextDirection(placement),
+			Direction:   direction,
 			Orientation: pdf.CurvedTextOrientationOutside,
-			Facing:      s.labelCurvedTextFacing(label, placement),
+			Facing:      facing,
 		}
 		return w.DrawRichTextOnCircle(rt, s.geometry.CenterX, s.geometry.CenterY, placement.radius, placement.angle, opts)
 	})
@@ -562,25 +563,17 @@ func (s *StdSector) labelCurvedTextVAlign(label *StdLabel) pdf.VerticalTextAlign
 	}
 }
 
-func (s *StdSector) labelCurvedTextDirection(placement *sectorLabelPlacement) pdf.CurvedTextDirection {
-	if placement.anchorY > s.geometry.CenterY {
-		return pdf.CurvedTextCounterClockwise
-	}
-	return pdf.CurvedTextClockwise
-}
-
-func (s *StdSector) labelCurvedTextFacing(label *StdLabel, placement *sectorLabelPlacement) pdf.CurvedTextFacing {
-	facing := label.sectorTextFacing()
+func sectorCurvedTextOrientation(facing sectorFacing, belowCenter bool) (pdf.CurvedTextDirection, pdf.CurvedTextFacing) {
 	switch facing {
 	case sectorFacingUpright:
-		return pdf.CurvedTextFacingUpright
+		return pdf.CurvedTextClockwise, pdf.CurvedTextFacingUpright
 	case sectorFacingUpsideDown:
-		return pdf.CurvedTextFacingUpsideDown
+		return pdf.CurvedTextCounterClockwise, pdf.CurvedTextFacingUpsideDown
 	default:
-		if placement.anchorY > s.geometry.CenterY {
-			return pdf.CurvedTextFacingUpsideDown
+		if belowCenter {
+			return pdf.CurvedTextCounterClockwise, pdf.CurvedTextFacingUpsideDown
 		}
-		return pdf.CurvedTextFacingUpright
+		return pdf.CurvedTextClockwise, pdf.CurvedTextFacingUpright
 	}
 }
 
@@ -747,19 +740,7 @@ func (s *StdSector) curvedSectorParagraphLayoutFor(p *StdParagraph, w Writer) *s
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
 
 	anchorRadius, anchorAngle, anchorY, static := s.curvedParagraphAnchor(p)
-	direction := pdf.CurvedTextClockwise
-	if anchorY > s.geometry.CenterY {
-		direction = pdf.CurvedTextCounterClockwise
-	}
-	facing := pdf.CurvedTextFacingUpright
-	switch p.sectorTextFacing() {
-	case sectorFacingUpsideDown:
-		facing = pdf.CurvedTextFacingUpsideDown
-	case sectorFacingAuto:
-		if anchorY > s.geometry.CenterY {
-			facing = pdf.CurvedTextFacingUpsideDown
-		}
-	}
+	direction, facing := sectorCurvedTextOrientation(p.sectorTextFacing(), anchorY > s.geometry.CenterY)
 
 	initialWidth := s.curvedParagraphArcWidth(p, anchorRadius, anchorAngle, static)
 	lines := wrapRichTextToWidths(rt, flags, []float64{max(initialWidth, 1)})

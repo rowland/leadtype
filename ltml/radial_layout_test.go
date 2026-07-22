@@ -1579,8 +1579,60 @@ func TestStdSector_LabelAlignmentAndFacingOverrideAnchorDefaults(t *testing.T) {
 	if got := w.curvedOpts[0].Facing; got != pdf.CurvedTextFacingUpsideDown {
 		t.Fatalf("curved facing = %v, want explicit upside-down", got)
 	}
+	if got := w.curvedOpts[0].Direction; got != pdf.CurvedTextCounterClockwise {
+		t.Fatalf("curved direction = %v, want counter-clockwise for upside-down facing", got)
+	}
 	if got := w.curvedOpts[0].VAlign; got != pdf.VTextAlignBelow {
 		t.Fatalf("curved valign = %v, want below", got)
+	}
+}
+
+func TestStdSector_ExplicitLabelFacingPreservesReadingDirectionForLTRAndRTL(t *testing.T) {
+	tests := []struct {
+		name string
+		dir  string
+		text string
+	}{
+		{name: "left to right", dir: "ltr", text: "Facing override"},
+		{name: "right to left", dir: "rtl", text: "مرحبا"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+			sector.font = testSectorFont()
+			ax, ay := radialPointAt(100, 100, 40, 270)
+			sector.setGeometry(radialSectorGeometry{
+				CenterX: 100, CenterY: 100,
+				InnerRadius: 20, OuterRadius: 60,
+				StartAngle: 225, EndAngle: 315,
+				AnchorAngle: 270, AnchorX: ax, AnchorY: ay,
+			})
+			label := addTestSectorLabel(t, sector, tt.text, map[string]string{
+				"position": "relative",
+				"facing":   "upright",
+				"dir":      tt.dir,
+			})
+			if got := label.Dir(); got != ParseDir(tt.dir) {
+				t.Fatalf("label direction = %v, want %v", got, ParseDir(tt.dir))
+			}
+			if got := label.AccessibilityText(); got != tt.text {
+				t.Fatalf("logical label text = %q, want %q", got, tt.text)
+			}
+
+			w := &labelTestWriter{t: t}
+			if err := sector.LayoutWidget(w); err != nil {
+				t.Fatal(err)
+			}
+			if err := sector.DrawContent(w); err != nil {
+				t.Fatal(err)
+			}
+			if len(w.curvedOpts) != 1 {
+				t.Fatalf("curved draws = %d, want 1", len(w.curvedOpts))
+			}
+			if got := w.curvedOpts[0]; got.Direction != pdf.CurvedTextClockwise || got.Facing != pdf.CurvedTextFacingUpright {
+				t.Fatalf("orientation = direction %v facing %v, want clockwise/upright", got.Direction, got.Facing)
+			}
+		})
 	}
 }
 
@@ -2259,15 +2311,17 @@ func TestStdSector_ParagraphAngleSelectsCurvedOrHorizontalMode(t *testing.T) {
 
 func TestStdSector_CurvedParagraphLineOrderFollowsFacing(t *testing.T) {
 	tests := []struct {
-		name        string
-		anchorAngle float64
-		facing      string
-		increasing  bool
+		name          string
+		anchorAngle   float64
+		facing        string
+		increasing    bool
+		wantDirection pdf.CurvedTextDirection
+		wantFacing    pdf.CurvedTextFacing
 	}{
-		{name: "top automatic", anchorAngle: 90},
-		{name: "bottom automatic", anchorAngle: 270, increasing: true},
-		{name: "top upside down", anchorAngle: 90, facing: "upside-down", increasing: true},
-		{name: "bottom upright", anchorAngle: 270, facing: "upright"},
+		{name: "top automatic", anchorAngle: 90, wantDirection: pdf.CurvedTextClockwise, wantFacing: pdf.CurvedTextFacingUpright},
+		{name: "bottom automatic", anchorAngle: 270, increasing: true, wantDirection: pdf.CurvedTextCounterClockwise, wantFacing: pdf.CurvedTextFacingUpsideDown},
+		{name: "top upside down", anchorAngle: 90, facing: "upside-down", increasing: true, wantDirection: pdf.CurvedTextCounterClockwise, wantFacing: pdf.CurvedTextFacingUpsideDown},
+		{name: "bottom upright", anchorAngle: 270, facing: "upright", wantDirection: pdf.CurvedTextClockwise, wantFacing: pdf.CurvedTextFacingUpright},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2291,6 +2345,12 @@ func TestStdSector_CurvedParagraphLineOrderFollowsFacing(t *testing.T) {
 			increasing := w.curvedRadii[1] > w.curvedRadii[0]
 			if increasing != tt.increasing {
 				t.Fatalf("first radii = %v, %v; increasing = %v, want %v", w.curvedRadii[0], w.curvedRadii[1], increasing, tt.increasing)
+			}
+			for i, opts := range w.curvedOpts {
+				if opts.Direction != tt.wantDirection || opts.Facing != tt.wantFacing {
+					t.Fatalf("line %d orientation = direction %v facing %v, want direction %v facing %v",
+						i, opts.Direction, opts.Facing, tt.wantDirection, tt.wantFacing)
+				}
 			}
 		})
 	}
