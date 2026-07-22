@@ -141,6 +141,13 @@ subsegments. This makes it practical to approximate the older “many thin arche
 look without manually authoring every slice. `Steps <= 0` defaults to one
 painted segment.
 
+Adjacent painted segments overlap slightly to suppress rasterizer hairline
+cracks. `SweepBand.Opacity` is currently applied independently to each segment,
+so a translucent band may show darker radial seams where those overlaps are
+composited twice. Use an opaque band when seamless output is required. This
+limitation can be removed once opacity is applied to an isolated band-wide
+transparency group instead of to each segment.
+
 `PaintSweepArc` provides the same behavior through a convenience parameter list.
 
 For a runnable end-to-end example, see [`../samples/test_021_gradients.go`](../samples/test_021_gradients.go).

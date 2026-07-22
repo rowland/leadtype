@@ -37,6 +37,13 @@ type sweepAngleInterval struct {
 }
 
 const sweepAngleEpsilon = 1e-9
+
+// Adjacent paints overlap slightly to prevent rasterizers from exposing
+// hairline cracks between mathematically touching clips. SweepBand opacity is
+// currently applied to each segment separately, so translucent bands
+// double-composite these overlap regions and may show darker radial seams.
+// Applying opacity once to an isolated band-wide transparency group would
+// preserve the crack workaround without that artifact.
 const sweepPaintOverlapDegrees = 0.2
 
 func (sb *SweepBand) validate() error {

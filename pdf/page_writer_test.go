@@ -2461,6 +2461,31 @@ func TestPageWriter_PaintSweepBandOpacity(t *testing.T) {
 	check(t, len(dw.extGStates) == 1, "should register one ExtGState")
 }
 
+func TestPageWriter_PaintSweepBandTranslucentOverlapIsCompositedPerSegment(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+	segments := []SweepBandSegment{
+		{StartAngle: 0, EndAngle: 45, StartColor: colors.Red, EndColor: colors.Yellow},
+		{StartAngle: 45, EndAngle: 90, StartColor: colors.Yellow, EndColor: colors.Blue},
+	}
+
+	err := pw.PaintSweepBand(&SweepBand{
+		X: 10, Y: 10,
+		InnerRadius: 2,
+		OuterRadius: 4,
+		Opacity:     0.6,
+		Segments:    segments,
+	})
+	check(t, err == nil, "PaintSweepBand should succeed")
+
+	expanded := expandSweepBandSegments(segments)
+	check(t, expanded[0].EndAngle > expanded[1].StartAngle, "touching translucent segments should retain the anti-crack overlap")
+	// This records the current limitation: uniform opacity is installed for
+	// each clipped segment, so their overlap is composited twice. A future
+	// band-wide transparency group should replace this expectation.
+	expectI(t, 2, strings.Count(pw.stream.String(), "/GS0 gs\n"))
+}
+
 func TestPageWriter_PaintSweepBandDoesNotLeakState(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

@@ -1092,6 +1092,14 @@ clockwise spans. PDF has no native sweep shading, so LTML approximates each
 interval with clipped, chord-aligned linear gradients. Increase `steps` for a
 smoother curved appearance at the cost of additional PDF shading operations.
 
+The clipped segments overlap very slightly to prevent PDF rasterizers from
+showing hairline cracks between them. At present, `opacity` is applied to each
+segment rather than once to the completed sweep. A translucent sweep gradient
+can therefore show thin, darker radial seams where adjacent segments overlap;
+more `steps` produces more such boundaries. Omit `opacity` when those seams are
+unacceptable. A future band-wide transparency implementation can remove this
+limitation without reintroducing cracks.
+
 ```xml
 <brush id="rainbow" kind="sweep-gradient" steps="12"
   stops="0:Red,0.25:Blue,0.5:Green,0.75:Gold,1:Red" />
