@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"maps"
 	"math"
 	"slices"
 	"strconv"
@@ -334,6 +335,49 @@ func TestParse_SectorDoesNotProvideLabelDefaults(t *testing.T) {
 	}
 	if got := label.OriginX(); got != OriginXCenter {
 		t.Fatalf("effective label angular origin = %v, want default center", got)
+	}
+}
+
+func TestParse_SectorDoesNotProvideParagraphDefaults(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <style>
+      sector { angle: 0; facing: upside-down; }
+      p.curved { angle: 35; facing: upright; }
+      p.horizontal { angle: 35; }
+    </style>
+    <div layout="radial" cols="3">
+      <sector><p>Unset</p></sector>
+      <sector><p class="curved">Nonzero</p></sector>
+      <p class="horizontal" angle="0">Zero wins</p>
+    </div>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	radial := doc.Root().Page(0).children[0].(*StdContainer)
+	unset := radial.children[0].(*StdSector).children[0].(*StdParagraph)
+	nonzero := radial.children[1].(*StdSector).children[0].(*StdParagraph)
+	horizontal := radial.children[2].(*StdSector).children[0].(*StdParagraph)
+	if unset.angleSet || unset.sectorTextFacing() != sectorFacingAuto || !unset.curvedInSector() {
+		t.Fatalf("unset paragraph inherited sector defaults: angle=%v facing=%v curved=%v",
+			unset.angleSet, unset.sectorTextFacing(), unset.curvedInSector())
+	}
+	if !nonzero.angleSet || nonzero.angle != 35 || !nonzero.curvedInSector() || nonzero.sectorTextFacing() != sectorFacingUpright {
+		t.Fatalf("styled paragraph attrs = angle %v/%v curved=%v facing=%v",
+			nonzero.angleSet, nonzero.angle, nonzero.curvedInSector(), nonzero.sectorTextFacing())
+	}
+	if !horizontal.angleSet || horizontal.angle != 0 || horizontal.curvedInSector() {
+		t.Fatalf("direct paragraph angle = %v/%v curved=%v, want local zero",
+			horizontal.angleSet, horizontal.angle, horizontal.curvedInSector())
+	}
+
+	invalid := &StdParagraph{}
+	invalid.SetAttrs(map[string]string{"angle": "not-an-angle"})
+	if invalid.angleSet {
+		t.Fatal("invalid paragraph angle unexpectedly selected a mode")
 	}
 }
 
@@ -1751,6 +1795,7 @@ func TestStdSector_ParagraphLayoutVariesLineWidthsAcrossSector(t *testing.T) {
 
 	p := &StdParagraph{}
 	p.paragraphStyle = &ParagraphStyle{}
+	p.SetAttrs(map[string]string{"angle": "0"})
 	if err := p.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
@@ -1798,6 +1843,7 @@ func TestStdSector_ParagraphIntervalsContainCompleteLineBoxes(t *testing.T) {
 	sector.font = testSectorFont()
 	p := &StdParagraph{}
 	p.paragraphStyle = &ParagraphStyle{}
+	p.SetAttrs(map[string]string{"angle": "0"})
 	if err := p.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
@@ -1988,6 +2034,7 @@ func TestStdSector_WithParagraphChild_DoesNotDefaultToTangentRotation(t *testing
 	sector.font = testSectorFont()
 	p := &StdParagraph{}
 	p.paragraphStyle = &ParagraphStyle{}
+	p.SetAttrs(map[string]string{"angle": "0"})
 	if err := p.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
@@ -2038,6 +2085,7 @@ func TestRadialSample_ImplicitParagraphsUseSectorFlow(t *testing.T) {
 	if len(implicit) != 2 {
 		t.Fatalf("implicit paragraph count = %d, want 2", len(implicit))
 	}
+	curved, horizontal := 0, 0
 	for _, paragraph := range implicit {
 		sector, ok := paragraph.Container().(*StdSector)
 		if !ok || sector.Tag != "" {
@@ -2050,5 +2098,319 @@ func TestRadialSample_ImplicitParagraphsUseSectorFlow(t *testing.T) {
 		if slot.MinY < sector.contentBounds.MinY-0.01 || slot.MaxY > sector.contentBounds.MaxY+0.01 {
 			t.Fatalf("paragraph slot = %#v, usable bounds %#v", slot, sector.contentBounds)
 		}
+		if paragraph.curvedInSector() {
+			curved++
+		} else {
+			horizontal++
+		}
+	}
+	if curved != 1 || horizontal != 1 {
+		t.Fatalf("implicit paragraph modes = %d curved, %d horizontal; want one of each", curved, horizontal)
+	}
+}
+
+func addTestSectorParagraph(t *testing.T, sector *StdSector, text string, attrs map[string]string) *StdParagraph {
+	t.Helper()
+	paragraph := &StdParagraph{}
+	paragraph.paragraphStyle = &ParagraphStyle{}
+	paragraph.SetAttrs(attrs)
+	if err := paragraph.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	paragraph.AddText(text)
+	sector.AddChild(paragraph)
+	return paragraph
+}
+
+func curvedParagraphTestSector(t *testing.T, anchorAngle float64) *StdSector {
+	t.Helper()
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	ax, ay := radialPointAt(120, 120, 75, anchorAngle)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX: 120, CenterY: 120, InnerRadius: 20, OuterRadius: 130,
+		StartAngle: anchorAngle - 50, EndAngle: anchorAngle + 50,
+		AnchorAngle: anchorAngle, AnchorX: ax, AnchorY: ay,
+	})
+	return sector
+}
+
+func TestStdSector_ParagraphAngleSelectsCurvedOrHorizontalMode(t *testing.T) {
+	tests := []struct {
+		name   string
+		angle  string
+		curved bool
+	}{
+		{name: "unset", curved: true},
+		{name: "zero", angle: "0", curved: false},
+		{name: "decimal zero", angle: "0.0", curved: false},
+		{name: "negative zero", angle: "-0", curved: false},
+		{name: "nonzero dormant", angle: "45", curved: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sector := curvedParagraphTestSector(t, 90)
+			attrs := map[string]string{}
+			if tt.angle != "" {
+				attrs["angle"] = tt.angle
+			}
+			paragraph := addTestSectorParagraph(t, sector, "Curved paragraph mode", attrs)
+			if got := paragraph.curvedInSector(); got != tt.curved {
+				t.Fatalf("curved mode = %v, want %v", got, tt.curved)
+			}
+			w := &labelTestWriter{t: t}
+			if err := sector.LayoutWidget(w); err != nil {
+				t.Fatal(err)
+			}
+			if err := sector.DrawContent(w); err != nil {
+				t.Fatal(err)
+			}
+			if got := w.curvedCount > 0; got != tt.curved {
+				t.Fatalf("curved draws = %d, curved mode %v", w.curvedCount, tt.curved)
+			}
+		})
+	}
+}
+
+func TestStdSector_CurvedParagraphLineOrderFollowsFacing(t *testing.T) {
+	tests := []struct {
+		name        string
+		anchorAngle float64
+		facing      string
+		increasing  bool
+	}{
+		{name: "top automatic", anchorAngle: 90},
+		{name: "bottom automatic", anchorAngle: 270, increasing: true},
+		{name: "top upside down", anchorAngle: 90, facing: "upside-down", increasing: true},
+		{name: "bottom upright", anchorAngle: 270, facing: "upright"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sector := curvedParagraphTestSector(t, tt.anchorAngle)
+			attrs := map[string]string{}
+			if tt.facing != "" {
+				attrs["facing"] = tt.facing
+			}
+			addTestSectorParagraph(t, sector,
+				"One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen", attrs)
+			w := &labelTestWriter{t: t}
+			if err := sector.LayoutWidget(w); err != nil {
+				t.Fatal(err)
+			}
+			if err := sector.DrawContent(w); err != nil {
+				t.Fatal(err)
+			}
+			if len(w.curvedRadii) < 2 {
+				t.Fatalf("curved line count = %d, want at least 2", len(w.curvedRadii))
+			}
+			increasing := w.curvedRadii[1] > w.curvedRadii[0]
+			if increasing != tt.increasing {
+				t.Fatalf("first radii = %v, %v; increasing = %v, want %v", w.curvedRadii[0], w.curvedRadii[1], increasing, tt.increasing)
+			}
+		})
+	}
+}
+
+func TestStdSector_CurvedParagraphAlignmentUsesReadableArcEndpoints(t *testing.T) {
+	tests := []struct {
+		name       string
+		startAngle float64
+		endAngle   float64
+		anchor     float64
+		align      string
+		rtl        bool
+		wantEnd    bool
+		wantCenter bool
+	}{
+		{name: "counterclockwise start", startAngle: 40, endAngle: 140, anchor: 90, align: "start"},
+		{name: "counterclockwise end", startAngle: 40, endAngle: 140, anchor: 90, align: "end", wantEnd: true},
+		{name: "counterclockwise rtl start", startAngle: 40, endAngle: 140, anchor: 90, align: "start", rtl: true, wantEnd: true},
+		{name: "counterclockwise center", startAngle: 40, endAngle: 140, anchor: 90, align: "center", wantCenter: true},
+		{name: "clockwise start", startAngle: 140, endAngle: 40, anchor: 90, align: "start"},
+		{name: "clockwise end", startAngle: 140, endAngle: 40, anchor: 90, align: "end", wantEnd: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sector := curvedParagraphTestSector(t, tt.anchor)
+			sector.geometry.StartAngle = tt.startAngle
+			sector.geometry.EndAngle = tt.endAngle
+			sector.rebuildContentGeometry()
+			attrs := map[string]string{"style.text-align": tt.align}
+			if tt.rtl {
+				attrs["dir"] = "rtl"
+			}
+			paragraph := addTestSectorParagraph(t, sector, "Aligned curved paragraph", attrs)
+			w := &labelTestWriter{t: t}
+			if err := sector.LayoutWidget(w); err != nil {
+				t.Fatal(err)
+			}
+			layout := sector.sectorParagraphLayoutFor(paragraph, w)
+			if len(layout.curvedLines) == 0 {
+				t.Fatal("curved paragraph has no line placements")
+			}
+			line := layout.curvedLines[0]
+			pathStart, pathEnd := sector.curvedParagraphArcEndpoints(line.radius, layout.direction)
+			want := pathStart
+			if tt.wantEnd {
+				want = pathEnd
+			}
+			if tt.wantCenter {
+				want = tt.anchor
+			}
+			if !floatEquals(line.angle, want) {
+				t.Fatalf("line angle = %v, want %v (path %v..%v)", line.angle, want, pathStart, pathEnd)
+			}
+		})
+	}
+}
+
+func TestStdSector_CurvedParagraphJustifiesAllButFinalLine(t *testing.T) {
+	sector := curvedParagraphTestSector(t, 90)
+	paragraph := addTestSectorParagraph(t, sector,
+		"one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen",
+		map[string]string{"style.text-align": "justify"})
+	w := &labelTestWriter{t: t}
+	if err := sector.LayoutWidget(w); err != nil {
+		t.Fatal(err)
+	}
+	layout := sector.sectorParagraphLayoutFor(paragraph, w)
+	if len(layout.lines) < 2 {
+		t.Fatalf("line count = %d, want at least two", len(layout.lines))
+	}
+	if err := sector.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.printed) != len(layout.lines) {
+		t.Fatalf("printed lines = %d, want %d", len(w.printed), len(layout.lines))
+	}
+	if math.Abs(w.printed[0].Width()-layout.curvedLines[0].arcWidth) > 0.05 {
+		t.Fatalf("first justified width = %v, want arc width %v", w.printed[0].Width(), layout.curvedLines[0].arcWidth)
+	}
+	last := len(layout.lines) - 1
+	if !floatEquals(w.printed[last].Width(), layout.lines[last].Width()) {
+		t.Fatalf("final width = %v, original %v; final line should not justify", w.printed[last].Width(), layout.lines[last].Width())
+	}
+}
+
+func TestStdSector_CurvedParagraphUsesCompleteFullCircleArc(t *testing.T) {
+	for _, span := range []float64{360, -360} {
+		t.Run(strconv.FormatFloat(span, 'f', 0, 64), func(t *testing.T) {
+			sector := curvedParagraphTestSector(t, 90)
+			sector.geometry.StartAngle = 0
+			sector.geometry.EndAngle = span
+			sector.rebuildContentGeometry()
+			paragraph := addTestSectorParagraph(t, sector, "Full circle curved paragraph", nil)
+			w := &labelTestWriter{t: t}
+			if err := sector.LayoutWidget(w); err != nil {
+				t.Fatal(err)
+			}
+			layout := sector.sectorParagraphLayoutFor(paragraph, w)
+			if len(layout.curvedLines) == 0 {
+				t.Fatal("full-circle paragraph has no lines")
+			}
+			for i, line := range layout.curvedLines {
+				want := 2 * math.Pi * line.radius
+				if math.Abs(line.arcWidth-want) > 0.01 {
+					t.Fatalf("line %d arc width = %v, want circumference %v", i, line.arcWidth, want)
+				}
+			}
+		})
+	}
+}
+
+func TestStdSector_CurvedParagraphBoxAttrsAreDormantUntilAngleZero(t *testing.T) {
+	attrs := map[string]string{
+		"units": "pt", "width": "80", "height": "40", "margin": "7", "padding": "6",
+		"fill": "Gold", "border": "Blue", "text-fill": "Red", "rotate": "18",
+	}
+	curvedSector := curvedParagraphTestSector(t, 45)
+	curved := addTestSectorParagraph(t, curvedSector, "Dormant curved paragraph box", attrs)
+	curvedWriter := &labelTestWriter{t: t}
+	if err := curvedSector.LayoutWidget(curvedWriter); err != nil {
+		t.Fatal(err)
+	}
+	curvedLayout := curvedSector.sectorParagraphLayoutFor(curved, curvedWriter)
+	if curved.Width() != 0 || !floatEquals(curved.Height(), curvedLayout.total) {
+		t.Fatalf("curved box = %vx%v, want zero width and natural height %v", curved.Width(), curved.Height(), curvedLayout.total)
+	}
+	if err := curvedSector.DrawContent(curvedWriter); err != nil {
+		t.Fatal(err)
+	}
+	if len(curvedWriter.rotations) != 0 || len(curvedWriter.fillRectPages) != 0 || len(curvedWriter.clipped) != 0 {
+		t.Fatalf("curved dormant paints rotations/fills/text clips = %d/%d/%d",
+			len(curvedWriter.rotations), len(curvedWriter.fillRectPages), len(curvedWriter.clipped))
+	}
+
+	horizontalSector := curvedParagraphTestSector(t, 90)
+	horizontalAttrs := maps.Clone(attrs)
+	horizontalAttrs["angle"] = "0"
+	horizontal := addTestSectorParagraph(t, horizontalSector, "Active horizontal paragraph box", horizontalAttrs)
+	horizontalWriter := &labelTestWriter{t: t}
+	if err := horizontalSector.LayoutWidget(horizontalWriter); err != nil {
+		t.Fatal(err)
+	}
+	if horizontal.Width() != 80 || horizontal.Height() != 40 {
+		t.Fatalf("horizontal box = %vx%v, want 80x40", horizontal.Width(), horizontal.Height())
+	}
+	if err := horizontalSector.DrawContent(horizontalWriter); err != nil {
+		t.Fatal(err)
+	}
+	if len(horizontalWriter.rotations) == 0 || len(horizontalWriter.fillRectPages) == 0 || len(horizontalWriter.clipped) == 0 {
+		t.Fatalf("horizontal active paints rotations/fills/text clips = %d/%d/%d",
+			len(horizontalWriter.rotations), len(horizontalWriter.fillRectPages), len(horizontalWriter.clipped))
+	}
+}
+
+func TestStdSector_StaticParagraphModesCannotMix(t *testing.T) {
+	sector := curvedParagraphTestSector(t, 90)
+	sector.path = "ltml/page/div/sector"
+	addTestSectorParagraph(t, sector, "Curved", nil)
+	addTestSectorParagraph(t, sector, "Horizontal", map[string]string{"angle": "0"})
+	err := sector.LayoutWidget(&labelTestWriter{t: t})
+	if err == nil || !strings.Contains(err.Error(), "ltml/page/div/sector") || !strings.Contains(err.Error(), "static curved and angle=\"0\" paragraphs") {
+		t.Fatalf("mixed-mode error = %v", err)
+	}
+}
+
+func TestStdSector_PositionedParagraphModesMayMix(t *testing.T) {
+	sector := curvedParagraphTestSector(t, 90)
+	addTestSectorParagraph(t, sector, "Curved", nil)
+	addTestSectorParagraph(t, sector, "Horizontal overlay", map[string]string{
+		"angle": "0", "position": "relative", "width": "80pt",
+	})
+	if err := sector.LayoutWidget(&labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStdSector_PositionedHorizontalParagraphUsesPageAxisSectorAnchor(t *testing.T) {
+	sector := curvedParagraphTestSector(t, 45)
+	addTestSectorParagraph(t, sector, "Curved flow", nil)
+	horizontal := addTestSectorParagraph(t, sector, "Horizontal overlay", map[string]string{
+		"angle": "0", "position": "relative", "origin-x": "center", "origin-y": "middle", "width": "80pt",
+	})
+	w := &labelTestWriter{t: t}
+	if err := sector.LayoutWidget(w); err != nil {
+		t.Fatal(err)
+	}
+	inner, outer := sector.contentRadii()
+	wantX, wantY := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY,
+		(inner+outer)/2, sector.geometry.AnchorAngle)
+	if math.Abs(horizontal.Left()-wantX) > 0.01 || math.Abs(horizontal.Top()-wantY) > 0.01 {
+		t.Fatalf("horizontal overlay anchor = (%v,%v), want page point (%v,%v)",
+			horizontal.Left(), horizontal.Top(), wantX, wantY)
+	}
+}
+
+func TestStdSector_CurvedParagraphRejectsInvalidLineRadius(t *testing.T) {
+	sector := curvedParagraphTestSector(t, 90)
+	sector.geometry.InnerRadius = 0
+	sector.rebuildContentGeometry()
+	addTestSectorParagraph(t, sector, "At the center", map[string]string{
+		"position": "relative", "origin-x": "center", "origin-y": "middle", "units": "pt", "shift-y": "65",
+	})
+	err := sector.LayoutWidget(&labelTestWriter{t: t})
+	if err == nil || !strings.Contains(err.Error(), "positive finite line radii") {
+		t.Fatalf("invalid-radius error = %v", err)
 	}
 }

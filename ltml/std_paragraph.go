@@ -26,6 +26,10 @@ type StdParagraph struct {
 	splitLines         []*rich_text.RichText
 	suppressBullet     bool
 	continuationIndent float64
+	angle              float64
+	angleSet           bool
+	facing             sectorFacing
+	facingSet          bool
 }
 
 func (p *StdParagraph) AddText(text string) {
@@ -67,6 +71,65 @@ func (p *StdParagraph) LayoutWidget(Writer) error {
 	// Paragraphs are text leaf widgets. Inline descendants contribute rich text
 	// rather than participating in container child layout.
 	return nil
+}
+
+func (p *StdParagraph) curvedInSector() bool {
+	_, inSector := p.Container().(*StdSector)
+	return inSector && (!p.angleSet || p.angle != 0)
+}
+
+func (p *StdParagraph) horizontalInSector() bool {
+	_, inSector := p.Container().(*StdSector)
+	return inSector && p.angleSet && p.angle == 0
+}
+
+func (p *StdParagraph) sectorTextFacing() sectorFacing {
+	if p.facingSet {
+		return p.facing
+	}
+	return sectorFacingAuto
+}
+
+func (p *StdParagraph) OriginX() OriginX {
+	if p.curvedInSector() && p.StdWidget.originX == OriginXUnspecified {
+		switch p.ParagraphStyle().ResolvedTextAlign(p) {
+		case HAlignCenter:
+			return OriginXCenter
+		case HAlignRight:
+			return OriginXEnd
+		default:
+			return OriginXStart
+		}
+	}
+	return p.StdWidget.originX
+}
+
+func (p *StdParagraph) OriginY() OriginY {
+	if p.curvedInSector() && p.StdWidget.originY == OriginYUnspecified {
+		return OriginYMiddle
+	}
+	return p.StdWidget.originY
+}
+
+func (p *StdParagraph) paintWithTransform(w Writer, fn func() error) error {
+	if p.curvedInSector() {
+		return fn()
+	}
+	return p.StdWidget.paintWithTransform(w, fn)
+}
+
+func (p *StdParagraph) PaintBackground(w Writer) error {
+	if p.curvedInSector() {
+		return nil
+	}
+	return p.StdWidget.PaintBackground(w)
+}
+
+func (p *StdParagraph) DrawBorder(w Writer) error {
+	if p.curvedInSector() {
+		return nil
+	}
+	return p.StdWidget.DrawBorder(w)
 }
 
 func (p *StdParagraph) Bullet() *BulletStyle {
@@ -152,11 +215,21 @@ func (p *StdParagraph) PreferredHeight(w Writer) (float64, error) {
 	if profiler := profilerForWidget(w, p); profiler != nil {
 		defer beginWidgetProfileSpan(profiler, "preferred_height", p).End()
 	}
+	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
+		layout := provider.sectorParagraphLayoutFor(p, w)
+		if layout.err != nil {
+			return 0, layout.err
+		}
+		if p.curvedInSector() {
+			return layout.total, nil
+		}
+		if p.height != 0 {
+			return float64(p.height), nil
+		}
+		return NonContentHeight(p) + layout.total, nil
+	}
 	if p.height != 0 {
 		return float64(p.height), nil
-	}
-	if provider, ok := p.container.(sectorParagraphLayoutProvider); ok {
-		return NonContentHeight(p) + provider.sectorParagraphLayoutFor(p, w).total, nil
 	}
 	return p.heightForLines(p.Lines(w, p.lineWidth()), w), nil
 }
@@ -203,6 +276,22 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	if widows, ok := attrs["widows"]; ok {
 		if value, err := strconv.Atoi(widows); err == nil {
 			p.widows = value
+		}
+	}
+	if angle, ok := attrs["angle"]; ok {
+		if value, err := strconv.ParseFloat(strings.TrimSpace(angle), 64); err == nil {
+			p.angle = value
+			p.angleSet = true
+		}
+	}
+	if facing, ok := attrs["facing"]; ok {
+		p.facingSet = true
+		p.facing = sectorFacingAuto
+		switch facing {
+		case "upright":
+			p.facing = sectorFacingUpright
+		case "upside-down":
+			p.facing = sectorFacingUpsideDown
 		}
 	}
 }

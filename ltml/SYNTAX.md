@@ -315,6 +315,8 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `style`            | Reference to a named `<para>` style. |
 | `style.text-align` | Text alignment: logical `start`/`end`, physical `left`/`right`, `center`, or `justify`. Defaults to `start`. |
 | `style.valign`     | Vertical alignment: `top`, `middle`, `bottom`, `baseline`. |
+| `angle`            | Inside a sector, an unset or nonzero angle selects curved paragraph text. `angle="0"` selects horizontal, wedge-aware wrapping. Arbitrary straight paragraph angles are not supported. |
+| `facing`           | Inside a sector, curved-text facing: `auto`, `upright`, or `upside-down`. |
 | `bullet`           | Reference to one or more named `<bullet>` styles. Multiple names are whitespace-separated and each reserves its configured width before the paragraph text. |
 | `width`, `height`  | Explicit dimensions. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the element. |
@@ -440,7 +442,8 @@ behavior for that region.
     <label>Curved arc text</label>
   </sector>
   <sector rowspan="2" colspan="2">
-    <p>Paragraphs wrap to the changing line width of the sector.</p>
+    <p>Paragraphs curve along successive concentric arcs.</p>
+    <p angle="0" position="relative">Horizontal wedge-aware overlay.</p>
   </sector>
 </div>
 ```
@@ -479,9 +482,9 @@ origins, and placement must be authored or styled on the label.
 
 Static sector children participate in a compact shape-aware flow. LTML
 preserves source order, chooses row breaks to fit the padded wedge, centers the
-packed group, and honors `dir`. Paragraphs consume a full flow band and retain
-sector-shaped line widths. Curved labels use arc-length footprints; straight
-labels and other widgets use their ordinary boxes. A sector always uses this
+packed group, and honors `dir`. Paragraphs consume a full flow band. Curved
+paragraphs and labels use arc-length footprints; straight labels and other
+widgets use their ordinary boxes. A sector always uses this
 special flow for static children even if another `layout` manager is parsed;
 wrap children in a nested container to request a vbox, hbox, table, or ordinary
 flow.
@@ -502,9 +505,26 @@ curved. They become active if an `angle` makes the label straight.
 `fit="shrink"` fits curved text to the available sector arc down to the normal
 6pt floor.
 
-Paragraphs placed in a sector use true sector-aware wrapping. LTML computes
-the usable line width from the actual wedge shape for each line instead of
-wrapping to one fixed rectangle.
+Paragraphs curve along concentric arcs by default. Each line wraps to the
+available padded arc at its own radius; alignment, direction, and one resolved
+facing apply consistently across the block. `style.text-align="justify"`
+expands every line except the last. `angle="0"` selects horizontal
+mode, where LTML computes each line width from the page-axis wedge chord.
+
+All static paragraphs in one sector must use the same mode. To combine a
+curved paragraph and an `angle="0"` paragraph, position one of them or place it
+in another sector or nested container. Positioned curved paragraphs default
+`origin-y` to `middle`; when `origin-x` is omitted it follows effective
+start/center/end text alignment. Sector angle, facing, alignment, and origins
+are never defaults for paragraph children.
+
+In curved mode, paragraph dimensions, margins, padding, fill, borders,
+`text-fill`, and generic `rotate` remain parsed but dormant. Bullets and
+indentation are not drawn, leaders do not fill, and linked text does not create
+a clickable annotation. Text, spans, font/color changes, shaping, dynamic
+inline text, accessibility text, positioning, and offsets remain active. The
+ordinary paragraph box and inline features remain available in horizontal
+`angle="0"` mode.
 
 ---
 
@@ -1574,6 +1594,7 @@ its separate angular-anchor semantics.
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
 - Static sector children participate in shape-aware source-order flow.
 - Non-static children are overlays; omitted origins use midpoint angle and radius.
+- Sector paragraphs curve by default; use `angle="0"` for horizontal wedge-aware wrapping.
 
 ### Radial-Out Details
 
@@ -1602,6 +1623,7 @@ its separate angular-anchor semantics.
   `origin-y="inner|middle|outer"` to anchor to radial reference points.
 - Static sector children participate in shape-aware source-order flow.
 - Non-static children are overlays; omitted origins use midpoint angle and radius.
+- Sector paragraphs curve by default; use `angle="0"` for horizontal wedge-aware wrapping.
 
 Example:
 
@@ -1611,7 +1633,8 @@ Example:
     <label>Curved title</label>
     <label angle="90" position="relative" origin-x="end" origin-y="outer">12</label>
   </sector>
-  <p colspan="2">This paragraph is wrapped by an implicit sector.</p>
+  <p colspan="2">This paragraph curves inside its implicit sector.</p>
+  <p colspan="2" angle="0">This paragraph uses horizontal wedge-aware wrapping.</p>
   <sector><label angle="0">Horizontal</label></sector>
 </div>
 ```

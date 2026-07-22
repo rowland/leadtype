@@ -20,10 +20,29 @@ const (
 )
 
 type sectorParagraphLayout struct {
-	lines     []*rich_text.RichText
-	intervals []radialInterval
-	total     float64
+	lines       []*rich_text.RichText
+	intervals   []radialInterval
+	curvedLines []sectorCurvedParagraphLine
+	total       float64
+	curved      bool
+	err         error
+	direction   pdf.CurvedTextDirection
+	facing      pdf.CurvedTextFacing
 }
+
+type sectorCurvedParagraphLine struct {
+	radius   float64
+	angle    float64
+	arcWidth float64
+}
+
+type sectorParagraphFlowMode uint8
+
+const (
+	sectorParagraphFlowRadial sectorParagraphFlowMode = iota
+	sectorParagraphFlowHorizontal
+	sectorParagraphFlowMixed
+)
 
 type sectorLabelPlacement struct {
 	anchorX   float64
@@ -199,6 +218,11 @@ func (s *StdSector) DrawContent(w Writer) error {
 }
 
 func (s *StdSector) LayoutWidget(w Writer) error {
+	flowMode := s.staticParagraphFlowMode()
+	if flowMode == sectorParagraphFlowMixed {
+		return fmt.Errorf("%s: static curved and angle=\"0\" paragraphs cannot share a sector; position one paragraph or move it to another container", s.Path())
+	}
+	s.setContentRotationForFlowMode(flowMode)
 	s.rebuildContentGeometry()
 	if len(s.contentPolygon) < 3 {
 		s.flowSlots = nil
@@ -249,13 +273,23 @@ func (s *StdSector) PreferredWidth(w Writer) (float64, error) {
 }
 
 func (s *StdSector) ResolveSectorReferenceX(widget Widget) float64 {
-	x, _ := s.resolveSectorReference(widget)
-	return s.geometry.AnchorX + x
+	x, y := s.resolveSectorReference(widget)
+	x += s.geometry.AnchorX
+	y += s.geometry.AnchorY
+	if paragraph, ok := widget.(*StdParagraph); ok && paragraph.horizontalInSector() {
+		x, _ = rotatePagePoint(x, y, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+	}
+	return x
 }
 
 func (s *StdSector) ResolveSectorReferenceY(widget Widget) float64 {
-	_, y := s.resolveSectorReference(widget)
-	return s.geometry.AnchorY + y
+	x, y := s.resolveSectorReference(widget)
+	x += s.geometry.AnchorX
+	y += s.geometry.AnchorY
+	if paragraph, ok := widget.(*StdParagraph); ok && paragraph.horizontalInSector() {
+		_, y = rotatePagePoint(x, y, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+	}
+	return y
 }
 
 func (s *StdSector) SetAttrs(attrs map[string]string) {
@@ -345,7 +379,7 @@ func (s *StdSector) drawChildrenWithRotation(w Writer) error {
 		if !child.Visible() || child.Disabled() {
 			continue
 		}
-		if _, ok := child.(*StdLabel); ok || s.contentRotation == 0 {
+		if _, ok := child.(*StdLabel); ok || isSectorParagraph(child) || s.contentRotation == 0 {
 			if err := Print(child, w); err != nil {
 				return err
 			}
@@ -690,6 +724,17 @@ func (s *StdSector) sectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorP
 	if layout := s.paragraphLayouts[p]; layout != nil {
 		return layout
 	}
+	var layout *sectorParagraphLayout
+	if p.curvedInSector() {
+		layout = s.curvedSectorParagraphLayoutFor(p, w)
+	} else {
+		layout = s.horizontalSectorParagraphLayoutFor(p, w)
+	}
+	s.paragraphLayouts[p] = layout
+	return layout
+}
+
+func (s *StdSector) horizontalSectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorParagraphLayout {
 	rt := p.RichText(w)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
@@ -712,18 +757,213 @@ func (s *StdSector) sectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorP
 		}
 		lines = nextLines
 	}
-	layout := &sectorParagraphLayout{
+	return &sectorParagraphLayout{
 		lines:     lines,
 		intervals: s.paragraphIntervalsForLines(p, w, lines),
 		total:     p.contentHeightForLines(lines, w),
 	}
-	s.paragraphLayouts[p] = layout
-	return layout
+}
+
+func (s *StdSector) curvedSectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorParagraphLayout {
+	rt := p.RichText(w)
+	if rt == nil || rt.Len() == 0 {
+		return &sectorParagraphLayout{curved: true}
+	}
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+
+	anchorRadius, anchorAngle, anchorY, static := s.curvedParagraphAnchor(p)
+	direction := pdf.CurvedTextClockwise
+	if anchorY > s.geometry.CenterY {
+		direction = pdf.CurvedTextCounterClockwise
+	}
+	facing := pdf.CurvedTextFacingUpright
+	switch p.sectorTextFacing() {
+	case sectorFacingUpsideDown:
+		facing = pdf.CurvedTextFacingUpsideDown
+	case sectorFacingAuto:
+		if anchorY > s.geometry.CenterY {
+			facing = pdf.CurvedTextFacingUpsideDown
+		}
+	}
+
+	initialWidth := s.curvedParagraphArcWidth(p, anchorRadius, anchorAngle, static)
+	lines := wrapRichTextToWidths(rt, flags, []float64{max(initialWidth, 1)})
+	var placements []sectorCurvedParagraphLine
+	total := 0.0
+	var layoutErr error
+	for range 8 {
+		placements, total, layoutErr = s.curvedParagraphLinePlacements(p, w, lines, anchorRadius, anchorAngle, static, direction, facing)
+		if layoutErr != nil {
+			break
+		}
+		widths := make([]float64, len(placements))
+		for i, placement := range placements {
+			widths[i] = max(placement.arcWidth, 1)
+		}
+		next := wrapRichTextToWidths(rt, flags, widths)
+		if richTextLinesEqual(lines, next) {
+			lines = next
+			break
+		}
+		lines = next
+	}
+	if layoutErr == nil {
+		placements, total, layoutErr = s.curvedParagraphLinePlacements(p, w, lines, anchorRadius, anchorAngle, static, direction, facing)
+	}
+	return &sectorParagraphLayout{
+		lines: lines, curvedLines: placements, total: total, curved: true,
+		direction: direction, facing: facing, err: layoutErr,
+	}
+}
+
+func (s *StdSector) curvedParagraphAnchor(p *StdParagraph) (radius, angle, y float64, static bool) {
+	if slot, ok := s.flowSlots[p]; ok && p.Position() == Static {
+		anchor := s.flowLabelAnchorAt((slot.MinY+slot.MaxY)/2, 0)
+		dx, dy := anchor.x-s.geometry.CenterX, s.geometry.CenterY-anchor.y
+		return math.Hypot(dx, dy), math.Atan2(dy, dx) * 180 / math.Pi, anchor.y, true
+	}
+	if p.Position() == Static {
+		innerRadius, outerRadius := s.contentRadii()
+		radius = (innerRadius + outerRadius) / 2
+		_, anchorY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, s.geometry.AnchorAngle)
+		return radius, s.geometry.AnchorAngle, anchorY, true
+	}
+	x := s.ResolveSectorReferenceX(p) + s.paragraphOffsetX(p)
+	y = s.ResolveSectorReferenceY(p) + s.paragraphOffsetY(p)
+	x, y = rotatePagePoint(x, y, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+	dx, dy := x-s.geometry.CenterX, s.geometry.CenterY-y
+	return math.Hypot(dx, dy), math.Atan2(dy, dx) * 180 / math.Pi, y, false
+}
+
+func (s *StdSector) paragraphOffsetX(p *StdParagraph) float64 {
+	offset := 0.0
+	if p.sides[leftSide].IsSet {
+		offset = p.sides[leftSide].Float64()
+	} else if p.sides[rightSide].IsSet {
+		offset = p.sides[rightSide].Float64()
+	}
+	return offset + p.shiftXOffset()
+}
+
+func (s *StdSector) paragraphOffsetY(p *StdParagraph) float64 {
+	offset := 0.0
+	if p.sides[topSide].IsSet {
+		offset = p.sides[topSide].Float64()
+	} else if p.sides[bottomSide].IsSet {
+		offset = p.sides[bottomSide].Float64()
+	}
+	return offset + p.shiftYOffset()
+}
+
+func (s *StdSector) curvedParagraphLinePlacements(p *StdParagraph, w Writer, lines []*rich_text.RichText, anchorRadius, anchorAngle float64, static bool, direction pdf.CurvedTextDirection, facing pdf.CurvedTextFacing) ([]sectorCurvedParagraphLine, float64, error) {
+	heights := make([]float64, len(lines))
+	total := 0.0
+	for i, line := range lines {
+		height := line.Leading() * w.LineSpacing()
+		if height <= 0 {
+			height = effectiveFontSizeForContainer(p) * w.LineSpacing()
+		}
+		heights[i] = height
+		total += height
+	}
+	centerRadius := anchorRadius
+	if !static {
+		switch p.OriginY() {
+		case OriginYTop:
+			centerRadius += total / 2
+		case OriginYBottom:
+			centerRadius -= total / 2
+		}
+	}
+	progression := -1.0
+	if facing == pdf.CurvedTextFacingUpsideDown {
+		progression = 1
+	}
+	placements := make([]sectorCurvedParagraphLine, len(lines))
+	position := 0.0
+	for i, height := range heights {
+		lineCenter := position + height/2
+		radius := centerRadius + progression*(lineCenter-total/2)
+		if radius <= radialAngleEpsilon || math.IsNaN(radius) || math.IsInf(radius, 0) {
+			return nil, total, fmt.Errorf("%s: curved sector paragraph requires positive finite line radii", p.Path())
+		}
+		angle := anchorAngle
+		align := p.ParagraphStyle().ResolvedTextAlign(p)
+		if static {
+			pathStart, pathEnd := s.curvedParagraphArcEndpoints(radius, direction)
+			switch align {
+			case HAlignCenter:
+				angle = s.geometry.AnchorAngle
+			case HAlignRight:
+				angle = pathEnd
+			default:
+				angle = pathStart
+			}
+		} else {
+			switch p.OriginX() {
+			case OriginXStart:
+				angle = s.contentBoundaryAngle(true, radius)
+			case OriginXEnd:
+				angle = s.contentBoundaryAngle(false, radius)
+			}
+		}
+		placements[i] = sectorCurvedParagraphLine{
+			radius: radius, angle: angle,
+			arcWidth: s.curvedParagraphArcWidth(p, radius, angle, static),
+		}
+		position += height
+	}
+	return placements, total, nil
+}
+
+func (s *StdSector) curvedParagraphArcEndpoints(radius float64, direction pdf.CurvedTextDirection) (start, end float64) {
+	start = s.contentBoundaryAngle(true, radius)
+	end = s.contentBoundaryAngle(false, radius)
+	sectorRunsCounterClockwise := s.geometry.EndAngle-s.geometry.StartAngle >= 0
+	textRunsCounterClockwise := direction == pdf.CurvedTextCounterClockwise
+	if sectorRunsCounterClockwise != textRunsCounterClockwise {
+		return end, start
+	}
+	return start, end
+}
+
+func (s *StdSector) curvedParagraphArcWidth(p *StdParagraph, radius, angle float64, static bool) float64 {
+	if radius <= 0 {
+		return 0
+	}
+	if static || math.Abs(s.geometry.EndAngle-s.geometry.StartAngle) >= 360-radialAngleEpsilon {
+		return s.contentArcWidth(radius)
+	}
+	align := p.ParagraphStyle().ResolvedTextAlign(p)
+	if align == HAlignJustify {
+		align = HAlignLeft
+	}
+	return s.availableArcWidth(radius, angle, align)
+}
+
+func (s *StdSector) contentArcWidth(radius float64) float64 {
+	if radius <= 0 {
+		return 0
+	}
+	span := math.Abs(s.geometry.EndAngle - s.geometry.StartAngle)
+	if span >= 360-radialAngleEpsilon {
+		return 2 * math.Pi * radius
+	}
+	start := s.contentBoundaryAngle(true, radius)
+	end := s.contentBoundaryAngle(false, radius)
+	return radius * s.angularDistanceAlongSweep(start, end) * math.Pi / 180
 }
 
 func (s *StdSector) drawSectorParagraph(p *StdParagraph, w Writer, layout *sectorParagraphLayout) error {
 	if layout == nil {
 		return nil
+	}
+	if layout.err != nil {
+		return layout.err
+	}
+	if layout.curved {
+		return s.drawCurvedSectorParagraph(p, w, layout)
 	}
 	indent := p.textIndent()
 	y := ContentTop(p)
@@ -745,15 +985,60 @@ func (s *StdSector) drawSectorParagraph(p *StdParagraph, w Writer, layout *secto
 		interval := layout.intervals[min(i, len(layout.intervals)-1)]
 		widthAvail := interval.MaxX - interval.MinX - indent
 		x := s.geometry.AnchorX + interval.MinX + indent
-		switch p.ParagraphStyle().ResolvedTextAlign(p) {
-		case HAlignCenter:
-			x += max((widthAvail-line.Width())/2, 0)
-		case HAlignRight:
-			x += max(widthAvail-line.Width(), 0)
+		align := p.ParagraphStyle().ResolvedTextAlign(p)
+		if align == HAlignJustify && i+1 == len(layout.lines) {
+			align = HAlignLeft
 		}
-		w.MoveTo(x, y+line.Ascent())
-		w.PrintRichText(line)
+		xOffset, drawLine := paragraphAlignedLine(line, widthAvail, align)
+		if align == HAlignCenter || align == HAlignRight {
+			xOffset = max(xOffset, 0)
+		}
+		w.MoveTo(x+xOffset, y+line.Ascent())
+		if p.textFill != nil {
+			backgroundX, backgroundY, backgroundWidth, backgroundHeight := p.backgroundRect()
+			var paintErr error
+			if err := w.ClipRichText(drawLine, func() {
+				paintErr = p.PaintBrushInRect(w, p.textFill, backgroundX, backgroundY, backgroundWidth, backgroundHeight)
+			}); err != nil {
+				return err
+			}
+			if paintErr != nil {
+				return paintErr
+			}
+		} else {
+			w.PrintRichText(drawLine)
+		}
 		y += line.Leading() * w.LineSpacing()
+	}
+	return nil
+}
+
+func (s *StdSector) drawCurvedSectorParagraph(p *StdParagraph, w Writer, layout *sectorParagraphLayout) error {
+	align := p.ParagraphStyle().ResolvedTextAlign(p)
+	for i, line := range layout.lines {
+		if i >= len(layout.curvedLines) {
+			break
+		}
+		placement := layout.curvedLines[i]
+		drawLine := line
+		curvedAlign := pdf.CurvedTextAlignLeft
+		switch align {
+		case HAlignCenter:
+			curvedAlign = pdf.CurvedTextAlignCenter
+		case HAlignRight:
+			curvedAlign = pdf.CurvedTextAlignRight
+		case HAlignJustify:
+			if i+1 < len(layout.lines) {
+				_, drawLine = paragraphAlignedLine(line, placement.arcWidth, HAlignJustify)
+			}
+		}
+		if err := w.DrawRichTextOnCircle(drawLine, s.geometry.CenterX, s.geometry.CenterY, placement.radius, placement.angle, pdf.CurvedTextOptions{
+			Align: curvedAlign, VAlign: pdf.VTextAlignMiddle,
+			Direction: layout.direction, Facing: layout.facing,
+			Orientation: pdf.CurvedTextOrientationOutside,
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -768,7 +1053,12 @@ func (s *StdSector) paragraphIntervalsForLines(p *StdParagraph, w Writer, lines 
 		// it. Use the intersection across the complete line box so ascenders,
 		// descenders, fills, and accessibility clipping stay inside the padded
 		// sector shape.
-		intervals = append(intervals, s.contentBandForHeight(localTop, lineHeight))
+		if p.horizontalInSector() && s.contentRotation != 0 {
+			polygon, bounds := s.horizontalContentGeometry()
+			intervals = append(intervals, polygonBandForHeight(polygon, bounds, localTop, lineHeight))
+		} else {
+			intervals = append(intervals, s.contentBandForHeight(localTop, lineHeight))
+		}
 		y += lineHeight
 	}
 	return intervals
@@ -816,7 +1106,7 @@ func polygonLineIntervalAt(polygon []radialPoint, bounds radialBounds, localY, p
 
 func (s *StdSector) setGeometry(geometry radialSectorGeometry) {
 	s.geometry = geometry
-	s.contentRotation = s.contentRotationAngle()
+	s.contentRotation = s.contentRotationAngle(s.staticParagraphFlowMode())
 	s.localPolygon = s.buildLocalPolygon()
 	s.localBounds = boundsForPoints(s.localPolygon)
 	s.rebuildContentGeometry()
@@ -871,6 +1161,13 @@ func (s *StdSector) localizePolygon(points []radialPoint) []radialPoint {
 }
 
 func (s *StdSector) rebuildContentGeometry() {
+	points := s.buildContentPagePolygon()
+	s.contentPolygon = s.localizePolygon(points)
+	s.contentBounds = boundsForPoints(s.contentPolygon)
+	s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+}
+
+func (s *StdSector) buildContentPagePolygon() []radialPoint {
 	innerRadius, outerRadius := s.contentRadii()
 	points := s.buildPagePolygon(innerRadius, outerRadius)
 	if len(points) > 0 && math.Abs(s.geometry.EndAngle-s.geometry.StartAngle) < 360-radialAngleEpsilon {
@@ -878,9 +1175,16 @@ func (s *StdSector) rebuildContentGeometry() {
 		points = clipPolygonToRadialEdge(points, s.geometry, s.geometry.StartAngle, startPadding)
 		points = clipPolygonToRadialEdge(points, s.geometry, s.geometry.EndAngle, endPadding)
 	}
-	s.contentPolygon = s.localizePolygon(points)
-	s.contentBounds = boundsForPoints(s.contentPolygon)
-	s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+	return points
+}
+
+func (s *StdSector) horizontalContentGeometry() ([]radialPoint, radialBounds) {
+	pagePoints := s.buildContentPagePolygon()
+	points := make([]radialPoint, 0, len(pagePoints))
+	for _, point := range pagePoints {
+		points = append(points, radialPoint{X: point.X - s.geometry.AnchorX, Y: point.Y - s.geometry.AnchorY})
+	}
+	return points, boundsForPoints(points)
 }
 
 func (s *StdSector) contentRadii() (inner, outer float64) {
@@ -959,10 +1263,14 @@ func clipPolygonToRadialEdge(points []radialPoint, geometry radialSectorGeometry
 	return result
 }
 
-func (s *StdSector) contentRotationAngle() float64 {
-	if s.hasParagraphChild() {
+func (s *StdSector) contentRotationAngle(mode sectorParagraphFlowMode) float64 {
+	if mode == sectorParagraphFlowHorizontal || mode == sectorParagraphFlowMixed {
 		return 0
 	}
+	return s.tangentContentRotationAngle()
+}
+
+func (s *StdSector) tangentContentRotationAngle() float64 {
 	theta := s.geometry.AnchorAngle * math.Pi / 180.0
 	tangentX := math.Sin(theta)
 	tangentY := math.Cos(theta)
@@ -971,6 +1279,20 @@ func (s *StdSector) contentRotationAngle() float64 {
 		tangentY = -math.Cos(theta)
 	}
 	return math.Atan2(tangentY, tangentX) * 180 / math.Pi
+}
+
+func (s *StdSector) setContentRotationForFlowMode(mode sectorParagraphFlowMode) {
+	rotation := s.contentRotationAngle(mode)
+	if floatEquals(rotation, s.contentRotation) {
+		return
+	}
+	s.contentRotation = rotation
+	s.localPolygon = s.buildLocalPolygon()
+	s.localBounds = boundsForPoints(s.localPolygon)
+	s.SetLeft(s.geometry.AnchorX + s.localBounds.MinX)
+	s.SetTop(s.geometry.AnchorY + s.localBounds.MinY)
+	s.SetWidth(s.localBounds.MaxX - s.localBounds.MinX)
+	s.SetHeight(s.localBounds.MaxY - s.localBounds.MinY)
 }
 
 func (s *StdSector) toLocal(x, y float64) (float64, float64) {
@@ -1003,6 +1325,14 @@ func (s *StdSector) contentLocalCenter() (float64, float64) {
 	return clampFloat(centroidX, bounds.MinX, bounds.MaxX), clampFloat(centroidY, bounds.MinY, bounds.MaxY)
 }
 
+func (s *StdSector) contentPolarCenterLocalY() float64 {
+	innerRadius, outerRadius := s.contentRadii()
+	x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY,
+		(innerRadius+outerRadius)/2, s.geometry.AnchorAngle)
+	_, localY := s.toLocal(x, y)
+	return localY
+}
+
 func (s *StdSector) seedContentWidth() float64 {
 	interval := s.contentLineIntervalAt(0)
 	width := interval.MaxX - interval.MinX
@@ -1030,13 +1360,31 @@ func floatEquals(a, b float64) bool {
 	return math.Abs(a-b) <= 0.001
 }
 
-func (s *StdSector) hasParagraphChild() bool {
+func (s *StdSector) staticParagraphFlowMode() sectorParagraphFlowMode {
+	curved, horizontal := false, false
 	for _, child := range s.Widgets() {
-		if _, ok := child.(*StdParagraph); ok {
-			return true
+		paragraph, ok := child.(*StdParagraph)
+		if !ok || paragraph.Position() != Static || paragraph.Display() == DisplayNone {
+			continue
+		}
+		if paragraph.horizontalInSector() {
+			horizontal = true
+		} else {
+			curved = true
 		}
 	}
-	return false
+	if curved && horizontal {
+		return sectorParagraphFlowMixed
+	}
+	if horizontal {
+		return sectorParagraphFlowHorizontal
+	}
+	return sectorParagraphFlowRadial
+}
+
+func isSectorParagraph(widget Widget) bool {
+	_, ok := widget.(*StdParagraph)
+	return ok
 }
 
 func polygonCentroid(points []radialPoint) (float64, float64, bool) {

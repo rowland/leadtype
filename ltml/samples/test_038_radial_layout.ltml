@@ -7,20 +7,20 @@
 
     <disc left="1.0" top="1.55" width="5.6" height="5.6" rows="3" angles="0,40,85,130,180,230,285,330,360" base-angle="-90" r0="0.8">
       <sector colspan="2" fill="AliceBlue" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center">Auto below midline</label></sector>
-      <p colspan="3" padding="0.08" font.size="8.5">This paragraph is a direct child of the radial container, so LTML wraps it in an implicit sector and shapes its lines to the changing width of the wedge.</p>
+      <p colspan="3" angle="0" padding="0.08" font.size="8.5">With angle zero, this direct paragraph keeps horizontal wedge-aware wrapping inside its implicit sector.</p>
       <sector fill="Cornsilk" border="ring"><label angle="0" font.weight="Bold">01</label></sector>
       <label angle="0" font.weight="Bold">02</label>
       <sector fill="LavenderBlush" border="ring" padding="0.08"><label facing="upside-down">Facing override</label></sector>
 
       <sector rowspan="2" colspan="3" fill="HoneyDew" border="ring" padding="0.08">
-        <p style.text-align="center">Merged sectors can host longer copy. This paragraph uses variable line widths that follow the sector instead of a rectangular frame.</p>
+        <p style.text-align="center">Curved paragraphs wrap each line to its own padded arc. Successive lines pack radially and share one readable facing.</p>
       </sector>
       <label angle="0" font.weight="Bold" font.size="16">03</label>
       <sector colspan="2" fill="MistyRose" border="ring">
         <label>Curved center</label>
         <label angle="90" position="relative" origin-x="end" origin-y="middle" right="0.35" top="0" font.size="11">07</label>
       </sector>
-      <p colspan="2" padding="0.08" font.size="8">Another implicit sector paragraph keeps ordinary LTML widgets but inherits sector geometry from the wrapper.</p>
+      <p colspan="2" padding="0.08" font.size="8">Implicit paragraphs curve too.</p>
 
       <sector colspan="2" fill="Lavender" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center">Auto above midline</label></sector>
       <label angle="0" font.weight="Bold">04</label>

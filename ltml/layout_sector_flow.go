@@ -101,7 +101,7 @@ func (s *StdSector) layoutStaticFlowPass(w Writer) (bool, error) {
 		item.widget.SetLeft(s.geometry.AnchorX + slot.MinX)
 		item.widget.SetTop(s.geometry.AnchorY + slot.MinY)
 		if paragraph, ok := item.widget.(*StdParagraph); ok &&
-			(paragraph.HeightMode() == DimUnspecified || paragraph.HeightMode() == DimAuto) {
+			(paragraph.curvedInSector() || paragraph.HeightMode() == DimUnspecified || paragraph.HeightMode() == DimAuto) {
 			paragraph.ClearResolvedHeight()
 			s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
 			height, err := paragraph.PreferredHeight(w)
@@ -140,8 +140,20 @@ func (s *StdSector) sectorFlowItems(widgets []Widget, w Writer) ([]sectorFlowIte
 				continue
 			}
 		}
-		if _, ok := child.(*StdParagraph); ok {
+		if paragraph, ok := child.(*StdParagraph); ok {
 			item.fullBand = true
+			if paragraph.curvedInSector() {
+				s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+				layout := s.sectorParagraphLayoutFor(paragraph, w)
+				if layout.err != nil {
+					return nil, layout.err
+				}
+				item.height = layout.total
+				paragraph.ResolveWidth(0)
+				paragraph.ResolveHeight(item.height)
+				items = append(items, item)
+				continue
+			}
 			if child.WidthMode() == DimUnspecified || child.WidthMode() == DimAuto {
 				child.ResolveWidth(seedWidth)
 			}
@@ -286,12 +298,7 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 	centerX, centerY := s.contentLocalCenter()
 	allCurved := true
 	for _, item := range items {
-		label, ok := item.widget.(*StdLabel)
-		if !ok {
-			allCurved = false
-			break
-		}
-		if _, straight := label.sectorTextAngle(); straight {
+		if !sectorFlowItemIsCurved(item) {
 			allCurved = false
 			break
 		}
@@ -301,7 +308,7 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 		// origin is the midpoint angle and midpoint radius. An area centroid
 		// moves toward the diameter of wide annular sectors and can put text on
 		// the inner boundary instead of in the middle of its track.
-		centerX, centerY = 0, 0
+		centerX, centerY = 0, s.contentPolarCenterLocalY()
 	}
 	tops := []float64{
 		centerY - totalHeight/2,
@@ -432,15 +439,23 @@ func sectorFlowRowIsCurved(items []sectorFlowItem, row sectorFlowRow) bool {
 		return false
 	}
 	for i := row.start; i < row.end; i++ {
-		label, ok := items[i].widget.(*StdLabel)
-		if !ok {
-			return false
-		}
-		if _, straight := label.sectorTextAngle(); straight {
+		if !sectorFlowItemIsCurved(items[i]) {
 			return false
 		}
 	}
 	return true
+}
+
+func sectorFlowItemIsCurved(item sectorFlowItem) bool {
+	switch widget := item.widget.(type) {
+	case *StdLabel:
+		_, straight := widget.sectorTextAngle()
+		return !straight
+	case *StdParagraph:
+		return widget.curvedInSector()
+	default:
+		return false
+	}
 }
 
 func (s *StdSector) flowArcWidthAtLocalY(localY float64) float64 {
@@ -449,9 +464,7 @@ func (s *StdSector) flowArcWidthAtLocalY(localY float64) float64 {
 		return 0
 	}
 	radius := math.Hypot(anchor.x-s.geometry.CenterX, anchor.y-s.geometry.CenterY)
-	start := s.contentBoundaryAngle(true, radius)
-	end := s.contentBoundaryAngle(false, radius)
-	return radius * s.angularDistanceAlongSweep(start, end) * math.Pi / 180
+	return s.contentArcWidth(radius)
 }
 
 func (s *StdSector) flowLabelAnchorAt(localY, arcOffset float64) sectorFlowLabelAnchor {
@@ -482,21 +495,28 @@ func (s *StdSector) flowLabelAnchorAt(localY, arcOffset float64) sectorFlowLabel
 }
 
 func (s *StdSector) contentBandForHeight(top, height float64) radialInterval {
+	return polygonBandForHeight(s.contentPolygon, s.contentBounds, top, height)
+}
+
+func polygonBandForHeight(polygon []radialPoint, bounds radialBounds, top, height float64) radialInterval {
 	yValues := []float64{top, top + height/2, top + height}
-	for _, point := range s.contentPolygon {
+	for _, point := range polygon {
 		if point.Y > top && point.Y < top+height {
 			yValues = append(yValues, point.Y)
 		}
 	}
+	centerX, _, ok := polygonCentroid(polygon)
+	if !ok {
+		centerX = (bounds.MinX + bounds.MaxX) / 2
+	}
 	result := radialInterval{MinX: math.Inf(-1), MaxX: math.Inf(1)}
 	for _, y := range yValues {
-		interval := s.contentLineIntervalAt(y)
+		interval := polygonLineIntervalAt(polygon, bounds, y, centerX)
 		result.MinX = max(result.MinX, interval.MinX)
 		result.MaxX = min(result.MaxX, interval.MaxX)
 	}
 	if math.IsInf(result.MinX, 0) || math.IsInf(result.MaxX, 0) || result.MaxX < result.MinX {
-		center, _ := s.contentLocalCenter()
-		return radialInterval{MinX: center, MaxX: center}
+		return radialInterval{MinX: centerX, MaxX: centerX}
 	}
 	return result
 }
