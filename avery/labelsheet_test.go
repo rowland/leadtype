@@ -78,6 +78,7 @@ func (w *testWriter) Line(x, y, angle, length float64)           {}
 func (w *testWriter) LineTo(x, y float64)                        {}
 func (w *testWriter) Loc() (x, y float64)                        { return 0, 0 }
 func (w *testWriter) MoveTo(x, y float64)                        {}
+func (w *testWriter) CurvePoints(points []pdf.Location) error    { return nil }
 func (w *testWriter) NewPage()                                   {}
 func (w *testWriter) Print(text string) error                    { w.printed = append(w.printed, text); return nil }
 func (w *testWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {

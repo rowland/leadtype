@@ -165,6 +165,7 @@ func (w *sampleTestWriter) Path(fn func()) error {
 	}
 	return nil
 }
+func (w *sampleTestWriter) CurvePoints(points []pdf.Location) error { return nil }
 func (w *sampleTestWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }

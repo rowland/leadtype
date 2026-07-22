@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"strings"
 
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
@@ -87,7 +86,6 @@ type StdSector struct {
 	paragraphLayouts map[*StdParagraph]*sectorParagraphLayout
 	sectorBorders    [4]*PenStyle
 	sectorBorderSet  [4]bool
-	logicalBorderSet [4]bool
 	flowSlots        map[Widget]radialBounds
 	flowLabelAnchors map[*StdLabel]sectorFlowLabelAnchor
 }
@@ -98,7 +96,7 @@ func (s *StdSector) DrawBorder(w Writer) error {
 	size := s.geometry.OuterRadius * 2
 	hasEdgeOverrides := false
 	for i := range s.sectorBorders {
-		hasEdgeOverrides = hasEdgeOverrides || s.sectorBorderSet[i] || s.logicalBorderSet[i] || s.sectorBorders[i] != nil || s.borders[i] != nil
+		hasEdgeOverrides = hasEdgeOverrides || s.sectorBorderSet[i] || s.borderSideSet[i] || s.sectorBorders[i] != nil || s.borders[i] != nil
 	}
 	if s.border != nil && !hasEdgeOverrides {
 		if err := s.border.ApplyInRect(w, x, y, size, size); err != nil {
@@ -127,24 +125,24 @@ func (s *StdSector) DrawBorder(w Writer) error {
 
 func (s *StdSector) resolvedSectorBorders() (outer, inner, start, end *PenStyle) {
 	outer, inner, start, end = s.border, s.border, s.border, s.border
-	if s.logicalBorderSet[topSide] || s.borders[topSide] != nil {
+	if s.borderSideSet[topSide] || s.borders[topSide] != nil {
 		outer = s.borders[topSide]
 	}
-	if s.logicalBorderSet[bottomSide] || s.borders[bottomSide] != nil {
+	if s.borderSideSet[bottomSide] || s.borders[bottomSide] != nil {
 		inner = s.borders[bottomSide]
 	}
 	if s.radialSweep() == radialSweepCW {
-		if s.logicalBorderSet[rightSide] || s.borders[rightSide] != nil {
+		if s.borderSideSet[rightSide] || s.borders[rightSide] != nil {
 			start = s.borders[rightSide]
 		}
-		if s.logicalBorderSet[leftSide] || s.borders[leftSide] != nil {
+		if s.borderSideSet[leftSide] || s.borders[leftSide] != nil {
 			end = s.borders[leftSide]
 		}
 	} else {
-		if s.logicalBorderSet[leftSide] || s.borders[leftSide] != nil {
+		if s.borderSideSet[leftSide] || s.borders[leftSide] != nil {
 			start = s.borders[leftSide]
 		}
-		if s.logicalBorderSet[rightSide] || s.borders[rightSide] != nil {
+		if s.borderSideSet[rightSide] || s.borders[rightSide] != nil {
 			end = s.borders[rightSide]
 		}
 	}
@@ -294,27 +292,25 @@ func (s *StdSector) ResolveSectorReferenceY(widget Widget) float64 {
 
 func (s *StdSector) SetAttrs(attrs map[string]string) {
 	s.StdContainer.SetAttrs(attrs)
-	if value, ok := attrs["border"]; ok {
-		if strings.EqualFold(strings.TrimSpace(value), "none") {
-			s.border = nil
-		}
-	}
-	for i, side := range sideNames {
-		name := "border-" + side
-		if value, ok := attrs[name]; ok {
-			s.logicalBorderSet[i] = true
-			if strings.EqualFold(strings.TrimSpace(value), "none") {
-				s.borders[i] = nil
-			}
-		}
-		if MapHasKeyPrefix(attrs, name+".") {
-			s.logicalBorderSet[i] = true
-		}
-	}
-	s.setSectorBorderStyle(sectorBorderOuter, "border-outer", attrs)
-	s.setSectorBorderStyle(sectorBorderEnd, "border-end", attrs)
-	s.setSectorBorderStyle(sectorBorderInner, "border-inner", attrs)
-	s.setSectorBorderStyle(sectorBorderStart, "border-start", attrs)
+	s.setSectorBorderResourceAttrs(attrs, s.Units())
+}
+
+func (s *StdSector) resetResourceAttrs() {
+	s.StdContainer.resetResourceAttrs()
+	s.sectorBorders = [4]*PenStyle{}
+	s.sectorBorderSet = [4]bool{}
+}
+
+func (s *StdSector) setResourceAttrs(attrs map[string]string, units Units) {
+	s.StdContainer.setResourceAttrs(attrs, units)
+	s.setSectorBorderResourceAttrs(attrs, units)
+}
+
+func (s *StdSector) setSectorBorderResourceAttrs(attrs map[string]string, units Units) {
+	s.setSectorBorderStyle(sectorBorderOuter, "border-outer", attrs, units)
+	s.setSectorBorderStyle(sectorBorderEnd, "border-end", attrs, units)
+	s.setSectorBorderStyle(sectorBorderInner, "border-inner", attrs, units)
+	s.setSectorBorderStyle(sectorBorderStart, "border-start", attrs, units)
 }
 
 func isInlineOnlyWidget(widget Widget) bool {
@@ -326,31 +322,9 @@ func isInlineOnlyWidget(widget Widget) bool {
 	}
 }
 
-func (s *StdSector) setSectorBorderStyle(index int, attrName string, attrs map[string]string) {
-	field := &s.sectorBorders[index]
-	if id, ok := attrs[attrName]; ok {
-		s.sectorBorderSet[index] = true
-		if strings.EqualFold(strings.TrimSpace(id), "none") {
-			*field = nil
-		} else {
-			*field = PenStyleFor(id, s.Scope())
-		}
-	}
-	prefix := attrName + "."
-	if !MapHasKeyPrefix(attrs, prefix) {
-		return
-	}
-	s.sectorBorderSet[index] = true
-	base := *field
-	if base == nil {
-		base = s.border
-	}
-	if base == nil {
-		*field = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
-	} else {
-		*field = base.Clone()
-	}
-	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), s.Units()))
+func (s *StdSector) setSectorBorderStyle(index int, attrName string, attrs map[string]string, units Units) {
+	setOptionalPenStyle(&s.sectorBorders[index], &s.sectorBorderSet[index], attrName,
+		attrs, s.Scope(), units, s.border)
 }
 
 func (s *StdSector) SetContainer(container Container) error {

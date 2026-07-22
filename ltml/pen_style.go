@@ -251,6 +251,36 @@ func SetPenStyle(field **PenStyle, attrName string, attrs map[string]string, sco
 	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
 }
 
+// setOptionalPenStyle applies a border-style pen reference while preserving
+// the distinction between an absent value and an explicit lowercase "none".
+// Once disabled, prefixed pen attributes remain dormant until a later layer
+// supplies an explicit non-none pen reference.
+func setOptionalPenStyle(field **PenStyle, explicitlySet *bool, attrName string, attrs map[string]string, scope HasScope, units Units, fallback *PenStyle) {
+	if id, ok := attrs[attrName]; ok {
+		*explicitlySet = true
+		if strings.TrimSpace(id) == "none" {
+			*field = nil
+		} else {
+			*field = PenStyleFor(id, scope)
+		}
+	}
+	prefix := attrName + "."
+	if !MapHasKeyPrefix(attrs, prefix) || (*explicitlySet && *field == nil) {
+		return
+	}
+	*explicitlySet = true
+	base := *field
+	if base == nil {
+		base = fallback
+	}
+	if base == nil {
+		*field = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
+	} else {
+		*field = base.Clone()
+	}
+	(*field).SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
+}
+
 func (ps *PenStyle) ensureLinearGradient() *pdf.LinearGradient {
 	if ps.linearGradient == nil {
 		ps.linearGradient = &pdf.LinearGradient{}

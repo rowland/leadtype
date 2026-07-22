@@ -312,6 +312,8 @@ func (m *mockWriter) Path(fn func()) error {
 	return nil
 }
 
+func (m *mockWriter) CurvePoints(points []pdf.Location) error { return nil }
+
 func (m *mockWriter) Rotate(angle, x, y float64, fn func()) error {
 	if fn != nil {
 		fn()

@@ -320,42 +320,8 @@ func (l *StdLabel) DrawBorder(w Writer) error {
 		return nil
 	}
 	x1, y1, width, height := l.sectorBackgroundRect()
-	x2, y2 := x1+width, y1+height
-	if l.border != nil {
-		if err := l.border.ApplyInRect(w, x1, y1, width, height); err != nil {
-			return err
-		}
-		w.Rectangle2(x1, y1, width, height, true, false, l.corners.Float64sFor(width, height), false, false)
-	}
-	if l.borders[topSide] != nil {
-		if err := l.borders[topSide].ApplyInRect(w, x1, y1, width, height); err != nil {
-			return err
-		}
-		w.MoveTo(x1, y1)
-		w.LineTo(x2, y1)
-	}
-	if l.borders[rightSide] != nil {
-		if err := l.borders[rightSide].ApplyInRect(w, x1, y1, width, height); err != nil {
-			return err
-		}
-		w.MoveTo(x2, y1)
-		w.LineTo(x2, y2)
-	}
-	if l.borders[bottomSide] != nil {
-		if err := l.borders[bottomSide].ApplyInRect(w, x1, y1, width, height); err != nil {
-			return err
-		}
-		w.MoveTo(x2, y2)
-		w.LineTo(x1, y2)
-	}
-	if l.borders[leftSide] != nil {
-		if err := l.borders[leftSide].ApplyInRect(w, x1, y1, width, height); err != nil {
-			return err
-		}
-		w.MoveTo(x1, y2)
-		w.LineTo(x1, y1)
-	}
-	return nil
+	return drawRectBorders(w, x1, y1, width, height, l.corners.Float64sFor(width, height),
+		l.border, l.borders, l.borderSideSet)
 }
 
 func (l *StdLabel) sectorBackgroundRect() (x, y, width, height float64) {

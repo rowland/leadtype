@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -24,7 +25,9 @@ type StdWidget struct {
 	role            string
 	accessibilityID string
 	border          *PenStyle
+	borderSet       bool
 	borders         [4]*PenStyle
+	borderSideSet   [4]bool
 	colSpan         int
 	fill            *BrushStyle
 	font            *FontStyle
@@ -102,48 +105,176 @@ func (widget *StdWidget) GetID() string {
 func (widget *StdWidget) DrawBorder(w Writer) error {
 	x1 := widget.Left() + widget.MarginLeft()
 	y1 := widget.Top() + widget.MarginTop()
-	x2 := widget.Right() - widget.MarginRight()
-	y2 := widget.Bottom() - widget.MarginBottom()
-	if widget.border != nil {
-		width := widget.Width() - widget.MarginLeft() - widget.MarginRight()
-		height := widget.Height() - widget.MarginTop() - widget.MarginBottom()
-		if err := widget.border.ApplyInRect(w, x1, y1,
-			width, height); err != nil {
-			return err
-		}
-		w.Rectangle2(x1, y1,
-			width, height,
-			true, false, widget.corners.Float64sFor(width, height), false, false)
+	width := widget.Width() - widget.MarginLeft() - widget.MarginRight()
+	height := widget.Height() - widget.MarginTop() - widget.MarginBottom()
+	return drawRectBorders(w, x1, y1, width, height, widget.corners.Float64sFor(width, height),
+		widget.border, widget.borders, widget.borderSideSet)
+}
+
+func drawRectBorders(w Writer, x, y, width, height float64, corners []float64, aggregate *PenStyle, sides [4]*PenStyle, sideSet [4]bool) error {
+	hasSideOverrides := false
+	for i := range sides {
+		hasSideOverrides = hasSideOverrides || sideSet[i] || sides[i] != nil
 	}
-	if widget.borders[topSide] != nil {
-		if err := widget.borders[topSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+	if !hasSideOverrides {
+		if aggregate == nil {
+			return nil
+		}
+		if err := aggregate.ApplyInRect(w, x, y, width, height); err != nil {
 			return err
 		}
-		w.MoveTo(x1, y1)
-		w.LineTo(x2, y1)
+		w.Rectangle2(x, y, width, height, true, false, corners, false, false)
+		return nil
 	}
-	if widget.borders[rightSide] != nil {
-		if err := widget.borders[rightSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
-			return err
+
+	effective := [4]*PenStyle{}
+	for i := range sides {
+		effective[i] = aggregate
+		if sideSet[i] || sides[i] != nil {
+			effective[i] = sides[i]
 		}
-		w.MoveTo(x2, y1)
-		w.LineTo(x2, y2)
 	}
-	if widget.borders[bottomSide] != nil {
-		if err := widget.borders[bottomSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+
+	if effective[0] != nil && sameRenderedPen(effective[0], effective[1]) &&
+		sameRenderedPen(effective[0], effective[2]) && sameRenderedPen(effective[0], effective[3]) {
+		if err := effective[0].ApplyInRect(w, x, y, width, height); err != nil {
 			return err
 		}
-		w.MoveTo(x2, y2)
-		w.LineTo(x1, y2)
+		w.Rectangle2(x, y, width, height, true, false, corners, false, false)
+		return nil
 	}
-	if widget.borders[leftSide] != nil {
-		if err := widget.borders[leftSide].ApplyInRect(w, x1, y1, x2-x1, y2-y1); err != nil {
+
+	curves := rectBorderCurves(x, y, width, height, corners)
+	visited := [4]bool{}
+	for i := range effective {
+		if visited[i] || effective[i] == nil || sameRenderedPen(effective[(i+3)%4], effective[i]) {
+			continue
+		}
+		run := []int{i}
+		visited[i] = true
+		for next := (i + 1) % 4; next != i && sameRenderedPen(effective[next], effective[i]); next = (next + 1) % 4 {
+			run = append(run, next)
+			visited[next] = true
+		}
+		if err := drawRectBorderRun(w, x, y, width, height, effective, curves, run); err != nil {
 			return err
 		}
-		w.MoveTo(x1, y2)
-		w.LineTo(x1, y1)
 	}
 	return nil
+}
+
+func sameRenderedPen(a, b *PenStyle) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	aValue, bValue := *a, *b
+	aValue.id, bValue.id = "", ""
+	return reflect.DeepEqual(aValue, bValue)
+}
+
+type rectBorderCurve [4]pdf.Location
+
+func drawRectBorderRun(w Writer, x, y, width, height float64, pens [4]*PenStyle, curves [4]rectBorderCurve, run []int) error {
+	pen := pens[run[0]]
+	if err := pen.ApplyInRect(w, x, y, width, height); err != nil {
+		return err
+	}
+
+	var drawErr, strokeErr error
+	if err := w.Path(func() {
+		first := run[0]
+		previous := (first + 3) % 4
+		leading := curves[previous]
+		if pens[previous] == nil {
+			w.MoveTo(leading[0].X, leading[0].Y)
+			drawErr = appendRectBorderCurve(w, leading)
+		} else {
+			_, second := splitRectBorderCurve(leading)
+			w.MoveTo(second[0].X, second[0].Y)
+			drawErr = appendRectBorderCurve(w, second)
+		}
+		if drawErr != nil {
+			return
+		}
+
+		for position, edge := range run {
+			curve := curves[edge]
+			w.LineTo(curve[0].X, curve[0].Y)
+			if position+1 < len(run) || pens[(edge+1)%4] == nil {
+				drawErr = appendRectBorderCurve(w, curve)
+			} else {
+				firstHalf, _ := splitRectBorderCurve(curve)
+				drawErr = appendRectBorderCurve(w, firstHalf)
+			}
+			if drawErr != nil {
+				return
+			}
+		}
+		strokeErr = w.Stroke()
+	}); err != nil {
+		return err
+	}
+	if drawErr != nil {
+		return drawErr
+	}
+	return strokeErr
+}
+
+func appendRectBorderCurve(w Writer, curve rectBorderCurve) error {
+	if curve[0] == curve[3] {
+		w.LineTo(curve[3].X, curve[3].Y)
+		return nil
+	}
+	return w.CurvePoints(curve[:])
+}
+
+func splitRectBorderCurve(curve rectBorderCurve) (rectBorderCurve, rectBorderCurve) {
+	midpoint := func(a, b pdf.Location) pdf.Location {
+		return pdf.Location{X: (a.X + b.X) / 2, Y: (a.Y + b.Y) / 2}
+	}
+	p01 := midpoint(curve[0], curve[1])
+	p12 := midpoint(curve[1], curve[2])
+	p23 := midpoint(curve[2], curve[3])
+	p012 := midpoint(p01, p12)
+	p123 := midpoint(p12, p23)
+	p0123 := midpoint(p012, p123)
+	return rectBorderCurve{curve[0], p01, p012, p0123},
+		rectBorderCurve{p0123, p123, p23, curve[3]}
+}
+
+func rectBorderCurves(x, y, width, height float64, corners []float64) [4]rectBorderCurve {
+	radii := rectBorderCornerRadii(corners)
+	kappa := 4.0 / 3.0 * (math.Sqrt2 - 1.0)
+	x2, y2 := x+width, y+height
+	topLeft, topRight, bottomRight, bottomLeft := radii[0], radii[1], radii[2], radii[3]
+	return [4]rectBorderCurve{
+		{{X: x2 - topRight[0], Y: y}, {X: x2 - topRight[0] + kappa*topRight[0], Y: y}, {X: x2, Y: y + topRight[1] - kappa*topRight[1]}, {X: x2, Y: y + topRight[1]}},
+		{{X: x2, Y: y2 - bottomRight[1]}, {X: x2, Y: y2 - bottomRight[1] + kappa*bottomRight[1]}, {X: x2 - bottomRight[0] + kappa*bottomRight[0], Y: y2}, {X: x2 - bottomRight[0], Y: y2}},
+		{{X: x + bottomLeft[0], Y: y2}, {X: x + bottomLeft[0] - kappa*bottomLeft[0], Y: y2}, {X: x, Y: y2 - bottomLeft[1] + kappa*bottomLeft[1]}, {X: x, Y: y2 - bottomLeft[1]}},
+		{{X: x, Y: y + topLeft[1]}, {X: x, Y: y + topLeft[1] - kappa*topLeft[1]}, {X: x + topLeft[0] - kappa*topLeft[0], Y: y}, {X: x + topLeft[0], Y: y}},
+	}
+}
+
+func rectBorderCornerRadii(corners []float64) [4][2]float64 {
+	var radii [4][2]float64
+	switch len(corners) {
+	case 1:
+		for i := range radii {
+			radii[i] = [2]float64{corners[0], corners[0]}
+		}
+	case 2:
+		radii[0], radii[1] = [2]float64{corners[0], corners[0]}, [2]float64{corners[0], corners[0]}
+		radii[2], radii[3] = [2]float64{corners[1], corners[1]}, [2]float64{corners[1], corners[1]}
+	case 4:
+		for i := range radii {
+			radii[i] = [2]float64{corners[i], corners[i]}
+		}
+	case 8:
+		for i := range radii {
+			radii[i] = [2]float64{corners[i*2], corners[i*2+1]}
+		}
+	}
+	return radii
 }
 
 func (widget *StdWidget) Font() *FontStyle {
@@ -313,30 +444,18 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 
 func (widget *StdWidget) resetResourceAttrs() {
 	widget.border = nil
+	widget.borderSet = false
 	widget.borders = [4]*PenStyle{}
+	widget.borderSideSet = [4]bool{}
 	widget.fill = nil
 	widget.font = nil
 }
 
 func (widget *StdWidget) setResourceAttrs(attrs map[string]string, units Units) {
-	SetPenStyle(&widget.border, "border", attrs, widget.scope, units)
+	setOptionalPenStyle(&widget.border, &widget.borderSet, "border", attrs, widget.scope, units, nil)
 	for i, side := range sideNames {
-		if border, ok := attrs["border-"+side]; ok {
-			widget.borders[i] = PenStyleFor(border, widget.scope)
-		}
-		prefix := "border-" + side + "."
-		if MapHasKeyPrefix(attrs, prefix) {
-			base := widget.borders[i]
-			if base == nil {
-				base = widget.border
-			}
-			if base == nil {
-				widget.borders[i] = &PenStyle{pattern: defaultPenPattern, cap: defaultPenCap}
-			} else {
-				widget.borders[i] = base.Clone()
-			}
-			widget.borders[i].SetAttrs(addUnits(filterMapAttrs(prefix, attrs), units))
-		}
+		setOptionalPenStyle(&widget.borders[i], &widget.borderSideSet[i], "border-"+side,
+			attrs, widget.scope, units, widget.border)
 	}
 	SetBrushStyle(&widget.fill, "fill", attrs, widget.scope, units)
 	SetFontStyle(&widget.font, "font", attrs, widget.scope, units, widget.container)

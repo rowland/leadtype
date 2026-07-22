@@ -71,6 +71,40 @@ func TestStdSectorBorderAliasesOverrideLogicalSides(t *testing.T) {
 	}
 }
 
+func TestStdSectorBorderNoneUsesPhysicalLogicalAggregatePrecedence(t *testing.T) {
+	sector := &StdSector{}
+	sector.SetAttrs(map[string]string{
+		"border":       "solid",
+		"border-top":   "Red",
+		"border-outer": "none",
+		"border-left":  "none",
+	})
+
+	outer, inner, start, end := sector.resolvedSectorBorders()
+	if outer != nil {
+		t.Fatalf("outer border = %#v, want physical none", outer)
+	}
+	if inner == nil || end == nil {
+		t.Fatalf("aggregate fallback inner/end = %#v/%#v, want solid", inner, end)
+	}
+	if start != nil {
+		t.Fatalf("start border = %#v, want mapped logical none", start)
+	}
+}
+
+func TestStdSectorBorderNoneRequiresExplicitPenToReviveAlias(t *testing.T) {
+	sector := &StdSector{}
+	sector.SetAttrs(map[string]string{"border-outer": "none"})
+	sector.SetAttrs(map[string]string{"border-outer.color": "Red"})
+	if outer, _, _, _ := sector.resolvedSectorBorders(); outer != nil {
+		t.Fatalf("outer border = %#v, subattribute revived none", outer)
+	}
+	sector.SetAttrs(map[string]string{"border-outer": "solid"})
+	if outer, _, _, _ := sector.resolvedSectorBorders(); outer == nil {
+		t.Fatal("explicit pen did not revive outer border")
+	}
+}
+
 func TestStdSectorDrawBorderStrokesIndividualArcsWithoutRadialSeam(t *testing.T) {
 	sector := &StdSector{}
 	sector.geometry = radialSectorGeometry{
@@ -261,6 +295,57 @@ func TestParse_ImplicitSectorOwnsCellAttrsAcrossCascadeLayers(t *testing.T) {
 	}
 	if !label.angleSet || label.angle != 0 || label.Width() != 30 || label.Font().size != 9 {
 		t.Fatalf("child attrs angle/width/font = %v/%v/%v/%v", label.angleSet, label.angle, label.Width(), label.Font().size)
+	}
+}
+
+func TestParse_ImplicitSectorRoutesBorderNoneAcrossCascadeLayers(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <style>
+      label { border: solid; border-top: none; }
+      label:first-child { border-right: none; }
+    </style>
+    <div layout="radial" cols="1">
+      <label border-left="none">Only the bottom edge remains</label>
+    </div>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sector := doc.Root().Page(0).children[0].(*StdContainer).children[0].(*StdSector)
+	label := sector.children[0].(*StdLabel)
+	if sector.border == nil {
+		t.Fatal("implicit sector aggregate border is nil, want solid")
+	}
+	for _, side := range []int{topSide, rightSide, leftSide} {
+		if !sector.borderSideSet[side] || sector.borders[side] != nil {
+			t.Fatalf("sector side %s = %#v set=%v, want explicit none", sideNames[side], sector.borders[side], sector.borderSideSet[side])
+		}
+	}
+	if label.border != nil || label.borderSet {
+		t.Fatalf("child border = %#v set=%v, want border attrs owned only by wrapper", label.border, label.borderSet)
+	}
+}
+
+func TestParse_ScopeResourceReplayPreservesBorderNoneAndResolvesLatePen(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page border="late" border-top="none">
+    <pen id="late" color="Gold" width="2pt" />
+    <label>Late pen</label>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	if page.border == nil || page.border.color != NamedColor("Gold") || page.border.width != 2 {
+		t.Fatalf("late aggregate border = %#v, want resolved Gold 2pt pen", page.border)
+	}
+	if !page.borderSideSet[topSide] || page.borders[topSide] != nil {
+		t.Fatalf("top border = %#v set=%v, want replayed none", page.borders[topSide], page.borderSideSet[topSide])
 	}
 }
 

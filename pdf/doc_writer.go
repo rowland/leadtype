@@ -860,6 +860,11 @@ func (dw *DocWriter) MoveTo(x, y float64) {
 	dw.CurPage().MoveTo(x, y)
 }
 
+// CurvePoints appends one or more cubic Bezier segments to the current path.
+func (dw *DocWriter) CurvePoints(points []Location) error {
+	return dw.CurPage().CurvePoints(points)
+}
+
 func (dw *DocWriter) PointsForCircle(x, y, r float64) []Location {
 	return dw.CurPage().PointsForCircle(x, y, r)
 }

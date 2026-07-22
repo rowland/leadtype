@@ -54,6 +54,172 @@ func TestStdWidget_SetAttrs_ParsesSideSpecificBorders(t *testing.T) {
 	}
 }
 
+func TestStdWidget_SetAttrs_ParsesExactLowercaseNoneForBorders(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+	widget := &StdWidget{}
+	widget.SetScope(scope)
+
+	widget.SetAttrs(map[string]string{"border": "solid", "border-top": "dashed"})
+	widget.SetAttrs(map[string]string{"border": "  none  ", "border-top": "none"})
+	if widget.border != nil || !widget.borderSet {
+		t.Fatalf("aggregate border = %#v set=%v, want explicit none", widget.border, widget.borderSet)
+	}
+	if widget.borders[topSide] != nil || !widget.borderSideSet[topSide] {
+		t.Fatalf("top border = %#v set=%v, want explicit none", widget.borders[topSide], widget.borderSideSet[topSide])
+	}
+	if _, ok := scope.StyleFor("pen_none"); ok {
+		t.Fatal("lowercase none unexpectedly registered a pen style")
+	}
+
+	widget.SetAttrs(map[string]string{"border.color": "Red", "border-top.width": "3pt"})
+	if widget.border != nil || widget.borders[topSide] != nil {
+		t.Fatalf("subattributes revived disabled borders: aggregate=%#v top=%#v", widget.border, widget.borders[topSide])
+	}
+
+	widget.SetAttrs(map[string]string{"border": "dotted", "border-top": "solid"})
+	if widget.border == nil || widget.borders[topSide] == nil {
+		t.Fatalf("explicit pens did not revive borders: aggregate=%#v top=%#v", widget.border, widget.borders[topSide])
+	}
+}
+
+func TestStdWidget_SetAttrs_NoneIsCaseSensitive(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+	widget := &StdWidget{}
+	widget.SetScope(scope)
+
+	widget.SetAttrs(map[string]string{"border": "None", "border-left": "NONE"})
+	if widget.border == nil || widget.borders[leftSide] == nil {
+		t.Fatalf("differently cased pen names were treated as none: aggregate=%#v left=%#v", widget.border, widget.borders[leftSide])
+	}
+}
+
+func TestStdWidget_DrawBorder_SideNoneSuppressesAggregateEdge(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetLeft(10)
+	widget.SetTop(20)
+	widget.SetWidth(120)
+	widget.SetHeight(40)
+	widget.SetAttrs(map[string]string{"border": "solid", "border-top": "none"})
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := widget.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 1 || w.strokes != 1 || len(w.rectPages) != 0 {
+		t.Fatalf("edge drawing paths/strokes/rectangles = %d/%d/%d, want 1/1/0", w.pathRuns, w.strokes, len(w.rectPages))
+	}
+}
+
+func TestStdWidget_DrawBorder_SideCanOverrideDisabledAggregate(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetWidth(100)
+	widget.SetHeight(30)
+	widget.SetAttrs(map[string]string{"border": "none", "border-bottom": "solid"})
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := widget.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 1 || w.strokes != 1 || len(w.rectPages) != 0 {
+		t.Fatalf("edge drawing paths/strokes/rectangles = %d/%d/%d, want 1/1/0", w.pathRuns, w.strokes, len(w.rectPages))
+	}
+}
+
+func TestStdWidget_DrawBorder_ClosedAggregateRetainsRoundedRectanglePath(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetWidth(100)
+	widget.SetHeight(30)
+	widget.SetAttrs(map[string]string{"border": "solid", "corners": "5pt"})
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := widget.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 0 || len(w.rectPages) != 1 {
+		t.Fatalf("aggregate drawing paths/rectangles = %d/%d, want 0/1", w.pathRuns, len(w.rectPages))
+	}
+}
+
+func TestStdWidget_DrawBorder_SideOverridesPreserveCornersAndGroupMatchingEdges(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetWidth(100)
+	widget.SetHeight(30)
+	widget.SetAttrs(map[string]string{"border": "solid", "border-top": "none", "corners": "5pt"})
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := widget.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 1 || w.strokes != 1 {
+		t.Fatalf("matching edge paths/strokes = %d/%d, want 1/1", w.pathRuns, w.strokes)
+	}
+	if w.curves != 4 {
+		t.Fatalf("rounded corner curves = %d, want 4", w.curves)
+	}
+}
+
+func TestStdWidget_DrawBorder_ExplicitMatchingSideKeepsClosedRoundedPath(t *testing.T) {
+	widget := &StdWidget{}
+	widget.SetWidth(100)
+	widget.SetHeight(30)
+	widget.SetAttrs(map[string]string{"border": "solid", "border-top": "solid", "corners": "5pt"})
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := widget.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 0 || len(w.rectPages) != 1 {
+		t.Fatalf("matching closed border paths/rectangles = %d/%d, want 0/1", w.pathRuns, len(w.rectPages))
+	}
+}
+
+func TestStdWidget_DrawBorder_DifferentPensSplitRoundedCornersBetweenRuns(t *testing.T) {
+	scope := &Scope{}
+	scope.SetParentScope(&defaultScope)
+	widget := &StdWidget{}
+	widget.SetScope(scope)
+	widget.SetWidth(100)
+	widget.SetHeight(30)
+	widget.SetAttrs(map[string]string{"border": "solid", "border-bottom": "dashed", "corners": "5pt"})
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := widget.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 2 || w.strokes != 2 || len(w.rectPages) != 0 {
+		t.Fatalf("different-pen paths/strokes/rectangles = %d/%d/%d, want 2/2/0", w.pathRuns, w.strokes, len(w.rectPages))
+	}
+	if w.curves != 6 {
+		t.Fatalf("whole and split corner curves = %d, want 6", w.curves)
+	}
+}
+
+func TestParse_BorderNoneAppliesToPageContainerAndShape(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page border="none">
+    <vbox border="none">
+      <circle border="none" width="20" height="20" />
+    </vbox>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := doc.Root().Page(0)
+	container := page.children[0].(*StdContainer)
+	shape := container.children[0].(*StdCircle)
+	for name, widget := range map[string]*StdWidget{
+		"page": &page.StdWidget, "container": &container.StdWidget, "shape": &shape.StdWidget,
+	} {
+		if !widget.borderSet || widget.border != nil {
+			t.Fatalf("%s border = %#v set=%v, want explicit none", name, widget.border, widget.borderSet)
+		}
+	}
+}
+
 func TestStdWidget_SetAttrs_ClonesBorderForBorderPrefixOverrides(t *testing.T) {
 	scope := &Scope{}
 	scope.SetParentScope(&defaultScope)
@@ -202,6 +368,7 @@ func TestStdWidget_DrawBorder_AppliesGradientSidePenInWidgetBox(t *testing.T) {
 	widget.SetTop(20)
 	widget.SetWidth(120)
 	widget.SetHeight(40)
+	widget.border = &PenStyle{pattern: "solid"}
 	widget.borders[rightSide] = &PenStyle{
 		kind: PenKindLinearGradient,
 		linearGradient: &pdf.LinearGradient{
@@ -212,13 +379,17 @@ func TestStdWidget_DrawBorder_AppliesGradientSidePenInWidgetBox(t *testing.T) {
 		},
 		linearPct: &linearGradientPct{X0: float64Ptr(0), Y0: float64Ptr(0), X1: float64Ptr(0), Y1: float64Ptr(100)},
 	}
-	writer := &labelTestWriter{}
+	widget.borderSideSet[rightSide] = true
+	writer := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
 
 	if err := widget.DrawBorder(writer); err != nil {
 		t.Fatal(err)
 	}
 	if len(writer.lineLinear) != 1 {
 		t.Fatalf("line linear gradient count = %d, want 1", len(writer.lineLinear))
+	}
+	if writer.pathRuns != 2 || writer.strokes != 2 || len(writer.rectPages) != 0 {
+		t.Fatalf("edge drawing paths/strokes/rectangles = %d/%d/%d, want 2/2/0", writer.pathRuns, writer.strokes, len(writer.rectPages))
 	}
 	got := writer.lineLinear[0]
 	if got.X0 != 10 || got.Y0 != 20 || got.X1 != 10 || got.Y1 != 60 {

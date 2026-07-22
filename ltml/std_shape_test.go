@@ -28,6 +28,7 @@ type shapeTestWriter struct {
 	inPath   bool
 	strokes  int
 	pathRuns int
+	curves   int
 }
 
 func (w *shapeTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
@@ -105,6 +106,11 @@ func (w *shapeTestWriter) Path(fn func()) error {
 	return nil
 }
 
+func (w *shapeTestWriter) CurvePoints(points []pdf.Location) error {
+	w.curves++
+	return nil
+}
+
 func (w *shapeTestWriter) Stroke() error {
 	if !w.inPath {
 		t := w.t
@@ -159,6 +165,21 @@ func TestStdCircle_DrawContent_RejectsSweepGradientFill(t *testing.T) {
 
 	if err := circle.DrawContent(&shapeTestWriter{}); err == nil {
 		t.Fatal("expected sector-only sweep-gradient error")
+	}
+}
+
+func TestStdCircle_DrawContent_BorderNoneDisablesShapeOutline(t *testing.T) {
+	circle := &StdCircle{}
+	circle.SetWidth(40)
+	circle.SetHeight(40)
+	circle.SetAttrs(map[string]string{"border": "none", "fill": "Gold"})
+	w := &shapeTestWriter{}
+
+	if err := circle.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.calls) != 1 || w.calls[0].border || !w.calls[0].fill {
+		t.Fatalf("shape calls = %#v, want fill without border", w.calls)
 	}
 }
 

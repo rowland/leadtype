@@ -251,6 +251,7 @@ func (w *labelTestWriter) Path(fn func()) error {
 	fn()
 	return nil
 }
+func (w *labelTestWriter) CurvePoints(points []pdf.Location) error { return nil }
 func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
 	return nil
 }
@@ -423,6 +424,22 @@ func TestStdLabel_DrawContent_TextFillClipsAndPaintsSolidBrush(t *testing.T) {
 	}
 	if len(w.fillRectPages) != 1 {
 		t.Fatalf("fill rect count = %d, want 1", len(w.fillRectPages))
+	}
+}
+
+func TestStdLabel_DrawBorder_StraightSectorLabelUsesSideNonePrecedence(t *testing.T) {
+	label := &StdLabel{}
+	label.SetWidth(100)
+	label.SetHeight(30)
+	label.SetAttrs(map[string]string{"border": "solid", "border-right": "none"})
+	label.sectorPlacement = &sectorLabelPlacement{straight: true, boxWidth: 100, boxHeight: 30}
+	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+
+	if err := label.DrawBorder(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 1 || w.strokes != 1 || len(w.rectPages) != 0 {
+		t.Fatalf("edge drawing paths/strokes/rectangles = %d/%d/%d, want 1/1/0", w.pathRuns, w.strokes, len(w.rectPages))
 	}
 }
 

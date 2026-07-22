@@ -473,6 +473,9 @@ precedence over the aggregate border. `border-top`/`border-outer` paints the out
 paint the two radial edges. For `sweep="ccw"`, left is start and right is end;
 for `sweep="cw"`, right is start and left is end. A full-circle sector can
 therefore use only `border-outer` and `border-inner` to avoid a radial seam.
+The exact lowercase value `none` disables an aggregate or individual edge;
+for example, `border="solid" border-inner="none"` leaves the other sector
+edges intact.
 
 An explicit sector contains widgets, not text. Nonblank text and inline-only
 elements directly inside `<sector>` are errors; wrap them in `<label>`.
@@ -1038,6 +1041,25 @@ auto-generated solid pen for that color:
 ```xml
 <rect border="red" />
 ```
+
+The exact lowercase value `none` disables a standard widget border. Surrounding
+whitespace is ignored, but differently cased values are ordinary pen names.
+Individual sides override the aggregate border, so this draws three connected
+edges and suppresses the top edge:
+
+```xml
+<label border="solid" border-top="none">Three-sided box</label>
+```
+
+Rounded `corners` remain active when individual sides are specified. Contiguous
+edges with the same effective pen are drawn as one stroke, preserving their
+corner joins. Adjacent edges with different pens meet at the midpoint of their
+shared corner; the pens' endcap styles control that transition. An explicitly
+disabled border remains disabled when only subattributes such as
+`border.color` or `border-top.width` are applied later. Supply an explicit pen
+value such as `border="solid"` or `border-top="dashed"` to re-enable that
+property. Side declarations remain independent, so `border="none"
+border-bottom="solid"` draws only the bottom edge.
 
 ---
 

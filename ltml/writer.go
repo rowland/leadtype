@@ -22,6 +22,7 @@ type Writer interface {
 	CompressEmbeddedFonts(bool) *pdf.DocWriter
 	CompressPages(bool) *pdf.DocWriter
 	CompressToUnicode(bool) *pdf.DocWriter
+	CurvePoints([]pdf.Location) error
 	DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error
 	DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error

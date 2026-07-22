@@ -72,6 +72,7 @@ func (w *layoutProbeWriter) CompressPages(value bool) *pdf.DocWriter {
 func (w *layoutProbeWriter) CompressToUnicode(value bool) *pdf.DocWriter {
 	return w.base.CompressToUnicode(value)
 }
+func (w *layoutProbeWriter) CurvePoints(points []pdf.Location) error { return nil }
 func (w *layoutProbeWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	return nil
 }

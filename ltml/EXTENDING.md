@@ -436,6 +436,9 @@ type Writer interface {
     // Drawing
     MoveTo(x, y float64)
     LineTo(x, y float64)
+    CurvePoints(points []pdf.Location) error
+    Path(func()) error
+    Stroke() error
     Rectangle2(x, y, w, h float64, stroke, fill bool, corners Corners, ...) error
     SetFillColor(colors.Color)
     SetFillLinearGradient(*pdf.LinearGradient) error

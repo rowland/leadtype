@@ -1,0 +1,83 @@
+<ltml page-size="letter">
+  <pen id="frame" color="#334155" width="3pt" />
+  <pen id="accent" color="#dc2626" width="5pt" />
+  <pen id="gradient-edge" kind="linear-gradient" width="6pt"
+       x0="0%" y0="50%" x1="100%" y1="50%"
+       stops="0:#2563eb,1:#db2777" />
+
+  <style>
+    .example {
+      width: 3.15in;
+      height: 0.9in;
+      padding: 10pt;
+      fill: #f8fafc;
+      border: frame;
+      text-align: center;
+      text-valign: middle;
+    }
+    .shape-example {
+      width: 0.72in;
+      height: 0.72in;
+      fill: LightSkyBlue;
+      border: frame;
+    }
+  </style>
+
+  <page margin="0.55in" layout="vbox" layout.vpadding="16pt">
+    <label font.size="20pt" font.weight="Bold">Border none</label>
+    <p>
+      Exact lowercase <code>none</code> disables one border property. An explicit
+      side overrides the aggregate border; unspecified sides continue to use it.
+    </p>
+
+    <hbox width="100%" layout.hpadding="0.2in">
+      <label class="example" border-top="none">
+        Aggregate frame, top disabled
+      </label>
+      <label class="example" border="none" border-bottom="accent">
+        Aggregate disabled, bottom restored
+      </label>
+    </hbox>
+
+    <hbox width="100%" layout.hpadding="0.2in">
+      <label class="example" corners="16pt">
+        Aggregate border keeps rounded corners
+      </label>
+      <label class="example" border-bottom="gradient-edge" corners="16pt">
+        Side override preserves corners
+      </label>
+    </hbox>
+
+    <hbox width="100%" height="1.15in" layout.hpadding="0.18in">
+      <vbox width="1.05in" layout.vpadding="4pt">
+        <circle class="shape-example" align-self="center" />
+        <label width="100%" text-align="center" font.size="8pt">Style border</label>
+      </vbox>
+      <vbox width="1.05in" layout.vpadding="4pt">
+        <circle class="shape-example" border="none" align-self="center" />
+        <label width="100%" text-align="center" font.size="8pt">Overridden</label>
+      </vbox>
+      <vbox width="4.2in" layout.vpadding="5pt">
+        <label font.weight="Bold">Shapes</label>
+        <p>The second circle disables the aggregate outline supplied by their shared style.</p>
+      </vbox>
+    </hbox>
+
+    <label width="100%" text-align="center" font.weight="Bold">Sector edge precedence</label>
+    <disc width="3.6in" height="3.6in" r0="0.85in" rows="1" cols="4"
+          base-angle="-90" align-self="center">
+      <sector fill="AliceBlue" border="frame" border-outer="none">
+        <label font.size="9pt">Outer off</label>
+      </sector>
+      <sector fill="HoneyDew" border="none" border-inner="accent">
+        <label font.size="9pt">Inner only</label>
+      </sector>
+      <sector fill="LemonChiffon" border="frame" border-left="none">
+        <label font.size="9pt">Logical side off</label>
+      </sector>
+      <sector fill="LavenderBlush" border="none" border-start="accent">
+        <label font.size="9pt">Start only</label>
+      </sector>
+    </disc>
+  </page>
+</ltml>
