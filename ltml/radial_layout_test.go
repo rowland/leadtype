@@ -1843,8 +1843,9 @@ func TestStdSector_LabelOffsetsUseSectorEdges(t *testing.T) {
 	wantRadius := 63.0
 	wantAngle := math.Asin(5/wantRadius) * 180 / math.Pi
 	wantX, wantY := radialPointAt(100, 100, wantRadius, wantAngle)
-	if !floatEquals(label.sectorPlacement.anchorX, wantX) || !floatEquals(label.sectorPlacement.anchorY, wantY) {
-		t.Fatalf("offset anchor = (%v,%v), want (%v,%v)", label.sectorPlacement.anchorX, label.sectorPlacement.anchorY, wantX, wantY)
+	layout := sector.cachedLabelLayout(label)
+	if !floatEquals(layout.anchorX, wantX) || !floatEquals(layout.anchorY, wantY) {
+		t.Fatalf("offset anchor = (%v,%v), want (%v,%v)", layout.anchorX, layout.anchorY, wantX, wantY)
 	}
 }
 
@@ -2075,25 +2076,106 @@ func TestStdSector_LabelPaintRecomputesInvalidatedPlacementBeforeBackground(t *t
 	if err := label.LayoutWidget(w); err != nil {
 		t.Fatal(err)
 	}
-	originalX := label.sectorPlacement.anchorX
+	originalX := sector.cachedLabelLayout(label).anchorX
 
 	label.SetAttrs(map[string]string{"units": "pt", "start": "12"})
-	if label.sectorPlacement != nil {
+	if sector.cachedLabelLayout(label) != nil {
 		t.Fatal("SetAttrs did not invalidate sector placement")
 	}
 	if err := label.paintWithTransform(w, func() error {
-		if label.sectorPlacement == nil {
+		if sector.cachedLabelLayout(label) == nil {
 			t.Fatal("placement was not restored before paint phases")
 		}
 		return label.PaintBackground(w)
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if got := label.sectorPlacement.anchorX; floatEquals(got, originalX) {
+	if got := sector.cachedLabelLayout(label).anchorX; floatEquals(got, originalX) {
 		t.Fatalf("recomputed anchor x = %v, want offset from %v", got, originalX)
 	}
 	if len(w.fillRectPages) != 1 {
 		t.Fatalf("background fills = %d, want one after lazy placement", len(w.fillRectPages))
+	}
+}
+
+func TestStdSector_TextAttributeChangesInvalidateOnlyChangedChild(t *testing.T) {
+	sector := &StdSector{}
+	firstLabel := &StdLabel{}
+	secondLabel := &StdLabel{}
+	paragraph := &StdParagraph{}
+	for _, child := range []WantsContainer{firstLabel, secondLabel, paragraph} {
+		if err := child.SetContainer(sector); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	firstLayout := &sectorLabelLayout{}
+	secondLayout := &sectorLabelLayout{}
+	paragraphLayout := &sectorParagraphLayout{}
+	sector.labelLayouts = map[*StdLabel]*sectorLabelLayout{
+		firstLabel:  firstLayout,
+		secondLabel: secondLayout,
+	}
+	sector.paragraphLayouts = map[*StdParagraph]*sectorParagraphLayout{
+		paragraph: paragraphLayout,
+	}
+
+	firstLabel.SetAttrs(map[string]string{"angle": "0"})
+	if sector.cachedLabelLayout(firstLabel) != nil {
+		t.Fatal("changed label layout was not invalidated")
+	}
+	if sector.cachedLabelLayout(secondLabel) != secondLayout {
+		t.Fatal("sibling label layout was invalidated")
+	}
+	if sector.paragraphLayouts[paragraph] != paragraphLayout {
+		t.Fatal("paragraph layout was invalidated by a label change")
+	}
+
+	sector.setLabelLayout(firstLabel, firstLayout)
+	paragraph.SetAttrs(map[string]string{"angle": "0"})
+	if sector.paragraphLayouts[paragraph] != nil {
+		t.Fatal("changed paragraph layout was not invalidated")
+	}
+	if sector.cachedLabelLayout(firstLabel) != firstLayout ||
+		sector.cachedLabelLayout(secondLabel) != secondLayout {
+		t.Fatal("label layout was invalidated by a paragraph change")
+	}
+}
+
+func TestStdSector_GeometryChangeInvalidatesAllTextLayouts(t *testing.T) {
+	sector := &StdSector{
+		labelLayouts: map[*StdLabel]*sectorLabelLayout{
+			{}: {},
+		},
+		paragraphLayouts: map[*StdParagraph]*sectorParagraphLayout{
+			{}: {},
+		},
+	}
+	sector.setGeometry(radialSectorGeometry{
+		CenterX: 100, CenterY: 100,
+		InnerRadius: 20, OuterRadius: 60,
+		StartAngle: 0, EndAngle: 90,
+	})
+	if sector.labelLayouts != nil || sector.paragraphLayouts != nil {
+		t.Fatal("geometry change did not invalidate all text layouts")
+	}
+}
+
+func TestStdLabelAndParagraph_OutsideSectorDoNotUseSectorLayouts(t *testing.T) {
+	container := &StdContainer{}
+	label := &StdLabel{}
+	paragraph := &StdParagraph{}
+	if err := label.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	if err := paragraph.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+
+	label.SetAttrs(map[string]string{"angle": "0"})
+	paragraph.SetAttrs(map[string]string{"angle": "0"})
+	if label.cachedSectorLayout() != nil {
+		t.Fatal("ordinary label unexpectedly has a sector layout")
 	}
 }
 
@@ -2452,7 +2534,7 @@ func TestStdSector_StaticWidgetsPackAndPositionedOverlayLeavesFlow(t *testing.T)
 			}
 		}
 	}
-	if overlay.sectorPlacement == nil {
+	if sector.cachedLabelLayout(overlay) == nil {
 		t.Fatal("positioned overlay was not laid out")
 	}
 }
@@ -2474,8 +2556,10 @@ func TestStdSector_StaticCurvedLabelsReceiveDistinctFlowAnchors(t *testing.T) {
 	if err := sector.DrawContent(w); err != nil {
 		t.Fatal(err)
 	}
-	if w.curvedCount != 2 || floatEquals(first.sectorPlacement.angle, second.sectorPlacement.angle) {
-		t.Fatalf("curved flow draws/angles = %d, %v/%v", w.curvedCount, first.sectorPlacement.angle, second.sectorPlacement.angle)
+	firstLayout := sector.cachedLabelLayout(first)
+	secondLayout := sector.cachedLabelLayout(second)
+	if w.curvedCount != 2 || floatEquals(firstLayout.angle, secondLayout.angle) {
+		t.Fatalf("curved flow draws/angles = %d, %v/%v", w.curvedCount, firstLayout.angle, secondLayout.angle)
 	}
 }
 

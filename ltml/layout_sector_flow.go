@@ -87,12 +87,11 @@ func (s *StdSector) layoutStaticFlowPass(w Writer) (bool, error) {
 
 	s.flowSlots = best.slots
 	s.flowLabelAnchors = best.labelAnchors
-	s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+	s.invalidateTextLayouts()
 	stable := true
 	for _, item := range items {
 		slot := best.slots[item.widget]
 		if label, ok := item.widget.(*StdLabel); ok {
-			label.sectorPlacement = nil
 			if err := label.LayoutWidget(w); err != nil {
 				return false, err
 			}
@@ -103,7 +102,7 @@ func (s *StdSector) layoutStaticFlowPass(w Writer) (bool, error) {
 		if paragraph, ok := item.widget.(*StdParagraph); ok &&
 			(paragraph.curvedInSector() || paragraph.HeightMode() == DimUnspecified || paragraph.HeightMode() == DimAuto) {
 			paragraph.ClearResolvedHeight()
-			s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+			s.paragraphLayouts = nil
 			height, err := paragraph.PreferredHeight(w)
 			if err != nil {
 				return false, err
@@ -143,7 +142,7 @@ func (s *StdSector) sectorFlowItems(widgets []Widget, w Writer) ([]sectorFlowIte
 		if paragraph, ok := child.(*StdParagraph); ok {
 			item.fullBand = true
 			if paragraph.curvedInSector() {
-				s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+				s.paragraphLayouts = nil
 				layout := s.sectorParagraphLayoutFor(paragraph, w)
 				if layout.err != nil {
 					return nil, layout.err
@@ -162,7 +161,7 @@ func (s *StdSector) sectorFlowItems(widgets []Widget, w Writer) ([]sectorFlowIte
 			} else {
 				child.SetTop(s.geometry.AnchorY + centerY)
 			}
-			s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+			s.paragraphLayouts = nil
 			if child.HeightMode() == DimUnspecified || child.HeightMode() == DimAuto {
 				child.ClearResolvedHeight()
 			}

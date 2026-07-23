@@ -43,7 +43,7 @@ const (
 	sectorParagraphFlowMixed
 )
 
-type sectorLabelPlacement struct {
+type sectorLabelLayout struct {
 	anchorX   float64
 	anchorY   float64
 	radius    float64
@@ -113,6 +113,7 @@ type StdSector struct {
 	contentBounds      radialBounds
 	contentPolygon     []radialPoint
 	contentRotation    float64
+	labelLayouts       map[*StdLabel]*sectorLabelLayout
 	paragraphLayouts   map[*StdParagraph]*sectorParagraphLayout
 	sectorBorders      [4]*PenStyle
 	sectorBorderSet    [4]bool
@@ -378,6 +379,33 @@ func (s *StdSector) SetAttrs(attrs map[string]string) {
 	s.setSectorBorderResourceAttrs(attrs, s.Units())
 }
 
+func (s *StdSector) cachedLabelLayout(label *StdLabel) *sectorLabelLayout {
+	if s.labelLayouts == nil {
+		return nil
+	}
+	return s.labelLayouts[label]
+}
+
+func (s *StdSector) setLabelLayout(label *StdLabel, layout *sectorLabelLayout) {
+	if s.labelLayouts == nil {
+		s.labelLayouts = make(map[*StdLabel]*sectorLabelLayout)
+	}
+	s.labelLayouts[label] = layout
+}
+
+func (s *StdSector) invalidateLabelLayout(label *StdLabel) {
+	delete(s.labelLayouts, label)
+}
+
+func (s *StdSector) invalidateParagraphLayout(paragraph *StdParagraph) {
+	delete(s.paragraphLayouts, paragraph)
+}
+
+func (s *StdSector) invalidateTextLayouts() {
+	s.labelLayouts = nil
+	s.paragraphLayouts = nil
+}
+
 func (s *StdSector) resetResourceAttrs() {
 	s.StdContainer.resetResourceAttrs()
 	s.sectorBorders = [4]*PenStyle{}
@@ -567,7 +595,7 @@ func (s *StdSector) layoutSectorLabel(label *StdLabel, w Writer) error {
 	if arcWidth <= 0 {
 		arcWidth = s.availableArcWidth(radius, angle, align)
 	}
-	label.sectorPlacement = &sectorLabelPlacement{
+	s.setLabelLayout(label, &sectorLabelLayout{
 		anchorX:   anchorX,
 		anchorY:   anchorY,
 		radius:    radius,
@@ -579,18 +607,18 @@ func (s *StdSector) layoutSectorLabel(label *StdLabel, w Writer) error {
 		straight:  straight,
 		textAngle: textAngle,
 		arcWidth:  arcWidth,
-	}
+	})
 	return nil
 }
 
 func (s *StdSector) drawSectorLabel(label *StdLabel, w Writer) error {
-	placement := label.sectorPlacement
+	placement := s.cachedLabelLayout(label)
 	textAngle, straight := label.sectorTextAngle()
 	if placement == nil || placement.straight != straight || (straight && !floatEquals(placement.textAngle, textAngle)) {
 		if err := s.layoutSectorLabel(label, w); err != nil {
 			return err
 		}
-		placement = label.sectorPlacement
+		placement = s.cachedLabelLayout(label)
 	}
 	if placement.straight {
 		return label.drawBoxLabelContent(w, placement.textAngle)
@@ -802,6 +830,9 @@ func (s *StdSector) sectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorP
 		layout = s.curvedSectorParagraphLayoutFor(p, w)
 	} else {
 		layout = s.horizontalSectorParagraphLayoutFor(p, w)
+	}
+	if s.paragraphLayouts == nil {
+		s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
 	}
 	s.paragraphLayouts[p] = layout
 	return layout
@@ -1154,11 +1185,7 @@ func (s *StdSector) setGeometry(geometry radialSectorGeometry) {
 	s.SetTop(s.geometry.AnchorY + s.localBounds.MinY)
 	s.SetWidth(s.localBounds.MaxX - s.localBounds.MinX)
 	s.SetHeight(s.localBounds.MaxY - s.localBounds.MinY)
-	for _, child := range s.Widgets() {
-		if label, ok := child.(*StdLabel); ok {
-			label.sectorPlacement = nil
-		}
-	}
+	s.invalidateTextLayouts()
 	s.flowSlots = nil
 	s.flowLabelAnchors = nil
 }
@@ -1204,7 +1231,7 @@ func (s *StdSector) rebuildContentGeometry() {
 	points := s.buildContentPagePolygon()
 	s.contentPolygon = s.localizePolygon(points)
 	s.contentBounds = boundsForPoints(s.contentPolygon)
-	s.paragraphLayouts = make(map[*StdParagraph]*sectorParagraphLayout)
+	s.invalidateTextLayouts()
 }
 
 func (s *StdSector) buildContentPagePolygon() []radialPoint {

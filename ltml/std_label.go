@@ -14,19 +14,18 @@ import (
 
 type StdLabel struct {
 	StdContainer
-	textPieces      []textPiece
-	richText        *rich_text.RichText
-	textFill        *BrushStyle
-	shrinkToFit     bool
-	angle           float64
-	angleSet        bool
-	facing          sectorFacing
-	facingSet       bool
-	textAlign       HAlign
-	textAlignSet    bool
-	textVAlign      VAlign
-	textVAlignSet   bool
-	sectorPlacement *sectorLabelPlacement
+	textPieces    []textPiece
+	richText      *rich_text.RichText
+	textFill      *BrushStyle
+	shrinkToFit   bool
+	angle         float64
+	angleSet      bool
+	facing        sectorFacing
+	facingSet     bool
+	textAlign     HAlign
+	textAlignSet  bool
+	textVAlign    VAlign
+	textVAlignSet bool
 }
 
 func (l *StdLabel) AddText(text string) {
@@ -180,29 +179,29 @@ func (l *StdLabel) sectorTextFacing() sectorFacing {
 }
 
 func (l *StdLabel) Left() float64 {
-	if l.sectorPlacement != nil {
-		return l.sectorPlacement.boxLeft
+	if layout := l.cachedSectorLayout(); layout != nil {
+		return layout.boxLeft
 	}
 	return l.StdWidget.Left()
 }
 
 func (l *StdLabel) Right() float64 {
-	if l.sectorPlacement != nil {
-		return l.sectorPlacement.boxLeft + l.sectorPlacement.boxWidth
+	if layout := l.cachedSectorLayout(); layout != nil {
+		return layout.boxLeft + layout.boxWidth
 	}
 	return l.StdWidget.Right()
 }
 
 func (l *StdLabel) Top() float64 {
-	if l.sectorPlacement != nil {
-		return l.sectorPlacement.boxTop
+	if layout := l.cachedSectorLayout(); layout != nil {
+		return layout.boxTop
 	}
 	return l.StdWidget.Top()
 }
 
 func (l *StdLabel) Bottom() float64 {
-	if l.sectorPlacement != nil {
-		return l.sectorPlacement.boxTop + l.sectorPlacement.boxHeight
+	if layout := l.cachedSectorLayout(); layout != nil {
+		return layout.boxTop + layout.boxHeight
 	}
 	return l.StdWidget.Bottom()
 }
@@ -211,8 +210,8 @@ func (l *StdLabel) OriginXValue() float64 {
 	if l.StdWidget.originX == OriginXCustom {
 		return l.StdWidget.OriginXValue()
 	}
-	if l.sectorPlacement != nil {
-		return l.sectorPlacement.anchorX
+	if layout := l.cachedSectorLayout(); layout != nil {
+		return layout.anchorX
 	}
 	return l.StdWidget.OriginXValue()
 }
@@ -221,22 +220,24 @@ func (l *StdLabel) OriginYValue() float64 {
 	if l.StdWidget.originY == OriginYCustom {
 		return l.StdWidget.OriginYValue()
 	}
-	if l.sectorPlacement != nil {
-		return l.sectorPlacement.anchorY
+	if layout := l.cachedSectorLayout(); layout != nil {
+		return layout.anchorY
 	}
 	return l.StdWidget.OriginYValue()
 }
 
 func (l *StdLabel) paintWithTransform(w Writer, fn func() error) error {
-	if sector, ok := l.Container().(*StdSector); ok && l.sectorPlacement == nil {
+	layout := l.cachedSectorLayout()
+	if sector, ok := l.Container().(*StdSector); ok && layout == nil {
 		if err := sector.layoutSectorLabel(l, w); err != nil {
 			return err
 		}
+		layout = sector.cachedLabelLayout(l)
 	}
-	if l.sectorPlacement == nil {
+	if layout == nil {
 		return l.StdWidget.paintWithTransform(w, fn)
 	}
-	if !l.sectorPlacement.straight || l.rotate == 0 {
+	if !layout.straight || l.rotate == 0 {
 		return fn()
 	}
 	var renderErr error
@@ -249,10 +250,11 @@ func (l *StdLabel) paintWithTransform(w Writer, fn func() error) error {
 }
 
 func (l *StdLabel) PaintBackground(w Writer) error {
-	if l.sectorPlacement == nil {
+	layout := l.cachedSectorLayout()
+	if layout == nil {
 		return l.StdWidget.PaintBackground(w)
 	}
-	if !l.sectorPlacement.straight || l.fill == nil {
+	if !layout.straight || l.fill == nil {
 		return nil
 	}
 	x, y, width, height := l.sectorBackgroundRect()
@@ -263,10 +265,11 @@ func (l *StdLabel) PaintBackground(w Writer) error {
 }
 
 func (l *StdLabel) DrawBorder(w Writer) error {
-	if l.sectorPlacement == nil {
+	layout := l.cachedSectorLayout()
+	if layout == nil {
 		return l.StdWidget.DrawBorder(w)
 	}
-	if !l.sectorPlacement.straight {
+	if !layout.straight {
 		return nil
 	}
 	x1, y1, width, height := l.sectorBackgroundRect()
@@ -286,7 +289,6 @@ func (l *StdLabel) RichText(w Writer) *rich_text.RichText {
 }
 
 func (l *StdLabel) SetAttrs(attrs map[string]string) {
-	l.sectorPlacement = nil
 	l.StdContainer.SetAttrs(attrs)
 	SetBrushStyle(&l.textFill, "text-fill", attrs, l.scope, l.Units())
 	if fit, ok := attrs["fit"]; ok {
@@ -316,6 +318,16 @@ func (l *StdLabel) SetAttrs(attrs map[string]string) {
 		l.textVAlignSet = true
 		l.textVAlign = parseLabelTextVAlign(textVAlign)
 	}
+	if sector, ok := l.Container().(*StdSector); ok {
+		sector.invalidateLabelLayout(l)
+	}
+}
+
+func (l *StdLabel) cachedSectorLayout() *sectorLabelLayout {
+	if sector, ok := l.Container().(*StdSector); ok {
+		return sector.cachedLabelLayout(l)
+	}
+	return nil
 }
 
 func (l *StdLabel) fittedRichText(w Writer) *rich_text.RichText {

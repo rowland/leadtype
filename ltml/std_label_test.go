@@ -432,7 +432,11 @@ func TestStdLabel_DrawBorder_StraightSectorLabelUsesSideNonePrecedence(t *testin
 	label.SetWidth(100)
 	label.SetHeight(30)
 	label.SetAttrs(map[string]string{"border": "solid", "border-right": "none"})
-	label.sectorPlacement = &sectorLabelPlacement{straight: true, boxWidth: 100, boxHeight: 30}
+	sector := &StdSector{}
+	if err := label.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	sector.setLabelLayout(label, &sectorLabelLayout{straight: true, boxWidth: 100, boxHeight: 30})
 	w := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
 
 	if err := label.DrawBorder(w); err != nil {

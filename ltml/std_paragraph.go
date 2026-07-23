@@ -294,6 +294,9 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 			p.facing = sectorFacingUpsideDown
 		}
 	}
+	if sector, ok := p.Container().(*StdSector); ok {
+		sector.invalidateParagraphLayout(p)
+	}
 }
 
 func (p *StdParagraph) paintTextFill(w Writer, para []*rich_text.RichText, startX, startY, width float64) error {
