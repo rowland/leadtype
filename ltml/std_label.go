@@ -158,53 +158,11 @@ func (l *StdLabel) sectorTextAngle() (float64, bool) {
 	return l.angle, l.angleSet
 }
 
-func (l *StdLabel) sectorOriginX() OriginX {
-	if l.StdWidget.originX != OriginXUnspecified {
-		return l.StdWidget.originX
-	}
-	return OriginXUnspecified
-}
-
-func (l *StdLabel) sectorAnchorOriginX() OriginX {
-	if origin := l.sectorOriginX(); origin != OriginXUnspecified {
-		return origin
-	}
-	if l.textAlignSet {
-		return originXForTextAlign(resolveTextAlign(l.textAlign, l))
-	}
-	return OriginXCenter
-}
-
-func originXForTextAlign(align HAlign) OriginX {
-	switch align {
-	case HAlignLeft:
-		return OriginXStart
-	case HAlignRight:
-		return OriginXEnd
-	default:
-		return OriginXCenter
-	}
-}
-
-func (l *StdLabel) sectorOriginY() OriginY {
-	if l.StdWidget.originY != OriginYUnspecified {
-		return l.StdWidget.originY
-	}
-	return OriginYUnspecified
-}
-
 func (l *StdLabel) sectorTextAlign() HAlign {
 	if l.textAlignSet {
 		return resolveTextAlign(l.textAlign, l)
 	}
-	switch l.sectorOriginX() {
-	case OriginXStart:
-		return HAlignLeft
-	case OriginXEnd:
-		return HAlignRight
-	default:
-		return HAlignCenter
-	}
+	return HAlignCenter
 }
 
 func (l *StdLabel) sectorTextVAlign() VAlign {
@@ -219,20 +177,6 @@ func (l *StdLabel) sectorTextFacing() sectorFacing {
 		return l.facing
 	}
 	return sectorFacingAuto
-}
-
-func (l *StdLabel) OriginX() OriginX {
-	if _, ok := l.Container().(*StdSector); ok {
-		return l.sectorAnchorOriginX()
-	}
-	return l.StdWidget.originX
-}
-
-func (l *StdLabel) OriginY() OriginY {
-	if _, ok := l.Container().(*StdSector); ok {
-		return l.sectorOriginY()
-	}
-	return l.StdWidget.originY
 }
 
 func (l *StdLabel) Left() float64 {
@@ -264,6 +208,9 @@ func (l *StdLabel) Bottom() float64 {
 }
 
 func (l *StdLabel) OriginXValue() float64 {
+	if l.StdWidget.originX == OriginXCustom {
+		return l.StdWidget.OriginXValue()
+	}
 	if l.sectorPlacement != nil {
 		return l.sectorPlacement.anchorX
 	}
@@ -271,6 +218,9 @@ func (l *StdLabel) OriginXValue() float64 {
 }
 
 func (l *StdLabel) OriginYValue() float64 {
+	if l.StdWidget.originY == OriginYCustom {
+		return l.StdWidget.OriginYValue()
+	}
 	if l.sectorPlacement != nil {
 		return l.sectorPlacement.anchorY
 	}

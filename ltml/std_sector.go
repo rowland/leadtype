@@ -63,6 +63,36 @@ type sectorFlowLabelAnchor struct {
 	arcWidth float64
 }
 
+type sectorPositionedReference struct {
+	pageX, pageY   float64
+	localX, localY float64
+	radius, angle  float64
+}
+
+type sectorAngularEdge int8
+
+const (
+	sectorAngularMidpoint sectorAngularEdge = iota
+	sectorAngularStart
+	sectorAngularEnd
+)
+
+type sectorRadialEdge int8
+
+const (
+	sectorRadialMidpoint sectorRadialEdge = iota
+	sectorRadialOuter
+	sectorRadialInner
+)
+
+type sectorPositionedChild struct {
+	angularEdge  sectorAngularEdge
+	angularInset float32
+	radialEdge   sectorRadialEdge
+	radialInset  float32
+	pageAxis     bool
+}
+
 type sectorParagraphLayoutProvider interface {
 	sectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorParagraphLayout
 	drawSectorParagraph(p *StdParagraph, w Writer, layout *sectorParagraphLayout) error
@@ -77,17 +107,18 @@ const (
 
 type StdSector struct {
 	StdContainer
-	geometry         radialSectorGeometry
-	localBounds      radialBounds
-	localPolygon     []radialPoint
-	contentBounds    radialBounds
-	contentPolygon   []radialPoint
-	contentRotation  float64
-	paragraphLayouts map[*StdParagraph]*sectorParagraphLayout
-	sectorBorders    [4]*PenStyle
-	sectorBorderSet  [4]bool
-	flowSlots        map[Widget]radialBounds
-	flowLabelAnchors map[*StdLabel]sectorFlowLabelAnchor
+	geometry           radialSectorGeometry
+	localBounds        radialBounds
+	localPolygon       []radialPoint
+	contentBounds      radialBounds
+	contentPolygon     []radialPoint
+	contentRotation    float64
+	paragraphLayouts   map[*StdParagraph]*sectorParagraphLayout
+	sectorBorders      [4]*PenStyle
+	sectorBorderSet    [4]bool
+	flowSlots          map[Widget]radialBounds
+	flowLabelAnchors   map[*StdLabel]sectorFlowLabelAnchor
+	positionedChildren map[*StdWidget]sectorPositionedChild
 }
 
 func (s *StdSector) DrawBorder(w Writer) error {
@@ -229,7 +260,63 @@ func (s *StdSector) LayoutWidget(w Writer) error {
 	if err := s.layoutStaticFlow(w); err != nil {
 		return err
 	}
-	return layoutPositionedChildren(s, w)
+	s.preparePositionedChildren()
+	return s.layoutPositionedChildren(w)
+}
+
+func (s *StdSector) layoutPositionedChildren(w Writer) error {
+	absolute, _ := printableWidgets(s, Absolute)
+	if err := layoutWidgetsWithPosition(w, absolute, Absolute); err != nil {
+		return err
+	}
+	relative, _ := printableWidgets(s, Relative)
+	for _, child := range relative {
+		if child.Printed() {
+			child.SetVisible(false)
+			continue
+		}
+		child.SetVisible(true)
+		child.SetPosition(Relative)
+		if !child.WidthIsSet() {
+			width, err := child.PreferredWidth(w)
+			if err != nil {
+				return err
+			}
+			child.ResolveWidth(width)
+		}
+		if err := child.LayoutWidget(w); err != nil {
+			return err
+		}
+		if !child.HeightIsSet() {
+			height, err := child.PreferredHeight(w)
+			if err != nil {
+				return err
+			}
+			child.ResolveHeight(height)
+		}
+	}
+	return nil
+}
+
+func (s *StdSector) preparePositionedChildren() {
+	if s.positionedChildren == nil {
+		s.positionedChildren = make(map[*StdWidget]sectorPositionedChild)
+	}
+	for _, child := range s.Widgets() {
+		base, ok := child.(interface{ sectorWidget() *StdWidget })
+		if !ok || base.sectorWidget() == nil {
+			continue
+		}
+		widget := base.sectorWidget()
+		state := s.positionedChildren[widget]
+		switch child.(type) {
+		case *StdLabel, *StdParagraph:
+			state.pageAxis = true
+		default:
+			state.pageAxis = false
+		}
+		s.positionedChildren[widget] = state
+	}
 }
 
 func (s *StdSector) PaintBackground(w Writer) error {
@@ -270,24 +357,20 @@ func (s *StdSector) PreferredWidth(w Writer) (float64, error) {
 	return s.StdContainer.PreferredWidth(w)
 }
 
-func (s *StdSector) ResolveSectorReferenceX(widget Widget) float64 {
-	x, y := s.resolveSectorReference(widget)
-	x += s.geometry.AnchorX
-	y += s.geometry.AnchorY
-	if paragraph, ok := widget.(*StdParagraph); ok && paragraph.horizontalInSector() {
-		x, _ = rotatePagePoint(x, y, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+func (s *StdSector) ResolveSectorPlacement(widget *StdWidget) sectorPositionedPlacement {
+	reference := s.resolvePositionedReference(widget)
+	anchorX, anchorY := reference.localX, reference.localY
+	if s.positionedChildren[widget].pageAxis {
+		anchorX, anchorY = reference.pageX, reference.pageY
 	}
-	return x
-}
-
-func (s *StdSector) ResolveSectorReferenceY(widget Widget) float64 {
-	x, y := s.resolveSectorReference(widget)
-	x += s.geometry.AnchorX
-	y += s.geometry.AnchorY
-	if paragraph, ok := widget.(*StdParagraph); ok && paragraph.horizontalInSector() {
-		_, y = rotatePagePoint(x, y, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+	xFactor := originXAttachmentFactor(widget.originX)
+	yFactor := originYAttachmentFactor(widget.originY)
+	return sectorPositionedPlacement{
+		boxLeft: anchorX - widget.Width()*xFactor,
+		boxTop:  anchorY - widget.Height()*yFactor,
+		anchorX: anchorX,
+		anchorY: anchorY,
 	}
-	return y
 }
 
 func (s *StdSector) SetAttrs(attrs map[string]string) {
@@ -311,6 +394,35 @@ func (s *StdSector) setSectorBorderResourceAttrs(attrs map[string]string, units 
 	s.setSectorBorderStyle(sectorBorderEnd, "border-end", attrs, units)
 	s.setSectorBorderStyle(sectorBorderInner, "border-inner", attrs, units)
 	s.setSectorBorderStyle(sectorBorderStart, "border-start", attrs, units)
+}
+
+func (s *StdSector) setChildPositionAttrs(widget *StdWidget, attrs map[string]string, units Units) {
+	if !MapHasAnyKey(attrs, "start", "end", "outer", "inner") {
+		return
+	}
+	if s.positionedChildren == nil {
+		s.positionedChildren = make(map[*StdWidget]sectorPositionedChild)
+	}
+	state := s.positionedChildren[widget]
+	// Apply the lower-priority member first so start and outer win
+	// deterministically when opposing attributes occur in the same layer.
+	if value, ok := attrs["end"]; ok {
+		state.angularEdge = sectorAngularEnd
+		state.angularInset = float32(ParseMeasurement(value, units))
+	}
+	if value, ok := attrs["start"]; ok {
+		state.angularEdge = sectorAngularStart
+		state.angularInset = float32(ParseMeasurement(value, units))
+	}
+	if value, ok := attrs["inner"]; ok {
+		state.radialEdge = sectorRadialInner
+		state.radialInset = float32(ParseMeasurement(value, units))
+	}
+	if value, ok := attrs["outer"]; ok {
+		state.radialEdge = sectorRadialOuter
+		state.radialInset = float32(ParseMeasurement(value, units))
+	}
+	s.positionedChildren[widget] = state
 }
 
 func isInlineOnlyWidget(widget Widget) bool {
@@ -410,19 +522,19 @@ func (s *StdSector) layoutSectorLabel(label *StdLabel, w Writer) error {
 	case HAlignRight:
 		xFactor = 1
 	}
-	anchorXFactor := 0.5
-	switch label.sectorAnchorOriginX() {
-	case OriginXStart:
-		anchorXFactor = 0
-	case OriginXEnd:
-		anchorXFactor = 1
+	if straight {
+		xFactor = originXAttachmentFactor(label.StdWidget.originX)
 	}
 	yFactor := 0.5
-	switch label.sectorOriginY() {
-	case OriginYTop:
-		yFactor = 0
-	case OriginYBottom:
-		yFactor = 1
+	if straight {
+		yFactor = originYAttachmentFactor(label.StdWidget.originY)
+	} else {
+		switch label.sectorTextVAlign() {
+		case VAlignTop:
+			yFactor = 0
+		case VAlignBottom:
+			yFactor = 1
+		}
 	}
 
 	var anchorX, anchorY, boxLeft, boxTop, arcWidth float64
@@ -430,7 +542,7 @@ func (s *StdSector) layoutSectorLabel(label *StdLabel, w Writer) error {
 		anchorX, anchorY, arcWidth = flowAnchor.x, flowAnchor.y, flowAnchor.arcWidth
 		boxLeft, boxTop = anchorX-boxWidth*xFactor, anchorY-boxHeight*yFactor
 	} else if slot, flowing := s.flowSlots[label]; flowing && label.Position() == Static {
-		localAnchorX := slot.MinX + (slot.MaxX-slot.MinX)*anchorXFactor
+		localAnchorX := slot.MinX + (slot.MaxX-slot.MinX)*xFactor
 		localAnchorY := slot.MinY + (slot.MaxY-slot.MinY)*yFactor
 		anchorX, anchorY = rotatePagePoint(s.geometry.AnchorX+localAnchorX, s.geometry.AnchorY+localAnchorY,
 			s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
@@ -440,9 +552,8 @@ func (s *StdSector) layoutSectorLabel(label *StdLabel, w Writer) error {
 		band := s.contentBandForHeight(slot.MinY, slot.MaxY-slot.MinY)
 		arcWidth = max(min(slot.MaxX, band.MaxX)-max(slot.MinX, band.MinX), 0)
 	} else {
-		localX := s.ResolveSectorReferenceX(label) + s.labelOffsetX(label)
-		localY := s.ResolveSectorReferenceY(label) + s.labelOffsetY(label)
-		anchorX, anchorY = rotatePagePoint(localX, localY, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		reference := s.resolvePositionedReference(&label.StdWidget)
+		anchorX, anchorY = reference.pageX, reference.pageY
 		boxLeft, boxTop = anchorX-boxWidth*xFactor, anchorY-boxHeight*yFactor
 	}
 	dx := anchorX - s.geometry.CenterX
@@ -577,26 +688,6 @@ func sectorCurvedTextOrientation(facing sectorFacing, belowCenter bool) (pdf.Cur
 	}
 }
 
-func (s *StdSector) labelOffsetX(label *StdLabel) float64 {
-	offset := 0.0
-	if label.sides[leftSide].IsSet {
-		offset = label.sides[leftSide].Float64()
-	} else if label.sides[rightSide].IsSet {
-		offset = label.sides[rightSide].Float64()
-	}
-	return offset + label.shiftXOffset()
-}
-
-func (s *StdSector) labelOffsetY(label *StdLabel) float64 {
-	offset := 0.0
-	if label.sides[topSide].IsSet {
-		offset = label.sides[topSide].Float64()
-	} else if label.sides[bottomSide].IsSet {
-		offset = label.sides[bottomSide].Float64()
-	}
-	return offset + label.shiftYOffset()
-}
-
 func (s *StdSector) withSectorClip(w Writer, fn func() error) error {
 	if len(s.contentPolygon) < 3 {
 		return nil
@@ -637,54 +728,69 @@ func (s *StdSector) buildContentPath(w Writer) error {
 	return nil
 }
 
-func (s *StdSector) resolveSectorReference(widget Widget) (float64, float64) {
-	xOrigin, yOrigin := widget.OriginX(), widget.OriginY()
+func originXAttachmentFactor(origin OriginX) float64 {
+	switch origin {
+	case OriginXCenter:
+		return 0.5
+	case OriginXEnd:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func originYAttachmentFactor(origin OriginY) float64 {
+	switch origin {
+	case OriginYMiddle:
+		return 0.5
+	case OriginYBottom:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func (s *StdSector) resolvePositionedReference(widget *StdWidget) sectorPositionedReference {
+	state := s.positionedChildren[widget]
 	innerRadius, outerRadius := s.contentRadii()
-	midRadius := (innerRadius + outerRadius) / 2
-	angleForOrigin := func(origin OriginX, radius float64) float64 {
-		switch origin {
-		case OriginXStart:
-			return s.contentBoundaryAngle(true, radius)
-		case OriginXEnd:
-			return s.contentBoundaryAngle(false, radius)
-		default:
-			return s.geometry.AnchorAngle
-		}
-	}
-	radiusForOrigin := func(origin OriginY) float64 {
-		switch origin {
-		case OriginYTop:
-			return innerRadius
-		case OriginYBottom:
-			return outerRadius
-		default:
-			return midRadius
-		}
-	}
-	if xOrigin != OriginXCustom && yOrigin != OriginYCustom {
-		radius := radiusForOrigin(yOrigin)
-		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, angleForOrigin(xOrigin, radius))
-		return s.toLocal(actualX, actualY)
+	radius := (innerRadius + outerRadius) / 2
+	switch state.radialEdge {
+	case sectorRadialOuter:
+		radius = outerRadius - float64(state.radialInset)
+	case sectorRadialInner:
+		radius = innerRadius + float64(state.radialInset)
 	}
 
-	localX := s.contentBounds.MinX
-	if xOrigin == OriginXCustom {
-		localX += widget.OriginXValue()
-	}
-	if xOrigin != OriginXCustom {
-		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, midRadius, angleForOrigin(xOrigin, midRadius))
-		localX, _ = s.toLocal(actualX, actualY)
+	angle := s.geometry.AnchorAngle
+	switch state.angularEdge {
+	case sectorAngularStart:
+		angle = s.positionedBoundaryAngle(true, radius, float64(state.angularInset))
+	case sectorAngularEnd:
+		angle = s.positionedBoundaryAngle(false, radius, float64(state.angularInset))
 	}
 
-	localY := s.contentBounds.MinY
-	if yOrigin == OriginYCustom {
-		localY += widget.OriginYValue()
+	pageX, pageY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, angle)
+	pageX += widget.shiftXOffset()
+	pageY += widget.shiftYOffset()
+	localX, localY := s.toLocal(pageX, pageY)
+	return sectorPositionedReference{
+		pageX: pageX, pageY: pageY,
+		localX: s.geometry.AnchorX + localX,
+		localY: s.geometry.AnchorY + localY,
+		radius: radius, angle: angle,
 	}
-	if yOrigin != OriginYCustom {
-		actualX, actualY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radiusForOrigin(yOrigin), s.geometry.AnchorAngle)
-		_, localY = s.toLocal(actualX, actualY)
+}
+
+func (s *StdSector) positionedBoundaryAngle(start bool, radius, childInset float64) float64 {
+	paddingStart, paddingEnd := s.radialSidePadding()
+	padding := paddingEnd
+	if start {
+		padding = paddingStart
 	}
-	return localX, localY
+	if math.Abs(s.geometry.EndAngle-s.geometry.StartAngle) >= 360-radialAngleEpsilon {
+		padding = 0
+	}
+	return s.radialBoundaryAngle(start, radius, padding+childInset)
 }
 
 func (s *StdSector) sectorParagraphLayoutFor(p *StdParagraph, w Writer) *sectorParagraphLayout {
@@ -784,31 +890,10 @@ func (s *StdSector) curvedParagraphAnchor(p *StdParagraph) (radius, angle, y flo
 		_, anchorY := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, s.geometry.AnchorAngle)
 		return radius, s.geometry.AnchorAngle, anchorY, true
 	}
-	x := s.ResolveSectorReferenceX(p) + s.paragraphOffsetX(p)
-	y = s.ResolveSectorReferenceY(p) + s.paragraphOffsetY(p)
-	x, y = rotatePagePoint(x, y, s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+	reference := s.resolvePositionedReference(&p.StdWidget)
+	x, y := reference.pageX, reference.pageY
 	dx, dy := x-s.geometry.CenterX, s.geometry.CenterY-y
 	return math.Hypot(dx, dy), math.Atan2(dy, dx) * 180 / math.Pi, y, false
-}
-
-func (s *StdSector) paragraphOffsetX(p *StdParagraph) float64 {
-	offset := 0.0
-	if p.sides[leftSide].IsSet {
-		offset = p.sides[leftSide].Float64()
-	} else if p.sides[rightSide].IsSet {
-		offset = p.sides[rightSide].Float64()
-	}
-	return offset + p.shiftXOffset()
-}
-
-func (s *StdSector) paragraphOffsetY(p *StdParagraph) float64 {
-	offset := 0.0
-	if p.sides[topSide].IsSet {
-		offset = p.sides[topSide].Float64()
-	} else if p.sides[bottomSide].IsSet {
-		offset = p.sides[bottomSide].Float64()
-	}
-	return offset + p.shiftYOffset()
 }
 
 func (s *StdSector) curvedParagraphLinePlacements(p *StdParagraph, w Writer, lines []*rich_text.RichText, anchorRadius, anchorAngle float64, static bool, direction pdf.CurvedTextDirection, facing pdf.CurvedTextFacing) ([]sectorCurvedParagraphLine, float64, error) {
@@ -1161,23 +1246,33 @@ func (s *StdSector) radialSidePadding() (start, end float64) {
 }
 
 func (s *StdSector) contentBoundaryAngle(start bool, radius float64) float64 {
-	angle := s.geometry.EndAngle
 	paddingStart, paddingEnd := s.radialSidePadding()
 	padding := paddingEnd
+	if start {
+		padding = paddingStart
+	}
+	if math.Abs(s.geometry.EndAngle-s.geometry.StartAngle) >= 360-radialAngleEpsilon {
+		padding = 0
+	}
+	return s.radialBoundaryAngle(start, radius, padding)
+}
+
+func (s *StdSector) radialBoundaryAngle(start bool, radius, inset float64) float64 {
+	angle := s.geometry.EndAngle
 	direction := -1.0
 	if start {
 		angle = s.geometry.StartAngle
-		padding = paddingStart
 		direction = 1
 	}
 	span := s.geometry.EndAngle - s.geometry.StartAngle
 	if span < 0 {
 		direction = -direction
 	}
-	if radius <= radialAngleEpsilon || padding <= 0 || math.Abs(span) >= 360-radialAngleEpsilon {
+	if radius <= radialAngleEpsilon || inset == 0 {
 		return angle
 	}
-	delta := math.Asin(min(padding/radius, 1)) * 180 / math.Pi
+	ratio := clampFloat(inset/radius, -1, 1)
+	delta := math.Asin(ratio) * 180 / math.Pi
 	return angle + direction*delta
 }
 

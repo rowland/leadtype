@@ -19,10 +19,10 @@ func addTestSectorLabel(t *testing.T, sector *StdSector, text string, attrs map[
 	t.Helper()
 	label := &StdLabel{}
 	label.font = testSectorFont()
-	label.SetAttrs(attrs)
 	if err := label.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
+	label.SetAttrs(attrs)
 	label.AddText(text)
 	sector.AddChild(label)
 	return label
@@ -266,7 +266,8 @@ func TestParse_ImplicitSectorOwnsCellAttrsAcrossCascadeLayers(t *testing.T) {
       label:first-child { fill: Gold; z-index: 7; }
     </style>
     <div layout="radial" cols="2">
-      <label id="source" class="number" units="pt" colspan="2" border="Blue" angle="0" width="30">26</label>
+      <label id="source" class="number" units="pt" colspan="2" border="Blue"
+             angle="0" width="30" start="4" outer="5">26</label>
     </div>
   </page>
 </ltml>`))
@@ -296,6 +297,59 @@ func TestParse_ImplicitSectorOwnsCellAttrsAcrossCascadeLayers(t *testing.T) {
 	if !label.angleSet || label.angle != 0 || label.Width() != 30 || label.Font().size != 9 {
 		t.Fatalf("child attrs angle/width/font = %v/%v/%v/%v", label.angleSet, label.angle, label.Width(), label.Font().size)
 	}
+	placement := sector.positionedChildren[&label.StdWidget]
+	if placement.angularEdge != sectorAngularStart || placement.angularInset != 4 ||
+		placement.radialEdge != sectorRadialOuter || placement.radialInset != 5 {
+		t.Fatalf("child radial placement = %#v, want start 4/outer 5", placement)
+	}
+	if _, ok := sector.positionedChildren[&sector.StdWidget]; ok {
+		t.Fatal("implicit wrapper unexpectedly owns child radial placement")
+	}
+	if label.Position() != Relative {
+		t.Fatalf("radial attributes position = %v, want relative", label.Position())
+	}
+}
+
+func TestParse_RadialPlacementCascadeAcrossDefaultsSelectorsPseudoAndDirectAttrs(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <define id="radial-label" tag="label" units="pt" start="1" outer="1" />
+    <style>
+      sector > label { start: 2pt; outer: 3pt; }
+      sector > label:first-child { end: 4pt; inner: 5pt; }
+    </style>
+    <div layout="radial" cols="4">
+      <sector>
+        <label id="pseudo">Pseudo</label>
+        <radial-label id="defaults">Defaults</radial-label>
+        <label id="selector">Selector</label>
+        <label id="direct" end="8pt" inner="9pt">Direct</label>
+      </sector>
+    </div>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sector := doc.Root().Page(0).children[0].(*StdContainer).children[0].(*StdSector)
+	if len(sector.children) != 4 {
+		t.Fatalf("sector children = %d, want 4", len(sector.children))
+	}
+	assertPlacement := func(index int, angular sectorAngularEdge, angularInset float32, radial sectorRadialEdge, radialInset float32) {
+		t.Helper()
+		label := sector.children[index].(*StdLabel)
+		got := sector.positionedChildren[&label.StdWidget]
+		if got.angularEdge != angular || got.angularInset != angularInset ||
+			got.radialEdge != radial || got.radialInset != radialInset {
+			t.Fatalf("child %d placement = %#v, want angular %v/%v radial %v/%v",
+				index, got, angular, angularInset, radial, radialInset)
+		}
+	}
+	assertPlacement(0, sectorAngularEnd, 4, sectorRadialInner, 5)
+	assertPlacement(1, sectorAngularStart, 1, sectorRadialOuter, 1)
+	assertPlacement(2, sectorAngularStart, 2, sectorRadialOuter, 3)
+	assertPlacement(3, sectorAngularEnd, 8, sectorRadialInner, 9)
 }
 
 func TestParse_ImplicitSectorRoutesBorderNoneAcrossCascadeLayers(t *testing.T) {
@@ -418,8 +472,8 @@ func TestParse_SectorDoesNotProvideLabelDefaults(t *testing.T) {
 	if got := label.sectorTextVAlign(); got != VAlignMiddle {
 		t.Fatalf("effective label vertical alignment = %v, want label default middle", got)
 	}
-	if got := label.OriginX(); got != OriginXCenter {
-		t.Fatalf("effective label angular origin = %v, want default center", got)
+	if got := label.OriginX(); got != OriginXUnspecified {
+		t.Fatalf("effective label box origin = %v, want ordinary unspecified/start default", got)
 	}
 }
 
@@ -1186,201 +1240,455 @@ func TestLayoutVBox_RadialChildWithHeightOnlyAndInnerRadiusDoesNotPanic(t *testi
 	}
 }
 
-func TestStdSector_OriginAliasesResolveToSectorReferencePoints(t *testing.T) {
+func positionedSectorTestFixture(t *testing.T, start, end float64) *StdSector {
+	t.Helper()
 	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
 	sector.font = testSectorFont()
-	ax, ay := radialPointAt(100, 100, 35, 45)
+	anchorAngle := start + (end-start)/2
+	ax, ay := radialPointAt(100, 100, 35, anchorAngle)
 	sector.setGeometry(radialSectorGeometry{
 		CenterX:     100,
 		CenterY:     100,
 		InnerRadius: 20,
 		OuterRadius: 50,
-		StartAngle:  0,
-		EndAngle:    90,
-		AnchorAngle: 45,
+		StartAngle:  start,
+		EndAngle:    end,
+		AnchorAngle: anchorAngle,
 		AnchorX:     ax,
 		AnchorY:     ay,
 	})
+	return sector
+}
 
+func TestStdSector_RadialAttrsImplyRelativeAndRectangularSidesStayDormant(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+
+	radial := &StdWidget{}
+	if err := radial.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	radial.SetAttrs(map[string]string{"units": "pt", "start": "4"})
+	if got := radial.Position(); got != Relative {
+		t.Fatalf("radial position = %v, want relative", got)
+	}
+
+	rectangular := &StdWidget{}
+	if err := rectangular.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	rectangular.SetAttrs(map[string]string{"units": "pt", "left": "4", "top": "5"})
+	if got := rectangular.Position(); got != Static {
+		t.Fatalf("rectangular-side position = %v, want static in sector", got)
+	}
+
+}
+
+func TestStdSector_ExplicitPositionOverridesRadialInference(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	for _, tt := range []struct {
+		value string
+		want  Position
+	}{
+		{value: "static", want: Static},
+		{value: "absolute", want: Absolute},
+		{value: "relative", want: Relative},
+	} {
+		t.Run(tt.value, func(t *testing.T) {
+			child := &StdWidget{}
+			if err := child.SetContainer(sector); err != nil {
+				t.Fatal(err)
+			}
+			child.SetAttrs(map[string]string{
+				"position": tt.value,
+				"start":    "4pt",
+				"outer":    "5pt",
+			})
+			if got := child.Position(); got != tt.want {
+				t.Fatalf("position = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+}
+
+func TestStdSector_PositionAndRadialInferenceFollowCascadeLayers(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
 	child := &StdWidget{}
 	if err := child.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
-	child.SetAttrs(map[string]string{
-		"position": "relative",
-		"origin-x": "start",
-		"origin-y": "outer",
-		"left":     "0",
-		"top":      "0",
-	})
 
-	if got, want := child.Left(), sector.ResolveSectorReferenceX(child); got != want {
-		t.Fatalf("Left() = %v, want %v", got, want)
+	child.SetAttrs(map[string]string{"position": "static"})
+	child.SetAttrs(map[string]string{"start": "4pt"})
+	if got := child.Position(); got != Relative {
+		t.Fatalf("later radial position = %v, want relative", got)
 	}
-	if got, want := child.Top(), sector.ResolveSectorReferenceY(child); got != want {
-		t.Fatalf("Top() = %v, want %v", got, want)
+
+	child.SetAttrs(map[string]string{"position": "absolute"})
+	child.SetAttrs(map[string]string{"font.size": "9pt"})
+	if got := child.Position(); got != Absolute {
+		t.Fatalf("unrelated later layer position = %v, want absolute", got)
 	}
-	if got, want := child.OriginXValue(), sector.ResolveSectorReferenceX(child); got != want {
-		t.Fatalf("OriginXValue() = %v, want %v", got, want)
+
+	child.SetAttrs(map[string]string{"outer": "5pt"})
+	if got := child.Position(); got != Relative {
+		t.Fatalf("later radial position after absolute = %v, want relative", got)
 	}
-	if got, want := child.OriginYValue(), sector.ResolveSectorReferenceY(child); got != want {
-		t.Fatalf("OriginYValue() = %v, want %v", got, want)
+
+	child.SetAttrs(map[string]string{"position": "static", "end": "6pt"})
+	if got := child.Position(); got != Static {
+		t.Fatalf("same-layer explicit position = %v, want static", got)
 	}
 }
 
-func TestStdSector_UnspecifiedOriginsResolveToSectorMidpoint(t *testing.T) {
-	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
-	sector.font = testSectorFont()
-	ax, ay := radialPointAt(100, 100, 35, 45)
-	sector.setGeometry(radialSectorGeometry{
-		CenterX:     100,
-		CenterY:     100,
-		InnerRadius: 20,
-		OuterRadius: 50,
-		StartAngle:  0,
-		EndAngle:    90,
-		AnchorAngle: 45,
-		AnchorX:     ax,
-		AnchorY:     ay,
-	})
-
+func TestStdSector_RadialEdgeCascadeAndSameLayerPrecedence(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
 	child := &StdWidget{}
 	if err := child.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
-	child.SetAttrs(map[string]string{
-		"position": "relative",
-		"left":     "0",
-		"top":      "0",
-	})
+	child.SetAttrs(map[string]string{"units": "pt", "start": "4", "outer": "6"})
+	child.SetAttrs(map[string]string{"units": "pt", "end": "9", "inner": "8"})
+	got := sector.resolvePositionedReference(child)
+	wantRadius := 28.0
+	wantAngle := 90 - math.Asin(9.0/wantRadius)*180/math.Pi
+	if math.Abs(got.radius-wantRadius) > 0.001 || math.Abs(got.angle-wantAngle) > 0.001 {
+		t.Fatalf("later-layer reference = %v/%v, want %v/%v", got.radius, got.angle, wantRadius, wantAngle)
+	}
 
-	wantX, wantY := ax, ay
-	if got := child.OriginX(); got != OriginXUnspecified {
-		t.Fatalf("OriginX() = %v, want %v", got, OriginXUnspecified)
-	}
-	if got := child.OriginY(); got != OriginYUnspecified {
-		t.Fatalf("OriginY() = %v, want %v", got, OriginYUnspecified)
-	}
-	if got := sector.ResolveSectorReferenceX(child); got != wantX {
-		t.Fatalf("ResolveSectorReferenceX() = %v, want %v", got, wantX)
-	}
-	if got := sector.ResolveSectorReferenceY(child); got != wantY {
-		t.Fatalf("ResolveSectorReferenceY() = %v, want %v", got, wantY)
-	}
-	if got := child.Left(); got != wantX {
-		t.Fatalf("Left() = %v, want %v", got, wantX)
-	}
-	if got := child.Top(); got != wantY {
-		t.Fatalf("Top() = %v, want %v", got, wantY)
+	child.SetAttrs(map[string]string{
+		"units": "pt",
+		"start": "3",
+		"end":   "7",
+		"outer": "5",
+		"inner": "9",
+	})
+	got = sector.resolvePositionedReference(child)
+	wantRadius = 45
+	wantAngle = math.Asin(3.0/wantRadius) * 180 / math.Pi
+	if math.Abs(got.radius-wantRadius) > 0.001 || math.Abs(got.angle-wantAngle) > 0.001 {
+		t.Fatalf("same-layer reference = %v/%v, want start/outer %v/%v", got.radius, got.angle, wantRadius, wantAngle)
 	}
 }
 
-func TestStdSector_MixedCustomAndRadialOriginsResolvePerAxis(t *testing.T) {
-	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
-	sector.font = testSectorFont()
-	ax, ay := radialPointAt(100, 100, 35, 45)
-	sector.setGeometry(radialSectorGeometry{
-		CenterX:     100,
-		CenterY:     100,
-		InnerRadius: 20,
-		OuterRadius: 50,
-		StartAngle:  0,
-		EndAngle:    90,
-		AnchorAngle: 45,
-		AnchorX:     ax,
-		AnchorY:     ay,
-	})
-
+func TestStdSector_PositionedRadialEdgesSelectReference(t *testing.T) {
 	tests := []struct {
-		name  string
-		attrs map[string]string
-		wantX float64
-		wantY float64
+		name       string
+		start, end float64
+		attrs      map[string]string
+		wantRadius float64
+		wantAngle  float64
 	}{
 		{
-			name: "custom x unspecified y",
-			attrs: map[string]string{
-				"position": "relative",
-				"units":    "pt",
-				"origin-x": "12",
-				"left":     "0",
-				"top":      "0",
-			},
-			wantX: sector.geometry.AnchorX + sector.localBounds.MinX + 12,
-			wantY: func() float64 {
-				_, y := sector.toLocal(ax, ay)
-				return sector.geometry.AnchorY + y
-			}(),
+			name: "ccw start outer", start: 0, end: 90,
+			attrs:      map[string]string{"start": "0", "outer": "0"},
+			wantRadius: 50, wantAngle: 0,
 		},
 		{
-			name: "unspecified x custom y",
-			attrs: map[string]string{
-				"position": "relative",
-				"units":    "pt",
-				"origin-y": "8",
-				"left":     "0",
-				"top":      "0",
-			},
-			wantX: ax,
-			wantY: sector.geometry.AnchorY + sector.localBounds.MinY + 8,
+			name: "ccw end inner", start: 0, end: 90,
+			attrs:      map[string]string{"end": "0", "inner": "0"},
+			wantRadius: 20, wantAngle: 90,
 		},
 		{
-			name: "start x custom y",
-			attrs: map[string]string{
-				"position": "relative",
-				"units":    "pt",
-				"origin-x": "start",
-				"origin-y": "8",
-				"left":     "0",
-				"top":      "0",
-			},
-			wantX: func() float64 {
-				x, y := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY, 35, sector.geometry.StartAngle)
-				localX, _ := sector.toLocal(x, y)
-				return sector.geometry.AnchorX + localX
-			}(),
-			wantY: sector.geometry.AnchorY + sector.localBounds.MinY + 8,
+			name: "cw start outer", start: 90, end: 0,
+			attrs:      map[string]string{"start": "0", "outer": "0"},
+			wantRadius: 50, wantAngle: 90,
 		},
 		{
-			name: "custom x outer y",
-			attrs: map[string]string{
-				"position": "relative",
-				"units":    "pt",
-				"origin-x": "12",
-				"origin-y": "outer",
-				"left":     "0",
-				"top":      "0",
-			},
-			wantX: sector.geometry.AnchorX + sector.localBounds.MinX + 12,
-			wantY: func() float64 {
-				x, y := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY, sector.geometry.OuterRadius, sector.geometry.AnchorAngle)
-				_, localY := sector.toLocal(x, y)
-				return sector.geometry.AnchorY + localY
-			}(),
+			name: "cw end inner", start: 90, end: 0,
+			attrs:      map[string]string{"end": "0", "inner": "0"},
+			wantRadius: 20, wantAngle: 0,
+		},
+		{
+			name: "lower quadrant", start: 180, end: 270,
+			attrs:      map[string]string{"start": "0", "inner": "0"},
+			wantRadius: 20, wantAngle: 180,
+		},
+		{
+			name: "crosses lower right quadrant", start: -90, end: 0,
+			attrs:      map[string]string{"end": "0", "outer": "0"},
+			wantRadius: 50, wantAngle: 0,
+		},
+		{
+			name: "full circle start inset", start: 0, end: 360,
+			attrs:      map[string]string{"start": "4", "outer": "0"},
+			wantRadius: 50, wantAngle: math.Asin(4.0/50.0) * 180 / math.Pi,
+		},
+		{
+			name: "full circle end inset", start: 0, end: 360,
+			attrs:      map[string]string{"end": "4", "inner": "0"},
+			wantRadius: 20, wantAngle: 360 - math.Asin(4.0/20.0)*180/math.Pi,
+		},
+		{
+			name: "omitted axes use midpoint", start: 0, end: 90,
+			attrs:      map[string]string{},
+			wantRadius: 35, wantAngle: 45,
+		},
+		{
+			name: "start and outer win in one layer", start: 0, end: 90,
+			attrs:      map[string]string{"start": "4", "end": "9", "outer": "6", "inner": "8"},
+			wantRadius: 44, wantAngle: math.Asin(4.0/44.0) * 180 / math.Pi,
+		},
+		{
+			name: "negative offsets cross edges", start: 0, end: 90,
+			attrs:      map[string]string{"start": "-4", "outer": "-6"},
+			wantRadius: 56, wantAngle: math.Asin(-4.0/56.0) * 180 / math.Pi,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			sector := positionedSectorTestFixture(t, tt.start, tt.end)
 			child := &StdWidget{}
 			if err := child.SetContainer(sector); err != nil {
 				t.Fatal(err)
 			}
-			child.SetAttrs(tt.attrs)
+			attrs := maps.Clone(tt.attrs)
+			attrs["position"] = "relative"
+			attrs["units"] = "pt"
+			child.SetAttrs(attrs)
 
-			if got := sector.ResolveSectorReferenceX(child); got != tt.wantX {
-				t.Fatalf("ResolveSectorReferenceX() = %v, want %v", got, tt.wantX)
-			}
-			if got := sector.ResolveSectorReferenceY(child); got != tt.wantY {
-				t.Fatalf("ResolveSectorReferenceY() = %v, want %v", got, tt.wantY)
-			}
-			if got := child.Left(); got != tt.wantX {
-				t.Fatalf("Left() = %v, want %v", got, tt.wantX)
-			}
-			if got := child.Top(); got != tt.wantY {
-				t.Fatalf("Top() = %v, want %v", got, tt.wantY)
+			got := sector.resolvePositionedReference(child)
+			if math.Abs(got.radius-tt.wantRadius) > 0.001 || math.Abs(got.angle-tt.wantAngle) > 0.001 {
+				t.Fatalf("reference radius/angle = %v/%v, want %v/%v", got.radius, got.angle, tt.wantRadius, tt.wantAngle)
 			}
 		})
+	}
+}
+
+func TestStdSector_RectangularSidesAreDormantForRelativeAndPageAxisForAbsolute(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 10, 100)
+
+	relative := &StdWidget{}
+	if err := relative.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	relative.SetAttrs(map[string]string{
+		"position": "relative",
+		"units":    "pt",
+		"left":     "7",
+		"right":    "8",
+		"top":      "9",
+		"bottom":   "10",
+	})
+	got := sector.resolvePositionedReference(relative)
+	if math.Abs(got.radius-35) > 0.001 || math.Abs(got.angle-55) > 0.001 {
+		t.Fatalf("relative reference = %v/%v, want midpoint 35/55", got.radius, got.angle)
+	}
+	if relative.Width() != 0 || relative.Height() != 0 {
+		t.Fatalf("relative size from dormant sides = %v/%v, want 0/0", relative.Width(), relative.Height())
+	}
+
+	absolute := &StdWidget{}
+	if err := absolute.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	absolute.SetAttrs(map[string]string{
+		"position": "absolute",
+		"units":    "pt",
+		"left":     "12",
+		"top":      "14",
+		"width":    "20",
+		"height":   "10",
+		"start":    "3",
+		"outer":    "4",
+	})
+	if absolute.Left() != 12 || absolute.Top() != 14 {
+		t.Fatalf("absolute page point = (%v,%v), want (12,14)", absolute.Left(), absolute.Top())
+	}
+}
+
+func TestStdSector_PositionedReferenceIncludesSectorPaddingAndChildInset(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	sector.SetAttrs(map[string]string{
+		"units":         "pt",
+		"padding-top":   "3",
+		"padding-left":  "2",
+		"padding-right": "7",
+	})
+	sector.rebuildContentGeometry()
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{"position": "relative", "units": "pt", "start": "5", "outer": "4"})
+
+	got := sector.resolvePositionedReference(child)
+	wantRadius := 43.0
+	wantAngle := math.Asin((2.0+5.0)/wantRadius) * 180 / math.Pi
+	if math.Abs(got.radius-wantRadius) > 0.001 || math.Abs(got.angle-wantAngle) > 0.001 {
+		t.Fatalf("padded reference radius/angle = %v/%v, want %v/%v", got.radius, got.angle, wantRadius, wantAngle)
+	}
+}
+
+func TestStdSector_PositionedOriginsAttachChildBox(t *testing.T) {
+	for _, x := range []struct {
+		name   string
+		factor float64
+	}{
+		{name: "start", factor: 0},
+		{name: "center", factor: 0.5},
+		{name: "end", factor: 1},
+	} {
+		for _, y := range []struct {
+			name   string
+			factor float64
+		}{
+			{name: "top", factor: 0},
+			{name: "middle", factor: 0.5},
+			{name: "bottom", factor: 1},
+		} {
+			t.Run(x.name+"/"+y.name, func(t *testing.T) {
+				sector := positionedSectorTestFixture(t, 0, 90)
+				child := &StdWidget{}
+				if err := child.SetContainer(sector); err != nil {
+					t.Fatal(err)
+				}
+				child.SetAttrs(map[string]string{
+					"position": "relative",
+					"units":    "pt",
+					"start":    "5",
+					"outer":    "4",
+					"origin-x": x.name,
+					"origin-y": y.name,
+					"width":    "20",
+					"height":   "10",
+				})
+				sector.preparePositionedChildren()
+
+				placement := sector.ResolveSectorPlacement(child)
+				if math.Abs(placement.boxLeft-(placement.anchorX-20*x.factor)) > 0.001 ||
+					math.Abs(placement.boxTop-(placement.anchorY-10*y.factor)) > 0.001 {
+					t.Fatalf("box/anchor = (%v,%v)/(%v,%v), want factors %v/%v",
+						placement.boxLeft, placement.boxTop, placement.anchorX, placement.anchorY,
+						x.factor, y.factor)
+				}
+				if math.Abs(child.OriginXValue()-placement.anchorX) > 0.001 ||
+					math.Abs(child.OriginYValue()-placement.anchorY) > 0.001 {
+					t.Fatalf("widget origin = (%v,%v), want placement anchor (%v,%v)",
+						child.OriginXValue(), child.OriginYValue(), placement.anchorX, placement.anchorY)
+				}
+			})
+		}
+	}
+}
+
+func TestStdSector_PositionedCustomOriginsRetainTransformCoordinates(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{
+		"position": "relative",
+		"units":    "pt",
+		"origin-x": "12",
+		"origin-y": "8",
+		"width":    "20",
+		"height":   "10",
+	})
+	if got := child.OriginXValue(); got != 12 {
+		t.Fatalf("custom origin x = %v, want 12", got)
+	}
+	if got := child.OriginYValue(); got != 8 {
+		t.Fatalf("custom origin y = %v, want 8", got)
+	}
+}
+
+func TestStdSector_PositionedOpposingRadialEdgesDoNotStretchChild(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{
+		"position": "relative",
+		"units":    "pt",
+		"start":    "3",
+		"end":      "4",
+		"outer":    "5",
+		"inner":    "6",
+	})
+	if got := child.Width(); got != 0 {
+		t.Fatalf("width from opposing sector sides = %v, want no stretch", got)
+	}
+	if got := child.Height(); got != 0 {
+		t.Fatalf("height from opposing sector sides = %v, want no stretch", got)
+	}
+}
+
+func TestStdSector_PositionedChildrenShareRadialReferenceAndPageAxisShift(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 20, 110)
+	image := &StdImage{}
+	label := &StdLabel{}
+	paragraph := &StdParagraph{}
+	container := &StdContainer{}
+	children := []*StdWidget{
+		{},
+		&image.StdWidget,
+		&label.StdWidget,
+		&paragraph.StdWidget,
+		&container.StdWidget,
+	}
+	var want sectorPositionedReference
+	for i, child := range children {
+		if err := child.SetContainer(sector); err != nil {
+			t.Fatal(err)
+		}
+		child.SetAttrs(map[string]string{
+			"position": "relative",
+			"units":    "pt",
+			"end":      "7",
+			"inner":    "3",
+			"shift-x":  "4",
+			"shift-y":  "-6",
+		})
+		got := sector.resolvePositionedReference(child)
+		if i == 0 {
+			want = got
+			continue
+		}
+		if math.Abs(got.pageX-want.pageX) > 0.001 || math.Abs(got.pageY-want.pageY) > 0.001 ||
+			math.Abs(got.radius-want.radius) > 0.001 || math.Abs(got.angle-want.angle) > 0.001 {
+			t.Fatalf("child %d reference = %+v, want %+v", i, got, want)
+		}
+	}
+
+	unshiftedX, unshiftedY := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY, want.radius, want.angle)
+	if math.Abs(want.pageX-(unshiftedX+4)) > 0.001 || math.Abs(want.pageY-(unshiftedY-6)) > 0.001 {
+		t.Fatalf("shifted page point = (%v,%v), want (%v,%v)", want.pageX, want.pageY, unshiftedX+4, unshiftedY-6)
+	}
+	rotatedX, rotatedY := rotatePagePoint(want.localX, want.localY,
+		sector.geometry.AnchorX, sector.geometry.AnchorY, sector.contentRotation)
+	if math.Abs(rotatedX-want.pageX) > 0.001 || math.Abs(rotatedY-want.pageY) > 0.001 {
+		t.Fatalf("local reference rotates to (%v,%v), want page point (%v,%v)",
+			rotatedX, rotatedY, want.pageX, want.pageY)
+	}
+}
+
+func TestStdSector_PositionedFacingDoesNotMoveReference(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 190, 280)
+	var want sectorPositionedReference
+	for i, facing := range []string{"upright", "upside-down"} {
+		label := &StdLabel{}
+		if err := label.SetContainer(sector); err != nil {
+			t.Fatal(err)
+		}
+		label.SetAttrs(map[string]string{
+			"position": "relative",
+			"units":    "pt",
+			"start":    "6",
+			"outer":    "4",
+			"facing":   facing,
+		})
+		got := sector.resolvePositionedReference(&label.StdWidget)
+		if i == 0 {
+			want = got
+			continue
+		}
+		if math.Abs(got.pageX-want.pageX) > 0.001 || math.Abs(got.pageY-want.pageY) > 0.001 {
+			t.Fatalf("%s reference = (%v,%v), want (%v,%v)", facing, got.pageX, got.pageY, want.pageX, want.pageY)
+		}
 	}
 }
 
@@ -1431,7 +1739,7 @@ func TestStdSector_DrawContent_UsesCurvedTextUnlessAngleOverrides(t *testing.T) 
 func TestStdSector_DrawContent_RightAlignedCurvedTextUsesSectorEndAngle(t *testing.T) {
 	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
 	sector.font = testSectorFont()
-	addTestSectorLabel(t, sector, "Radial", map[string]string{"position": "relative", "origin-x": "end", "text-align": "right"})
+	addTestSectorLabel(t, sector, "Radial", map[string]string{"position": "relative", "end": "0", "text-align": "right"})
 	ax, ay := radialPointAt(100, 100, 40, -45)
 	sector.setGeometry(radialSectorGeometry{
 		CenterX:     100,
@@ -1469,17 +1777,17 @@ func TestStdSector_LabelsUseIndependentRadialAnchors(t *testing.T) {
 	})
 
 	attrs := []map[string]string{
-		{"position": "relative", "origin-x": "start", "origin-y": "inner"},
-		{"position": "relative", "origin-x": "center", "origin-y": "middle"},
-		{"position": "relative", "origin-x": "end", "origin-y": "outer"},
+		{"position": "relative", "start": "0", "inner": "0", "text-align": "left"},
+		{"position": "relative", "text-align": "center"},
+		{"position": "relative", "end": "0", "outer": "0", "text-align": "right"},
 	}
 	for i, attr := range attrs {
 		label := &StdLabel{}
 		label.font = testSectorFont()
-		label.SetAttrs(attr)
 		if err := label.SetContainer(sector); err != nil {
 			t.Fatal(err)
 		}
+		label.SetAttrs(attr)
 		label.AddText(strconv.Itoa(i + 1))
 		sector.AddChild(label)
 	}
@@ -1507,7 +1815,7 @@ func TestStdSector_LabelsUseIndependentRadialAnchors(t *testing.T) {
 	}
 }
 
-func TestStdSector_LabelOffsetsUseSectorLocalFrame(t *testing.T) {
+func TestStdSector_LabelOffsetsUseSectorEdges(t *testing.T) {
 	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
 	sector.font = testSectorFont()
 	ax, ay := radialPointAt(100, 100, 40, 45)
@@ -1519,20 +1827,22 @@ func TestStdSector_LabelOffsetsUseSectorLocalFrame(t *testing.T) {
 	})
 	label := &StdLabel{}
 	label.font = testSectorFont()
-	label.SetAttrs(map[string]string{
-		"units": "pt",
-		"left":  "5",
-		"top":   "-3",
-	})
 	if err := label.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
+	label.SetAttrs(map[string]string{
+		"units": "pt",
+		"start": "5",
+		"outer": "-3",
+	})
 	label.AddText("offset")
 	sector.AddChild(label)
 	if err := sector.LayoutWidget(&labelTestWriter{t: t}); err != nil {
 		t.Fatal(err)
 	}
-	wantX, wantY := rotatePagePoint(ax+5, ay-3, ax, ay, sector.contentRotation)
+	wantRadius := 63.0
+	wantAngle := math.Asin(5/wantRadius) * 180 / math.Pi
+	wantX, wantY := radialPointAt(100, 100, wantRadius, wantAngle)
 	if !floatEquals(label.sectorPlacement.anchorX, wantX) || !floatEquals(label.sectorPlacement.anchorY, wantY) {
 		t.Fatalf("offset anchor = (%v,%v), want (%v,%v)", label.sectorPlacement.anchorX, label.sectorPlacement.anchorY, wantX, wantY)
 	}
@@ -1550,16 +1860,16 @@ func TestStdSector_LabelAlignmentAndFacingOverrideAnchorDefaults(t *testing.T) {
 	})
 	label := &StdLabel{}
 	label.font = testSectorFont()
+	if err := label.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
 	label.SetAttrs(map[string]string{
 		"position":    "relative",
-		"origin-x":    "start",
+		"start":       "0",
 		"text-align":  "center",
 		"facing":      "upside-down",
 		"text-valign": "bottom",
 	})
-	if err := label.SetContainer(sector); err != nil {
-		t.Fatal(err)
-	}
 	label.AddText("override")
 	sector.AddChild(label)
 
@@ -1647,14 +1957,17 @@ func TestStdSector_LabelAutomaticOrientationUsesItsOwnAnchor(t *testing.T) {
 		AnchorAngle: 0, AnchorX: ax, AnchorY: ay,
 	})
 
-	for _, origin := range []string{"start", "end"} {
+	for _, attrs := range []map[string]string{
+		{"position": "relative", "start": "0"},
+		{"position": "relative", "end": "0"},
+	} {
 		label := &StdLabel{}
 		label.font = testSectorFont()
-		label.SetAttrs(map[string]string{"position": "relative", "origin-x": origin})
 		if err := label.SetContainer(sector); err != nil {
 			t.Fatal(err)
 		}
-		label.AddText(origin)
+		label.SetAttrs(attrs)
+		label.AddText("anchor")
 		sector.AddChild(label)
 	}
 
@@ -1764,7 +2077,7 @@ func TestStdSector_LabelPaintRecomputesInvalidatedPlacementBeforeBackground(t *t
 	}
 	originalX := label.sectorPlacement.anchorX
 
-	label.SetAttrs(map[string]string{"units": "pt", "left": "12"})
+	label.SetAttrs(map[string]string{"units": "pt", "start": "12"})
 	if label.sectorPlacement != nil {
 		t.Fatal("SetAttrs did not invalidate sector placement")
 	}
@@ -1833,10 +2146,10 @@ func TestStdSector_CurvedLabelRejectsZeroRadius(t *testing.T) {
 	})
 	label := &StdLabel{}
 	label.font = testSectorFont()
-	label.SetAttrs(map[string]string{"position": "relative", "origin-y": "inner"})
 	if err := label.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
+	label.SetAttrs(map[string]string{"position": "relative", "inner": "0"})
 	label.AddText("center")
 	sector.AddChild(label)
 	err := sector.LayoutWidget(&labelTestWriter{t: t})
@@ -2118,7 +2431,7 @@ func TestStdSector_StaticWidgetsPackAndPositionedOverlayLeavesFlow(t *testing.T)
 		})
 	}
 	overlay := addTestSectorLabel(t, sector, "overlay", map[string]string{
-		"position": "relative", "origin-x": "end", "origin-y": "outer",
+		"position": "relative", "end": "0", "outer": "0",
 	})
 	w := &labelTestWriter{t: t}
 	if err := sector.LayoutWidget(w); err != nil {
@@ -2250,10 +2563,10 @@ func addTestSectorParagraph(t *testing.T, sector *StdSector, text string, attrs 
 	t.Helper()
 	paragraph := &StdParagraph{}
 	paragraph.paragraphStyle = &ParagraphStyle{}
-	paragraph.SetAttrs(attrs)
 	if err := paragraph.SetContainer(sector); err != nil {
 		t.Fatal(err)
 	}
+	paragraph.SetAttrs(attrs)
 	paragraph.AddText(text)
 	sector.AddChild(paragraph)
 	return paragraph
@@ -2541,8 +2854,13 @@ func TestStdSector_PositionedHorizontalParagraphUsesPageAxisSectorAnchor(t *test
 	inner, outer := sector.contentRadii()
 	wantX, wantY := radialPointAt(sector.geometry.CenterX, sector.geometry.CenterY,
 		(inner+outer)/2, sector.geometry.AnchorAngle)
-	if math.Abs(horizontal.Left()-wantX) > 0.01 || math.Abs(horizontal.Top()-wantY) > 0.01 {
-		t.Fatalf("horizontal overlay anchor = (%v,%v), want page point (%v,%v)",
+	if math.Abs(horizontal.OriginXValue()-wantX) > 0.01 || math.Abs(horizontal.OriginYValue()-wantY) > 0.01 {
+		t.Fatalf("horizontal overlay origin = (%v,%v), want page point (%v,%v)",
+			horizontal.OriginXValue(), horizontal.OriginYValue(), wantX, wantY)
+	}
+	if math.Abs(horizontal.Left()-(wantX-horizontal.Width()/2)) > 0.01 ||
+		math.Abs(horizontal.Top()-(wantY-horizontal.Height()/2)) > 0.01 {
+		t.Fatalf("horizontal overlay box = (%v,%v), want centered on (%v,%v)",
 			horizontal.Left(), horizontal.Top(), wantX, wantY)
 	}
 }

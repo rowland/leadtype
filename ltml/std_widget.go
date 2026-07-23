@@ -54,9 +54,13 @@ type StdWidget struct {
 	rawAttrs        map[string]string
 }
 
-type sectorReferenceResolver interface {
-	ResolveSectorReferenceX(widget Widget) float64
-	ResolveSectorReferenceY(widget Widget) float64
+type sectorPositionedPlacement struct {
+	boxLeft, boxTop  float64
+	anchorX, anchorY float64
+}
+
+type sectorPlacementResolver interface {
+	ResolveSectorPlacement(widget *StdWidget) sectorPositionedPlacement
 }
 
 func (widget *StdWidget) Align() Align {
@@ -81,6 +85,10 @@ func (widget *StdWidget) ColSpan() int {
 
 func (widget *StdWidget) Container() Container {
 	return widget.container
+}
+
+func (widget *StdWidget) sectorWidget() *StdWidget {
+	return widget
 }
 
 func (widget *StdWidget) RowSpan() int {
@@ -365,6 +373,9 @@ func (widget *StdWidget) Printed() bool {
 func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	widget.units.SetAttrs(attrs)
 	widget.Dimensions.SetAttrs(attrs, widget.Units())
+	if sector, ok := widget.container.(*StdSector); ok {
+		sector.setChildPositionAttrs(widget, attrs, widget.Units())
+	}
 
 	if position, ok := attrs["position"]; ok {
 		switch position {
@@ -375,7 +386,10 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		case "absolute":
 			widget.position = Absolute
 		}
-	} else if MapHasAnyKey(attrs, "top", "right", "bottom", "left") {
+	} else if widget.isDirectSectorChild() &&
+		MapHasAnyKey(attrs, "start", "end", "outer", "inner") {
+		widget.position = Relative
+	} else if !widget.isDirectSectorChild() && MapHasAnyKey(attrs, "top", "right", "bottom", "left") {
 		// Match ERML continuity: positional attrs implicitly opt a widget into
 		// positioned layout when position is otherwise omitted.
 		widget.position = Relative
@@ -832,6 +846,9 @@ func (widget *StdWidget) String() string {
 }
 
 func (widget *StdWidget) Top() float64 {
+	if placement, ok := widget.relativeSectorPlacement(); ok {
+		return placement.boxTop
+	}
 	if widget.sides[topSide].IsSet {
 		return widget.resolveTop(widget.sides[topSide].Float64())
 	}
@@ -842,6 +859,9 @@ func (widget *StdWidget) Top() float64 {
 }
 
 func (widget *StdWidget) Right() float64 {
+	if placement, ok := widget.relativeSectorPlacement(); ok {
+		return placement.boxLeft + widget.Width()
+	}
 	if widget.sides[rightSide].IsSet {
 		return widget.resolveRight(widget.sides[rightSide].Float64())
 	}
@@ -852,6 +872,9 @@ func (widget *StdWidget) Right() float64 {
 }
 
 func (widget *StdWidget) Bottom() float64 {
+	if placement, ok := widget.relativeSectorPlacement(); ok {
+		return placement.boxTop + widget.Height()
+	}
 	if widget.sides[bottomSide].IsSet {
 		return widget.resolveBottom(widget.sides[bottomSide].Float64())
 	}
@@ -862,6 +885,9 @@ func (widget *StdWidget) Bottom() float64 {
 }
 
 func (widget *StdWidget) Left() float64 {
+	if placement, ok := widget.relativeSectorPlacement(); ok {
+		return placement.boxLeft
+	}
 	if widget.sides[leftSide].IsSet {
 		return widget.resolveLeft(widget.sides[leftSide].Float64())
 	}
@@ -918,7 +944,8 @@ func (widget *StdWidget) uncappedWidthWithResolver(resolveLeft, resolveRight fun
 	case DimLiteral:
 		return float64(widget.widthValue)
 	}
-	if widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet {
+	if !widget.isRelativeSectorChild() &&
+		widget.sides[leftSide].IsSet && widget.sides[rightSide].IsSet {
 		return resolveRight(widget.sides[rightSide].Float64()) - resolveLeft(widget.sides[leftSide].Float64())
 	}
 	return 0
@@ -948,7 +975,8 @@ func (widget *StdWidget) uncappedHeightWithResolver(resolveTop, resolveBottom fu
 	case DimLiteral:
 		return float64(widget.heightValue)
 	}
-	if widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet {
+	if !widget.isRelativeSectorChild() &&
+		widget.sides[topSide].IsSet && widget.sides[bottomSide].IsSet {
 		return resolveBottom(widget.sides[bottomSide].Float64()) - resolveTop(widget.sides[topSide].Float64())
 	}
 	return 0
@@ -1050,11 +1078,6 @@ func (widget *StdWidget) resolveLeft(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveLeftWithoutShift(value float64) float64 {
-	if widget.position == Relative && widget.container != nil {
-		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceX(widget) + value
-		}
-	}
 	if widget.container != nil && value < 0 {
 		value = widget.container.Width() + value
 	}
@@ -1069,11 +1092,6 @@ func (widget *StdWidget) resolveRight(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveRightWithoutShift(value float64) float64 {
-	if widget.position == Relative && widget.container != nil {
-		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceX(widget) + value
-		}
-	}
 	if widget.container != nil && value <= 0 {
 		value = widget.container.Width() + value
 	}
@@ -1088,11 +1106,6 @@ func (widget *StdWidget) resolveTop(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveTopWithoutShift(value float64) float64 {
-	if widget.position == Relative && widget.container != nil {
-		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceY(widget) + value
-		}
-	}
 	if widget.container != nil && value < 0 {
 		value = widget.container.Height() + value
 	}
@@ -1107,11 +1120,6 @@ func (widget *StdWidget) resolveBottom(value float64) float64 {
 }
 
 func (widget *StdWidget) resolveBottomWithoutShift(value float64) float64 {
-	if widget.position == Relative && widget.container != nil {
-		if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-			return resolver.ResolveSectorReferenceY(widget) + value
-		}
-	}
 	if widget.container != nil && value <= 0 {
 		value = widget.container.Height() + value
 	}
@@ -1152,8 +1160,8 @@ func (widget *StdWidget) OriginXValue() float64 {
 	if widget.originX == OriginXCustom {
 		return float64(widget.originXValue)
 	}
-	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-		return resolver.ResolveSectorReferenceX(widget)
+	if placement, ok := widget.relativeSectorPlacement(); ok {
+		return placement.anchorX
 	}
 	switch widget.originX {
 	case OriginXUnspecified, OriginXStart:
@@ -1170,8 +1178,8 @@ func (widget *StdWidget) OriginYValue() float64 {
 	if widget.originY == OriginYCustom {
 		return float64(widget.originYValue)
 	}
-	if resolver, ok := widget.container.(sectorReferenceResolver); ok {
-		return resolver.ResolveSectorReferenceY(widget)
+	if placement, ok := widget.relativeSectorPlacement(); ok {
+		return placement.anchorY
 	}
 	switch widget.originY {
 	case OriginYUnspecified, OriginYTop:
@@ -1182,6 +1190,27 @@ func (widget *StdWidget) OriginYValue() float64 {
 		return widget.Bottom()
 	}
 	return widget.Top()
+}
+
+func (widget *StdWidget) relativeSectorPlacement() (sectorPositionedPlacement, bool) {
+	if !widget.isRelativeSectorChild() {
+		return sectorPositionedPlacement{}, false
+	}
+	resolver := widget.container.(sectorPlacementResolver)
+	return resolver.ResolveSectorPlacement(widget), true
+}
+
+func (widget *StdWidget) isRelativeSectorChild() bool {
+	if widget.position != Relative || widget.container == nil {
+		return false
+	}
+	_, ok := widget.container.(sectorPlacementResolver)
+	return ok
+}
+
+func (widget *StdWidget) isDirectSectorChild() bool {
+	_, ok := widget.container.(*StdSector)
+	return ok
 }
 
 func parseOriginX(token string, units Units) (OriginX, float32) {

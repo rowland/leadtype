@@ -459,8 +459,8 @@ both, write an explicit sector containing a separately bordered label.
 | Attribute | Description |
 |-----------|-------------|
 | `colspan`, `rowspan` | Span multiple radial slots, just like table cells. |
-| `origin-x` | For positioned child widgets inside a sector, `start`, `center`, and `end` anchor to the sector start angle, midpoint angle, and end angle. |
-| `origin-y` | For positioned child widgets inside a sector, `inner`, `middle`, and `outer` anchor to the inner radius, midpoint radius, and outer radius. |
+| `start`, `end` | On a relative direct child, select and inset from the padded sector start or end edge. |
+| `outer`, `inner` | On a relative direct child, select and inset from the padded outer or inner radius. |
 | `border-outer`, `border-inner` | Physical aliases for the sector's `border-top` outer arc and `border-bottom` inner arc. |
 | `border-start`, `border-end` | Physical aliases for the radial edges at the sector's start and end angles. These map to `border-left` and `border-right` according to the parent's sweep direction. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Insets sector content. Top/bottom mean outer/inner; left/right mean start/end according to sweep. Start/end padding is a constant physical distance from each radial edge. |
@@ -493,10 +493,27 @@ wrap children in a nested container to request a vbox, hbox, table, or ordinary
 flow.
 
 Set `position="relative"` or `position="absolute"` to remove a child from
-sector flow. Existing positional side attributes still imply relative
-positioning. Positioned children use sector references; omitted label origins
-default to midpoint angle and radius. `origin-x="start|center|end"` pairs with
-left/center/right glyph alignment unless `text-align` overrides it.
+sector flow. `start`, `end`, `outer`, or `inner` also imply relative
+positioning when `position` is omitted. A relative child uses `start` or `end`
+to select and inset from the correspondingly named padded radial edge, and
+`outer` or `inner` to select and inset from the corresponding radius. An
+omitted axis uses that axis's midpoint. Angular insets are constant page
+distances from the radial edge for both sweep directions, and negative
+offsets may cross the sector boundary.
+
+Opposing radial attributes select one anchor rather than stretching the child.
+The declaration from the later cascade layer wins; within one layer `start`
+wins over `end` and `outer` wins over `inner`. The rectangular
+`left`/`right`/`top`/`bottom` attributes remain parsed but are dormant for a
+relative direct sector child and do not imply positioning there. They retain
+their ordinary page-coordinate behavior for an absolute child.
+
+`origin-x="start|center|end"` and
+`origin-y="top|middle|bottom"` select the point on a straight child's own box
+that attaches to the resolved radial point. They default to start/top, as for
+ordinary widgets. Numeric origins retain their ordinary transform-origin
+meaning. `shift-x` and `shift-y` are final page-axis nudges. Absolute children
+continue to use page coordinates.
 
 Labels without an effective `angle` follow their resolved circular arc with
 automatic readable orientation. Any effective angle, including `angle="0"`,
@@ -516,10 +533,10 @@ mode, where LTML computes each line width from the page-axis wedge chord.
 
 All static paragraphs in one sector must use the same mode. To combine a
 curved paragraph and an `angle="0"` paragraph, position one of them or place it
-in another sector or nested container. Positioned curved paragraphs default
-`origin-y` to `middle`; when `origin-x` is omitted it follows effective
-start/center/end text alignment. Sector angle, facing, alignment, and origins
-are never defaults for paragraph children.
+in another sector or nested container. Positioned curved paragraphs use radial
+edge attributes to select their radius and angular anchor; box origins are dormant
+while the text is curved. Sector angle, facing, alignment, origins, and
+placement are never defaults for paragraph children.
 
 In curved mode, paragraph dimensions, margins, padding, fill, borders,
 `text-fill`, and generic `rotate` remain parsed but dormant. Bullets and
@@ -1620,10 +1637,10 @@ its separate angular-anchor semantics.
 - `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
 - Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
-- Positioned children inside a sector may use `origin-x="start|center|end"` and
-  `origin-y="inner|middle|outer"` to anchor to radial reference points.
+- Relative children use `start`/`end` for angular edges and `outer`/`inner`
+  for radii.
 - Static sector children participate in shape-aware source-order flow.
-- Non-static children are overlays; omitted origins use midpoint angle and radius.
+- Non-static children are overlays; an omitted radial axis uses its midpoint.
 - Sector paragraphs curve by default; use `angle="0"` for horizontal wedge-aware wrapping.
 
 ### Radial-Out Details
@@ -1649,10 +1666,10 @@ its separate angular-anchor semantics.
 - `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
 - Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
-- Positioned children inside a sector may use `origin-x="start|center|end"` and
-  `origin-y="inner|middle|outer"` to anchor to radial reference points.
+- Relative children use `start`/`end` for angular edges and `outer`/`inner`
+  for radii.
 - Static sector children participate in shape-aware source-order flow.
-- Non-static children are overlays; omitted origins use midpoint angle and radius.
+- Non-static children are overlays; an omitted radial axis uses its midpoint.
 - Sector paragraphs curve by default; use `angle="0"` for horizontal wedge-aware wrapping.
 
 Example:
@@ -1661,7 +1678,10 @@ Example:
 <div layout="radial" rows="3" angles="0,45,90,135,225,315,360" base-angle="-90" width="4in" height="4in">
   <sector colspan="2">
     <label>Curved title</label>
-    <label angle="90" position="relative" origin-x="end" origin-y="outer">12</label>
+    <label angle="90" position="relative" start="5pt" outer="5pt"
+           origin-x="center" origin-y="middle">12</label>
+    <label angle="90" position="relative" end="12pt"
+           origin-x="center" origin-y="middle">07</label>
   </sector>
   <p colspan="2">This paragraph curves inside its implicit sector.</p>
   <p colspan="2" angle="0">This paragraph uses horizontal wedge-aware wrapping.</p>

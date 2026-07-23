@@ -375,17 +375,17 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 				if label, ok := item.widget.(*StdLabel); ok {
 					if _, straight := label.sectorTextAngle(); !straight {
 						factor := 0.5
-						switch label.sectorAnchorOriginX() {
-						case OriginXStart:
+						switch label.sectorTextAlign() {
+						case HAlignLeft:
 							factor = 0
-						case OriginXEnd:
+						case HAlignRight:
 							factor = 1
 						}
 						yFactor := 0.5
-						switch label.sectorOriginY() {
-						case OriginYTop:
+						switch label.sectorTextVAlign() {
+						case VAlignTop:
 							yFactor = 0
-						case OriginYBottom:
+						case VAlignBottom:
 							yFactor = 1
 						}
 						arcOffset := slot.MinX + item.width*factor - rowAxisX

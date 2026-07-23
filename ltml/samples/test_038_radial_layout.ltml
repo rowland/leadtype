@@ -18,7 +18,7 @@
       <label angle="0" font.weight="Bold" font.size="16">03</label>
       <sector colspan="2" fill="MistyRose" border="ring">
         <label>Curved center</label>
-        <label angle="90" position="relative" origin-x="end" origin-y="middle" right="0.35" top="0" font.size="11">07</label>
+        <label angle="90" position="relative" end="0.2" origin-x="center" origin-y="middle" font.size="11">07</label>
       </sector>
       <p colspan="2" padding="0.08" font.size="8">Implicit paragraphs curve too.</p>
 
