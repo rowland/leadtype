@@ -421,8 +421,8 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `angles`         | Comma-separated angular boundary bearings relative to `base-angle`. LTML normalizes, sorts, and deduplicates them before building sectors. |
 | `sweep`          | Radial sector sweep direction: `ccw` (default) or `cw`. This changes how sectors span between boundaries without changing what the angle numbers mean. |
 | `center-x`, `center-y` | Optional radial center coordinates in the container's content box. |
-| `r`              | Optional outer radius for radial layout. Otherwise LTML infers it from the smaller content dimension. |
-| `r0`             | Optional inner radius for radial layout. Preferred alias when paired with `r`. |
+| `r`, `r1`        | Optional outer radius for `radial` and `radial-out`. `r1` is the explicit counterpart to `r0`; `r` is its shorthand alias. Either allows width and height to be inferred from the outer diameter. If both occur in one cascade layer, `r1` wins. |
+| `r0`             | Optional inner radius for `radial` and `radial-out`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
 | `bullets`        | Optional whitespace-separated list of bullet styles applied to direct child paragraphs in `layout="vbox"` containers. The predefined `unordered` style renders the default circle; the predefined `ordered` style renders the child paragraph's ordinal number. |
 | `role` | Override the computed PDF structure type when `ua="true"`, for example `L` or `Table`. |
@@ -1634,7 +1634,8 @@ its separate angular-anchor semantics.
   offsets. Differently offset rows cannot share the current annular-sector
   geometry.
 - A single distinct `angles` value means one full-circle sector.
-- `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
+- `center-x`, `center-y`, `r0`, and `r1` override inferred geometry; `r` is
+  retained as the shorthand outer-radius alias.
 - Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Relative children use `start`/`end` for angular edges and `outer`/`inner`
@@ -1663,7 +1664,8 @@ its separate angular-anchor semantics.
 - A sector may span multiple rows only when those rows have equivalent angular
   offsets.
 - A single distinct `angles` value means one full-circle sector.
-- `center-x`, `center-y`, `r`, and `r0` override inferred geometry.
+- `center-x`, `center-y`, `r0`, and `r1` override inferred geometry; `r` is
+  retained as the shorthand outer-radius alias.
 - Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Relative children use `start`/`end` for angular edges and `outer`/`inner`

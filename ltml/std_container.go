@@ -323,6 +323,11 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 	if radius, ok := attrs["r"]; ok {
 		c.outerRadius = ParseMeasurement(radius, c.Units())
 	}
+	// r1 is the explicit outer member of the r0/r1 pair and therefore wins
+	// over the r alias when both are declared in the same cascade layer.
+	if radius1, ok := attrs["r1"]; ok {
+		c.outerRadius = ParseMeasurement(radius1, c.Units())
+	}
 	if radius0, ok := attrs["r0"]; ok {
 		c.innerRadius = ParseMeasurement(radius0, c.Units())
 	}

@@ -1023,6 +1023,71 @@ func TestLayoutRadialTable_R0AliasSetsInnerRadius(t *testing.T) {
 	}
 }
 
+func TestLayoutRadialTable_R1SetsOuterRadiusAndInfersDimensions(t *testing.T) {
+	for _, manager := range []string{"radial", "radial-out"} {
+		t.Run(manager, func(t *testing.T) {
+			container := &StdContainer{}
+			container.SetScope(&defaultScope)
+			container.SetAttrs(map[string]string{
+				"layout":   manager,
+				"rows":     "1",
+				"cols":     "1",
+				"center-x": "75",
+				"center-y": "80",
+				"r0":       "20",
+				"r1":       "60",
+			})
+
+			sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+			sector.font = testSectorFont()
+			if err := sector.SetContainer(container); err != nil {
+				t.Fatal(err)
+			}
+			container.AddChild(sector)
+
+			if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+				t.Fatal(err)
+			}
+			if got, want := container.Width(), 120.0; !floatEquals(got, want) {
+				t.Fatalf("inferred width = %v, want %v", got, want)
+			}
+			if got, want := container.Height(), 120.0; !floatEquals(got, want) {
+				t.Fatalf("inferred height = %v, want %v", got, want)
+			}
+			if got, want := sector.geometry.CenterX, 75.0; !floatEquals(got, want) {
+				t.Fatalf("center x = %v, want %v", got, want)
+			}
+			if got, want := sector.geometry.CenterY, 80.0; !floatEquals(got, want) {
+				t.Fatalf("center y = %v, want %v", got, want)
+			}
+			if got, want := sector.geometry.InnerRadius, 20.0; !floatEquals(got, want) {
+				t.Fatalf("inner radius = %v, want %v", got, want)
+			}
+			if got, want := sector.geometry.OuterRadius, 60.0; !floatEquals(got, want) {
+				t.Fatalf("outer radius = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestStdContainer_R1AndRAliasFollowCascadePrecedence(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{"units": "pt", "r": "40", "r1": "60"})
+	if got, want := container.OuterRadius(), 60.0; !floatEquals(got, want) {
+		t.Fatalf("same-layer outer radius = %v, want r1 value %v", got, want)
+	}
+
+	container.SetAttrs(map[string]string{"r": "70"})
+	if got, want := container.OuterRadius(), 70.0; !floatEquals(got, want) {
+		t.Fatalf("later r outer radius = %v, want %v", got, want)
+	}
+
+	container.SetAttrs(map[string]string{"r1": "80"})
+	if got, want := container.OuterRadius(), 80.0; !floatEquals(got, want) {
+		t.Fatalf("later r1 outer radius = %v, want %v", got, want)
+	}
+}
+
 func TestLayoutRadialOut_OrderColsFillsOutwardBeforeNextAngularSlot(t *testing.T) {
 	container := positionedContainer(0, 0, 200, 200)
 	container.SetScope(&defaultScope)
