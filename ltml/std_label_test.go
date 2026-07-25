@@ -40,6 +40,7 @@ type labelTestWriter struct {
 	printed        []*rich_text.RichText
 	clipped        []*rich_text.RichText
 	clippedText    []string
+	clipCalls      int
 	paragraphOpts  []options.Options
 	printedPages   []int
 	plainPrinted   []string
@@ -88,6 +89,7 @@ func (w *labelTestWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart
 	return nil
 }
 func (w *labelTestWriter) Clip(fn func()) error {
+	w.clipCalls++
 	if fn != nil {
 		fn()
 	}

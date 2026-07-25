@@ -450,7 +450,7 @@ behavior for that region.
 
 Direct non-`<sector>` children of a radial container are wrapped in an
 implicit sector automatically. Cell attributes (`colspan`, `rowspan`, `fill`,
-borders, `padding`, `display`, and `z-index`) belong to that wrapper; ordinary widget
+borders, `padding`, `clip`, `display`, and `z-index`) belong to that wrapper; ordinary widget
 attributes remain on the source child. `units` applies to both. The transparent
 wrapper does not copy the child's identity, classes, role, or alternative text.
 For example, a `border` on a direct radial label borders its sector. To border
@@ -464,6 +464,7 @@ both, write an explicit sector containing a separately bordered label.
 | `border-outer`, `border-inner` | Physical aliases for the sector's `border-top` outer arc and `border-bottom` inner arc. |
 | `border-start`, `border-end` | Physical aliases for the radial edges at the sector's start and end angles. These map to `border-left` and `border-right` according to the parent's sweep direction. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Insets sector content. Top/bottom mean outer/inner; left/right mean start/end according to sweep. Start/end padding is a constant physical distance from each radial edge. |
+| `clip` | Whether children are clipped to the padded sector path. Defaults to `true`; use `false` for positioned overlays that may extend beyond the sector. |
 | `layout.hpadding`, `layout.vpadding` | Horizontal item and vertical row gaps for the sector's shape-aware flow. |
 
 An aggregate `border` supplies all four edges. Edge declarations override it:
@@ -482,6 +483,31 @@ elements directly inside `<sector>` are errors; wrap them in `<label>`.
 Sector attributes are not label defaults. Font, direction, and units retain
 their normal container inheritance, while label angle, facing, alignment,
 origins, and placement must be authored or styled on the label.
+
+An invisible concentric radial layout can position labels around a shared
+center and radius. Disable clipping on its sectors when the labels should
+extend beyond their positioning cells:
+
+```xml
+<style>
+  #corner-labels > sector { clip: false; }
+  #corner-labels label {
+    position: relative;
+    outer: 0;
+    origin-x: center;
+    origin-y: middle;
+    angle: 0;
+  }
+</style>
+<disc id="corner-labels" position="absolute"
+      center-x="50%" center-y="50%" r0="3in" r1="3.5in"
+      rows="1" cols="4">
+  <sector><label>Fee</label></sector>
+  <sector><label>Fie</label></sector>
+  <sector><label>Foe</label></sector>
+  <sector><label>Fum</label></sector>
+</disc>
+```
 
 Static sector children participate in a compact shape-aware flow. LTML
 preserves source order, chooses row breaks to fit the padded wedge, centers the

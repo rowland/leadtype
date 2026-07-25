@@ -553,6 +553,7 @@ func applyAttrs(target any, receiver HasAttrs, attrs map[string]string) {
 func splitImplicitSectorAttrs(attrs map[string]string) (cell, child map[string]string) {
 	for name, value := range attrs {
 		cellOwned := name == "colspan" || name == "rowspan" || name == "display" || name == "z-index" ||
+			name == "clip" ||
 			name == "fill" || strings.HasPrefix(name, "fill.") ||
 			name == "border" || strings.HasPrefix(name, "border.") || strings.HasPrefix(name, "border-") ||
 			name == "padding" || strings.HasPrefix(name, "padding-")

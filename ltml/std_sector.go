@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strings"
 
 	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
@@ -120,6 +121,7 @@ type StdSector struct {
 	flowSlots          map[Widget]radialBounds
 	flowLabelAnchors   map[*StdLabel]sectorFlowLabelAnchor
 	positionedChildren map[*StdWidget]sectorPositionedChild
+	clipDisabled       bool
 }
 
 func (s *StdSector) DrawBorder(w Writer) error {
@@ -377,6 +379,9 @@ func (s *StdSector) ResolveSectorPlacement(widget *StdWidget) sectorPositionedPl
 func (s *StdSector) SetAttrs(attrs map[string]string) {
 	s.StdContainer.SetAttrs(attrs)
 	s.setSectorBorderResourceAttrs(attrs, s.Units())
+	if clip, ok := attrs["clip"]; ok {
+		s.clipDisabled = strings.TrimSpace(clip) == "false"
+	}
 }
 
 func (s *StdSector) cachedLabelLayout(label *StdLabel) *sectorLabelLayout {
@@ -719,6 +724,9 @@ func sectorCurvedTextOrientation(facing sectorFacing, belowCenter bool) (pdf.Cur
 func (s *StdSector) withSectorClip(w Writer, fn func() error) error {
 	if len(s.contentPolygon) < 3 {
 		return nil
+	}
+	if s.clipDisabled {
+		return fn()
 	}
 	var clipErr error
 	var renderErr error

@@ -105,6 +105,57 @@ func TestStdSectorBorderNoneRequiresExplicitPenToReviveAlias(t *testing.T) {
 	}
 }
 
+func TestStdSectorContentClipping(t *testing.T) {
+	sector := &StdSector{
+		contentPolygon: []radialPoint{{X: 0, Y: 0}, {X: 10, Y: 0}, {X: 0, Y: 10}},
+	}
+
+	for _, test := range []struct {
+		name      string
+		attrs     []map[string]string
+		wantClips int
+	}{
+		{name: "default", wantClips: 1},
+		{name: "explicit true", attrs: []map[string]string{{"clip": "true"}}, wantClips: 1},
+		{name: "disabled", attrs: []map[string]string{{"clip": "false"}}, wantClips: 0},
+		{name: "later disabled", attrs: []map[string]string{{"clip": "true"}, {"clip": "false"}}, wantClips: 0},
+		{name: "later enabled", attrs: []map[string]string{{"clip": "false"}, {"clip": "true"}}, wantClips: 1},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			sector.clipDisabled = false
+			for _, attrs := range test.attrs {
+				sector.SetAttrs(attrs)
+			}
+			writer := &labelTestWriter{t: t}
+			painted := 0
+			if err := sector.withSectorClip(writer, func() error {
+				painted++
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			if writer.clipCalls != test.wantClips || painted != 1 {
+				t.Fatalf("clip calls/paint calls = %d/%d, want %d/1", writer.clipCalls, painted, test.wantClips)
+			}
+		})
+	}
+}
+
+func TestStdSectorClipDisabledStillSuppressesCollapsedGeometry(t *testing.T) {
+	sector := &StdSector{clipDisabled: true}
+	writer := &labelTestWriter{t: t}
+	painted := false
+	if err := sector.withSectorClip(writer, func() error {
+		painted = true
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if painted || writer.clipCalls != 0 {
+		t.Fatalf("collapsed sector painted/clipped = %v/%d, want false/0", painted, writer.clipCalls)
+	}
+}
+
 func TestStdSectorDrawBorderStrokesIndividualArcsWithoutRadialSeam(t *testing.T) {
 	sector := &StdSector{}
 	sector.geometry = radialSectorGeometry{
@@ -262,8 +313,8 @@ func TestParse_ImplicitSectorOwnsCellAttrsAcrossCascadeLayers(t *testing.T) {
 <ltml>
   <page>
     <style>
-      label { border: Red; padding: 2pt; font.size: 9pt; }
-      label:first-child { fill: Gold; z-index: 7; }
+      label { border: Red; padding: 2pt; font.size: 9pt; clip: true; }
+      label:first-child { fill: Gold; z-index: 7; clip: false; }
     </style>
     <div layout="radial" cols="2">
       <label id="source" class="number" units="pt" colspan="2" border="Blue"
@@ -287,6 +338,9 @@ func TestParse_ImplicitSectorOwnsCellAttrsAcrossCascadeLayers(t *testing.T) {
 	}
 	if sector.PaddingTop() != 2 || label.PaddingTop() != 0 {
 		t.Fatalf("padding sector/label = %v/%v, want 2/0", sector.PaddingTop(), label.PaddingTop())
+	}
+	if !sector.clipDisabled {
+		t.Fatal("implicit sector did not receive clip=false")
 	}
 	if sector.Units() != "pt" || label.Units() != "pt" {
 		t.Fatalf("units sector/label = %q/%q, want pt/pt", sector.Units(), label.Units())
