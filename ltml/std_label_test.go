@@ -74,6 +74,13 @@ type rotationCall struct {
 }
 
 func (w *labelTestWriter) FontColor() colors.Color { return w.fontColor }
+func (w *labelTestWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
+func (w *labelTestWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
+func (w *labelTestWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
 func (w *labelTestWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }
@@ -153,6 +160,8 @@ func (w *labelTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bo
 func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
+func (w *labelTestWriter) Fill() error          { return nil }
+func (w *labelTestWriter) FillAndStroke() error { return nil }
 func (w *labelTestWriter) Fonts() []*font.Font {
 	if len(w.fonts) == 0 && w.t != nil {
 		w.fonts = defaultTestFonts(w.t)

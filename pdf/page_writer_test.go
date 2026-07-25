@@ -479,6 +479,51 @@ func TestPageWriter_CircleFillAndStroke(t *testing.T) {
 	}
 }
 
+func TestPageWriter_CompoundCirclePathWithReversedInnerSubpath(t *testing.T) {
+	dw := NewDocWriter()
+	pw := newPageWriter(dw, options.Options{})
+	pw.SetFillColor(red)
+
+	var outerStream, innerStream string
+	if err := pw.Path(func() {
+		if err := pw.AppendClosedShapePath(ClosedShape{
+			Kind:   ClosedShapeCircle,
+			Center: Location{X: 10, Y: 10},
+			Radius: 5,
+		}); err != nil {
+			t.Fatalf("AppendClosedShapePath outer returned error: %v", err)
+		}
+		outerStream = pw.stream.String()
+		if err := pw.AppendClosedShapePath(ClosedShape{
+			Kind:    ClosedShapeCircle,
+			Center:  Location{X: 10, Y: 10},
+			Radius:  2,
+			Reverse: true,
+		}); err != nil {
+			t.Fatalf("AppendClosedShapePath inner returned error: %v", err)
+		}
+		innerStream = pw.stream.String()
+		if err := pw.Fill(); err != nil {
+			t.Fatalf("Fill returned error: %v", err)
+		}
+	}); err != nil {
+		t.Fatalf("Path returned error: %v", err)
+	}
+
+	got := pw.stream.String()
+	fillCount := strings.Count(got, "f\n")
+	if fillCount != 1 {
+		t.Fatalf("fill operator count = %d, want 1; stream:\n%s", fillCount, got)
+	}
+	closeCount := strings.Count(got, "h\n")
+	if closeCount != 2 {
+		t.Fatalf("closepath operator count = %d, want 2; stream:\n%s", closeCount, got)
+	}
+	if outerStream == innerStream {
+		t.Fatal("expected reversed inner subpath to differ from outer subpath stream")
+	}
+}
+
 func TestPageWriter_EllipseFillAndStrokeClosesPath(t *testing.T) {
 	dw := NewDocWriter()
 	pw := newPageWriter(dw, options.Options{})

@@ -440,29 +440,41 @@ func (c *StdContainer) CenterY() (float64, bool) {
 	return c.centerY, c.centerYMode != DimUnspecified
 }
 
+func (c *StdContainer) hasPositionedCenter() bool {
+	return c.centerXMode != DimUnspecified || c.centerYMode != DimUnspecified
+}
+
 func (c *StdContainer) usesPositionedRadialCenter(position Position) bool {
 	return position != Static &&
 		isRadialLayoutStyle(c.layout) &&
-		(c.centerXMode != DimUnspecified || c.centerYMode != DimUnspecified)
+		c.hasPositionedCenter()
+}
+
+func (c *StdContainer) radialCenterAnchorOffset() (float64, float64) {
+	if c.outerRadius > 0 {
+		return c.MarginLeft() + c.PaddingLeft() + c.outerRadius,
+			c.MarginTop() + c.PaddingTop() + c.outerRadius
+	}
+	return c.MarginLeft() + c.PaddingLeft() + ContentWidth(c)/2,
+		c.MarginTop() + c.PaddingTop() + ContentHeight(c)/2
+}
+
+func (c *StdContainer) placeBoxAtPositionedCenter(position Position, anchorX, anchorY float64) {
+	targetX, targetY := c.positionedRadialCenter(position)
+	if position == Relative && c.container != nil {
+		targetX -= c.container.Left()
+		targetY -= c.container.Top()
+	}
+	c.SetLeft(targetX - anchorX)
+	c.SetTop(targetY - anchorY)
 }
 
 func (c *StdContainer) resolvePositionedRadialBox(position Position) {
 	if !c.usesPositionedRadialCenter(position) {
 		return
 	}
-	targetX, targetY := c.positionedRadialCenter(position)
-	offsetX := c.MarginLeft() + c.PaddingLeft() + ContentWidth(c)/2
-	offsetY := c.MarginTop() + c.PaddingTop() + ContentHeight(c)/2
-	if c.outerRadius > 0 {
-		offsetX = c.MarginLeft() + c.PaddingLeft() + c.outerRadius
-		offsetY = c.MarginTop() + c.PaddingTop() + c.outerRadius
-	}
-	if position == Relative && c.container != nil {
-		targetX -= c.container.Left()
-		targetY -= c.container.Top()
-	}
-	c.SetLeft(targetX - offsetX)
-	c.SetTop(targetY - offsetY)
+	anchorX, anchorY := c.radialCenterAnchorOffset()
+	c.placeBoxAtPositionedCenter(position, anchorX, anchorY)
 }
 
 func (c *StdContainer) positionedRadialCenter(position Position) (float64, float64) {

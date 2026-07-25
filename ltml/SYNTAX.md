@@ -600,7 +600,8 @@ Shared attributes:
 | `fill` | Reference to a named `<brush>` style for the interior. |
 | `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Outer spacing around the shape widget. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Inner spacing inside the shape widget. |
-| `reverse` | Reverse the path direction for shapes that support it. |
+| `reverse` | Reverse the path direction for shapes that support it. Nested `<circle reverse="true">` (and other closed shapes) cut holes from a parent's fill when the parent uses a composite path. |
+| `center-x`, `center-y` | Optional center coordinates for layout and drawing. Measurements and percentages use physical-page coordinates for absolute shapes and parent-box coordinates for relative shapes. Declaring either coordinate implies relative positioning unless `position` is explicit. |
 | `alt` | When `ua="true"`, opt the shape into tagged output and use this text as `/ActualText`. |
 | `role` | Override the default tagged role when `ua="true"`. Shapes with `alt` default to `Figure`. |
 

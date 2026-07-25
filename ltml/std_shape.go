@@ -23,9 +23,42 @@ func (s *StdShape) PaintBackground(w Writer) error {
 
 func (s *StdShape) SetAttrs(attrs map[string]string) {
 	s.StdContainer.SetAttrs(attrs)
+	if _, positionSet := attrs["position"]; !positionSet &&
+		MapHasAnyKey(attrs, "center-x", "center-y") {
+		s.position = Relative
+	}
 	if reverse, ok := attrs["reverse"]; ok {
 		s.reverse = reverse == "true"
 	}
+}
+
+func (s *StdShape) usesPositionedRadialCenter(position Position) bool {
+	return position != Static && s.hasPositionedCenter()
+}
+
+func (s *StdShape) shapePlacementRadius() float64 {
+	return s.radius()
+}
+
+func (s *StdShape) shapePlacementAnchor() (float64, float64) {
+	r := s.shapePlacementRadius()
+	return s.MarginLeft() + s.PaddingLeft() + r,
+		s.MarginTop() + s.PaddingTop() + r
+}
+
+func (s *StdShape) resolvePositionedRadialBox(position Position) {
+	if !s.usesPositionedRadialCenter(position) {
+		return
+	}
+	anchorX, anchorY := s.shapePlacementAnchor()
+	s.placeBoxAtPositionedCenter(position, anchorX, anchorY)
+}
+
+func (s *StdShape) center() (float64, float64) {
+	if s.hasPositionedCenter() {
+		return s.positionedRadialCenter(s.Position())
+	}
+	return s.shapeLeft() + s.shapeWidth()/2, s.shapeTop() + s.shapeHeight()/2
 }
 
 func (s *StdShape) drawChildren(w Writer) error {
@@ -45,10 +78,6 @@ func (s *StdShape) applyBorderAndFill(w Writer) error {
 		s.fill.Apply(w)
 	}
 	return nil
-}
-
-func (s *StdShape) center() (float64, float64) {
-	return s.shapeLeft() + s.shapeWidth()/2, s.shapeTop() + s.shapeHeight()/2
 }
 
 func (s *StdShape) radius() float64 {
@@ -91,16 +120,7 @@ type StdCircle struct {
 }
 
 func (c *StdCircle) DrawContent(w Writer) error {
-	if err := withGraphicAccessibility(w, &c.StdWidget, "Figure", func() error {
-		if err := c.applyBorderAndFill(w); err != nil {
-			return err
-		}
-		x, y := c.center()
-		return w.Circle(x, y, c.radius(), c.border != nil, c.fill != nil, c.reverse)
-	}); err != nil {
-		return err
-	}
-	return c.drawChildren(w)
+	return c.drawShapeContent(w, &c.StdWidget, c.appendShapePath, c.drawCircleImmediate)
 }
 
 func (c *StdCircle) PreferredHeight(Writer) (float64, error) {
@@ -157,16 +177,7 @@ type StdEllipse struct {
 }
 
 func (e *StdEllipse) DrawContent(w Writer) error {
-	if err := withGraphicAccessibility(w, &e.StdWidget, "Figure", func() error {
-		if err := e.applyBorderAndFill(w); err != nil {
-			return err
-		}
-		x, y := e.center()
-		return w.Ellipse(x, y, e.radiusX(), e.radiusY(), e.border != nil, e.fill != nil, e.reverse)
-	}); err != nil {
-		return err
-	}
-	return e.drawChildren(w)
+	return e.drawShapeContent(w, &e.StdWidget, e.appendShapePath, e.drawEllipseImmediate)
 }
 
 func (e *StdEllipse) SetAttrs(attrs map[string]string) {
@@ -193,6 +204,10 @@ func (e *StdEllipse) radiusY() float64 {
 	return e.shapeHeight() / 2
 }
 
+func (e *StdEllipse) shapePlacementRadius() float64 {
+	return max(e.radiusX(), e.radiusY())
+}
+
 type StdPolygon struct {
 	StdShape
 	r        float64
@@ -201,16 +216,7 @@ type StdPolygon struct {
 }
 
 func (p *StdPolygon) DrawContent(w Writer) error {
-	if err := withGraphicAccessibility(w, &p.StdWidget, "Figure", func() error {
-		if err := p.applyBorderAndFill(w); err != nil {
-			return err
-		}
-		x, y := p.center()
-		return w.Polygon(x, y, p.radius(), p.Sides(), p.border != nil, p.fill != nil, p.reverse, p.rotation)
-	}); err != nil {
-		return err
-	}
-	return p.drawChildren(w)
+	return p.drawShapeContent(w, &p.StdWidget, p.appendShapePath, p.drawPolygonImmediate)
 }
 
 func (p *StdPolygon) SetAttrs(attrs map[string]string) {
@@ -269,16 +275,7 @@ type StdStar struct {
 }
 
 func (s *StdStar) DrawContent(w Writer) error {
-	if err := withGraphicAccessibility(w, &s.StdWidget, "Figure", func() error {
-		if err := s.applyBorderAndFill(w); err != nil {
-			return err
-		}
-		x, y := s.center()
-		return w.Star(x, y, s.outerRadius(), s.innerRadius(), s.Points(), s.border != nil, s.fill != nil, s.reverse, s.rotation)
-	}); err != nil {
-		return err
-	}
-	return s.drawChildren(w)
+	return s.drawShapeContent(w, &s.StdWidget, s.appendShapePath, s.drawStarImmediate)
 }
 
 func (s *StdStar) SetAttrs(attrs map[string]string) {
@@ -418,16 +415,7 @@ type StdPie struct {
 }
 
 func (p *StdPie) DrawContent(w Writer) error {
-	if err := withGraphicAccessibility(w, &p.StdWidget, "Figure", func() error {
-		if err := p.applyBorderAndFill(w); err != nil {
-			return err
-		}
-		x, y := p.center()
-		return w.Pie(x, y, p.radius(), p.startAngle, p.endAngle, p.border != nil, p.fill != nil, p.reverse)
-	}); err != nil {
-		return err
-	}
-	return p.drawChildren(w)
+	return p.drawShapeContent(w, &p.StdWidget, p.appendShapePath, p.drawPieImmediate)
 }
 
 type StdArch struct {
@@ -439,16 +427,7 @@ type StdArch struct {
 }
 
 func (a *StdArch) DrawContent(w Writer) error {
-	if err := withGraphicAccessibility(w, &a.StdWidget, "Figure", func() error {
-		if err := a.applyBorderAndFill(w); err != nil {
-			return err
-		}
-		x, y := a.center()
-		return w.Arch(x, y, a.outerRadius(), a.innerRadius(), a.startAngle, a.endAngle, a.border != nil, a.fill != nil, a.reverse)
-	}); err != nil {
-		return err
-	}
-	return a.drawChildren(w)
+	return a.drawShapeContent(w, &a.StdWidget, a.appendShapePath, a.drawArchImmediate)
 }
 
 func (a *StdArch) PreferredHeight(Writer) (float64, error) {
@@ -499,6 +478,10 @@ func (a *StdArch) innerRadius() float64 {
 		return a.r2
 	}
 	return a.outerRadius() * 0.5
+}
+
+func (a *StdArch) shapePlacementRadius() float64 {
+	return a.outerRadius()
 }
 
 func init() {

@@ -165,6 +165,16 @@ func (m *mockWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fi
 	return nil
 }
 
+func (m *mockWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
+
+func (m *mockWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
+
+func (m *mockWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
+
 func (m *mockWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
 	return nil
 }
@@ -220,6 +230,9 @@ func (m *mockWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) e
 func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
+
+func (m *mockWriter) Fill() error          { return nil }
+func (m *mockWriter) FillAndStroke() error { return nil }
 
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontCalls = append(m.setFontCalls, name)

@@ -877,6 +877,10 @@ func (dw *DocWriter) DrawClosedShape(shape ClosedShape, border, fill bool) error
 	return dw.CurPage().DrawClosedShape(shape, border, fill)
 }
 
+func (dw *DocWriter) AppendClosedShapePath(shape ClosedShape) error {
+	return dw.CurPage().AppendClosedShapePath(shape)
+}
+
 func (dw *DocWriter) CirclePath(x, y, r float64, reverse bool) error {
 	return dw.CurPage().CirclePath(x, y, r, reverse)
 }
@@ -905,8 +909,16 @@ func (dw *DocWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, re
 	return dw.CurPage().Pie(x, y, r, startAngle, endAngle, border, fill, reverse)
 }
 
+func (dw *DocWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	return dw.CurPage().AppendPiePath(x, y, r, startAngle, endAngle, reverse)
+}
+
 func (dw *DocWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return dw.CurPage().Arch(x, y, r1, r2, startAngle, endAngle, border, fill, reverse)
+}
+
+func (dw *DocWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	return dw.CurPage().AppendArchPath(x, y, r1, r2, startAngle, endAngle, reverse)
 }
 
 func (dw *DocWriter) PointsForPolygon(x, y, r float64, sides int, rotation float64) []Location {

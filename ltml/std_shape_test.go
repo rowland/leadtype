@@ -24,11 +24,60 @@ type shapeCall struct {
 
 type shapeTestWriter struct {
 	labelTestWriter
-	calls    []shapeCall
-	inPath   bool
-	strokes  int
-	pathRuns int
-	curves   int
+	calls         []shapeCall
+	appendPaths   []pdf.ClosedShape
+	events        []string
+	inPath        bool
+	strokes       int
+	fills         int
+	fillAndStrokes int
+	pathRuns      int
+	curves        int
+}
+
+func (w *shapeTestWriter) AppendClosedShapePath(shape pdf.ClosedShape) error {
+	w.appendPaths = append(w.appendPaths, shape)
+	w.events = append(w.events, "append")
+	return nil
+}
+
+func (w *shapeTestWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	w.events = append(w.events, "appendPie")
+	return nil
+}
+
+func (w *shapeTestWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	w.events = append(w.events, "appendArch")
+	return nil
+}
+
+func (w *shapeTestWriter) Fill() error {
+	if !w.inPath {
+		t := w.t
+		if t != nil {
+			t.Fatalf("Fill() called outside Path()")
+		}
+	}
+	w.fills++
+	w.events = append(w.events, "fill")
+	return nil
+}
+
+func (w *shapeTestWriter) FillAndStroke() error {
+	if !w.inPath {
+		t := w.t
+		if t != nil {
+			t.Fatalf("FillAndStroke() called outside Path()")
+		}
+	}
+	w.fillAndStrokes++
+	w.events = append(w.events, "fillAndStroke")
+	return nil
+}
+
+func (w *shapeTestWriter) Print(text string) error {
+	w.events = append(w.events, "print:"+text)
+	return w.labelTestWriter.Print(text)
 }
 
 func (w *shapeTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error {
@@ -120,6 +169,166 @@ func (w *shapeTestWriter) Stroke() error {
 	}
 	w.strokes++
 	return nil
+}
+
+func TestStdCircle_DrawContent_CompositeTireUsesSinglePathFill(t *testing.T) {
+	outer := &StdCircle{}
+	outer.SetLeft(0)
+	outer.SetTop(0)
+	outer.SetWidth(100)
+	outer.SetHeight(100)
+	outer.fill = &BrushStyle{id: "fill", color: NamedColor("gold")}
+
+	inner := &StdCircle{}
+	inner.SetAttrs(map[string]string{"r": "20pt", "reverse": "true"})
+	outer.AddChild(inner)
+	if err := inner.SetContainer(outer); err != nil {
+		t.Fatal(err)
+	}
+
+	w := &shapeTestWriter{}
+	w.t = t
+	if err := outer.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 1 {
+		t.Fatalf("pathRuns = %d, want 1", w.pathRuns)
+	}
+	if w.fills != 1 {
+		t.Fatalf("fills = %d, want 1", w.fills)
+	}
+	if len(w.appendPaths) != 2 {
+		t.Fatalf("appendPaths = %d, want 2", len(w.appendPaths))
+	}
+	if w.appendPaths[0].Reverse {
+		t.Fatal("outer append path should not be reversed")
+	}
+	if !w.appendPaths[1].Reverse {
+		t.Fatal("inner append path should be reversed")
+	}
+	if len(w.calls) != 0 {
+		t.Fatalf("immediate shape calls = %#v, want none", w.calls)
+	}
+}
+
+func TestStdCircle_DrawContent_CompositePaintsLabelAfterFill(t *testing.T) {
+	outer := &StdCircle{}
+	outer.SetLeft(0)
+	outer.SetTop(0)
+	outer.SetWidth(100)
+	outer.SetHeight(100)
+	outer.fill = &BrushStyle{id: "fill", color: NamedColor("gold")}
+
+	inner := &StdCircle{}
+	inner.SetAttrs(map[string]string{"r": "20pt", "reverse": "true"})
+
+	w := &shapeTestWriter{}
+	w.t = t
+	child := &paintOrderChild{w: w}
+	inner.AddChild(child)
+	outer.AddChild(inner)
+	if err := inner.SetContainer(outer); err != nil {
+		t.Fatal(err)
+	}
+	if err := child.SetContainer(inner); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := outer.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	fillIdx := -1
+	childIdx := -1
+	for i, event := range w.events {
+		if event == "fill" {
+			fillIdx = i
+		}
+		if event == "childDraw" {
+			childIdx = i
+		}
+	}
+	if fillIdx < 0 {
+		t.Fatalf("events = %#v, want fill", w.events)
+	}
+	if childIdx < 0 {
+		t.Fatalf("events = %#v, want child draw", w.events)
+	}
+	if childIdx < fillIdx {
+		t.Fatalf("child drew before fill: events = %#v", w.events)
+	}
+}
+
+type paintOrderChild struct {
+	StdWidget
+	w *shapeTestWriter
+}
+
+func (c *paintOrderChild) DrawContent(w Writer) error {
+	c.w.events = append(c.w.events, "childDraw")
+	return nil
+}
+
+func TestStdCircle_DrawContent_ReversedChildWithFillRedrawsAfterComposite(t *testing.T) {
+	outer := &StdCircle{}
+	outer.SetLeft(0)
+	outer.SetTop(0)
+	outer.SetWidth(100)
+	outer.SetHeight(100)
+	outer.fill = &BrushStyle{id: "fill", color: NamedColor("gold")}
+
+	inner := &StdCircle{}
+	inner.SetAttrs(map[string]string{"r": "20pt", "reverse": "true", "fill": "SkyBlue"})
+
+	outer.AddChild(inner)
+	if err := inner.SetContainer(outer); err != nil {
+		t.Fatal(err)
+	}
+
+	w := &shapeTestWriter{}
+	w.t = t
+	if err := outer.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.appendPaths) != 2 || !w.appendPaths[1].Reverse {
+		t.Fatalf("appendPaths = %#v, want outer + reversed inner", w.appendPaths)
+	}
+	if len(w.calls) != 1 {
+		t.Fatalf("immediate shape calls = %#v, want one inner redraw", w.calls)
+	}
+	call := w.calls[0]
+	if !call.fill || call.border {
+		t.Fatalf("inner redraw = %#v, want fill without border", call)
+	}
+}
+
+func TestStdCircle_DrawContent_LabelOnlyUsesImmediateDraw(t *testing.T) {
+	circle := &StdCircle{}
+	circle.SetLeft(0)
+	circle.SetTop(0)
+	circle.SetWidth(100)
+	circle.SetHeight(100)
+	circle.fill = &BrushStyle{id: "fill", color: NamedColor("gold")}
+
+	w := &shapeTestWriter{}
+	w.t = t
+	child := &paintOrderChild{w: w}
+	circle.AddChild(child)
+	if err := child.SetContainer(circle); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := circle.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 0 {
+		t.Fatalf("pathRuns = %d, want 0", w.pathRuns)
+	}
+	if len(w.calls) != 1 || !w.calls[0].fill {
+		t.Fatalf("shape calls = %#v, want one filled circle", w.calls)
+	}
+	if len(w.appendPaths) != 0 {
+		t.Fatalf("appendPaths = %d, want 0", len(w.appendPaths))
+	}
 }
 
 func TestStdCircle_DrawContent_UsesContentBoxCenterAndRadius(t *testing.T) {
@@ -435,5 +644,84 @@ func TestParse_ShapeTags(t *testing.T) {
 	}
 	if arch, ok := page.children[6].(*StdArch); !ok || arch.r2 == 0 || arch.startAngle != 90 || arch.endAngle != 270 {
 		t.Fatalf("arch = %#v", page.children[6])
+	}
+}
+
+func TestStdCircle_LayoutAbsolute_CenterPlacement(t *testing.T) {
+	page := &StdPage{pageStyle: &PageStyle{width: 400, height: 300}}
+	page.SetScope(&defaultScope)
+	page.SetAttrs(map[string]string{"layout": "absolute"})
+
+	circle := &StdCircle{}
+	circle.SetScope(&defaultScope)
+	if err := circle.SetContainer(page); err != nil {
+		t.Fatal(err)
+	}
+	circle.SetAttrs(map[string]string{
+		"position":  "absolute",
+		"center-x":  "50%",
+		"center-y":  "25%",
+		"r":         "40pt",
+	})
+	page.AddChild(circle)
+
+	if err := LayoutAbsolute(page, page.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+
+	cx, cy := circle.center()
+	if !floatEquals(cx, 200) || !floatEquals(cy, 75) {
+		t.Fatalf("center = (%v,%v), want (200,75)", cx, cy)
+	}
+	if !floatEquals(circle.Left(), 160) || !floatEquals(circle.Top(), 35) {
+		t.Fatalf("box origin = (%v,%v), want (160,35)", circle.Left(), circle.Top())
+	}
+}
+
+func TestStdCircle_DrawContent_CompositeTripleRingUsesNestedPaths(t *testing.T) {
+	outer := &StdCircle{}
+	outer.SetLeft(0)
+	outer.SetTop(0)
+	outer.SetWidth(100)
+	outer.SetHeight(100)
+	outer.fill = &BrushStyle{id: "fill", color: NamedColor("gold")}
+
+	middle := &StdCircle{}
+	middle.SetAttrs(map[string]string{"r": "30pt", "reverse": "true", "fill": "SkyBlue"})
+
+	inner := &StdCircle{}
+	inner.SetAttrs(map[string]string{"r": "10pt", "reverse": "true"})
+
+	outer.AddChild(middle)
+	middle.AddChild(inner)
+	if err := middle.SetContainer(outer); err != nil {
+		t.Fatal(err)
+	}
+	if err := inner.SetContainer(middle); err != nil {
+		t.Fatal(err)
+	}
+
+	w := &shapeTestWriter{}
+	w.t = t
+	if err := outer.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.pathRuns != 2 {
+		t.Fatalf("pathRuns = %d, want 2", w.pathRuns)
+	}
+	if w.fills != 2 {
+		t.Fatalf("fills = %d, want 2", w.fills)
+	}
+	if len(w.appendPaths) != 4 {
+		t.Fatalf("appendPaths = %d, want 4", len(w.appendPaths))
+	}
+	if !w.appendPaths[1].Reverse {
+		t.Fatal("middle append path in outer composite should be reversed")
+	}
+	if !w.appendPaths[3].Reverse {
+		t.Fatal("inner append path in middle composite should be reversed")
+	}
+	if len(w.calls) != 0 {
+		t.Fatalf("immediate shape calls = %#v, want none", w.calls)
 	}
 }

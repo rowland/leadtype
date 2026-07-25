@@ -33,6 +33,13 @@ func (w *layoutProbeWriter) SetProfiler(profiler *profile.Profiler) {
 func (w *layoutProbeWriter) AddFont(family string, opts options.Options) ([]*font.Font, error) {
 	return w.base.AddFont(family, opts)
 }
+func (w *layoutProbeWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
+func (w *layoutProbeWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
+func (w *layoutProbeWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
 func (w *layoutProbeWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
 }
@@ -90,6 +97,8 @@ func (w *layoutProbeWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds
 func (w *layoutProbeWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
 	return nil
 }
+func (w *layoutProbeWriter) Fill() error          { return nil }
+func (w *layoutProbeWriter) FillAndStroke() error { return nil }
 func (w *layoutProbeWriter) FontColor() colors.Color { return w.base.FontColor() }
 func (w *layoutProbeWriter) Fonts() []*font.Font     { return w.base.Fonts() }
 func (w *layoutProbeWriter) FontSize() float64       { return w.base.FontSize() }

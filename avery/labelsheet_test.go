@@ -58,9 +58,18 @@ func (w *testWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, 
 	return nil
 }
 func (w *testWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error { return nil }
+func (w *testWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
+func (w *testWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
+func (w *testWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	return nil
+}
 func (w *testWriter) EnableTaggedPDF(bool)                                           {}
 func (w *testWriter) Circle(x, y, r float64, border, fill, reverse bool) error       { return nil }
 func (w *testWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error { return nil }
+func (w *testWriter) Fill() error                                                   { return nil }
+func (w *testWriter) FillAndStroke() error                                          { return nil }
 func (w *testWriter) FontColor() colors.Color                                        { return colors.Black }
 func (w *testWriter) Fonts() []*font.Font                                            { return nil }
 func (w *testWriter) FontSize() float64                                              { return 12 }

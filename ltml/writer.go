@@ -12,6 +12,9 @@ import (
 )
 
 type Writer interface {
+	AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error
+	AppendClosedShapePath(shape pdf.ClosedShape) error
+	AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error
 	Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error
 	Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error
 	Clip(fn func()) error
@@ -29,6 +32,8 @@ type Writer interface {
 	EnableTaggedPDF(bool)
 	Circle(x, y, r float64, border, fill, reverse bool) error
 	Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error
+	Fill() error
+	FillAndStroke() error
 	FontColor() colors.Color
 	Fonts() []*font.Font
 	FontSize() float64

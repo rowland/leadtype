@@ -998,6 +998,17 @@ func (pw *PageWriter) DrawClosedShape(shape ClosedShape, border, fill bool) erro
 	})
 }
 
+func (pw *PageWriter) AppendClosedShapePath(shape ClosedShape) error {
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
+	shape = shape.normalized()
+	if err := shape.validate(); err != nil {
+		return err
+	}
+	return pw.buildClosedShapePath(shape)
+}
+
 func (pw *PageWriter) ClipClosedShape(shape ClosedShape, fn func()) error {
 	shape = shape.normalized()
 	if err := shape.validate(); err != nil {
@@ -1135,16 +1146,30 @@ func (pw *PageWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart boo
 	return pw.CurvePoints(points)
 }
 
+func (pw *PageWriter) appendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	if reverse {
+		startAngle, endAngle = endAngle, startAngle
+	}
+	pw.MoveTo(x, y)
+	pw.LineTo(x+r*math.Cos(startAngle*math.Pi/180.0), y-r*math.Sin(startAngle*math.Pi/180.0))
+	if err := pw.Arc(x, y, r, startAngle, endAngle, false); err != nil {
+		return err
+	}
+	pw.LineTo(x, y)
+	return nil
+}
+
 func (pw *PageWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return pw.drawClosedShape(border, fill, func() {
-		if reverse {
-			startAngle, endAngle = endAngle, startAngle
-		}
-		pw.MoveTo(x, y)
-		pw.LineTo(x+r*math.Cos(startAngle*math.Pi/180.0), y-r*math.Sin(startAngle*math.Pi/180.0))
-		_ = pw.Arc(x, y, r, startAngle, endAngle, false)
-		pw.LineTo(x, y)
+		_ = pw.appendPiePath(x, y, r, startAngle, endAngle, reverse)
 	})
+}
+
+func (pw *PageWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
+	return pw.appendPiePath(x, y, r, startAngle, endAngle, reverse)
 }
 
 func (pw *PageWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
@@ -1157,6 +1182,19 @@ func (pw *PageWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, f
 	return pw.drawClosedShape(border, fill, func() {
 		_ = pw.annularArcPath(x, y, r1, r2, startAngle, endAngle)
 	})
+}
+
+func (pw *PageWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
+	if startAngle == endAngle {
+		return nil
+	}
+	if err := pw.requirePathSession(); err != nil {
+		return err
+	}
+	if reverse {
+		startAngle, endAngle = endAngle, startAngle
+	}
+	return pw.annularArcPath(x, y, r1, r2, startAngle, endAngle)
 }
 
 func (pw *PageWriter) PointsForPolygon(x, y, r float64, sides int, rotation float64) []Location {

@@ -22,5 +22,28 @@
       <pie width="1.5in" height="1.5in" border="solid" fill="bg" start-angle="30" end-angle="150" />
       <arch width="1.75in" height="1.5in" r2="0.35in" border="ForestGreen" fill="bg" start-angle="210" end-angle="30" />
     </hbox>
+    <label font.weight="Bold">Hollow shapes</label>
+    <hbox>
+      <circle width="1.5in" height="1.5in" border="solid" fill="bg" padding="0.35in">
+        <circle width="100%" height="100%" reverse="true" />
+      </circle>
+      <ellipse width="1.75in" height="1.25in" rx="0.75in" border="solid" fill="bg" padding="0.25in">
+        <ellipse width="100%" height="100%" reverse="true" />
+      </ellipse>
+      <polygon width="1.5in" height="1.5in" sides="6" border="Blue" fill="bg" padding="0.3in">
+        <polygon width="100%" height="100%" sides="6" reverse="true" />
+      </polygon>
+    </hbox>
+    <hbox>
+      <star width="1.5in" height="1.5in" points="5" border="DarkSlateGray" fill="Gold" padding="0.3in">
+        <star width="100%" height="100%" points="5" reverse="true" />
+      </star>
+      <pie width="1.5in" height="1.5in" border="solid" fill="bg" start-angle="30" end-angle="150" padding="0.3in">
+        <pie width="100%" height="100%" reverse="true" start-angle="30" end-angle="150" />
+      </pie>
+      <arch width="1.75in" height="1.5in" r2="0.55in" border="ForestGreen" fill="bg" start-angle="210" end-angle="30" padding="0.15in">
+        <arch width="100%" height="100%" r2="0.35in" reverse="true" start-angle="210" end-angle="30" />
+      </arch>
+    </hbox>
   </page>
 </ltml>
