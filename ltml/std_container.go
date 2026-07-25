@@ -38,9 +38,9 @@ type StdContainer struct {
 	rowAngleOffsets  []float64
 	radialSweep      radialSweep
 	centerX          float64
-	centerXSet       bool
+	centerXMode      DimensionMode
 	centerY          float64
-	centerYSet       bool
+	centerYMode      DimensionMode
 	outerRadius      float64
 	innerRadius      float64
 }
@@ -313,12 +313,10 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		}
 	}
 	if centerX, ok := attrs["center-x"]; ok {
-		c.centerX = ParseMeasurement(centerX, c.Units())
-		c.centerXSet = true
+		c.centerXMode, c.centerX = parseRadialCenterAttr(centerX, c.Units())
 	}
 	if centerY, ok := attrs["center-y"]; ok {
-		c.centerY = ParseMeasurement(centerY, c.Units())
-		c.centerYSet = true
+		c.centerYMode, c.centerY = parseRadialCenterAttr(centerY, c.Units())
 	}
 	if radius, ok := attrs["r"]; ok {
 		c.outerRadius = ParseMeasurement(radius, c.Units())
@@ -346,6 +344,19 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 		}
 	}
 	c.setContainerResourceAttrs(attrs, c.Units())
+	if _, positionSet := attrs["position"]; !positionSet &&
+		isRadialLayoutStyle(c.layout) &&
+		MapHasAnyKey(attrs, "center-x", "center-y") {
+		c.position = Relative
+	}
+}
+
+func parseRadialCenterAttr(value string, units Units) (DimensionMode, float64) {
+	mode, parsed := parseDimensionAttr(value, units)
+	if mode == DimPct {
+		return mode, parsed
+	}
+	return DimLiteral, ParseMeasurement(strings.TrimSpace(value), units)
 }
 
 func (c *StdContainer) resetResourceAttrs() {
@@ -422,11 +433,61 @@ func (c *StdContainer) radialInferredWidth() (float64, bool) {
 }
 
 func (c *StdContainer) CenterX() (float64, bool) {
-	return c.centerX, c.centerXSet
+	return c.centerX, c.centerXMode != DimUnspecified
 }
 
 func (c *StdContainer) CenterY() (float64, bool) {
-	return c.centerY, c.centerYSet
+	return c.centerY, c.centerYMode != DimUnspecified
+}
+
+func (c *StdContainer) usesPositionedRadialCenter(position Position) bool {
+	return position != Static &&
+		isRadialLayoutStyle(c.layout) &&
+		(c.centerXMode != DimUnspecified || c.centerYMode != DimUnspecified)
+}
+
+func (c *StdContainer) resolvePositionedRadialBox(position Position) {
+	if !c.usesPositionedRadialCenter(position) {
+		return
+	}
+	targetX, targetY := c.positionedRadialCenter(position)
+	offsetX := c.MarginLeft() + c.PaddingLeft() + ContentWidth(c)/2
+	offsetY := c.MarginTop() + c.PaddingTop() + ContentHeight(c)/2
+	if c.outerRadius > 0 {
+		offsetX = c.MarginLeft() + c.PaddingLeft() + c.outerRadius
+		offsetY = c.MarginTop() + c.PaddingTop() + c.outerRadius
+	}
+	if position == Relative && c.container != nil {
+		targetX -= c.container.Left()
+		targetY -= c.container.Top()
+	}
+	c.SetLeft(targetX - offsetX)
+	c.SetTop(targetY - offsetY)
+}
+
+func (c *StdContainer) positionedRadialCenter(position Position) (float64, float64) {
+	var left, top, width, height float64
+	if position == Absolute {
+		if page := rootPageForContainer(c.container); page != nil {
+			width, height = page.Width(), page.Height()
+		}
+	} else if c.container != nil {
+		left, top = c.container.Left(), c.container.Top()
+		width, height = c.container.Width(), c.container.Height()
+	}
+	return resolveRadialCenterAxis(c.centerX, c.centerXMode, left, width),
+		resolveRadialCenterAxis(c.centerY, c.centerYMode, top, height)
+}
+
+func resolveRadialCenterAxis(value float64, mode DimensionMode, origin, extent float64) float64 {
+	switch mode {
+	case DimPct:
+		return origin + value/100*extent
+	case DimLiteral:
+		return origin + value
+	default:
+		return origin + extent/2
+	}
 }
 
 func (c *StdContainer) OuterRadius() float64 {

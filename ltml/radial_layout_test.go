@@ -1029,13 +1029,11 @@ func TestLayoutRadialTable_R1SetsOuterRadiusAndInfersDimensions(t *testing.T) {
 			container := &StdContainer{}
 			container.SetScope(&defaultScope)
 			container.SetAttrs(map[string]string{
-				"layout":   manager,
-				"rows":     "1",
-				"cols":     "1",
-				"center-x": "75",
-				"center-y": "80",
-				"r0":       "20",
-				"r1":       "60",
+				"layout": manager,
+				"rows":   "1",
+				"cols":   "1",
+				"r0":     "20",
+				"r1":     "60",
 			})
 
 			sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
@@ -1054,10 +1052,10 @@ func TestLayoutRadialTable_R1SetsOuterRadiusAndInfersDimensions(t *testing.T) {
 			if got, want := container.Height(), 120.0; !floatEquals(got, want) {
 				t.Fatalf("inferred height = %v, want %v", got, want)
 			}
-			if got, want := sector.geometry.CenterX, 75.0; !floatEquals(got, want) {
+			if got, want := sector.geometry.CenterX, 60.0; !floatEquals(got, want) {
 				t.Fatalf("center x = %v, want %v", got, want)
 			}
-			if got, want := sector.geometry.CenterY, 80.0; !floatEquals(got, want) {
+			if got, want := sector.geometry.CenterY, 60.0; !floatEquals(got, want) {
 				t.Fatalf("center y = %v, want %v", got, want)
 			}
 			if got, want := sector.geometry.InnerRadius, 20.0; !floatEquals(got, want) {
@@ -1067,6 +1065,235 @@ func TestLayoutRadialTable_R1SetsOuterRadiusAndInfersDimensions(t *testing.T) {
 				t.Fatalf("outer radius = %v, want %v", got, want)
 			}
 		})
+	}
+}
+
+func TestLayoutPositionedRadialCenter_AbsoluteUsesPhysicalPage(t *testing.T) {
+	for _, manager := range []string{"radial", "radial-out"} {
+		t.Run(manager, func(t *testing.T) {
+			page := &StdPage{pageStyle: &PageStyle{width: 400, height: 300}}
+			page.SetScope(&defaultScope)
+			page.SetAttrs(map[string]string{
+				"layout":  "absolute",
+				"margin":  "30pt",
+				"padding": "10pt",
+			})
+
+			radial := &StdContainer{}
+			radial.SetScope(&defaultScope)
+			if err := radial.SetContainer(page); err != nil {
+				t.Fatal(err)
+			}
+			radial.SetAttrs(map[string]string{
+				"layout":        manager,
+				"position":      "absolute",
+				"rows":          "1",
+				"cols":          "1",
+				"center-x":      "50%",
+				"center-y":      "25%",
+				"r0":            "10pt",
+				"r1":            "40pt",
+				"margin-left":   "3pt",
+				"margin-top":    "5pt",
+				"padding-left":  "7pt",
+				"padding-right": "11pt",
+				"padding-top":   "13pt",
+			})
+			page.AddChild(radial)
+
+			sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+			sector.font = testSectorFont()
+			if err := sector.SetContainer(radial); err != nil {
+				t.Fatal(err)
+			}
+			radial.AddChild(sector)
+
+			if err := LayoutAbsolute(page, page.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+				t.Fatal(err)
+			}
+			if got, want := radial.Width(), 101.0; !floatEquals(got, want) {
+				t.Fatalf("inferred width = %v, want %v", got, want)
+			}
+			if got, want := sector.geometry.CenterX, 200.0; !floatEquals(got, want) {
+				t.Fatalf("absolute center x = %v, want %v", got, want)
+			}
+			if got, want := sector.geometry.CenterY, 75.0; !floatEquals(got, want) {
+				t.Fatalf("absolute center y = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestLayoutPositionedRadialCenter_RelativeUsesParentBorderBox(t *testing.T) {
+	parent := positionedContainer(50, 40, 300, 200)
+	parent.SetScope(&defaultScope)
+	parent.SetAttrs(map[string]string{
+		"layout":        "relative",
+		"margin":        "17pt",
+		"padding-left":  "23pt",
+		"padding-right": "29pt",
+		"padding-top":   "31pt",
+	})
+
+	radial := &StdContainer{}
+	radial.SetScope(&defaultScope)
+	if err := radial.SetContainer(parent); err != nil {
+		t.Fatal(err)
+	}
+	radial.SetAttrs(map[string]string{
+		"layout":   "radial",
+		"rows":     "1",
+		"cols":     "1",
+		"center-x": "25%",
+		"center-y": "75%",
+		"r1":       "30pt",
+	})
+	parent.AddChild(radial)
+
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(radial); err != nil {
+		t.Fatal(err)
+	}
+	radial.AddChild(sector)
+
+	if radial.Position() != Relative {
+		t.Fatalf("center attrs implied position = %v, want relative", radial.Position())
+	}
+	if err := LayoutRelative(parent, parent.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := sector.geometry.CenterX, 125.0; !floatEquals(got, want) {
+		t.Fatalf("relative center x = %v, want %v", got, want)
+	}
+	if got, want := sector.geometry.CenterY, 190.0; !floatEquals(got, want) {
+		t.Fatalf("relative center y = %v, want %v", got, want)
+	}
+}
+
+func TestLayoutPositionedRadialCenter_OmittedAxisDefaultsToMidpointAndShiftIsFinal(t *testing.T) {
+	parent := positionedContainer(20, 30, 200, 100)
+	parent.SetScope(&defaultScope)
+	parent.SetAttrs(map[string]string{"layout": "relative"})
+
+	radial := &StdContainer{}
+	radial.SetScope(&defaultScope)
+	if err := radial.SetContainer(parent); err != nil {
+		t.Fatal(err)
+	}
+	radial.SetAttrs(map[string]string{
+		"layout":   "radial",
+		"rows":     "1",
+		"cols":     "1",
+		"center-x": "125%",
+		"r1":       "20pt",
+		"left":     "1pt",
+		"right":    "2pt",
+		"top":      "3pt",
+		"bottom":   "4pt",
+		"shift-x":  "6pt",
+		"shift-y":  "-7pt",
+	})
+	parent.AddChild(radial)
+
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(radial); err != nil {
+		t.Fatal(err)
+	}
+	radial.AddChild(sector)
+
+	if err := LayoutRelative(parent, parent.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := sector.geometry.CenterX, 276.0; !floatEquals(got, want) {
+		t.Fatalf("shifted center x = %v, want %v", got, want)
+	}
+	if got, want := sector.geometry.CenterY, 73.0; !floatEquals(got, want) {
+		t.Fatalf("midpoint/shift center y = %v, want %v", got, want)
+	}
+}
+
+func TestStdContainer_RadialCenterPositionCascade(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{
+		"layout":   "radial",
+		"center-x": "50%",
+		"position": "static",
+	})
+	if container.Position() != Static {
+		t.Fatalf("same-layer explicit position = %v, want static", container.Position())
+	}
+
+	container.SetAttrs(map[string]string{"center-y": "25%"})
+	if container.Position() != Relative {
+		t.Fatalf("later center position = %v, want relative", container.Position())
+	}
+
+	container.SetAttrs(map[string]string{"position": "absolute"})
+	if container.Position() != Absolute {
+		t.Fatalf("later explicit position = %v, want absolute", container.Position())
+	}
+}
+
+func TestStdContainer_RadialCenterModesFollowCascade(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{"units": "pt", "center-x": "12.5%"})
+	if container.centerXMode != DimPct || !floatEquals(container.centerX, 12.5) {
+		t.Fatalf("percentage center x = mode %v value %v, want pct 12.5", container.centerXMode, container.centerX)
+	}
+	container.SetAttrs(map[string]string{"center-x": "72pt"})
+	if container.centerXMode != DimLiteral || !floatEquals(container.centerX, 72) {
+		t.Fatalf("literal center x = mode %v value %v, want literal 72", container.centerXMode, container.centerX)
+	}
+	container.SetAttrs(map[string]string{"center-x": "125%"})
+	if container.centerXMode != DimPct || !floatEquals(container.centerX, 125) {
+		t.Fatalf("later percentage center x = mode %v value %v, want pct 125", container.centerXMode, container.centerX)
+	}
+
+	for _, tc := range []struct {
+		value float64
+		mode  DimensionMode
+		want  float64
+	}{
+		{value: 0, mode: DimPct, want: 10},
+		{value: 50, mode: DimPct, want: 110},
+		{value: 100, mode: DimPct, want: 210},
+		{value: 12.5, mode: DimPct, want: 35},
+		{value: 40, mode: DimLiteral, want: 50},
+	} {
+		if got := resolveRadialCenterAxis(tc.value, tc.mode, 10, 200); !floatEquals(got, tc.want) {
+			t.Errorf("resolved center (%v,%v) = %v, want %v", tc.value, tc.mode, got, tc.want)
+		}
+	}
+}
+
+func TestLayoutRadialTable_StaticCenterAttrsAreDormant(t *testing.T) {
+	container := positionedContainer(10, 20, 120, 80)
+	container.SetScope(&defaultScope)
+	container.SetAttrs(map[string]string{
+		"layout":   "radial",
+		"position": "static",
+		"rows":     "1",
+		"cols":     "1",
+		"center-x": "0%",
+		"center-y": "100%",
+	})
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	if err := sector.SetContainer(container); err != nil {
+		t.Fatal(err)
+	}
+	container.AddChild(sector)
+
+	if err := LayoutRadialTable(container, container.LayoutStyle(), &labelTestWriter{t: t}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := sector.geometry.CenterX, 70.0; !floatEquals(got, want) {
+		t.Fatalf("static center x = %v, want box midpoint %v", got, want)
+	}
+	if got, want := sector.geometry.CenterY, 60.0; !floatEquals(got, want) {
+		t.Fatalf("static center y = %v, want box midpoint %v", got, want)
 	}
 }
 

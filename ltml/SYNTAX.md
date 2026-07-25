@@ -420,7 +420,7 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | `row-angle-offsets` | Optional comma-separated angular offsets added to `base-angle` by logical radial row. Missing row values default to `0`. |
 | `angles`         | Comma-separated angular boundary bearings relative to `base-angle`. LTML normalizes, sorts, and deduplicates them before building sectors. |
 | `sweep`          | Radial sector sweep direction: `ccw` (default) or `cw`. This changes how sectors span between boundaries without changing what the angle numbers mean. |
-| `center-x`, `center-y` | Optional radial center coordinates in the container's content box. |
+| `center-x`, `center-y` | Optional radial center coordinates. Measurements and percentages use physical-page coordinates for absolute containers and parent-box coordinates for relative containers. Declaring either coordinate implies relative positioning unless `position` is explicit. |
 | `r`, `r1`        | Optional outer radius for `radial` and `radial-out`. `r1` is the explicit counterpart to `r0`; `r` is its shorthand alias. Either allows width and height to be inferred from the outer diameter. If both occur in one cascade layer, `r1` wins. |
 | `r0`             | Optional inner radius for `radial` and `radial-out`. |
 | `paragraph-style` | Default paragraph style for child `<p>` elements. |
@@ -1636,6 +1636,13 @@ its separate angular-anchor semantics.
 - A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r0`, and `r1` override inferred geometry; `r` is
   retained as the shorthand outer-radius alias.
+- An absolute radial container resolves center measurements and percentages
+  against the complete physical page, without regard to page margins or
+  padding. A relative radial container resolves them against its parent's full
+  box. If one center axis is omitted, that axis defaults to `50%`.
+- Declaring either center coordinate implies `position="relative"` unless
+  `position` is explicit. Center placement supersedes rectangular side
+  placement; `shift-x` and `shift-y` remain final page-axis adjustments.
 - Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Relative children use `start`/`end` for angular edges and `outer`/`inner`
@@ -1666,6 +1673,9 @@ its separate angular-anchor semantics.
 - A single distinct `angles` value means one full-circle sector.
 - `center-x`, `center-y`, `r0`, and `r1` override inferred geometry; `r` is
   retained as the shorthand outer-radius alias.
+- Absolute and relative center coordinates follow the same page/parent
+  coordinate rules described for `radial`; row growth direction does not
+  change center placement.
 - Explicit sectors contain widgets; wrap sector text in `<label>`.
 - Direct non-`<sector>` children are wrapped in implicit sectors automatically.
 - Relative children use `start`/`end` for angular edges and `outer`/`inner`
@@ -1688,6 +1698,27 @@ Example:
   <p colspan="2">This paragraph curves inside its implicit sector.</p>
   <p colspan="2" angle="0">This paragraph uses horizontal wedge-aware wrapping.</p>
   <sector><label angle="0">Horizontal</label></sector>
+</div>
+```
+
+An absolute disc can be centered on the physical page and sized entirely from
+its radii:
+
+```xml
+<div layout="radial" position="absolute"
+     center-x="50%" center-y="50%" r0="0.6in" r1="2.4in"
+     rows="3" cols="8">
+  ...
+</div>
+```
+
+Omitting `position` makes a centered radial container relative to its parent:
+
+```xml
+<div layout="radial-out"
+     center-x="25%" center-y="60%" r0="24pt" r1="96pt"
+     rows="3" cols="6">
+  ...
 </div>
 ```
 

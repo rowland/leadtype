@@ -8,6 +8,11 @@ const (
 	Absolute
 )
 
+type positionedRadialCenter interface {
+	usesPositionedRadialCenter(Position) bool
+	resolvePositionedRadialBox(Position)
+}
+
 func LayoutAbsolute(container Container, style *LayoutStyle, writer Writer) (err error) {
 	defer func() { err = wrapLayoutError("absolute", containerPath(container), err) }()
 	if err := validateLayoutInputs(container, style); err != nil {
@@ -42,10 +47,12 @@ func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Positio
 		}
 		widget.SetVisible(true)
 		widget.SetPosition(position)
-		if !widget.LeftIsSet() && !widget.RightIsSet() {
+		centered, usesCenter := widget.(positionedRadialCenter)
+		centerPlacement := usesCenter && centered.usesPositionedRadialCenter(position)
+		if !centerPlacement && !widget.LeftIsSet() && !widget.RightIsSet() {
 			widget.SetLeft(0)
 		}
-		if !widget.TopIsSet() && !widget.BottomIsSet() {
+		if !centerPlacement && !widget.TopIsSet() && !widget.BottomIsSet() {
 			widget.SetTop(0)
 		}
 		if !widget.WidthIsSet() {
@@ -54,6 +61,16 @@ func layoutWidgetsWithPosition(writer Writer, widgets []Widget, position Positio
 				return err
 			}
 			widget.ResolveWidth(width)
+		}
+		if centerPlacement && !widget.HeightIsSet() {
+			height, err := widget.PreferredHeight(writer)
+			if err != nil {
+				return err
+			}
+			widget.ResolveHeight(height)
+		}
+		if centerPlacement {
+			centered.resolvePositionedRadialBox(position)
 		}
 		if err := widget.LayoutWidget(writer); err != nil {
 			return err

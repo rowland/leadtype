@@ -389,11 +389,10 @@ func radialContainerGeometry(container Container) (centerX, centerY, innerRadius
 	centerY = ContentTop(container) + ContentHeight(container)/2
 	outerRadius = min(ContentWidth(container), ContentHeight(container)) / 2
 	if base, ok := container.(*StdContainer); ok {
-		if value, set := base.CenterX(); set {
-			centerX = ContentLeft(container) + value
-		}
-		if value, set := base.CenterY(); set {
-			centerY = ContentTop(container) + value
+		positionedCenter := base.usesPositionedRadialCenter(base.Position())
+		if positionedCenter && base.OuterRadius() > 0 {
+			centerX = ContentLeft(container) + base.OuterRadius()
+			centerY = ContentTop(container) + base.OuterRadius()
 		}
 		if value := base.OuterRadius(); value > 0 {
 			outerRadius = value
