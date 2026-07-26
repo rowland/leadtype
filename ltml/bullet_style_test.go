@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"math"
 	"testing"
 
 	"github.com/rowland/leadtype/pdf"
@@ -236,6 +237,16 @@ func TestClosedShapeForBullet_LowPointPolygonAndStarDefaultPointUpRotation(t *te
 	star6 := &BulletStyle{shape: "star", points: 6}
 	if got := closedShapeForBullet(star6, 10, 20, 18).Rotation; got != 30 {
 		t.Fatalf("6-point star rotation = %v, want 30", got)
+	}
+
+	star3 := &BulletStyle{shape: "star", points: 3}
+	if got := closedShapeForBullet(star3, 10, 20, 18).Rotation; got != 60 {
+		t.Fatalf("3-point star rotation = %v, want 60", got)
+	}
+
+	star7 := &BulletStyle{shape: "star", points: 7}
+	if got := closedShapeForBullet(star7, 10, 20, 18).Rotation; math.Abs(got-180.0/7.0) > 0.0001 {
+		t.Fatalf("7-point star rotation = %v, want %v", got, 180.0/7.0)
 	}
 }
 

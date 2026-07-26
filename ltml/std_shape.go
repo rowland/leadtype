@@ -338,6 +338,17 @@ func (s *StdStar) Points() int {
 	return 5
 }
 
+func (s *StdStar) effectiveRotation() float64 {
+	return defaultStarRotation(s.Points()) + s.rotation
+}
+
+func defaultStarRotation(points int) float64 {
+	if points < 2 {
+		return 0
+	}
+	return 180 / float64(points)
+}
+
 type StdArc struct {
 	StdShape
 	r          float64

@@ -97,9 +97,20 @@ func (s *StdSector) layoutStaticFlowPass(w Writer) (bool, error) {
 			}
 			continue
 		}
-		item.widget.SetLeft(s.geometry.AnchorX + slot.MinX)
-		item.widget.SetTop(s.geometry.AnchorY + slot.MinY)
-		if paragraph, ok := item.widget.(*StdParagraph); ok &&
+		paragraph, isParagraph := item.widget.(*StdParagraph)
+		if isParagraph {
+			item.widget.SetLeft(s.geometry.AnchorX + slot.MinX)
+			item.widget.SetTop(s.geometry.AnchorY + slot.MinY)
+		} else {
+			centerX, centerY := rotatePagePoint(
+				s.geometry.AnchorX+(slot.MinX+slot.MaxX)/2,
+				s.geometry.AnchorY+(slot.MinY+slot.MaxY)/2,
+				s.geometry.AnchorX, s.geometry.AnchorY, s.flowRotation,
+			)
+			item.widget.SetLeft(centerX - item.width/2)
+			item.widget.SetTop(centerY - item.height/2)
+		}
+		if isParagraph &&
 			(paragraph.curvedInSector() || paragraph.HeightMode() == DimUnspecified || paragraph.HeightMode() == DimAuto) {
 			paragraph.ClearResolvedHeight()
 			s.paragraphLayouts = nil
@@ -468,14 +479,14 @@ func (s *StdSector) flowArcWidthAtLocalY(localY float64) float64 {
 
 func (s *StdSector) flowLabelAnchorAt(localY, arcOffset float64) sectorFlowLabelAnchor {
 	baseX, baseY := rotatePagePoint(s.geometry.AnchorX, s.geometry.AnchorY+localY,
-		s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		s.geometry.AnchorX, s.geometry.AnchorY, s.flowRotation)
 	radius := math.Hypot(baseX-s.geometry.CenterX, baseY-s.geometry.CenterY)
 	if radius <= radialAngleEpsilon {
 		return sectorFlowLabelAnchor{x: baseX, y: baseY}
 	}
 	baseAngle := math.Atan2(s.geometry.CenterY-baseY, baseX-s.geometry.CenterX) * 180 / math.Pi
 	testX, testY := rotatePagePoint(s.geometry.AnchorX+1, s.geometry.AnchorY+localY,
-		s.geometry.AnchorX, s.geometry.AnchorY, s.contentRotation)
+		s.geometry.AnchorX, s.geometry.AnchorY, s.flowRotation)
 	testAngle := math.Atan2(s.geometry.CenterY-testY, testX-s.geometry.CenterX) * 180 / math.Pi
 	delta := testAngle - baseAngle
 	for delta > 180 {

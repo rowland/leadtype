@@ -433,16 +433,7 @@ func defaultBulletRotation(bullet *BulletStyle) float64 {
 			return 30
 		}
 	case "star":
-		switch bulletPoints(bullet) {
-		case 2:
-			return 90
-		case 4:
-			return 45
-		case 5:
-			return 36
-		case 6:
-			return 30
-		}
+		return defaultStarRotation(bulletPoints(bullet))
 	}
 	return 0
 }

@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"math"
 	"testing"
 
 	"github.com/rowland/leadtype/pdf"
@@ -506,6 +507,53 @@ func TestStdStar_DefaultsInnerRadiusAndPoints(t *testing.T) {
 	}
 	if call.a != 50 || call.b != 25 {
 		t.Fatalf("r1/r2 = %v/%v, want 50/25", call.a, call.b)
+	}
+	if call.rotation != 36 {
+		t.Fatalf("rotation = %v, want point-up default 36", call.rotation)
+	}
+}
+
+func TestStdStar_PointUpRotationUsesPointsAndAddsAuthoredRotation(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		points   string
+		rotation string
+		want     float64
+	}{
+		{name: "three points", points: "3", want: 60},
+		{name: "five points", points: "5", want: 36},
+		{name: "seven points", points: "7", want: 180.0 / 7.0},
+		{name: "authored delta", points: "5", rotation: "10", want: 46},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			star := &StdStar{}
+			attrs := map[string]string{"points": test.points}
+			if test.rotation != "" {
+				attrs["rotation"] = test.rotation
+			}
+			star.SetAttrs(attrs)
+			if got := star.effectiveRotation(); math.Abs(got-test.want) > 0.0001 {
+				t.Fatalf("effective rotation = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestStdStar_RadiusSyntaxDoesNotChangeRotation(t *testing.T) {
+	for _, attrs := range []map[string]string{
+		{"units": "pt", "r": "130"},
+		{"units": "pt", "r1": "130", "r2": "50"},
+		{"units": "pt", "r1": "50", "r2": "130"},
+	} {
+		star := &StdStar{}
+		star.SetAttrs(attrs)
+		writer := &shapeTestWriter{labelTestWriter: labelTestWriter{t: t}}
+		if err := star.appendShapePath(writer); err != nil {
+			t.Fatal(err)
+		}
+		if len(writer.appendPaths) != 1 || writer.appendPaths[0].Rotation != 36 {
+			t.Fatalf("attrs %v appended rotation = %#v, want 36", attrs, writer.appendPaths)
+		}
 	}
 }
 

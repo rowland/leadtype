@@ -217,14 +217,14 @@ func (s *StdStar) appendShapePath(w Writer) error {
 		Radius:      s.outerRadius(),
 		InnerRadius: s.innerRadius(),
 		Points:      s.Points(),
-		Rotation:    s.rotation,
+		Rotation:    s.effectiveRotation(),
 		Reverse:     s.reverse,
 	})
 }
 
 func (s *StdStar) drawStarImmediate(w Writer, border, fill bool) error {
 	x, y := s.center()
-	return w.Star(x, y, s.outerRadius(), s.innerRadius(), s.Points(), border, fill, s.reverse, s.rotation)
+	return w.Star(x, y, s.outerRadius(), s.innerRadius(), s.Points(), border, fill, s.reverse, s.effectiveRotation())
 }
 
 func (p *StdPie) appendShapePath(w Writer) error {

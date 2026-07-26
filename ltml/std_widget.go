@@ -386,8 +386,7 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 		case "absolute":
 			widget.position = Absolute
 		}
-	} else if widget.isDirectSectorChild() &&
-		MapHasAnyKey(attrs, "start", "end", "outer", "inner") {
+	} else if widget.isDirectSectorChild() && hasRadialPositionMeasurement(attrs) {
 		widget.position = Relative
 	} else if !widget.isDirectSectorChild() && MapHasAnyKey(attrs, "top", "right", "bottom", "left") {
 		// Match ERML continuity: positional attrs implicitly opt a widget into
@@ -454,6 +453,15 @@ func (widget *StdWidget) SetAttrs(attrs map[string]string) {
 	if value, ok := attrs["role"]; ok {
 		widget.role = strings.TrimSpace(value)
 	}
+}
+
+func hasRadialPositionMeasurement(attrs map[string]string) bool {
+	for _, name := range []string{"start", "end", "outer", "inner"} {
+		if value, ok := attrs[name]; ok && strings.TrimSpace(value) != "auto" {
+			return true
+		}
+	}
+	return false
 }
 
 func (widget *StdWidget) resetResourceAttrs() {

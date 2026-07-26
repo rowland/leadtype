@@ -1717,6 +1717,66 @@ func TestStdSector_RadialEdgeCascadeAndSameLayerPrecedence(t *testing.T) {
 	}
 }
 
+func TestStdSector_RadialEdgeAutoResetsCascadeSelection(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{"units": "pt", "start": "4", "outer": "6"})
+	child.SetAttrs(map[string]string{"start": " auto ", "outer": "auto"})
+
+	got := sector.resolvePositionedReference(child)
+	if math.Abs(got.radius-35) > 0.001 || math.Abs(got.angle-45) > 0.001 {
+		t.Fatalf("reset reference = %v/%v, want midpoint 35/45", got.radius, got.angle)
+	}
+	if got := child.Position(); got != Relative {
+		t.Fatalf("position after reset = %v, want retained relative", got)
+	}
+
+	child.SetAttrs(map[string]string{"start": "3", "outer": "5"})
+	child.SetAttrs(map[string]string{"end": "auto", "inner": "auto"})
+	got = sector.resolvePositionedReference(child)
+	if math.Abs(got.radius-35) > 0.001 || math.Abs(got.angle-45) > 0.001 {
+		t.Fatalf("opposing reset reference = %v/%v, want midpoint 35/45", got.radius, got.angle)
+	}
+}
+
+func TestStdSector_RadialEdgeAutoHonorsSameLayerPrecedence(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{
+		"units": "pt",
+		"start": "auto",
+		"end":   "7",
+		"outer": "auto",
+		"inner": "9",
+	})
+
+	got := sector.resolvePositionedReference(child)
+	if math.Abs(got.radius-35) > 0.001 || math.Abs(got.angle-45) > 0.001 {
+		t.Fatalf("same-layer reset reference = %v/%v, want midpoint 35/45", got.radius, got.angle)
+	}
+	if got := child.Position(); got != Relative {
+		t.Fatalf("measurement alongside reset position = %v, want relative", got)
+	}
+}
+
+func TestStdSector_RadialEdgeAutoDoesNotImplyPositioning(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 0, 90)
+	child := &StdWidget{}
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	child.SetAttrs(map[string]string{"start": "auto", "outer": " auto "})
+	if got := child.Position(); got != Static {
+		t.Fatalf("auto-only position = %v, want static", got)
+	}
+}
+
 func TestStdSector_PositionedRadialEdgesSelectReference(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -1842,6 +1902,17 @@ func TestStdSector_RectangularSidesAreDormantForRelativeAndPageAxisForAbsolute(t
 	if absolute.Left() != 12 || absolute.Top() != 14 {
 		t.Fatalf("absolute page point = (%v,%v), want (12,14)", absolute.Left(), absolute.Top())
 	}
+	sector.AddChild(absolute)
+	writer := &labelTestWriter{t: t}
+	if err := sector.LayoutWidget(writer); err != nil {
+		t.Fatal(err)
+	}
+	if err := sector.DrawContent(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.rotations) != 0 {
+		t.Fatalf("absolute child received sector rotations = %#v, want none", writer.rotations)
+	}
 }
 
 func TestStdSector_PositionedReferenceIncludesSectorPaddingAndChildInset(t *testing.T) {
@@ -1900,8 +1971,6 @@ func TestStdSector_PositionedOriginsAttachChildBox(t *testing.T) {
 					"width":    "20",
 					"height":   "10",
 				})
-				sector.preparePositionedChildren()
-
 				placement := sector.ResolveSectorPlacement(child)
 				if math.Abs(placement.boxLeft-(placement.anchorX-20*x.factor)) > 0.001 ||
 					math.Abs(placement.boxTop-(placement.anchorY-10*y.factor)) > 0.001 {
@@ -2004,11 +2073,12 @@ func TestStdSector_PositionedChildrenShareRadialReferenceAndPageAxisShift(t *tes
 	if math.Abs(want.pageX-(unshiftedX+4)) > 0.001 || math.Abs(want.pageY-(unshiftedY-6)) > 0.001 {
 		t.Fatalf("shifted page point = (%v,%v), want (%v,%v)", want.pageX, want.pageY, unshiftedX+4, unshiftedY-6)
 	}
-	rotatedX, rotatedY := rotatePagePoint(want.localX, want.localY,
-		sector.geometry.AnchorX, sector.geometry.AnchorY, sector.contentRotation)
-	if math.Abs(rotatedX-want.pageX) > 0.001 || math.Abs(rotatedY-want.pageY) > 0.001 {
-		t.Fatalf("local reference rotates to (%v,%v), want page point (%v,%v)",
-			rotatedX, rotatedY, want.pageX, want.pageY)
+	for i, child := range children {
+		placement := sector.ResolveSectorPlacement(child)
+		if math.Abs(placement.anchorX-want.pageX) > 0.001 || math.Abs(placement.anchorY-want.pageY) > 0.001 {
+			t.Fatalf("child %d placement anchor = (%v,%v), want page point (%v,%v)",
+				i, placement.anchorX, placement.anchorY, want.pageX, want.pageY)
+		}
 	}
 }
 
@@ -2646,12 +2716,93 @@ func TestStdSector_LayoutWidget_CentersSingleStaticChildInSector(t *testing.T) {
 
 	localX, localY := sector.contentLocalCenter()
 	wantX, wantY := rotatePagePoint(sector.geometry.AnchorX+localX, sector.geometry.AnchorY+localY,
-		sector.geometry.AnchorX, sector.geometry.AnchorY, sector.contentRotation)
+		sector.geometry.AnchorX, sector.geometry.AnchorY, sector.flowRotation)
 	if got, want := (label.Left()+label.Right())/2, wantX; math.Abs(got-want) > 0.5 {
 		t.Fatalf("label center x = %v, want near %v", got, want)
 	}
 	if got, want := (label.Top()+label.Bottom())/2, wantY; math.Abs(got-want) > 5 {
 		t.Fatalf("label center y = %v, want near %v", got, want)
+	}
+}
+
+func TestStdSector_StaticWidgetsKeepRadialFlowPositionWithoutSectorRotation(t *testing.T) {
+	tests := []struct {
+		name        string
+		anchorAngle float64
+		sweep       radialSweep
+	}{
+		{name: "upper clockwise", anchorAngle: 45, sweep: radialSweepCW},
+		{name: "lower counterclockwise", anchorAngle: 225, sweep: radialSweepCCW},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+			sector.font = testSectorFont()
+			sector.container = &StdContainer{radialSweep: tt.sweep}
+			ax, ay := radialPointAt(100, 100, 50, tt.anchorAngle)
+			sector.setGeometry(radialSectorGeometry{
+				CenterX: 100, CenterY: 100,
+				InnerRadius: 20, OuterRadius: 80,
+				StartAngle: tt.anchorAngle - 35, EndAngle: tt.anchorAngle + 35,
+				AnchorAngle: tt.anchorAngle, AnchorX: ax, AnchorY: ay,
+			})
+
+			child := &StdContainer{}
+			child.SetAttrs(map[string]string{"units": "pt", "width": "16", "height": "10"})
+			if err := child.SetContainer(sector); err != nil {
+				t.Fatal(err)
+			}
+			sector.AddChild(child)
+			writer := &labelTestWriter{t: t}
+			if err := sector.LayoutWidget(writer); err != nil {
+				t.Fatal(err)
+			}
+
+			slot := sector.flowSlots[child]
+			wantX, wantY := rotatePagePoint(
+				sector.geometry.AnchorX+(slot.MinX+slot.MaxX)/2,
+				sector.geometry.AnchorY+(slot.MinY+slot.MaxY)/2,
+				sector.geometry.AnchorX, sector.geometry.AnchorY, sector.flowRotation,
+			)
+			if gotX, gotY := (child.Left()+child.Right())/2, (child.Top()+child.Bottom())/2; math.Abs(gotX-wantX) > 0.001 || math.Abs(gotY-wantY) > 0.001 {
+				t.Fatalf("child center = (%v,%v), want transformed slot center (%v,%v)", gotX, gotY, wantX, wantY)
+			}
+			if err := sector.DrawContent(writer); err != nil {
+				t.Fatal(err)
+			}
+			if len(writer.rotations) != 0 {
+				t.Fatalf("sector supplied rotations = %#v, want none", writer.rotations)
+			}
+		})
+	}
+}
+
+func TestStdSector_ChildRotateIsNotCompoundedWithFlowRotation(t *testing.T) {
+	sector := positionedSectorTestFixture(t, 20, 100)
+	child := &StdContainer{}
+	child.SetAttrs(map[string]string{
+		"position": "relative",
+		"units":    "pt",
+		"outer":    "5",
+		"width":    "16",
+		"height":   "10",
+		"origin-x": "center",
+		"origin-y": "middle",
+		"rotate":   "17",
+	})
+	if err := child.SetContainer(sector); err != nil {
+		t.Fatal(err)
+	}
+	sector.AddChild(child)
+	writer := &labelTestWriter{t: t}
+	if err := sector.LayoutWidget(writer); err != nil {
+		t.Fatal(err)
+	}
+	if err := sector.DrawContent(writer); err != nil {
+		t.Fatal(err)
+	}
+	if len(writer.rotations) != 1 || math.Abs(writer.rotations[0].angle-17) > 0.001 {
+		t.Fatalf("rotations = %#v, want only child rotate 17", writer.rotations)
 	}
 }
 
@@ -2934,8 +3085,8 @@ func TestStdSector_WithParagraphChild_DoesNotDefaultToTangentRotation(t *testing
 		AnchorY:     ay,
 	})
 
-	if got := sector.contentRotation; math.Abs(got) > 0.001 {
-		t.Fatalf("content rotation = %v, want 0 for paragraph-bearing sector", got)
+	if got := sector.flowRotation; math.Abs(got) > 0.001 {
+		t.Fatalf("flow rotation = %v, want 0 for paragraph-bearing sector", got)
 	}
 }
 

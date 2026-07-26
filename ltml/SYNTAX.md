@@ -459,8 +459,8 @@ both, write an explicit sector containing a separately bordered label.
 | Attribute | Description |
 |-----------|-------------|
 | `colspan`, `rowspan` | Span multiple radial slots, just like table cells. |
-| `start`, `end` | On a relative direct child, select and inset from the padded sector start or end edge. |
-| `outer`, `inner` | On a relative direct child, select and inset from the padded outer or inner radius. |
+| `start`, `end` | On a relative direct child, select and inset from the padded sector start or end edge. The exact lowercase value `auto` resets the angular axis to its midpoint. |
+| `outer`, `inner` | On a relative direct child, select and inset from the padded outer or inner radius. The exact lowercase value `auto` resets the radial axis to its midpoint. |
 | `border-outer`, `border-inner` | Physical aliases for the sector's `border-top` outer arc and `border-bottom` inner arc. |
 | `border-start`, `border-end` | Physical aliases for the radial edges at the sector's start and end angles. These map to `border-left` and `border-right` according to the parent's sweep direction. |
 | `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left` | Insets sector content. Top/bottom mean outer/inner; left/right mean start/end according to sweep. Start/end padding is a constant physical distance from each radial edge. |
@@ -513,14 +513,16 @@ Static sector children participate in a compact shape-aware flow. LTML
 preserves source order, chooses row breaks to fit the padded wedge, centers the
 packed group, and honors `dir`. Paragraphs consume a full flow band. Curved
 paragraphs and labels use arc-length footprints; straight labels and other
-widgets use their ordinary boxes. A sector always uses this
-special flow for static children even if another `layout` manager is parsed;
-wrap children in a nested container to request a vbox, hbox, table, or ordinary
-flow.
+widgets use their ordinary page-upright boxes. The flow is calculated in a
+tangent/radial frame, but that frame does not rotate rectangular children;
+use the child's ordinary `rotate` attribute when rotation is wanted. A sector
+always uses this special flow for static children even if another `layout`
+manager is parsed; wrap children in a nested container to request a vbox,
+hbox, table, or ordinary flow.
 
 Set `position="relative"` or `position="absolute"` to remove a child from
-sector flow. `start`, `end`, `outer`, or `inner` also imply relative
-positioning when `position` is omitted. A relative child uses `start` or `end`
+sector flow. A measured `start`, `end`, `outer`, or `inner` also implies
+relative positioning when `position` is omitted. A relative child uses `start` or `end`
 to select and inset from the correspondingly named padded radial edge, and
 `outer` or `inner` to select and inset from the corresponding radius. An
 omitted axis uses that axis's midpoint. Angular insets are constant page
@@ -529,7 +531,22 @@ offsets may cross the sector boundary.
 
 Opposing radial attributes select one anchor rather than stretching the child.
 The declaration from the later cascade layer wins; within one layer `start`
-wins over `end` and `outer` wins over `inner`. The rectangular
+wins over `end` and `outer` wins over `inner`. The exact lowercase value
+`auto` explicitly resets that axis to its midpoint, overriding a selection
+from an earlier cascade layer rather than revealing it. An `auto` declaration
+does not by itself imply relative positioning or return an already positioned
+child to static flow. For example:
+
+```css
+disc#wheel label.number {
+  position: relative;
+  start: 8pt;
+  outer: 8pt;
+}
+disc#wheel label.number.inner { start: auto; }
+```
+
+The rectangular
 `left`/`right`/`top`/`bottom` attributes remain parsed but are dormant for a
 relative direct sector child and do not imply positioning there. They retain
 their ordinary page-coordinate behavior for an absolute child.
@@ -638,10 +655,15 @@ Shape-specific attributes:
 | `<circle>` | `r` for an explicit radius. Otherwise radius is inferred from the content box. |
 | `<ellipse>` | `rx`, `ry` for explicit radii. Otherwise radii are inferred from width and height. |
 | `<polygon>` | `r`, `sides`, `rotation`. |
-| `<star>` | `r` or `r1` for outer radius, `r2` for inner radius, `points`, `rotation`. |
+| `<star>` | `r` or `r1` for outer radius, `r2` for inner radius, `points`, `rotation`. The inner radius defaults to half the outer radius. Stars point up by default; `rotation` is added to that point-up orientation. |
 | `<arc>` | `r`, `start-angle`, `end-angle`. |
 | `<pie>` | `r`, `start-angle`, `end-angle`. |
 | `<arch>` | `r1`, `r2`, `start-angle`, `end-angle`. |
+
+For a star, `r` is an alias for the outer `r1`; `r2` is always the inner
+radius. The point-up baseline is `180 / points` degrees, so a five-point star
+uses 36 degrees. For example, `rotation="10"` on a five-point star produces an
+effective rotation of 46 degrees.
 
 ---
 
