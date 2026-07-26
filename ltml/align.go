@@ -144,11 +144,12 @@ type VAlign int8
 const (
 	VAlignTop = VAlign(iota)
 	VAlignMiddle
+	VAlignCapMiddle
 	VAlignBottom
 	VAlignBaseline
 )
 
-var vAlignStrings = []string{"top", "middle", "bottom", "baseline"}
+var vAlignStrings = []string{"top", "middle", "cap-middle", "bottom", "baseline"}
 
 func (va VAlign) String() string {
 	if int(va) < len(vAlignStrings) {

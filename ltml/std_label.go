@@ -391,6 +391,9 @@ func (l *StdLabel) textAnchor(rt *rich_text.RichText) (x, y float64) {
 	switch textVAlign {
 	case VAlignMiddle:
 		y = contentTop + max((contentHeight-textHeight)/2, 0) + ascent
+	case VAlignCapMiddle:
+		capHeight := rt.CapHeight()
+		y = contentTop + max((contentHeight-capHeight)/2, 0) + capHeight
 	case VAlignBottom:
 		y = ContentBottom(l) + descent
 	default:
@@ -414,6 +417,8 @@ func parseLabelTextVAlign(value string) VAlign {
 	switch strings.TrimSpace(value) {
 	case "middle":
 		return VAlignMiddle
+	case "cap-middle":
+		return VAlignCapMiddle
 	case "bottom":
 		return VAlignBottom
 	case "baseline":

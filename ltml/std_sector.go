@@ -682,6 +682,8 @@ func (s *StdSector) labelCurvedTextVAlign(label *StdLabel) pdf.VerticalTextAlign
 		return pdf.VTextAlignBelow
 	case VAlignBaseline:
 		return pdf.VTextAlignBase
+	case VAlignCapMiddle:
+		return pdf.VTextAlignCapMiddle
 	default:
 		return pdf.VTextAlignMiddle
 	}

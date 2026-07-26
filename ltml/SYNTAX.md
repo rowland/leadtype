@@ -681,7 +681,7 @@ Unlike `<p>`, it does not perform paragraph wrapping or bullet layout.
 | `font` / `font.*` | Same font attributes supported by `<p>`. |
 | `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the label text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
 | `text-align` | Label text alignment: logical `start`/`end`, physical `left`/`right`, or `center`. Defaults to `start`. Affects the text anchor inside the label box. |
-| `text-valign` | Label vertical text alignment: `top` (default), `middle`, or `bottom`. |
+| `text-valign` | Label vertical text alignment: `top` (default), `middle`, `cap-middle`, `bottom`, or `baseline`. `cap-middle` centers the tallest font run's cap-height box and ignores descender space, making all-caps text optically consistent when straight, curved, upright, or inverted. |
 | `angle` | Rotate only the label text by the given degrees. Border/fill/background stay axis-aligned. |
 | `facing` | Inside a sector, curved-text facing: `auto`, `upright`, or `upside-down`. |
 | `fit="shrink"` | If `width` is set and the text is too wide, shrink the label text proportionally until it fits, down to a minimum of 6pt. |

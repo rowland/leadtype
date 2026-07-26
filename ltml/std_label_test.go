@@ -1,6 +1,7 @@
 package ltml
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -709,6 +710,79 @@ func TestStdLabel_DrawContent_TextVAlignMiddleAffectsAnchor(t *testing.T) {
 	wantY := ContentTop(l) + (ContentHeight(l)-textHeight)/2 + rt.Ascent()
 	if math.Abs(w.moves[0][1]-wantY) > 0.001 {
 		t.Fatalf("move y = %v, want %v", w.moves[0][1], wantY)
+	}
+}
+
+func TestStdLabel_DrawContent_TextVAlignCapMiddleCentersCapHeight(t *testing.T) {
+	for _, angle := range []float64{0, 30} {
+		t.Run(fmt.Sprintf("angle_%g", angle), func(t *testing.T) {
+			l := &StdLabel{}
+			l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+			l.SetAttrs(map[string]string{"text-valign": "cap-middle"})
+			l.angle = angle
+			l.SetLeft(10)
+			l.SetTop(20)
+			l.SetWidth(120)
+			l.SetHeight(60)
+			l.AddText("CAPS")
+
+			w := &labelTestWriter{t: t, fonts: defaultTestFonts(t), lineSpacing: 1.0}
+			rt := l.fittedRichText(w)
+			if err := l.DrawContent(w); err != nil {
+				t.Fatal(err)
+			}
+
+			capHeight := rt.CapHeight()
+			wantY := ContentTop(l) + (ContentHeight(l)-capHeight)/2 + capHeight
+			if len(w.moves) != 1 || math.Abs(w.moves[0][1]-wantY) > 0.001 {
+				t.Fatalf("move = %v, want baseline y %v", w.moves, wantY)
+			}
+			if angle == 0 {
+				if len(w.rotations) != 0 {
+					t.Fatalf("rotation count = %d, want 0", len(w.rotations))
+				}
+			} else if len(w.rotations) != 1 || math.Abs(w.rotations[0].y-wantY) > 0.001 {
+				t.Fatalf("rotation = %v, want anchor y %v", w.rotations, wantY)
+			}
+		})
+	}
+}
+
+func TestStdLabel_DrawContent_TextVAlignCapMiddleUsesTallestRichTextRun(t *testing.T) {
+	source, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	helvetica, err := font.New("Helvetica", options.Options{}, font.FontSources{source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	courier, err := font.New("Courier", options.Options{}, font.FontSources{source})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	l := &StdLabel{}
+	l.font = &FontStyle{id: "body", entries: []fontEntry{{name: "Helvetica"}}, size: 12}
+	l.SetAttrs(map[string]string{"text-valign": "cap-middle"})
+	l.SetLeft(10)
+	l.SetTop(20)
+	l.SetWidth(120)
+	l.SetHeight(60)
+	l.richText = (&rich_text.RichText{
+		Text: "A", Font: helvetica, FontSize: 10,
+	}).AddPiece(&rich_text.RichText{
+		Text: "B", Font: courier, FontSize: 20,
+	})
+
+	w := &labelTestWriter{t: t, fonts: []*font.Font{helvetica}, lineSpacing: 1.0}
+	if err := l.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	capHeight := l.richText.CapHeight()
+	wantY := ContentTop(l) + (ContentHeight(l)-capHeight)/2 + capHeight
+	if len(w.moves) != 1 || math.Abs(w.moves[0][1]-wantY) > 0.001 {
+		t.Fatalf("move = %v, want tallest-run baseline y %v", w.moves, wantY)
 	}
 }
 

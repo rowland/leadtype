@@ -397,6 +397,8 @@ func (pw *PageWriter) checkSetVTextAlign(force bool) {
 			rise = -top
 		case VTextAlignMiddle:
 			rise = -((top + descent) / 2.0)
+		case VTextAlignCapMiddle:
+			rise = -(top / 2.0)
 		case VTextAlignBelow:
 			rise = -descent
 		}
@@ -1450,6 +1452,14 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 	savedWordSpacing := pw.wordSpacing
 	savedVTextAlign := pw.vTextAlign
 	savedVTextAlignPts := pw.vTextAlignPts
+	sharedVTextAlignRise, hasSharedVTextAlignRise := sharedRichTextRise(line, savedVTextAlign)
+	applySharedVTextAlignRise := func() {
+		if !hasSharedVTextAlignRise {
+			return
+		}
+		pw.vTextAlignPts = sharedVTextAlignRise
+		pw.tw.setRise(sharedVTextAlignRise)
+	}
 	defer func() {
 		pw.fontColor = savedFontColor
 		pw.fontKey = savedFontKey
@@ -1540,6 +1550,7 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 			pw.SetFontSize(p.FontSize)
 			pw.checkSetFont()
 			pw.checkSetVTextAlign(false)
+			applySharedVTextAlignRise()
 			if usePositionedGlyphs {
 				pw.charSpacing = 0
 				pw.wordSpacing = 0
@@ -1733,6 +1744,7 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 				pw.SetFontSize(piece.FontSize)
 				pw.checkSetFont()
 				pw.checkSetVTextAlign(false)
+				applySharedVTextAlignRise()
 				pw.charSpacing = piece.CharSpacing
 				pw.wordSpacing = piece.WordSpacing
 				pw.checkSetSpacing()
@@ -1756,6 +1768,9 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 			return
 		}
 		rise := pw.textRiseForPiece(p, savedVTextAlign)
+		if hasSharedVTextAlignRise {
+			rise = sharedVTextAlignRise
+		}
 		loc2 := Location{loc1.X + p.Width(), loc1.Y} // TODO: Adjust if print at an angle.
 		if emit.emitDecorations && p.Underline {
 			position, thickness, lineColor, hasLineColor, capStyle, linePattern, hasLinePattern := pieceUnderlineStyle(p)
@@ -1785,6 +1800,13 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 	// TODO: Adjust pw.loc.y if printing at an angle.
 }
 
+func sharedRichTextRise(text *rich_text.RichText, align VerticalTextAlign) (float64, bool) {
+	if align != VTextAlignCapMiddle {
+		return 0, false
+	}
+	return -(text.CapHeight() / 2.0), true
+}
+
 func (pw *PageWriter) textRiseForPiece(p *rich_text.RichText, vTextAlign VerticalTextAlign) float64 {
 	if p == nil || p.Font == nil {
 		return 0
@@ -1812,6 +1834,8 @@ func textRiseForFont(f *font.Font, fontSize float64, vTextAlign VerticalTextAlig
 		return -top
 	case VTextAlignMiddle:
 		return -((top + descent) / 2.0)
+	case VTextAlignCapMiddle:
+		return -(top / 2.0)
 	case VTextAlignBelow:
 		return -descent
 	default:

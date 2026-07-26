@@ -161,6 +161,33 @@ func (piece *RichText) Chars() int {
 	return piece.chars
 }
 
+// CapHeight returns the maximum scaled cap height among the text's leaf
+// pieces. Fonts without a cap-height metric fall back to their ascent.
+func (piece *RichText) CapHeight() float64 {
+	if piece == nil {
+		return 0
+	}
+	if piece.IsLeaf() {
+		if piece.Font == nil {
+			return 0
+		}
+		unitsPerEm := piece.Font.UnitsPerEm()
+		if unitsPerEm <= 0 {
+			return 0
+		}
+		height := piece.Font.CapHeight()
+		if height == 0 {
+			height = piece.Font.Ascent()
+		}
+		return float64(height) * piece.FontSize / float64(unitsPerEm)
+	}
+	height := 0.0
+	for _, child := range piece.pieces {
+		height = max(height, child.CapHeight())
+	}
+	return height
+}
+
 func (piece *RichText) Clone() *RichText {
 	p := *piece
 	p.chars = 0

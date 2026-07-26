@@ -124,6 +124,11 @@ Zero-value `CurvedTextOptions` should be usable:
 - `Orientation`: `CurvedTextOrientationOutside`
 - `Facing`: `CurvedTextFacingAuto`
 
+`VTextAlignCapMiddle` centers the tallest scaled cap-height box in a rich-text
+line on the curve, falling back to font ascent when cap height is unavailable.
+It uses one shared baseline for all runs and is useful for all-caps text that
+must retain the same optical radius when automatic facing flips it.
+
 Callers can therefore write:
 
 ```go

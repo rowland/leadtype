@@ -1110,6 +1110,71 @@ func TestPageWriter_SetVTextAlign(t *testing.T) {
 	prev := pw.SetVTextAlign("top")
 	expectS(t, "base", prev)
 	expectS(t, "top", pw.VTextAlign())
+	prev = pw.SetVTextAlign("cap-middle")
+	expectS(t, "top", prev)
+	expectS(t, "cap-middle", pw.VTextAlign())
+}
+
+func TestPageWriter_flushText_VTextAlignCapMiddleRise(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	fonts, err := pw.SetFont("Courier", 12, options.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pw.SetVTextAlign("cap-middle")
+	if err := pw.Print("CAPS"); err != nil {
+		t.Fatal(err)
+	}
+	pw.flushText()
+
+	scale := 12 / float64(fonts[0].UnitsPerEm())
+	expectedRise := -float64(fonts[0].CapHeight()) * scale / 2
+	if !strings.Contains(pw.stream.String(), g(expectedRise)+" Ts\n") {
+		t.Fatalf("expected cap-middle rise %q, got:\n%s", g(expectedRise)+" Ts\n", pw.stream.String())
+	}
+}
+
+func TestPageWriter_PrintRichText_VTextAlignCapMiddleUsesSharedRise(t *testing.T) {
+	dw := NewDocWriter()
+	fc, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(fc)
+	pw := dw.NewPage()
+
+	helvetica, err := font.New("Helvetica", options.Options{}, font.FontSources{fc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	courier, err := font.New("Courier", options.Options{}, font.FontSources{fc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := (&rich_text.RichText{
+		Text: "A", Font: helvetica, FontSize: 20,
+	}).AddPiece(&rich_text.RichText{
+		Text: "B", Font: courier, FontSize: 10,
+	})
+
+	pw.SetVTextAlign("cap-middle")
+	pw.PrintRichText(text)
+	pw.flushText()
+
+	sharedRise, ok := sharedRichTextRise(text, VTextAlignCapMiddle)
+	if !ok {
+		t.Fatal("cap-middle did not produce a shared rise")
+	}
+	if got := strings.Count(pw.stream.String(), g(sharedRise)+" Ts\n"); got < 2 {
+		t.Fatalf("shared rise occurrences = %d, want one for each rich-text run; stream:\n%s", got, pw.stream.String())
+	}
 }
 
 func TestPageWriter_flushText_VTextAlignRise(t *testing.T) {

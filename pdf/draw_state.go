@@ -12,6 +12,7 @@ const (
 	VTextAlignAbove
 	VTextAlignTop
 	VTextAlignMiddle
+	VTextAlignCapMiddle
 	VTextAlignBelow
 )
 
@@ -23,6 +24,8 @@ func parseVerticalTextAlign(value string) VerticalTextAlign {
 		return VTextAlignTop
 	case "middle":
 		return VTextAlignMiddle
+	case "cap-middle":
+		return VTextAlignCapMiddle
 	case "below":
 		return VTextAlignBelow
 	default:
@@ -38,6 +41,8 @@ func (v VerticalTextAlign) String() string {
 		return "top"
 	case VTextAlignMiddle:
 		return "middle"
+	case VTextAlignCapMiddle:
+		return "cap-middle"
 	case VTextAlignBelow:
 		return "below"
 	default:

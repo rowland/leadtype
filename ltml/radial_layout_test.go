@@ -2152,6 +2152,42 @@ func TestStdSector_DrawContent_UsesCurvedTextUnlessAngleOverrides(t *testing.T) 
 	}
 }
 
+func TestStdSector_DrawContent_CapMiddleUsesCurvedAndStraightLabels(t *testing.T) {
+	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
+	sector.font = testSectorFont()
+	curved := addTestSectorLabel(t, sector, "CURVED", map[string]string{"text-valign": "cap-middle"})
+	straight := addTestSectorLabel(t, sector, "STRAIGHT", map[string]string{
+		"angle": "30", "text-valign": "cap-middle",
+	})
+	ax, ay := radialPointAt(100, 100, 40, 90)
+	sector.setGeometry(radialSectorGeometry{
+		CenterX: 100, CenterY: 100,
+		InnerRadius: 20, OuterRadius: 60,
+		StartAngle: 45, EndAngle: 135,
+		AnchorAngle: 90, AnchorX: ax, AnchorY: ay,
+	})
+
+	w := &labelTestWriter{t: t}
+	if err := sector.LayoutWidget(w); err != nil {
+		t.Fatal(err)
+	}
+	if err := sector.DrawContent(w); err != nil {
+		t.Fatal(err)
+	}
+	if got := curved.sectorTextVAlign(); got != VAlignCapMiddle {
+		t.Fatalf("curved label valign = %v, want cap-middle", got)
+	}
+	if len(w.curvedOpts) != 1 || w.curvedOpts[0].VAlign != pdf.VTextAlignCapMiddle {
+		t.Fatalf("curved options = %v, want cap-middle", w.curvedOpts)
+	}
+	if got := straight.sectorTextVAlign(); got != VAlignCapMiddle {
+		t.Fatalf("straight label valign = %v, want cap-middle", got)
+	}
+	if len(w.rotations) != 1 || w.rotations[0].angle != 30 {
+		t.Fatalf("straight rotations = %v, want one 30-degree rotation", w.rotations)
+	}
+}
+
 func TestStdSector_DrawContent_RightAlignedCurvedTextUsesSectorEndAngle(t *testing.T) {
 	sector := &StdSector{StdContainer: StdContainer{paragraphStyle: &ParagraphStyle{}}}
 	sector.font = testSectorFont()

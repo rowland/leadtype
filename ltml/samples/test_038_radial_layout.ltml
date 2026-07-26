@@ -6,7 +6,7 @@
     <p left="0.7" top="0.82" width="6.2">A radial container behaves like a table wrapped around a circle. Some children below are explicit sectors, while direct labels and paragraphs are wrapped into implicit sectors at parse time.</p>
 
     <disc left="1.0" top="1.55" width="5.6" height="5.6" rows="3" angles="0,40,85,130,180,230,285,330,360" base-angle="-90" r0="0.8">
-      <sector colspan="2" fill="AliceBlue" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center">Auto below midline</label></sector>
+      <sector colspan="2" fill="AliceBlue" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center" text-valign="cap-middle">CAP-MIDDLE BELOW</label></sector>
       <p colspan="3" angle="0" padding="0.08" font.size="8.5">With angle zero, this direct paragraph keeps horizontal wedge-aware wrapping inside its implicit sector.</p>
       <sector fill="Cornsilk" border="ring"><label angle="0" font.weight="Bold">01</label></sector>
       <label angle="0" font.weight="Bold">02</label>
@@ -22,7 +22,7 @@
       </sector>
       <p colspan="2" padding="0.08" font.size="8">Implicit paragraphs curve too.</p>
 
-      <sector colspan="2" fill="Lavender" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center">Auto above midline</label></sector>
+      <sector colspan="2" fill="Lavender" border="ring" padding="0.08" font.size="9" font.weight="Bold"><label text-align="center" text-valign="cap-middle">CAP-MIDDLE ABOVE</label></sector>
       <label angle="0" font.weight="Bold">04</label>
       <sector colspan="2" fill="LightYellow" border="ring" padding="0.08" layout.hpadding="0.08">
         <label angle="0" font.size="9">A</label>

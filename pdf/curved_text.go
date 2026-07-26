@@ -367,6 +367,7 @@ func (pw *PageWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, st
 	if err != nil {
 		return err
 	}
+	sharedBaselineOffset, useSharedBaseline := curvedTextSharedBaselineOffset(text, opts.VAlign)
 
 	savedFontColor := pw.fontColor
 	savedFontKey := pw.fontKey
@@ -394,13 +395,21 @@ func (pw *PageWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, st
 	}()
 	for i, placement := range placements {
 		glyph := glyphs[i]
-		placement.BaselineOffset = textRiseForFont(glyph.font, glyph.fontSize, opts.VAlign)
+		if useSharedBaseline {
+			placement.BaselineOffset = sharedBaselineOffset
+		} else {
+			placement.BaselineOffset = textRiseForFont(glyph.font, glyph.fontSize, opts.VAlign)
+		}
 		placement = orientCurvedTextPlacement(placement, opts.Orientation)
 		if err := pw.showCurvedTextGlyph(glyph, placement, resolvedFacing); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func curvedTextSharedBaselineOffset(text *rich_text.RichText, align VerticalTextAlign) (float64, bool) {
+	return sharedRichTextRise(text, align)
 }
 
 func (dw *DocWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts CurvedTextOptions) error {

@@ -93,6 +93,43 @@ func minimalFixtureFont(t *testing.T) *font.Font {
 	return f
 }
 
+func afmFixtureFont(t *testing.T, family string) *font.Font {
+	t.Helper()
+	source, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := font.New(family, options.Options{}, font.FontSources{source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+
+func TestRichText_CapHeightUsesTallestRunAndAscentFallback(t *testing.T) {
+	helvetica := afmFixtureFont(t, "Helvetica")
+	courier := afmFixtureFont(t, "Courier")
+	symbol := afmFixtureFont(t, "Symbol")
+	text := &RichText{pieces: []*RichText{
+		{Text: "A", Font: helvetica, FontSize: 10},
+		{Text: "B", Font: courier, FontSize: 20},
+	}}
+
+	want := float64(courier.CapHeight()) * 20 / float64(courier.UnitsPerEm())
+	if got := text.CapHeight(); got != want {
+		t.Fatalf("CapHeight() = %v, want tallest run %v", got, want)
+	}
+
+	fallback := &RichText{Text: "A", Font: symbol, FontSize: 12}
+	if symbol.CapHeight() != 0 {
+		t.Fatalf("Symbol cap height = %d, want fixture without cap-height metric", symbol.CapHeight())
+	}
+	want = float64(symbol.Ascent()) * 12 / float64(symbol.UnitsPerEm())
+	if got := fallback.CapHeight(); got != want {
+		t.Fatalf("fallback CapHeight() = %v, want ascent %v", got, want)
+	}
+}
+
 func TestNewRichText_English(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}

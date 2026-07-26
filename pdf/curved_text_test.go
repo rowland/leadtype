@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rowland/leadtype/afm_fonts"
+	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/rich_text"
 )
@@ -104,6 +105,56 @@ func TestCurvedTextGlyphPlacement_BaselineAndOriginPoint(t *testing.T) {
 	expectV(t, Location{40, 16}, origin)
 }
 
+func TestCurvedTextSharedBaselineOffset_CapMiddleUsesWholeLine(t *testing.T) {
+	afm, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	helvetica, err := font.New("Helvetica", options.Options{}, font.FontSources{afm})
+	if err != nil {
+		t.Fatal(err)
+	}
+	courier, err := font.New("Courier", options.Options{}, font.FontSources{afm})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := (&rich_text.RichText{
+		Text: "A", Font: helvetica, FontSize: 10,
+	}).AddPiece(&rich_text.RichText{
+		Text: "B", Font: courier, FontSize: 20,
+	})
+
+	offset, shared := curvedTextSharedBaselineOffset(text, VTextAlignCapMiddle)
+	if !shared {
+		t.Fatal("cap-middle did not select a shared baseline")
+	}
+	expectF(t, -(text.CapHeight() / 2), offset)
+
+	if _, shared := curvedTextSharedBaselineOffset(text, VTextAlignMiddle); shared {
+		t.Fatal("ordinary middle unexpectedly selected a shared baseline")
+	}
+}
+
+func TestCurvedTextCapMiddleCentersVisibleCapsForEitherFacing(t *testing.T) {
+	const capHeight = 8.0
+	placement := curvedTextGlyphPlacement{
+		Advance:        12,
+		Point:          Location{X: 40, Y: 50},
+		Tangent:        Location{X: 1, Y: 0},
+		Normal:         Location{X: 0, Y: 1},
+		BaselineOffset: -capHeight / 2,
+	}
+	for _, facing := range []CurvedTextFacing{CurvedTextFacingUpright, CurvedTextFacingUpsideDown} {
+		xAxis, yAxis := curvedTextFrame(placement.Tangent, placement.Normal, facing)
+		origin := placement.originPointWithAxes(xAxis, yAxis, placement.BaselineOffset)
+		visibleCenter := Location{
+			X: origin.X + xAxis.X*placement.Advance/2 + yAxis.X*capHeight/2,
+			Y: origin.Y + xAxis.Y*placement.Advance/2 + yAxis.Y*capHeight/2,
+		}
+		expectV(t, placement.Point, visibleCenter)
+	}
+}
+
 func TestPlaceCurvedTextGlyphs_OutsidePath(t *testing.T) {
 	path := curvedTextTestLinePath{total: 20}
 	glyphs := []curvedTextGlyph{
@@ -139,7 +190,7 @@ func TestPageWriter_DrawTextOnCircle_CardinalAnchors(t *testing.T) {
 	centerY := pw.translate(50)
 
 	tests := []struct {
-		name        string
+		name       string
 		startAngle float64
 		direction  CurvedTextDirection
 		facing     CurvedTextFacing
@@ -358,7 +409,7 @@ func TestPageWriter_DrawRichTextOnCircle_MatchesStringPath(t *testing.T) {
 		t.Fatalf("SetFont returned error: %v", err)
 	}
 	rt, err := rich_text.New("Hello", pwRich.Fonts(), pwRich.FontSize(), options.Options{
-		"color": pwRich.FontColor(),
+		"color":     pwRich.FontColor(),
 		"strikeout": pwRich.strikeout,
 		"underline": pwRich.underline,
 	})
