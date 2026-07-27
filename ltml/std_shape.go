@@ -127,6 +127,9 @@ func (c *StdCircle) PreferredHeight(Writer) (float64, error) {
 	if c.height != 0 {
 		return float64(c.height), nil
 	}
+	if c.radiusValue != 0 && !widgetWidthAuthored(c) {
+		return c.radiusValue*2 + NonContentHeight(c), nil
+	}
 	if c.width != 0 {
 		return float64(c.width), nil
 	}

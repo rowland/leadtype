@@ -1646,6 +1646,10 @@ its separate angular-anchor semantics.
   the table fall back to equal sharing.
 - Cells with `colspan > 1` receive the resolved width of their spanned columns
   but do not drive auto column sizing.
+- Table cells stretch to the full row height by default. Use
+  `align-self="start"`, `align-self="center"`, or `align-self="end"` to retain
+  the cell widget's preferred or declared height and place it at the top,
+  middle, or bottom of the allocated row or rowspan.
 - When at least one row contains a `height="auto"` cell and a height-constrained
   table has true surplus height beyond fixed and preferred row heights, omitted
   rows keep their preferred heights and auto rows split the remaining height

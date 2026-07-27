@@ -316,3 +316,83 @@ func TestLayoutTable_NaturalHeightLeavesAutoRowsAtPreferredHeight(t *testing.T) 
 		t.Fatalf("container.Height() = %v, want natural height 60", got)
 	}
 }
+
+func TestLayoutTable_AlignSelfPositionsCellsWithoutStretching(t *testing.T) {
+	c := testTableContainer(400, 0, 4)
+
+	stretched := addTableTestWidget(t, c, 30, 60)
+
+	start := addTableTestWidget(t, c, 30, 20)
+	start.SetAttrs(map[string]string{"align-self": "start"})
+
+	center := addTableTestWidget(t, c, 30, 10)
+	center.SetHeight(30)
+	center.SetAttrs(map[string]string{"align-self": "center"})
+
+	end := addTableTestWidget(t, c, 30, 20)
+	end.SetAttrs(map[string]string{"align-self": "end"})
+
+	LayoutTable(c, c.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got := stretched.Height(); got != 60 {
+		t.Fatalf("default cell height = %v, want stretched row height 60", got)
+	}
+	if got := start.Top(); got != 0 {
+		t.Fatalf("start cell top = %v, want 0", got)
+	}
+	if got := start.Height(); got != 20 {
+		t.Fatalf("start cell height = %v, want preferred height 20", got)
+	}
+	if got := center.Top(); got != 15 {
+		t.Fatalf("center cell top = %v, want 15", got)
+	}
+	if got := center.Height(); got != 30 {
+		t.Fatalf("center cell height = %v, want declared height 30", got)
+	}
+	if got := end.Top(); got != 40 {
+		t.Fatalf("end cell top = %v, want 40", got)
+	}
+	if got := end.Height(); got != 20 {
+		t.Fatalf("end cell height = %v, want preferred height 20", got)
+	}
+}
+
+func TestLayoutTable_AlignSelfUsesFullRowspanHeightIncludingPadding(t *testing.T) {
+	c := testTableContainer(200, 0, 2)
+	c.layout.vpadding = 10
+
+	spanning := addTableTestWidget(t, c, 30, 20)
+	spanning.SetAttrs(map[string]string{"rowspan": "2", "align-self": "end"})
+	addTableTestWidget(t, c, 30, 30)
+	addTableTestWidget(t, c, 30, 40)
+
+	LayoutTable(c, c.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got := spanning.Top(); got != 60 {
+		t.Fatalf("spanning cell top = %v, want 60 within 80-point span", got)
+	}
+	if got := spanning.Height(); got != 20 {
+		t.Fatalf("spanning cell height = %v, want preferred height 20", got)
+	}
+}
+
+func TestLayoutTable_AlignSelfStartPreservesIntrinsicShapeHeight(t *testing.T) {
+	c := testTableContainer(200, 0, 2)
+
+	addTableTestWidget(t, c, 30, 60)
+	circle := &StdCircle{radiusValue: 10}
+	circle.SetAttrs(map[string]string{"align-self": "start"})
+	if err := circle.SetContainer(c); err != nil {
+		t.Fatal(err)
+	}
+	c.AddChild(circle)
+
+	LayoutTable(c, c.LayoutStyle(), &labelTestWriter{t: t})
+
+	if got := circle.Top(); got != 0 {
+		t.Fatalf("circle top = %v, want row top 0", got)
+	}
+	if got := circle.Height(); got != 20 {
+		t.Fatalf("circle height = %v, want intrinsic diameter 20", got)
+	}
+}

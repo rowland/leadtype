@@ -304,9 +304,15 @@ func tableCellWidth(widths []float64, startCol, colSpan int, hpadding float64) f
 	return width + float64(colSpan-1)*hpadding
 }
 
-func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, writer Writer) (*SpanSizeGrid, []bool, error) {
-	heights := NewSpanSizeGrid(grid.Cols(), grid.Rows())
-	autoRows := make([]bool, grid.Rows())
+func tableBaseHeights(
+	grid *WidgetGrid,
+	widths []float64,
+	style *LayoutStyle,
+	writer Writer,
+) (heights, cellHeights *SpanSizeGrid, autoRows []bool, err error) {
+	heights = NewSpanSizeGrid(grid.Cols(), grid.Rows())
+	cellHeights = NewSpanSizeGrid(grid.Cols(), grid.Rows())
+	autoRows = make([]bool, grid.Rows())
 	for c := 0; c < grid.Cols(); c++ {
 		for r := 0; r < grid.Rows(); r++ {
 			widget := grid.Cell(c, r)
@@ -322,16 +328,16 @@ func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, wr
 			if widget.HeightIsSet() {
 				height = widget.Height()
 			} else {
-				var err error
 				height, err = widget.PreferredHeight(writer)
 				if err != nil {
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				if widgetAutoHeight(widget) && widget.RowSpan() == 1 {
 					autoRows[r] = true
 				}
 			}
 			heights.SetCell(c, r, SpanSize{Span: widget.RowSpan(), Size: height})
+			cellHeights.SetCell(c, r, SpanSize{Span: widget.RowSpan(), Size: height})
 		}
 	}
 
@@ -357,7 +363,7 @@ func tableBaseHeights(grid *WidgetGrid, widths []float64, style *LayoutStyle, wr
 			heights.SetCell(c, r, ss)
 		}
 	}
-	return heights, autoRows, nil
+	return heights, cellHeights, autoRows, nil
 }
 
 func applyTableAutoRowHeights(container Container, style *LayoutStyle, heights *SpanSizeGrid, autoRows []bool) {
@@ -415,7 +421,7 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) (err er
 		return err
 	}
 	widths := tracks.resolvedSizes()
-	heights, autoRows, err := tableBaseHeights(grid, widths, style, writer)
+	heights, cellHeights, autoRows, err := tableBaseHeights(grid, widths, style, writer)
 	if err != nil {
 		return err
 	}
@@ -466,7 +472,19 @@ func LayoutTable(container Container, style *LayoutStyle, writer Writer) (err er
 				for rowOffset := 0; rowOffset < ss.Span; rowOffset++ {
 					height += heights.Cell(c, r+rowOffset).Size
 				}
-				widget.ResolveHeight(height)
+				if widget.SelfAlign() == SelfAlignDefault {
+					widget.ResolveHeight(height)
+				} else {
+					cellHeight := cellHeights.Cell(c, r).Size
+					widget.ResolveHeight(cellHeight)
+					surplus := max(height-cellHeight, 0)
+					switch widget.SelfAlign() {
+					case SelfAlignCenter:
+						widget.SetTop(top + surplus/2)
+					case SelfAlignEnd:
+						widget.SetTop(top + surplus)
+					}
+				}
 				if ss.Span == 1 && ss.Size > maxHeight {
 					maxHeight = ss.Size
 				}
