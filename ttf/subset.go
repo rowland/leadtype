@@ -38,18 +38,14 @@ func (font *Font) Subset(glyphIDs []uint16) ([]byte, error) {
 // readers interpret its charset as CID mappings; wrapping it in OpenType can
 // cause readers to treat those values as glyph names or assume Identity.
 func (font *Font) PDFSubset(glyphIDs []uint16) ([]byte, string, error) {
+	if font.cffCID != nil {
+		return font.PDFSubsetWithSession(nil, glyphIDs)
+	}
 	data, err := font.Subset(glyphIDs)
 	if err != nil {
 		return nil, "", err
 	}
-	if font.cffCID == nil {
-		return data, "", nil
-	}
-	cff, err := sfntTableData(data, "CFF ")
-	if err != nil {
-		return nil, "", err
-	}
-	return cff, "CIDFontType0C", nil
+	return data, "", nil
 }
 
 // sfntTableData extracts one table from a generated sfnt after validating the

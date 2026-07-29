@@ -37,7 +37,10 @@ func (s *fullCFFFallbackSource) SubType() string {
 }
 
 type fullCFFFallbackMetrics struct {
-	bytes []byte
+	bytes       []byte
+	bytesCalls  int
+	sourceBytes int64
+	subset      []byte
 }
 
 func (m *fullCFFFallbackMetrics) AdvanceWidth(r rune) (int, bool) {
@@ -54,9 +57,12 @@ func (m *fullCFFFallbackMetrics) AdvanceWidthForGlyph(glyphID uint16) int {
 	return 512
 }
 
-func (m *fullCFFFallbackMetrics) Ascent() int             { return 800 }
-func (m *fullCFFFallbackMetrics) BoundingBox() [4]int     { return [4]int{0, -200, 512, 800} }
-func (m *fullCFFFallbackMetrics) Bytes() []byte           { return m.bytes }
+func (m *fullCFFFallbackMetrics) Ascent() int         { return 800 }
+func (m *fullCFFFallbackMetrics) BoundingBox() [4]int { return [4]int{0, -200, 512, 800} }
+func (m *fullCFFFallbackMetrics) Bytes() []byte {
+	m.bytesCalls++
+	return m.bytes
+}
 func (m *fullCFFFallbackMetrics) CapHeight() int          { return 700 }
 func (m *fullCFFFallbackMetrics) Copyright() string       { return "" }
 func (m *fullCFFFallbackMetrics) Descent() int            { return -200 }
@@ -71,11 +77,15 @@ func (m *fullCFFFallbackMetrics) LineGap() int            { return 0 }
 func (m *fullCFFFallbackMetrics) NumGlyphs() int          { return 64 }
 func (m *fullCFFFallbackMetrics) OutlineKind() string     { return "CFF" }
 func (m *fullCFFFallbackMetrics) PostScriptName() string  { return "FullCFF" }
+func (m *fullCFFFallbackMetrics) SourceSize() int64       { return m.sourceBytes }
 func (m *fullCFFFallbackMetrics) StemV() int              { return 80 }
 func (m *fullCFFFallbackMetrics) StrikeoutPosition() int  { return 300 }
 func (m *fullCFFFallbackMetrics) StrikeoutThickness() int { return 50 }
 func (m *fullCFFFallbackMetrics) Style() string           { return "Regular" }
 func (m *fullCFFFallbackMetrics) Subset([]uint16) ([]byte, error) {
+	if m.subset != nil {
+		return m.subset, nil
+	}
 	return nil, errors.New("subset unsupported")
 }
 func (m *fullCFFFallbackMetrics) SupportsArabic() bool    { return false }
@@ -95,6 +105,44 @@ func (m *fullCFFFallbackMetrics) GlyphIndex(r rune) uint16 {
 		return 0
 	}
 }
+
+type sessionCFFMetrics struct {
+	*fullCFFFallbackMetrics
+	family   string
+	psName   string
+	sessions []*font.PDFSubsetSession
+}
+
+func (m *sessionCFFMetrics) CIDForGlyph(glyphID uint16) (uint16, bool) {
+	return 1000 + glyphID, true
+}
+
+func (m *sessionCFFMetrics) CIDSystemInfo() (string, string, int, bool) {
+	return "Adobe", "Identity", 0, true
+}
+
+func (m *sessionCFFMetrics) Family() string         { return m.family }
+func (m *sessionCFFMetrics) Filename() string       { return m.family + ".otf" }
+func (m *sessionCFFMetrics) FontKey() string        { return m.family }
+func (m *sessionCFFMetrics) FullName() string       { return m.family }
+func (m *sessionCFFMetrics) PostScriptName() string { return m.psName }
+
+func (m *sessionCFFMetrics) PDFSubsetWithSession(session *font.PDFSubsetSession, glyphIDs []uint16) ([]byte, string, error) {
+	m.sessions = append(m.sessions, session)
+	return []byte{1, 0, 4, 4, byte(len(glyphIDs))}, "CIDFontType0C", nil
+}
+
+type sessionCFFSource map[string]*sessionCFFMetrics
+
+func (source sessionCFFSource) Select(family, weight, style string, ranges []string) (font.FontMetrics, error) {
+	metrics := source[family]
+	if metrics == nil {
+		return nil, errors.New("not found")
+	}
+	return metrics, nil
+}
+
+func (sessionCFFSource) SubType() string { return "TrueType" }
 
 // ── buildCIDWidthArray ────────────────────────────────────────────────────────
 
@@ -549,6 +597,85 @@ func TestUnicodeMode_CFFFullFontFallbackWhenSubsetFails(t *testing.T) {
 	}
 	if strings.Contains(pdf, "+FullCFF") {
 		t.Fatal("did not expect subset tag when embedding the full fallback font")
+	}
+}
+
+func TestFlushUnicodeFontsSharesOnePDFSubsetSession(t *testing.T) {
+	first := &sessionCFFMetrics{
+		fullCFFFallbackMetrics: &fullCFFFallbackMetrics{},
+		family:                 "Session CFF One",
+		psName:                 "SessionCFFOne",
+	}
+	second := &sessionCFFMetrics{
+		fullCFFFallbackMetrics: &fullCFFFallbackMetrics{},
+		family:                 "Session CFF Two",
+		psName:                 "SessionCFFTwo",
+	}
+	dw := NewDocWriter()
+	dw.AddFontSource(sessionCFFSource{
+		first.family:  first,
+		second.family: second,
+	})
+
+	pw := dw.NewPage()
+	if _, err := pw.SetFont(first.family, 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	if err := pw.Print("中"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pw.SetFont(second.family, 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := pw.Print("文"); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if _, err := dw.WriteTo(&out); err != nil {
+		t.Fatal(err)
+	}
+	if len(first.sessions) != 1 || len(second.sessions) != 1 {
+		t.Fatalf("subset session calls = %d/%d, want 1/1", len(first.sessions), len(second.sessions))
+	}
+	if first.sessions[0] == nil || first.sessions[0] != second.sessions[0] {
+		t.Fatal("Unicode font subsets did not share one non-nil flush session")
+	}
+}
+
+func TestFontTraceUsesSourceSizeWithoutReadingFontBytes(t *testing.T) {
+	subset, err := os.ReadFile("../ttf/testdata/minimal-cff.otf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	metrics := &fullCFFFallbackMetrics{
+		bytes:       []byte("must not be read"),
+		sourceBytes: 117238844,
+		subset:      subset,
+	}
+	dw := NewDocWriter()
+	dw.AddFontSource(&fullCFFFallbackSource{metrics: metrics})
+	var trace bytes.Buffer
+	dw.SetFontTrace(&trace)
+
+	pw := dw.NewPage()
+	if _, err := pw.SetFont("Full CFF", 12, options.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	pw.MoveTo(72, 720)
+	if err := pw.Print("中文"); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if _, err := dw.WriteTo(&out); err != nil {
+		t.Fatal(err)
+	}
+	if metrics.bytesCalls != 0 {
+		t.Fatalf("font trace called Bytes %d times, want 0", metrics.bytesCalls)
+	}
+	if !strings.Contains(trace.String(), "source_bytes=117238844") {
+		t.Fatalf("font trace missing lightweight source size: %s", trace.String())
 	}
 }
 

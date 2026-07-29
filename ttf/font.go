@@ -13,16 +13,17 @@ import (
 
 type Font struct {
 	FontInfo
-	cmapTable cmapTable
-	headTable headTable
-	hheaTable hheaTable
-	hmtxTable hmtxTable
-	maxpTable maxpTable
-	postTable postTable
-	vheaTable vheaTable
-	vmtxTable vmtxTable
-	rawBytes  []byte // non-nil only when loaded via LoadFontFromBytes
-	cffCID    *cffCIDMetadata
+	cmapTable  cmapTable
+	headTable  headTable
+	hheaTable  hheaTable
+	hmtxTable  hmtxTable
+	maxpTable  maxpTable
+	postTable  postTable
+	vheaTable  vheaTable
+	vmtxTable  vmtxTable
+	rawBytes   []byte // non-nil only when loaded via LoadFontFromBytes
+	sourceSize int64
+	cffCID     *cffCIDMetadata
 
 	supportsArabic bool
 }
@@ -57,6 +58,15 @@ func (font *Font) CIDForGlyph(glyphID uint16) (uint16, bool) {
 // by the shaper. No I/O is performed.
 func (font *Font) FontKey() string {
 	return fmt.Sprintf("%s@%d", font.filename, font.ttcOffset)
+}
+
+// SourceSize reports the size of the backing font file without reading it.
+// TTC members report the size of their shared collection.
+func (font *Font) SourceSize() int64 {
+	if font.sourceSize > 0 {
+		return font.sourceSize
+	}
+	return int64(len(font.rawBytes))
 }
 
 // Bytes returns the raw font file contents. For fonts loaded from disk this
@@ -100,6 +110,9 @@ func LoadFontAtOffset(filename string, offset int64) (font *Font, err error) {
 	font = new(Font)
 	font.filename = filename
 	font.ttcOffset = offset
+	if info, statErr := file.Stat(); statErr == nil {
+		font.sourceSize = info.Size()
+	}
 	err = font.init(file, offset)
 	return
 }
@@ -110,6 +123,7 @@ func LoadFontFromBytes(data []byte) (*Font, error) {
 	font := new(Font)
 	font.filename = "<bytes>"
 	font.rawBytes = data
+	font.sourceSize = int64(len(data))
 	err := font.init(bytes.NewReader(data), 0)
 	return font, err
 }

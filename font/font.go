@@ -6,6 +6,7 @@ package font
 import (
 	"fmt"
 
+	"github.com/rowland/leadtype/internal/pdfsubset"
 	"github.com/rowland/leadtype/options"
 	"github.com/rowland/leadtype/shaping"
 )
@@ -323,6 +324,28 @@ type PDFSubsetter interface {
 	PDFSubset(glyphIDs []uint16) (data []byte, subtype string, err error)
 }
 
+// PDFSubsetSession owns immutable resources shared while a group of PDF font
+// subsets is being built. Callers should keep a session only for the duration
+// of that operation so large source tables become collectible immediately
+// afterward.
+type PDFSubsetSession = pdfsubset.Session
+
+func NewPDFSubsetSession() *PDFSubsetSession {
+	return pdfsubset.NewSession()
+}
+
+// SessionPDFSubsetter optionally reuses immutable source data across multiple
+// PDF subsets built in the same short-lived session.
+type SessionPDFSubsetter interface {
+	PDFSubsetWithSession(session *PDFSubsetSession, glyphIDs []uint16) (data []byte, subtype string, err error)
+}
+
+// SourceSizer reports the byte size of a font's backing source without reading
+// or materializing that source.
+type SourceSizer interface {
+	SourceSize() int64
+}
+
 // SubsetBytes returns a font binary containing only the supplied glyph IDs, or
 // an error if the underlying font type does not support subsetting.
 func (font *Font) SubsetBytes(glyphIDs []uint16) ([]byte, error) {
@@ -341,6 +364,25 @@ func (font *Font) PDFSubsetBytes(glyphIDs []uint16) ([]byte, string, error) {
 	}
 	data, err := font.SubsetBytes(glyphIDs)
 	return data, "", err
+}
+
+// PDFSubsetBytesWithSession is PDFSubsetBytes with an optional short-lived
+// resource session. Backends without session support retain their existing
+// behavior.
+func (font *Font) PDFSubsetBytesWithSession(session *PDFSubsetSession, glyphIDs []uint16) ([]byte, string, error) {
+	if s, ok := font.metrics.(SessionPDFSubsetter); ok {
+		return s.PDFSubsetWithSession(session, glyphIDs)
+	}
+	return font.PDFSubsetBytes(glyphIDs)
+}
+
+// SourceSize returns the size of the backing font source without reading its
+// contents. Zero means the metrics backend cannot report a size.
+func (font *Font) SourceSize() int64 {
+	if s, ok := font.metrics.(SourceSizer); ok {
+		return s.SourceSize()
+	}
+	return 0
 }
 
 func stringSlicesEqual(sl1, sl2 []string) bool {

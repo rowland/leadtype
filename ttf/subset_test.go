@@ -114,6 +114,9 @@ func TestSubset_CIDKeyedCFFPreservesCIDsAndCompactsGlyphs(t *testing.T) {
 	if subtype != "CIDFontType0C" || len(pdfData) == 0 || pdfData[0] != 1 {
 		t.Fatalf("PDFSubset subtype=%q bytes=%d", subtype, len(pdfData))
 	}
+	if !bytes.Equal(pdfData, cff) {
+		t.Fatal("direct PDF CFF subset differs from CFF extracted from standalone subset")
+	}
 }
 
 // TestSubset_ReducesSize checks that a subset is strictly smaller than the original.

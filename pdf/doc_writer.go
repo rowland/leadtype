@@ -479,6 +479,7 @@ func (dw *DocWriter) flushUnicodeFonts() error {
 		psNames = append(psNames, psName)
 	}
 	sort.Strings(psNames)
+	subsetSession := font.NewPDFSubsetSession()
 
 	for _, psName := range psNames {
 		gr := dw.glyphRecorders[psName]
@@ -544,7 +545,7 @@ func (dw *DocWriter) flushUnicodeFonts() error {
 		// subset by our local subsetter; for those, embed the full font file so
 		// viewers do not substitute a mismatched local font.
 		span := dw.profiler.Begin("pdf.font.subset")
-		subsetData, pdfFontSubtype, err := f.PDFSubsetBytes(glyphIDs)
+		subsetData, pdfFontSubtype, err := f.PDFSubsetBytesWithSession(subsetSession, glyphIDs)
 		span.End()
 		fontData := subsetData
 		subsetEmbedded := err == nil
@@ -579,7 +580,7 @@ func (dw *DocWriter) flushUnicodeFonts() error {
 				dw.fontDescriptors[psName].setCIDSet(&indirectObjectRef{cidSetStream})
 			}
 			if dw.fontTrace != nil {
-				fmt.Fprintf(dw.fontTrace, "font embedded postscript=%q outline=%q cid_keyed=%t glyphs=%d subset_bytes=%d source_bytes=%d\n", psName, f.OutlineKind(), cidKeyed, len(glyphIDs), len(fontData), len(f.Bytes()))
+				fmt.Fprintf(dw.fontTrace, "font embedded postscript=%q outline=%q cid_keyed=%t glyphs=%d subset_bytes=%d source_bytes=%d\n", psName, f.OutlineKind(), cidKeyed, len(glyphIDs), len(fontData), f.SourceSize())
 			}
 			if dw.compressEmbeddedFonts {
 				if err := fontStream.compress(); err != nil {

@@ -7,8 +7,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"sort"
+
+	"github.com/rowland/leadtype/internal/pdfsubset"
 )
 
 const (
@@ -68,6 +71,99 @@ type cffTopDictInfo struct {
 
 type cffPrivateInfo struct {
 	subrsOffset int
+}
+
+type cffSubsetResourceKey struct {
+	filename  string
+	memory    *Font
+	offset    uint32
+	length    uint32
+	numGlyphs uint16
+}
+
+type cffSubsetResource struct {
+	data   []byte
+	parsed *cffSubsetData
+}
+
+var readCFFSubsetTable = func(font *Font, entry *tableDirEntry) ([]byte, error) {
+	if font.rawBytes != nil {
+		start := uint64(entry.offset)
+		end := start + uint64(entry.length)
+		if end > uint64(len(font.rawBytes)) {
+			return nil, fmt.Errorf("subset cff: CFF table exceeds in-memory font bounds")
+		}
+		return font.rawBytes[start:end], nil
+	}
+	file, err := os.Open(font.filename)
+	if err != nil {
+		return nil, fmt.Errorf("subset cff: opening %s: %w", font.filename, err)
+	}
+	defer file.Close()
+	data := make([]byte, entry.length)
+	reader := io.NewSectionReader(file, int64(entry.offset), int64(entry.length))
+	if _, err := io.ReadFull(reader, data); err != nil {
+		return nil, fmt.Errorf("subset cff: reading CFF table from %s: %w", font.filename, err)
+	}
+	return data, nil
+}
+
+func (font *Font) cffSubsetResource(session *pdfsubset.Session) (*cffSubsetResource, error) {
+	entry := font.tableDir.table("CFF ")
+	if entry == nil {
+		return nil, fmt.Errorf("subset cff: font has no CFF table")
+	}
+	key := cffSubsetResourceKey{
+		filename:  font.filename,
+		offset:    entry.offset,
+		length:    entry.length,
+		numGlyphs: font.maxpTable.numGlyphs,
+	}
+	if font.rawBytes != nil {
+		key.filename = ""
+		key.memory = font
+	}
+	value, err := session.Load(key, func() (any, error) {
+		data, err := readCFFSubsetTable(font, entry)
+		if err != nil {
+			return nil, err
+		}
+		parsed, err := parseCFFForSubset(data, int(font.maxpTable.numGlyphs))
+		if err != nil {
+			return nil, err
+		}
+		return &cffSubsetResource{data: data, parsed: parsed}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	resource, ok := value.(*cffSubsetResource)
+	if !ok {
+		return nil, fmt.Errorf("subset cff: invalid cached CFF resource %T", value)
+	}
+	return resource, nil
+}
+
+// PDFSubsetWithSession returns the exact font program required by PDF while
+// sharing immutable CFF parsing within session. CID-keyed CFF fonts return raw
+// CFF with CIDFontType0C; all other outlines preserve the existing subset path.
+func (font *Font) PDFSubsetWithSession(session *pdfsubset.Session, glyphIDs []uint16) ([]byte, string, error) {
+	if font.cffCID == nil {
+		data, err := font.Subset(glyphIDs)
+		return data, "", err
+	}
+	resource, err := font.cffSubsetResource(session)
+	if err != nil {
+		return nil, "", err
+	}
+	if !resource.parsed.isCID {
+		return nil, "", fmt.Errorf("subset cff: loaded CID-keyed font has a name-keyed CFF table")
+	}
+	subset, err := buildCIDKeyedCFFSubset(resource.parsed, glyphIDs)
+	if err != nil {
+		return nil, "", err
+	}
+	return subset.cffData, "CIDFontType0C", nil
 }
 
 func (font *Font) subsetCFFOpenType(glyphIDs []uint16) ([]byte, error) {
@@ -177,15 +273,18 @@ func (font *Font) subsetCFFOpenType(glyphIDs []uint16) ([]byte, error) {
 	return assembleSFNT(font.scalar, tables)
 }
 
-// subsetCIDKeyedCFF builds a dense subset: retained source GIDs are sorted and
-// assigned new contiguous GIDs, while their original CIDs are deliberately
-// preserved in the CFF charset. It also removes unused Font DICTs, remaps
-// FDSelect, and rebuilds OpenType tables whose entries are indexed by GID.
-//
-// Preserving CIDs is essential because the PDF descendant font is addressed by
-// those CIDs. The PDF Encoding CMap maps LeadType's emitted character codes to
-// them; assuming new GID == CID is invalid for fonts such as Source Han.
-func (font *Font) subsetCIDKeyedCFF(raw []byte, parsed *cffSubsetData, glyphIDs []uint16) ([]byte, error) {
+type cidCFFSubsetResult struct {
+	cffData   []byte
+	closure   map[uint16]bool
+	oldGlyphs []int
+	oldToNew  map[uint16]uint16
+}
+
+// buildCIDKeyedCFFSubset builds a dense raw CFF subset. Retained source GIDs
+// are sorted and assigned new contiguous GIDs while their original CIDs remain
+// in the CFF charset. The parsed source is immutable and may be reused by
+// multiple subsets.
+func buildCIDKeyedCFFSubset(parsed *cffSubsetData, glyphIDs []uint16) (*cidCFFSubsetResult, error) {
 	// Always retain .notdef, then establish the one source-GID to subset-GID
 	// map shared by CharStrings, cmap, metrics, and maxp.
 	closure := map[uint16]bool{0: true}
@@ -253,13 +352,29 @@ func (font *Font) subsetCIDKeyedCFF(raw []byte, parsed *cffSubsetData, glyphIDs 
 	if err != nil {
 		return nil, err
 	}
-	maxpBuf := buildCFFMaxpTable(uint16(len(oldGlyphs)))
-	hheaBuf, err := subsetHheaTable(raw, font.tableDir.table("hhea"), uint16(len(oldGlyphs)))
+	return &cidCFFSubsetResult{
+		cffData:   cffData,
+		closure:   closure,
+		oldGlyphs: oldGlyphs,
+		oldToNew:  oldToNew,
+	}, nil
+}
+
+// subsetCIDKeyedCFF wraps the dense CFF program in a standalone OpenType font.
+// PDF embedding uses the raw program directly and deliberately skips this
+// wrapper work.
+func (font *Font) subsetCIDKeyedCFF(raw []byte, parsed *cffSubsetData, glyphIDs []uint16) ([]byte, error) {
+	subset, err := buildCIDKeyedCFFSubset(parsed, glyphIDs)
 	if err != nil {
 		return nil, err
 	}
-	hmtxBuf := font.subsetHmtxTableRemapped(oldGlyphs)
-	cmapBuf, err := font.subsetCmapTableRemapped(closure, oldToNew)
+	maxpBuf := buildCFFMaxpTable(uint16(len(subset.oldGlyphs)))
+	hheaBuf, err := subsetHheaTable(raw, font.tableDir.table("hhea"), uint16(len(subset.oldGlyphs)))
+	if err != nil {
+		return nil, err
+	}
+	hmtxBuf := font.subsetHmtxTableRemapped(subset.oldGlyphs)
+	cmapBuf, err := font.subsetCmapTableRemapped(subset.closure, subset.oldToNew)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +391,7 @@ func (font *Font) subsetCIDKeyedCFF(raw []byte, parsed *cffSubsetData, glyphIDs 
 		var data []byte
 		switch entry.tag {
 		case "CFF ":
-			data = cffData
+			data = subset.cffData
 		case "maxp":
 			data = maxpBuf
 		case "hhea":
