@@ -1487,12 +1487,14 @@ Style blocks use CSS-style selector syntax:
 
 | Pattern         | Matches |
 |-----------------|---------|
+| `*`             | All elements |
 | `p`             | All `<p>` elements |
 | `.classname`    | Elements with `class="classname"` |
 | `p.classname`   | `<p>` elements with `class="classname"` |
 | `p#myid`        | `<p>` elements with `id="myid"` |
 | `div p`         | `<p>` elements anywhere inside a `<div>` |
 | `div > p`       | `<p>` elements that are direct children of a `<div>` |
+| `div > *`       | All elements that are direct children of a `<div>` |
 | `p, span`       | All `<p>` and `<span>` elements |
 
 Selector names accept letters, digits, underscores, and hyphens in tags, ids,

@@ -1005,6 +1005,29 @@ func TestRules_integration_grouped_selectors_apply_independently(t *testing.T) {
 	}
 }
 
+func TestRules_integration_universal_child_selector_applies_to_multiple_widget_types(t *testing.T) {
+	doc := parseDoc(t, `
+		<ltml>
+			<style>.box > * { z-index: 7; }</style>
+			<page>
+				<vbox class="box">
+					<p>paragraph</p>
+					<label>label</label>
+				</vbox>
+			</page>
+		</ltml>`)
+
+	box := firstContainer(t, doc)
+	if len(box.children) != 2 {
+		t.Fatalf("box child count = %d, want 2", len(box.children))
+	}
+	for i, child := range box.children {
+		if child.ZIndex() != 7 {
+			t.Errorf("child %d (%T) z-index = %d, want 7", i, child, child.ZIndex())
+		}
+	}
+}
+
 func TestRules_integration_invalid_tier_returns_parse_error(t *testing.T) {
 	if _, err := Parse([]byte(`
 		<ltml>

@@ -311,7 +311,9 @@ func parseSelectorBase(base string, item *selectorItem) error {
 		return nil
 	}
 	i := 0
-	if isWordByte(base[0]) {
+	if base[0] == '*' {
+		i++
+	} else if isWordByte(base[0]) {
 		start := i
 		for i < len(base) && isWordByte(base[i]) {
 			i++
