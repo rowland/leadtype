@@ -42,7 +42,7 @@ func parseConfig() (*Config, error) {
 	flag.StringVar(&basePath, "assets", "", "path to static asset directory (ASSETS, required)")
 	flag.StringVar(&basePath, "a", "", "path to static asset directory (shorthand)")
 	flag.StringVar(&fontDir, "font-dir", "auto", "ordered comma-delimited font directories; auto adds system directories (FONT_DIR)")
-	flag.StringVar(&outputPath, "output-path", "", "root directory for file output (OUTPUT_PATH, optional; enables X-Output-File)")
+	flag.StringVar(&outputPath, "output-path", "", "existing root directory for persisted render output requested with X-Output-File (OUTPUT_PATH, optional)")
 	flag.Int64Var(&maxUploadBytes, "max-upload-bytes", 32<<20, "maximum multipart request size in bytes (MAX_UPLOAD_BYTES)")
 	flag.DurationVar(&readTimeout, "read-timeout", 0, "HTTP server read timeout, e.g. 30s (READ_TIMEOUT)")
 	flag.DurationVar(&writeTimeout, "write-timeout", 0, "HTTP server write timeout, e.g. 60s (WRITE_TIMEOUT)")
