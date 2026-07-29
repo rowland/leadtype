@@ -22,8 +22,20 @@ import (
 	"testing"
 	"time"
 
+	leadtype "github.com/rowland/leadtype"
 	"github.com/rowland/leadtype/ltml"
 )
+
+func TestMainVersion(t *testing.T) {
+	var output bytes.Buffer
+	if code := Main(context.Background(), []string{"--version"}, &output, nil); code != 0 {
+		t.Fatalf("Main() = %d, want 0", code)
+	}
+	want := fmt.Sprintf("render-ltml %s\n", leadtype.Version)
+	if got := output.String(); got != want {
+		t.Fatalf("version output = %q, want %q", got, want)
+	}
+}
 
 type renderLocalComponent struct {
 	ltml.StdComponent

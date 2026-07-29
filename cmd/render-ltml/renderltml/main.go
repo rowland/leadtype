@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	leadtype "github.com/rowland/leadtype"
 	"github.com/rowland/leadtype/internal/assetpath"
 	"github.com/rowland/leadtype/internal/overlayfs"
 	"github.com/rowland/leadtype/ltml"
@@ -126,6 +127,7 @@ func displayPath(path string) string {
 func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets func() error) int {
 	var cfg runConfig
 	var extraFiles multiFlag
+	var showVersion bool
 	if stderr == nil {
 		stderr = os.Stderr
 	}
@@ -139,6 +141,7 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 
 	fs := flag.NewFlagSet("render-ltml", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.BoolVar(&showVersion, "version", false, "print version and exit")
 	fs.StringVar(&cfg.assetsDir, "assets", "", "path to asset `directory`")
 	fs.StringVar(&cfg.assetsDir, "a", "", "path to asset `directory` (shorthand)")
 	fs.StringVar(&cfg.fontDir, "font-dir", "auto", "ordered comma-delimited font `directories`; auto adds system directories")
@@ -167,6 +170,10 @@ func Main(ctx context.Context, args []string, stderr io.Writer, registerWidgets 
 	}
 	if err := fs.Parse(normalizedArgs); err != nil {
 		return 2
+	}
+	if showVersion {
+		fmt.Fprintf(stderr, "render-ltml %s\n", leadtype.Version)
+		return 0
 	}
 
 	cfg.extraFiles, err = parseExtraAssets([]string(extraFiles))

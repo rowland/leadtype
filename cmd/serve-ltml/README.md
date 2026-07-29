@@ -22,6 +22,7 @@ Every flag can also be set via the corresponding environment variable.
 | `-max-upload-bytes <n>` | `MAX_UPLOAD_BYTES` | `33554432` (32 MiB) | Maximum request body size |
 | `-read-timeout <duration>` | `READ_TIMEOUT` | none | HTTP server read timeout (e.g. `30s`) |
 | `-write-timeout <duration>` | `WRITE_TIMEOUT` | none | HTTP server write timeout (e.g. `60s`) |
+| `-version` |  |  | Print the compiled Leadtype version and exit |
 
 `ASSETS` must exist and be a directory; the server refuses to start otherwise.
 

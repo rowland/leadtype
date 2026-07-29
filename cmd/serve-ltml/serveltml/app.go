@@ -30,6 +30,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	leadtype "github.com/rowland/leadtype"
 )
 
 // Main runs the serve-ltml command flow and returns a process exit code.
@@ -37,6 +39,10 @@ import (
 func Main(stderr io.Writer, registerWidgets func() error) int {
 	if stderr == nil {
 		stderr = os.Stderr
+	}
+	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		fmt.Fprintf(stderr, "serve-ltml %s\n", leadtype.Version)
+		return 0
 	}
 	if registerWidgets != nil {
 		if err := registerWidgets(); err != nil {

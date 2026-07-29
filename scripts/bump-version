@@ -1,0 +1,66 @@
+#!/bin/sh
+
+set -eu
+
+part=${1:-}
+version_file=${2:-VERSION}
+
+if [ ! -f "$version_file" ]; then
+	echo "bump-version: version file not found: $version_file" >&2
+	exit 1
+fi
+
+version=$(tr -d '[:space:]' <"$version_file")
+case "$version" in
+	*[!0-9.]* | *.*.*.* | .* | *.)
+		echo "bump-version: invalid semantic version in $version_file: $version" >&2
+		exit 1
+		;;
+esac
+
+old_ifs=$IFS
+IFS=.
+set -- $version
+IFS=$old_ifs
+if [ "$#" -ne 3 ] || [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+	echo "bump-version: invalid semantic version in $version_file: $version" >&2
+	exit 1
+fi
+
+major=$1
+minor=$2
+patch=$3
+for number in "$major" "$minor" "$patch"; do
+	case "$number" in
+		0 | [1-9] | [1-9][0-9]*) ;;
+		*)
+			echo "bump-version: invalid semantic version in $version_file: $version" >&2
+			exit 1
+			;;
+	esac
+done
+
+case "$part" in
+	major)
+		major=$((major + 1))
+		minor=0
+		patch=0
+		;;
+	minor)
+		minor=$((minor + 1))
+		patch=0
+		;;
+	patch)
+		patch=$((patch + 1))
+		;;
+	*)
+		echo "bump-version: expected major, minor, or patch" >&2
+		exit 1
+		;;
+esac
+
+new_version=$major.$minor.$patch
+tmp_file=$version_file.tmp
+printf '%s\n' "$new_version" >"$tmp_file"
+mv "$tmp_file" "$version_file"
+echo "$version -> $new_version"

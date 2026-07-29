@@ -1,13 +1,25 @@
-.PHONY: binaries test samples ltml-samples ltml-samples-open ltml-image-sample-local ltml-image-sample-remote
+.PHONY: binaries test samples ltml-samples ltml-samples-open ltml-image-sample-local ltml-image-sample-remote bump-major bump-minor bump-patch
+
+.DEFAULT_GOAL := binaries
 
 BIN_DIR := bin
 BINARY_PKGS := ./cmd/render-ltml ./cmd/serve-ltml ./ttdump
+VERSION_FILE := VERSION
 LTML_IMAGE_SAMPLE := ltml/samples/test_031_render_ltml_images.ltml
 LTML_IMAGE_JPEG := pdf/testdata/testimg.jpg
 LTML_IMAGE_PNG := pdf/testdata/eidetic.png
 LTML_IMAGE_LOCAL_OUTPUT := ltml/samples/test_031_render_ltml_images.local.pdf
 LTML_IMAGE_REMOTE_OUTPUT := ltml/samples/test_031_render_ltml_images.remote.pdf
 LTML_SERVER_ADDR ?= 127.0.0.1:18080
+
+bump-major:
+	@./scripts/bump-version major $(VERSION_FILE)
+
+bump-minor:
+	@./scripts/bump-version minor $(VERSION_FILE)
+
+bump-patch:
+	@./scripts/bump-version patch $(VERSION_FILE)
 
 binaries:
 	@mkdir -p $(BIN_DIR)

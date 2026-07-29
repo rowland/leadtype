@@ -24,6 +24,7 @@ render-ltml -b [flags] <file1> <file2> ...
 | `-ua` |  | Default to tagged PDF output |
 | `-list-fonts` |  | List searchable TTF/OTF font identifiers and exit |
 | `-trace-fonts` |  | Print local font selection decisions while rendering |
+| `-version` |  | Print the compiled Leadtype version and exit |
 
 ### Output paths
 
