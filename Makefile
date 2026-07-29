@@ -1,4 +1,4 @@
-.PHONY: binaries test samples ltml-samples ltml-samples-open ltml-image-sample-local ltml-image-sample-remote bump-major bump-minor bump-patch
+.PHONY: binaries test samples ltml-samples ltml-samples-open ltml-image-sample-local ltml-image-sample-remote version bump-major bump-minor bump-patch release-check release
 
 .DEFAULT_GOAL := binaries
 
@@ -12,6 +12,10 @@ LTML_IMAGE_LOCAL_OUTPUT := ltml/samples/test_031_render_ltml_images.local.pdf
 LTML_IMAGE_REMOTE_OUTPUT := ltml/samples/test_031_render_ltml_images.remote.pdf
 LTML_SERVER_ADDR ?= 127.0.0.1:18080
 
+version:
+	@tr -d '[:space:]' < $(VERSION_FILE)
+	@printf '\n'
+
 bump-major:
 	@./scripts/bump-version major $(VERSION_FILE)
 
@@ -20,6 +24,12 @@ bump-minor:
 
 bump-patch:
 	@./scripts/bump-version patch $(VERSION_FILE)
+
+release-check:
+	@./scripts/release check
+
+release:
+	@./scripts/release publish
 
 binaries:
 	@mkdir -p $(BIN_DIR)

@@ -1,0 +1,111 @@
+#!/bin/sh
+
+set -eu
+
+mode=${1:-}
+case "$mode" in
+	check | publish) ;;
+	*)
+		echo "release: expected check or publish" >&2
+		exit 1
+		;;
+esac
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+	echo "release: not inside a Git repository" >&2
+	exit 1
+}
+cd "$repo_root"
+
+if [ ! -f VERSION ]; then
+	echo "release: VERSION not found" >&2
+	exit 1
+fi
+version=$(tr -d '[:space:]' <VERSION)
+if ! printf '%s\n' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+	echo "release: invalid semantic version in VERSION: $version" >&2
+	exit 1
+fi
+tag=v$version
+
+if [ -n "$(git status --porcelain)" ]; then
+	echo "release: working tree is not clean" >&2
+	exit 1
+fi
+
+branch=$(git symbolic-ref --quiet --short HEAD) || {
+	echo "release: HEAD is detached" >&2
+	exit 1
+}
+
+if git rev-parse --quiet --verify "refs/tags/$tag" >/dev/null; then
+	echo "release: tag already exists locally: $tag" >&2
+	exit 1
+fi
+
+if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+	echo "release: tag already exists on origin: $tag" >&2
+	exit 1
+else
+	status=$?
+	if [ "$status" -ne 2 ]; then
+		echo "release: could not check tags on origin" >&2
+		exit 1
+	fi
+fi
+
+echo "==> building Leadtype $version"
+go build ./...
+
+echo "==> testing Leadtype $version"
+go test ./...
+
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/leadtype-release.XXXXXX")
+cleanup_tmp() {
+	rm -rf "$tmp_dir"
+}
+trap cleanup_tmp EXIT HUP INT TERM
+
+go build -o "$tmp_dir/render-ltml" ./cmd/render-ltml
+go build -o "$tmp_dir/serve-ltml" ./cmd/serve-ltml
+
+render_version=$("$tmp_dir/render-ltml" --version 2>&1)
+serve_version=$("$tmp_dir/serve-ltml" --version 2>&1)
+if [ "$render_version" != "render-ltml $version" ]; then
+	echo "release: render-ltml reported unexpected version: $render_version" >&2
+	exit 1
+fi
+if [ "$serve_version" != "serve-ltml $version" ]; then
+	echo "release: serve-ltml reported unexpected version: $serve_version" >&2
+	exit 1
+fi
+if [ -n "$(git status --porcelain)" ]; then
+	echo "release: checks left the working tree dirty" >&2
+	exit 1
+fi
+
+echo "==> release checks passed for $tag on $branch"
+if [ "$mode" = check ]; then
+	exit 0
+fi
+
+git tag -a "$tag" -m "Release $tag"
+tag_created=true
+cleanup_release() {
+	status=$?
+	trap - EXIT HUP INT TERM
+	cleanup_tmp
+	if [ "$status" -ne 0 ] && [ "${tag_created:-false}" = true ]; then
+		git tag -d "$tag" >/dev/null 2>&1 || true
+		echo "release: removed local tag after failed publish: $tag" >&2
+	fi
+	exit "$status"
+}
+trap cleanup_release EXIT HUP INT TERM
+
+echo "==> publishing $tag"
+git push --atomic origin \
+	"HEAD:refs/heads/$branch" \
+	"refs/tags/$tag:refs/tags/$tag"
+tag_created=false
+echo "==> published $tag"
