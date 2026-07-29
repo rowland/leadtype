@@ -51,6 +51,7 @@ type documentRenderContext struct {
 	activeIndexEntry *resolvedIndexEntry
 	destinations     map[string]documentDestination
 	indexEntries     []collectedIndexEntry
+	paragraphLines   paragraphLinesCache
 	seenIndexEntries map[Widget]bool
 	preflight        bool
 }
@@ -59,6 +60,7 @@ func newDocumentRenderContext(snapshot *documentIndexSnapshot, preflight bool) *
 	return &documentRenderContext{
 		activeSnapshot:   snapshot,
 		destinations:     make(map[string]documentDestination),
+		paragraphLines:   make(paragraphLinesCache),
 		seenIndexEntries: make(map[Widget]bool),
 		preflight:        preflight,
 	}

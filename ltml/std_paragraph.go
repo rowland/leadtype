@@ -32,6 +32,13 @@ type StdParagraph struct {
 	facingSet          bool
 }
 
+type paragraphLinesCacheKey struct {
+	paragraph *StdParagraph
+	width     float64
+}
+
+type paragraphLinesCache map[paragraphLinesCacheKey][]*rich_text.RichText
+
 func (p *StdParagraph) AddText(text string) {
 	p.AddTextWithFont(text, p.explicitFont())
 }
@@ -205,10 +212,25 @@ func (p *StdParagraph) Lines(w Writer, width float64) []*rich_text.RichText {
 	if lines, ok := prepareLeaderLines(w, p, p.textPieces, width, true); ok {
 		return lines
 	}
+	doc := documentForContainer(p)
+	cacheable := !textPiecesHaveDynamicText(p.textPieces) && doc != nil && doc.renderContext != nil
+	key := paragraphLinesCacheKey{paragraph: p, width: width}
+	if cacheable {
+		if lines, ok := doc.renderContext.paragraphLines[key]; ok {
+			// RichText applies the paragraph's font settings as a writer side
+			// effect. Preserve that behavior even when wrapping is cached.
+			applyTextPieceFonts(w, p, p.textPieces, p.Font())
+			return lines
+		}
+	}
 	rt := p.RichText(w)
 	flags := make([]wordbreaking.Flags, rt.Len())
 	wordbreaking.MarkRuneAttributes(rt.String(), flags)
-	return rt.WrapToWidth(width, flags, false)
+	lines := rt.WrapToWidth(width, flags, false)
+	if cacheable {
+		doc.renderContext.paragraphLines[key] = lines
+	}
+	return lines
 }
 
 func (p *StdParagraph) PreferredHeight(w Writer) (float64, error) {
