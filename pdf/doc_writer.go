@@ -37,7 +37,7 @@ type DocWriter struct {
 	curPage               *PageWriter
 	options               options.Options
 	fontSources           font.FontSources
-	selectedFonts         map[string]*font.Font
+	selectedFonts         map[string]fontSelectionResult
 	fontKeys              map[string]string
 	fontEncodings         map[string]*fontEncoding
 	glyphRecorders        map[string]*glyphRecorder  // keyed by font PostScript name
@@ -81,6 +81,11 @@ type dimensionCacheEntry struct {
 	err    error
 }
 
+type fontSelectionResult struct {
+	selected *font.Font
+	err      error
+}
+
 type namedDestination struct {
 	page *page
 	x    float64
@@ -99,7 +104,7 @@ func NewDocWriter() *DocWriter {
 	resources.setProcSet(nameArray("PDF", "Text", "ImageB", "ImageC"))
 	file.body.add(resources)
 	fontSources := make(font.FontSources, 0, 2)
-	selectedFonts := make(map[string]*font.Font)
+	selectedFonts := make(map[string]fontSelectionResult)
 	fontKeys := make(map[string]string)
 	fontEncodings := make(map[string]*fontEncoding)
 	return &DocWriter{
@@ -177,7 +182,7 @@ func (dw *DocWriter) AddFont(family string, options options.Options) ([]*font.Fo
 
 func (dw *DocWriter) AddFontSource(fontSource font.FontSource) {
 	dw.fontSources = append(dw.fontSources, fontSource)
-	dw.selectedFonts = make(map[string]*font.Font)
+	dw.selectedFonts = make(map[string]fontSelectionResult)
 }
 
 func (dw *DocWriter) CompressPages(value bool) *DocWriter {
@@ -633,7 +638,7 @@ func (dw *DocWriter) ShareFontSelectionCacheFrom(other *DocWriter) {
 		return
 	}
 	if other.selectedFonts == nil {
-		other.selectedFonts = make(map[string]*font.Font)
+		other.selectedFonts = make(map[string]fontSelectionResult)
 	}
 	dw.selectedFonts = other.selectedFonts
 }
@@ -641,8 +646,11 @@ func (dw *DocWriter) ShareFontSelectionCacheFrom(other *DocWriter) {
 func (dw *DocWriter) selectFont(family string, opts options.Options) (*font.Font, error) {
 	key, cacheable := fontSelectionCacheKey(family, opts)
 	if cacheable {
-		if cached := dw.selectedFonts[key]; cached != nil {
-			return cached.Clone(), nil
+		if cached, ok := dw.selectedFonts[key]; ok {
+			if cached.err != nil {
+				return nil, cached.err
+			}
+			return cached.selected.Clone(), nil
 		}
 	}
 	match := opts.StringDefault("match", "exact")
@@ -655,14 +663,20 @@ func (dw *DocWriter) selectFont(family string, opts options.Options) (*font.Font
 	}
 	if err != nil {
 		dw.traceFontSelection(family, opts, nil, err)
+		if cacheable {
+			if dw.selectedFonts == nil {
+				dw.selectedFonts = make(map[string]fontSelectionResult)
+			}
+			dw.selectedFonts[key] = fontSelectionResult{err: err}
+		}
 		return nil, err
 	}
 	dw.traceFontSelection(family, opts, selected, nil)
 	if cacheable {
 		if dw.selectedFonts == nil {
-			dw.selectedFonts = make(map[string]*font.Font)
+			dw.selectedFonts = make(map[string]fontSelectionResult)
 		}
-		dw.selectedFonts[key] = selected.Clone()
+		dw.selectedFonts[key] = fontSelectionResult{selected: selected.Clone()}
 	}
 	return selected, nil
 }

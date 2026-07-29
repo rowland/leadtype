@@ -177,6 +177,27 @@ func TestDocWriter_AddFontCachesSelections(t *testing.T) {
 	}
 }
 
+func TestDocWriter_AddFontCachesFailedSelections(t *testing.T) {
+	afmFonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &countingFontSource{base: afmFonts}
+	dw := NewDocWriter()
+	dw.AddFontSource(source)
+
+	if _, err := dw.SetFont("Missing Font", 12, options.Options{}); err == nil {
+		t.Fatal("first missing font selection succeeded")
+	}
+	if _, err := dw.SetFont("Missing Font", 12, options.Options{}); err == nil {
+		t.Fatal("cached missing font selection succeeded")
+	}
+
+	if source.selects != 1 {
+		t.Fatalf("font selections = %d, want 1 cached failure", source.selects)
+	}
+}
+
 func TestDocWriter_AddFontSourceClearsSelectionCache(t *testing.T) {
 	afmFonts, err := afm_fonts.Default()
 	if err != nil {
@@ -196,6 +217,28 @@ func TestDocWriter_AddFontSourceClearsSelectionCache(t *testing.T) {
 
 	if source.selects != 2 {
 		t.Fatalf("font selections = %d, want 2 after adding a source", source.selects)
+	}
+}
+
+func TestDocWriter_AddFontSourceClearsFailedSelectionCache(t *testing.T) {
+	afmFonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	missingSource := &countingFontSource{base: &ttf_fonts.TtfFonts{}}
+	dw := NewDocWriter()
+	dw.AddFontSource(missingSource)
+
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err == nil {
+		t.Fatal("font selection unexpectedly succeeded before adding AFM source")
+	}
+	dw.AddFontSource(afmFonts)
+	if _, err := dw.SetFont("Helvetica", 12, options.Options{}); err != nil {
+		t.Fatalf("font selection after adding AFM source: %v", err)
+	}
+
+	if missingSource.selects != 2 {
+		t.Fatalf("font selections = %d, want 2 after invalidating cached failure", missingSource.selects)
 	}
 }
 
@@ -220,6 +263,30 @@ func TestDocWriter_ShareFontSelectionCacheFrom(t *testing.T) {
 
 	if source.selects != 1 {
 		t.Fatalf("font selections = %d, want 1 shared cache miss", source.selects)
+	}
+}
+
+func TestDocWriter_ShareFontSelectionCacheFromSharesFailures(t *testing.T) {
+	afmFonts, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &countingFontSource{base: afmFonts}
+	first := NewDocWriter()
+	first.AddFontSource(source)
+	second := NewDocWriter()
+	second.AddFontSource(source)
+	second.ShareFontSelectionCacheFrom(first)
+
+	if _, err := first.SetFont("Missing Font", 12, options.Options{}); err == nil {
+		t.Fatal("first missing font selection succeeded")
+	}
+	if _, err := second.SetFont("Missing Font", 12, options.Options{}); err == nil {
+		t.Fatal("shared cached missing font selection succeeded")
+	}
+
+	if source.selects != 1 {
+		t.Fatalf("font selections = %d, want 1 shared cached failure", source.selects)
 	}
 }
 
