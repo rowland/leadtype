@@ -16,17 +16,36 @@ type vmtxTable struct {
 }
 
 func (table *vmtxTable) init(file io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16, numOfLongVerMetrics uint16) (err error) {
+	if numOfLongVerMetrics > numGlyphs {
+		return fmt.Errorf("vmtx: number of long metrics %d exceeds glyph count %d", numOfLongVerMetrics, numGlyphs)
+	}
+	numBearings := int(numGlyphs - numOfLongVerMetrics)
+	required := int(numOfLongVerMetrics)*4 + numBearings*2
+	if uint64(required) > uint64(entry.length) {
+		return fmt.Errorf("vmtx: table length %d is shorter than required %d", entry.length, required)
+	}
 	if _, err = file.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	table.vMetrics = make([]longVerMetric, numOfLongVerMetrics)
-	for i, _ := range table.vMetrics {
-		if err = table.vMetrics[i].read(file); err != nil {
-			return
-		}
+	data := make([]byte, required)
+	if _, err = io.ReadFull(file, data); err != nil {
+		return
 	}
-	table.topSideBearing = make([]FWord, numGlyphs-numOfLongVerMetrics)
-	err = binary.Read(file, binary.BigEndian, table.topSideBearing)
+
+	table.vMetrics = make([]longVerMetric, numOfLongVerMetrics)
+	pos := 0
+	for i := range table.vMetrics {
+		table.vMetrics[i] = longVerMetric{
+			advanceHeight:  binary.BigEndian.Uint16(data[pos:]),
+			topSideBearing: int16(binary.BigEndian.Uint16(data[pos+2:])),
+		}
+		pos += 4
+	}
+	table.topSideBearing = make([]FWord, numBearings)
+	for i := range table.topSideBearing {
+		table.topSideBearing[i] = FWord(int16(binary.BigEndian.Uint16(data[pos:])))
+		pos += 2
+	}
 	return
 }
 
@@ -46,8 +65,4 @@ func (table *vmtxTable) write(wr io.Writer) {
 type longVerMetric struct {
 	advanceHeight  uint16
 	topSideBearing int16
-}
-
-func (m *longVerMetric) read(file io.Reader) error {
-	return readValues(file, &m.advanceHeight, &m.topSideBearing)
 }

@@ -4,7 +4,6 @@
 package ttf
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -17,18 +16,36 @@ type hmtxTable struct {
 }
 
 func (table *hmtxTable) init(rs io.ReadSeeker, entry *tableDirEntry, numGlyphs uint16, numOfLongHorMetrics uint16) (err error) {
+	if numOfLongHorMetrics > numGlyphs {
+		return fmt.Errorf("hmtx: number of long metrics %d exceeds glyph count %d", numOfLongHorMetrics, numGlyphs)
+	}
+	numBearings := int(numGlyphs - numOfLongHorMetrics)
+	required := int(numOfLongHorMetrics)*4 + numBearings*2
+	if uint64(required) > uint64(entry.length) {
+		return fmt.Errorf("hmtx: table length %d is shorter than required %d", entry.length, required)
+	}
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	file := bufio.NewReaderSize(rs, int(entry.length))
-	table.hMetrics = make([]longHorMetric, numOfLongHorMetrics)
-	for i, _ := range table.hMetrics {
-		if err = table.hMetrics[i].read(file); err != nil {
-			return
-		}
+	data := make([]byte, required)
+	if _, err = io.ReadFull(rs, data); err != nil {
+		return
 	}
-	table.leftSideBearing = make([]FWord, numGlyphs-numOfLongHorMetrics)
-	err = binary.Read(file, binary.BigEndian, table.leftSideBearing)
+
+	table.hMetrics = make([]longHorMetric, numOfLongHorMetrics)
+	pos := 0
+	for i := range table.hMetrics {
+		table.hMetrics[i] = longHorMetric{
+			advanceWidth:    binary.BigEndian.Uint16(data[pos:]),
+			leftSideBearing: int16(binary.BigEndian.Uint16(data[pos+2:])),
+		}
+		pos += 4
+	}
+	table.leftSideBearing = make([]FWord, numBearings)
+	for i := range table.leftSideBearing {
+		table.leftSideBearing[i] = FWord(int16(binary.BigEndian.Uint16(data[pos:])))
+		pos += 2
+	}
 	return
 }
 
@@ -85,8 +102,4 @@ func (table *hmtxTable) write(wr io.Writer) {
 type longHorMetric struct {
 	advanceWidth    uint16
 	leftSideBearing int16
-}
-
-func (m *longHorMetric) read(file io.Reader) error {
-	return readValues(file, &m.advanceWidth, &m.leftSideBearing)
 }

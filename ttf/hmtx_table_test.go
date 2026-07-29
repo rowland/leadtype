@@ -3,7 +3,77 @@
 
 package ttf
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
+
+func TestHmtxTableInitBulkDecodesMetricsAndBearings(t *testing.T) {
+	data := []byte{
+		0x01, 0xf4, 0xff, 0xf6, // advance 500, bearing -10
+		0x02, 0xbc, 0x00, 0x14, // advance 700, bearing 20
+		0xff, 0xe2, // bearing -30
+		0x00, 0x28, // bearing 40
+	}
+	source := append([]byte{0xaa, 0xbb}, data...)
+	var table hmtxTable
+	if err := table.init(bytes.NewReader(source), &tableDirEntry{offset: 2, length: uint32(len(data))}, 4, 2); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []longHorMetric{
+		{advanceWidth: 500, leftSideBearing: -10},
+		{advanceWidth: 700, leftSideBearing: 20},
+	}
+	for i := range want {
+		if table.hMetrics[i] != want[i] {
+			t.Fatalf("metric %d = %#v, want %#v", i, table.hMetrics[i], want[i])
+		}
+	}
+	if got := table.lookup(2); got.advanceWidth != 700 || got.leftSideBearing != -30 {
+		t.Fatalf("lookup(2) = %#v, want advance 700 and bearing -30", got)
+	}
+	if got := table.lookup(3); got.advanceWidth != 700 || got.leftSideBearing != 40 {
+		t.Fatalf("lookup(3) = %#v, want advance 700 and bearing 40", got)
+	}
+}
+
+func TestHmtxTableInitRejectsMalformedLengthsAndCounts(t *testing.T) {
+	tests := []struct {
+		name       string
+		data       []byte
+		tableLen   uint32
+		numGlyphs  uint16
+		numMetrics uint16
+	}{
+		{name: "metrics exceed glyphs", tableLen: 8, numGlyphs: 1, numMetrics: 2},
+		{name: "declared table too short", data: make([]byte, 10), tableLen: 9, numGlyphs: 3, numMetrics: 2},
+		{name: "source data truncated", data: make([]byte, 9), tableLen: 10, numGlyphs: 3, numMetrics: 2},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var table hmtxTable
+			if err := table.init(bytes.NewReader(tc.data), &tableDirEntry{length: tc.tableLen}, tc.numGlyphs, tc.numMetrics); err == nil {
+				t.Fatal("init succeeded, want malformed table error")
+			}
+		})
+	}
+}
+
+func BenchmarkHmtxTableInitLarge(b *testing.B) {
+	const numGlyphs = uint16(65535)
+	const numMetrics = uint16(65532)
+	data := make([]byte, int(numMetrics)*4+int(numGlyphs-numMetrics)*2)
+	entry := &tableDirEntry{length: uint32(len(data))}
+	b.ReportAllocs()
+	b.SetBytes(int64(len(data)))
+	for i := 0; i < b.N; i++ {
+		var table hmtxTable
+		if err := table.init(bytes.NewReader(data), entry, numGlyphs, numMetrics); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
 
 func TestHmtxTable_lookup_Arial(t *testing.T) {
 	f, err := LoadFont("/Library/Fonts/Arial.ttf")

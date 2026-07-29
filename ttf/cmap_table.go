@@ -28,7 +28,7 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 	if _, err = rs.Seek(int64(entry.offset), os.SEEK_SET); err != nil {
 		return
 	}
-	hdrBuf := bufio.NewReaderSize(rs, int(4+table.numberSubtables*8+64))
+	hdrBuf := bufio.NewReaderSize(io.LimitReader(rs, int64(entry.length)), int(4+table.numberSubtables*8+64))
 	if err = readValues(hdrBuf, &table.version, &table.numberSubtables); err != nil {
 		return
 	}
@@ -57,11 +57,15 @@ func (table *cmapTable) init(rs io.ReadSeeker, entry *tableDirEntry) (err error)
 			continue
 		}
 		seen[rec.offset] = true
+		if rec.offset >= entry.length || entry.length-rec.offset < 2 {
+			return fmt.Errorf("cmap subtable offset %d is outside the %d-byte table", rec.offset, entry.length)
+		}
 		absOffset := int64(entry.offset) + int64(rec.offset)
 		if _, err = rs.Seek(absOffset, os.SEEK_SET); err != nil {
 			return
 		}
-		subBuf := bufio.NewReaderSize(rs, int(entry.length))
+		remaining := entry.length - rec.offset
+		subBuf := bufio.NewReaderSize(io.LimitReader(rs, int64(remaining)), int(remaining))
 		if err = rec.readMapping(subBuf); err != nil {
 			if isSkippableCmapFormatError(err) {
 				err = nil
@@ -491,10 +495,32 @@ func (enc *format12EncodingRecord) init(file io.Reader) (err error) {
 		&enc.nGroups); err != nil {
 		return
 	}
+	const headerLength = uint32(16)
+	const groupLength = uint64(12)
+	if enc.length < headerLength {
+		return fmt.Errorf("format 12 cmap length %d is shorter than header length %d", enc.length, headerLength)
+	}
+	groupBytes := uint64(enc.nGroups) * groupLength
+	declaredGroupBytes := uint64(enc.length - headerLength)
+	if groupBytes != declaredGroupBytes {
+		return fmt.Errorf("format 12 cmap has %d groups requiring %d bytes, but its length declares %d group bytes", enc.nGroups, groupBytes, declaredGroupBytes)
+	}
+	maxInt := int(^uint(0) >> 1)
+	if groupBytes > uint64(maxInt) {
+		return fmt.Errorf("format 12 cmap group data is too large: %d bytes", groupBytes)
+	}
+
+	data := make([]byte, int(groupBytes))
+	if _, err = io.ReadFull(file, data); err != nil {
+		return
+	}
 	enc.groups = make([]format12Group, enc.nGroups)
-	for i := uint32(0); i < enc.nGroups; i++ {
-		if err = enc.groups[i].read(file); err != nil {
-			return
+	for i := range enc.groups {
+		pos := i * int(groupLength)
+		enc.groups[i] = format12Group{
+			startCharCode:  binary.BigEndian.Uint32(data[pos:]),
+			endCharCode:    binary.BigEndian.Uint32(data[pos+4:]),
+			startGlyphCode: binary.BigEndian.Uint32(data[pos+8:]),
 		}
 	}
 	return
@@ -502,9 +528,9 @@ func (enc *format12EncodingRecord) init(file io.Reader) (err error) {
 
 // 51.7 ns
 func (enc *format12EncodingRecord) glyphIndex(codepoint int) int {
-	low, high := uint32(0), enc.nGroups-1
+	low, high := 0, len(enc.groups)-1
 	for low <= high {
-		i := (low + high) / 2
+		i := low + (high-low)/2
 		group := &enc.groups[i]
 		if uint32(codepoint) > group.endCharCode {
 			low = i + 1
@@ -533,8 +559,4 @@ type format12Group struct {
 	startCharCode  uint32
 	endCharCode    uint32
 	startGlyphCode uint32
-}
-
-func (group *format12Group) read(file io.Reader) (err error) {
-	return readValues(file, &group.startCharCode, &group.endCharCode, &group.startGlyphCode)
 }
