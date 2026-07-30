@@ -5,6 +5,7 @@ package ltml
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"unicode"
@@ -282,7 +283,19 @@ func (p *StdParagraph) SetAttrs(attrs map[string]string) {
 	SetBrushStyle(&p.textFill, "text-fill", attrs, p.scope, p.Units())
 	p.orphans = 2
 	p.widows = 2
-	SetParagraphStyle(&p.paragraphStyle, "style", attrs, p.scope, p)
+	styleAttrs := attrs
+	textAlign, hasTextAlign := attrs["text-align"]
+	textVAlign, hasTextVAlign := attrs["text-valign"]
+	if hasTextAlign || hasTextVAlign {
+		styleAttrs = maps.Clone(attrs)
+		if hasTextAlign {
+			styleAttrs["style.text-align"] = textAlign
+		}
+		if hasTextVAlign {
+			styleAttrs["style.valign"] = textVAlign
+		}
+	}
+	SetParagraphStyle(&p.paragraphStyle, "style", styleAttrs, p.scope, p)
 	if bullet, ok := attrs["bullet"]; ok {
 		p.bullets = bulletStylesFor(bullet, p.scope)
 	}

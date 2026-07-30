@@ -179,6 +179,12 @@ func (w *testWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOpti
 	}
 	return nil
 }
+func (w *testWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
+	if fn == nil {
+		return nil
+	}
+	return fn()
+}
 
 func TestLookupStock_CanonicalAndAlias(t *testing.T) {
 	canonical, ok := LookupStock("avery5160")

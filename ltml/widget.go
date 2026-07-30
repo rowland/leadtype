@@ -1,6 +1,10 @@
 package ltml
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/rowland/leadtype/pdf"
+)
 
 type Widget interface {
 	Printer
@@ -280,13 +284,26 @@ func Print(widget Widget, writer Writer) error {
 		}
 		return nil
 	}
+	direction := pdf.TextDirectionLTR
+	if container, ok := widget.(Container); ok {
+		if container.Dir() == DirRTL {
+			direction = pdf.TextDirectionRTL
+		}
+	} else if child, ok := widget.(interface{ Container() Container }); ok {
+		if parent := child.Container(); parent != nil && parent.Dir() == DirRTL {
+			direction = pdf.TextDirectionRTL
+		}
+	}
+	directionalRender := func() error {
+		return writer.WithTextDirection(direction, render)
+	}
 	if tw, ok := widget.(interface {
 		paintWithTransform(Writer, func() error) error
 	}); ok {
-		if err := tw.paintWithTransform(writer, render); err != nil {
+		if err := tw.paintWithTransform(writer, directionalRender); err != nil {
 			return err
 		}
-	} else if err := render(); err != nil {
+	} else if err := directionalRender(); err != nil {
 		return err
 	}
 	widget.SetPrinted(true)

@@ -425,7 +425,8 @@ func (pw *PageWriter) curvedTextGlyphsForRichText(text *rich_text.RichText) ([]c
 		return nil, nil
 	}
 
-	displayPieces := bidiDisplayPieces(text.Merge())
+	merged := text.Merge()
+	displayPieces := bidiDisplayPieces(merged, pw.bidiBaseDirection(merged.String()))
 	glyphs := []curvedTextRenderGlyph{}
 	for _, p := range displayPieces {
 		if p == nil || p.Font == nil {

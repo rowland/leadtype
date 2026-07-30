@@ -69,6 +69,8 @@ type PageWriter struct {
 	pathStates            []pathState
 	supportsArabicShaping bool
 	stream                bytes.Buffer
+	textDirection         TextDirection
+	textDirectionSet      bool
 	tw                    *textWriter
 	units                 *units
 	vTextAlignPts         float64
@@ -110,6 +112,8 @@ func newContentWriterFromPage(base *PageWriter, pageWidth, pageHeight float64) *
 	content.last = drawState{}
 	content.fonts = append([]*font.Font(nil), base.fonts...)
 	content.supportsArabicShaping = base.supportsArabicShaping
+	content.textDirection = base.textDirection
+	content.textDirectionSet = base.textDirectionSet
 	content.memoCapture = true
 	return content
 }
@@ -120,6 +124,8 @@ func clonePageWriter(opw *PageWriter) *PageWriter {
 	pw.units = opw.units
 	pw.fonts = append(pw.fonts, opw.fonts...)
 	pw.supportsArabicShaping = opw.supportsArabicShaping
+	pw.textDirection = opw.textDirection
+	pw.textDirectionSet = opw.textDirectionSet
 	return pw
 }
 
@@ -220,6 +226,30 @@ func (pw *PageWriter) WithAccessibilityTag(tag string, opts AccessibilityOptions
 		fn()
 	}
 	return nil
+}
+
+// WithTextDirection renders fn using direction as the bidi paragraph base.
+// Calls made outside a direction scope retain the legacy first-strong behavior.
+func (pw *PageWriter) WithTextDirection(direction TextDirection, fn func() error) error {
+	if fn == nil {
+		return nil
+	}
+	if pw.textDirectionSet && pw.textDirection == direction {
+		return fn()
+	}
+
+	pw.flushText()
+	previousDirection := pw.textDirection
+	previousDirectionSet := pw.textDirectionSet
+	pw.textDirection = direction
+	pw.textDirectionSet = true
+	defer func() {
+		pw.flushText()
+		pw.textDirection = previousDirection
+		pw.textDirectionSet = previousDirectionSet
+	}()
+
+	return fn()
 }
 
 func (pw *PageWriter) WithAccessibilityArtifact(fn func()) error {
@@ -1484,7 +1514,7 @@ func (pw *PageWriter) emitRichTextLine(line *rich_text.RichText, emit textEmissi
 	usedPositionedText := false
 	var buf bytes.Buffer
 	merged := line.Merge()
-	displayPieces := bidiDisplayPieces(merged)
+	displayPieces := bidiDisplayPieces(merged, pw.bidiBaseDirection(merged.String()))
 	// Iterate leaf pieces directly. TrueType leaves are encoded as big-endian
 	// uint16 glyph ID pairs. AFM/Type1 leaves use codepage-based encoding.
 	for _, p := range displayPieces {

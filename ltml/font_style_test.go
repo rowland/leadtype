@@ -385,6 +385,13 @@ func (m *mockWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOpti
 	return nil
 }
 
+func (m *mockWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
+	if fn == nil {
+		return nil
+	}
+	return fn()
+}
+
 func TestFontStyle_SetAttrs_SingleName(t *testing.T) {
 	var fs FontStyle
 	fs.SetAttrs(map[string]string{"name": "Helvetica", "size": "12"})

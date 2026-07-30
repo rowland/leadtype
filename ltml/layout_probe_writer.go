@@ -217,3 +217,9 @@ func (w *layoutProbeWriter) WithAccessibilityTag(tag string, opts pdf.Accessibil
 	}
 	return nil
 }
+func (w *layoutProbeWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
+	if fn == nil {
+		return nil
+	}
+	return fn()
+}

@@ -53,6 +53,8 @@ type labelTestWriter struct {
 	curvedRadii    []float64
 	curvedStarts   []float64
 	curvedOpts     []pdf.CurvedTextOptions
+	currentTextDir pdf.TextDirection
+	printedTextDir []pdf.TextDirection
 	pageCount      int
 	rectPages      []int
 	fillRectPages  []int
@@ -250,11 +252,13 @@ func (w *labelTestWriter) PrintParagraph(para []*rich_text.RichText, opts option
 	for _, line := range para {
 		w.printed = append(w.printed, line)
 		w.printedPages = append(w.printedPages, w.pageCount)
+		w.printedTextDir = append(w.printedTextDir, w.currentTextDir)
 	}
 }
 func (w *labelTestWriter) PrintRichText(text *rich_text.RichText) {
 	w.printed = append(w.printed, text)
 	w.printedPages = append(w.printedPages, w.pageCount)
+	w.printedTextDir = append(w.printedTextDir, w.currentTextDir)
 }
 func (w *labelTestWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
 	return nil
@@ -358,6 +362,17 @@ func (w *labelTestWriter) WithAccessibilityTag(tag string, opts pdf.Accessibilit
 		fn()
 	}
 	return nil
+}
+func (w *labelTestWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
+	previous := w.currentTextDir
+	w.currentTextDir = direction
+	defer func() {
+		w.currentTextDir = previous
+	}()
+	if fn == nil {
+		return nil
+	}
+	return fn()
 }
 
 func TestStdLabel_AddTextWithFont_NormalizesXMLWhitespace(t *testing.T) {

@@ -77,8 +77,8 @@
 
     <label font.weight="Bold">Right-to-left hbox</label>
     <hbox class="dir-row" dir="rtl">
-      <vbox class="dir-panel dir-first"><label>First logical child</label><p>The divider follows this panel on its left edge.</p></vbox>
-      <vbox class="dir-panel"><label>Second logical child</label><p>This panel appears on the physical left.</p></vbox>
+      <vbox class="dir-panel dir-first"><label>First logical child</label><p dir="ltr" text-align="right">The divider follows this panel on its left edge.</p></vbox>
+      <vbox class="dir-panel"><label>Second logical child</label><p dir="ltr" text-align="right">This panel appears on the physical left.</p></vbox>
     </hbox>
   </page>
 </ltml>

@@ -168,6 +168,11 @@ func (dw *DocWriter) WithAccessibilityArtifact(fn func()) error {
 	return dw.CurPage().WithAccessibilityArtifact(fn)
 }
 
+// WithTextDirection renders fn using direction as the bidi paragraph base.
+func (dw *DocWriter) WithTextDirection(direction TextDirection, fn func() error) error {
+	return dw.CurPage().WithTextDirection(direction, fn)
+}
+
 func nextSeqFunc() func() int {
 	var nextValue = 0
 	return func() int {

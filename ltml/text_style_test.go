@@ -109,3 +109,41 @@ func TestParagraphLogicalAlignmentOptionsArePhysical(t *testing.T) {
 		})
 	}
 }
+
+func TestParagraphDirectTextAttributesAliasStyleOverrides(t *testing.T) {
+	p := &StdParagraph{}
+	p.SetAttrs(map[string]string{
+		"dir":         "ltr",
+		"text-align":  "right",
+		"text-valign": "middle",
+	})
+
+	style := p.ParagraphStyle()
+	if !style.textAlignSet || style.textAlign != HAlignRight {
+		t.Fatalf("text alignment = %s set=%v, want right set=true", style.textAlign, style.textAlignSet)
+	}
+	if style.vAlign != VAlignMiddle {
+		t.Fatalf("text vertical alignment = %s, want middle", style.vAlign)
+	}
+	if got := paragraphTextFillOptions(p).StringDefault("text-align", ""); got != "right" {
+		t.Fatalf("writer text-align = %q, want right", got)
+	}
+}
+
+func TestParagraphDirectAliasesOverrideCanonicalStyleAttributes(t *testing.T) {
+	p := &StdParagraph{}
+	p.SetAttrs(map[string]string{
+		"text-align":       "left",
+		"text-valign":      "top",
+		"style.text-align": "right",
+		"style.valign":     "bottom",
+	})
+
+	style := p.ParagraphStyle()
+	if !style.textAlignSet || style.textAlign != HAlignLeft {
+		t.Fatalf("text alignment = %s set=%v, want left set=true", style.textAlign, style.textAlignSet)
+	}
+	if style.vAlign != VAlignTop {
+		t.Fatalf("text vertical alignment = %s, want top", style.vAlign)
+	}
+}

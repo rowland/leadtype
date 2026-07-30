@@ -236,3 +236,9 @@ func (w *sampleTestWriter) WithAccessibilityTag(tag string, opts pdf.Accessibili
 	}
 	return nil
 }
+func (w *sampleTestWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
+	if fn == nil {
+		return nil
+	}
+	return fn()
+}

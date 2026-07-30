@@ -16,7 +16,7 @@ type leafSlice struct {
 	clipEnd   int
 }
 
-func bidiDisplayPieces(text *rich_text.RichText) []*rich_text.RichText {
+func bidiDisplayPieces(text *rich_text.RichText, baseDirection xbidi.Direction) []*rich_text.RichText {
 	merged := text.Merge()
 	logical := merged.String()
 	if logical == "" {
@@ -29,7 +29,7 @@ func bidiDisplayPieces(text *rich_text.RichText) []*rich_text.RichText {
 	}
 
 	var paragraph xbidi.Paragraph
-	if _, err := paragraph.SetString(logical); err != nil {
+	if _, err := paragraph.SetString(logical, xbidi.DefaultDirection(baseDirection)); err != nil {
 		return leafPieces(leaves)
 	}
 	order, err := paragraph.Order()
@@ -38,7 +38,7 @@ func bidiDisplayPieces(text *rich_text.RichText) []*rich_text.RichText {
 	}
 
 	runIndexes := make([]int, 0, order.NumRuns())
-	if firstStrongDirection(logical) == xbidi.RightToLeft {
+	if baseDirection == xbidi.RightToLeft {
 		for i := order.NumRuns() - 1; i >= 0; i-- {
 			runIndexes = append(runIndexes, i)
 		}
@@ -145,6 +145,16 @@ func sliceRunes(s string, start, end int) string {
 		return ""
 	}
 	return string(runes[start:end])
+}
+
+func (pw *PageWriter) bidiBaseDirection(text string) xbidi.Direction {
+	if pw.textDirectionSet {
+		if pw.textDirection == TextDirectionRTL {
+			return xbidi.RightToLeft
+		}
+		return xbidi.LeftToRight
+	}
+	return firstStrongDirection(text)
 }
 
 func firstStrongDirection(text string) xbidi.Direction {

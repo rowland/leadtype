@@ -313,6 +313,8 @@ A block of text. Text content may include inline elements (`<span>`, `<b>`,
 | `font.line-height` | Line spacing multiplier (e.g., `1.5`). |
 | `text-fill`, `text-fill.*` | Optional text brush. When present, LTML clips the paragraph text against the widget box fill brush instead of using flat `font.color`. Use the same brush attributes supported by `fill` and `fill.*`. |
 | `style`            | Reference to a named `<para>` style. |
+| `text-align`       | Direct alias for `style.text-align`. |
+| `text-valign`      | Direct alias for `style.valign`. |
 | `style.text-align` | Text alignment: logical `start`/`end`, physical `left`/`right`, `center`, or `justify`. Defaults to `start`. |
 | `style.valign`     | Vertical alignment: `top`, `middle`, `bottom`, `baseline`. |
 | `angle`            | Inside a sector, an unset or nonzero angle selects curved paragraph text. `angle="0"` selects horizontal, wedge-aware wrapping. Arbitrary straight paragraph angles are not supported. |

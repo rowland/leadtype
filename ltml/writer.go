@@ -93,6 +93,7 @@ type Writer interface {
 	Underline() bool
 	WithAccessibilityArtifact(fn func()) error
 	WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error
+	WithTextDirection(direction pdf.TextDirection, fn func() error) error
 }
 
 type PageOptionWriter interface {

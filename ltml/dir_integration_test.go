@@ -1,6 +1,10 @@
 package ltml
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rowland/leadtype/pdf"
+)
 
 func TestParseAndLayout_DirInheritanceAffectsNestedFlowGeometry(t *testing.T) {
 	doc, err := Parse([]byte(`
@@ -84,5 +88,32 @@ func TestParseAndPrint_RTLFlowOverflowMakesProgressAcrossPages(t *testing.T) {
 	}
 	if got := doc.Root().CurrentPhysicalPageNo(); got != 2 {
 		t.Fatalf("physical page count = %d, want 2", got)
+	}
+}
+
+func TestParseAndPrint_ResolvedDirectionScopesTextAndLocalOverrideWins(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page layout="vbox" dir="rtl">
+    <p>Brent عادة ما يرى نفسه على أنه:</p>
+    <p dir="ltr">Report for برنت:</p>
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := &labelTestWriter{t: t}
+	if err := doc.Print(w); err != nil {
+		t.Fatal(err)
+	}
+	if len(w.printed) != 2 || len(w.printedTextDir) != 2 {
+		t.Fatalf("printed text/directions = %d/%d, want 2/2", len(w.printed), len(w.printedTextDir))
+	}
+	if got := w.printedTextDir[0]; got != pdf.TextDirectionRTL {
+		t.Fatalf("inherited direction = %v, want RTL", got)
+	}
+	if got := w.printedTextDir[1]; got != pdf.TextDirectionLTR {
+		t.Fatalf("local override direction = %v, want LTR", got)
 	}
 }
