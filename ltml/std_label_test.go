@@ -30,6 +30,7 @@ func defaultTestFonts(t testing.TB) []*font.Font {
 }
 
 type labelTestWriter struct {
+	NoopWriter
 	fonts          []*font.Font
 	fontColor      colors.Color
 	fillColor      colors.Color
@@ -78,27 +79,8 @@ type rotationCall struct {
 }
 
 func (w *labelTestWriter) FontColor() colors.Color { return w.fontColor }
-func (w *labelTestWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
-	return nil
-}
-func (w *labelTestWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
-func (w *labelTestWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
-	return nil
-}
-func (w *labelTestWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
-	return nil
-}
-func (w *labelTestWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
-	return nil
-}
 func (w *labelTestWriter) Clip(fn func()) error {
 	w.clipCalls++
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *labelTestWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
 	if fn != nil {
 		fn()
 	}
@@ -118,13 +100,6 @@ func (w *labelTestWriter) ClipText(text string, fn func()) error {
 	}
 	return nil
 }
-func (w *labelTestWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
-func (w *labelTestWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
-	return shape.Bounds()
-}
-func (w *labelTestWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return nil }
-func (w *labelTestWriter) CompressPages(bool) *pdf.DocWriter         { return nil }
-func (w *labelTestWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
 func (w *labelTestWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
 	w.curvedCount++
 	w.curvedXs = append(w.curvedXs, x)
@@ -162,11 +137,6 @@ func (w *labelTestWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bo
 		return nil
 	}
 }
-func (w *labelTestWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
-	return nil
-}
-func (w *labelTestWriter) Fill() error          { return nil }
-func (w *labelTestWriter) FillAndStroke() error { return nil }
 func (w *labelTestWriter) Fonts() []*font.Font {
 	if len(w.fonts) == 0 && w.t != nil {
 		w.fonts = defaultTestFonts(w.t)
@@ -174,15 +144,6 @@ func (w *labelTestWriter) Fonts() []*font.Font {
 	return w.fonts
 }
 func (w *labelTestWriter) FontSize() float64 { return w.fontSize }
-func (w *labelTestWriter) ImageDimensions(data []byte) (width, height int, err error) {
-	return 0, 0, nil
-}
-func (w *labelTestWriter) SVGDimensions(data []byte) (width, height int, err error) {
-	return 0, 0, nil
-}
-func (w *labelTestWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
-	return 0, 0, nil
-}
 func (w *labelTestWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
 	if dims, ok := w.fileDimensions[filename]; ok {
 		return dims[0], dims[1], nil
@@ -195,9 +156,6 @@ func (w *labelTestWriter) LineSpacing() float64 {
 	}
 	return w.lineSpacing
 }
-func (w *labelTestWriter) SetLineCapStyle(style string) (prev string) { return "" }
-func (w *labelTestWriter) Line(x, y, angle, length float64)           {}
-func (w *labelTestWriter) LineTo(x, y float64)                        {}
 func (w *labelTestWriter) Loc() (x, y float64) {
 	if len(w.moves) == 0 {
 		return 0, 0
@@ -211,18 +169,6 @@ func (w *labelTestWriter) Print(text string) error {
 	w.plainPrinted = append(w.plainPrinted, text)
 	w.plainPages = append(w.plainPages, w.pageCount)
 	return nil
-}
-func (w *labelTestWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *labelTestWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *labelTestWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *labelTestWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
 }
 func (w *labelTestWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
 	w.imagePaints = append(w.imagePaints, paintedImageCall{
@@ -260,18 +206,6 @@ func (w *labelTestWriter) PrintRichText(text *rich_text.RichText) {
 	w.printedPages = append(w.printedPages, w.pageCount)
 	w.printedTextDir = append(w.printedTextDir, w.currentTextDir)
 }
-func (w *labelTestWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
-	return nil
-}
-func (w *labelTestWriter) Path(fn func()) error {
-	fn()
-	return nil
-}
-func (w *labelTestWriter) CurvePoints(points []pdf.Location) error { return nil }
-func (w *labelTestWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *labelTestWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
 func (w *labelTestWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
 	w.rectPages = append(w.rectPages, w.pageCount)
 	if fill {
@@ -307,9 +241,6 @@ func (w *labelTestWriter) SetFillColor(value any) (prev colors.Color) {
 	}
 	return prev
 }
-func (w *labelTestWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error { return nil }
-func (w *labelTestWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error { return nil }
-func (w *labelTestWriter) ClearFillGradient()                                 {}
 func (w *labelTestWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error {
 	w.lineLinear = append(w.lineLinear, lg)
 	return nil
@@ -323,16 +254,8 @@ func (w *labelTestWriter) SetLineColor(value colors.Color) (prev colors.Color) {
 	w.lineColors = append(w.lineColors, value)
 	return 0
 }
-func (w *labelTestWriter) SetLineDashPattern(pattern string) (prev string)   { return "" }
 func (w *labelTestWriter) SetLineSpacing(lineSpacing float64) (prev float64) { return w.lineSpacing }
 func (w *labelTestWriter) SetLineWidth(width float64)                        { w.lineWidths = append(w.lineWidths, width) }
-func (w *labelTestWriter) SetLanguage(language string)                       {}
-func (w *labelTestWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
-	return pdf.SVGBlendModeRespect
-}
-func (w *labelTestWriter) SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
-	return pdf.SVGGradientStopOpacityModeSoftMask
-}
 func (w *labelTestWriter) SetStrikeout(strikeout bool) (prev bool) {
 	prev = w.strikeout
 	w.strikeout = strikeout
@@ -343,26 +266,8 @@ func (w *labelTestWriter) SetUnderline(underline bool) (prev bool) {
 	w.underline = underline
 	return prev
 }
-func (w *labelTestWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *labelTestWriter) Stroke() error              { return nil }
-func (w *labelTestWriter) Strikeout() bool            { return w.strikeout }
-func (w *labelTestWriter) Underline() bool            { return w.underline }
-func (w *labelTestWriter) EnableTaggedPDF(value bool) {}
-func (w *labelTestWriter) TaggedPDFEnabled() bool     { return false }
-func (w *labelTestWriter) WithAccessibilityArtifact(fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *labelTestWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
+func (w *labelTestWriter) Strikeout() bool { return w.strikeout }
+func (w *labelTestWriter) Underline() bool { return w.underline }
 func (w *labelTestWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
 	previous := w.currentTextDir
 	w.currentTextDir = direction

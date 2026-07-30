@@ -4,188 +4,23 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rowland/leadtype/colors"
-	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/ltml"
-	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/pdf"
-	"github.com/rowland/leadtype/rich_text"
 )
 
 type testWriter struct {
+	ltml.NoopWriter
 	rectCount int
 	printed   []string
 }
 
-func (w *testWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
+func (w *testWriter) Print(text string) error {
+	w.printed = append(w.printed, text)
 	return nil
-}
-func (w *testWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error { return nil }
-func (w *testWriter) Clip(fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) ClipText(text string, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
-	return shape.Bounds()
-}
-func (w *testWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return nil }
-func (w *testWriter) CompressPages(bool) *pdf.DocWriter         { return nil }
-func (w *testWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
-func (w *testWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
-	return nil
-}
-func (w *testWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
-	return nil
-}
-func (w *testWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error { return nil }
-func (w *testWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
-	return nil
-}
-func (w *testWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
-func (w *testWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
-	return nil
-}
-func (w *testWriter) EnableTaggedPDF(bool)                                           {}
-func (w *testWriter) Circle(x, y, r float64, border, fill, reverse bool) error       { return nil }
-func (w *testWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error { return nil }
-func (w *testWriter) Fill() error                                                   { return nil }
-func (w *testWriter) FillAndStroke() error                                          { return nil }
-func (w *testWriter) FontColor() colors.Color                                        { return colors.Black }
-func (w *testWriter) Fonts() []*font.Font                                            { return nil }
-func (w *testWriter) FontSize() float64                                              { return 12 }
-func (w *testWriter) ImageDimensions(data []byte) (width, height int, err error)     { return 0, 0, nil }
-func (w *testWriter) SVGDimensions(data []byte) (width, height int, err error)       { return 0, 0, nil }
-func (w *testWriter) SVGDimensionsFromFile(filename string) (width, height int, err error) {
-	return 0, 0, nil
-}
-func (w *testWriter) ImageDimensionsFromFile(filename string) (width, height int, err error) {
-	return 0, 0, nil
-}
-func (w *testWriter) LineSpacing() float64                       { return 1.0 }
-func (w *testWriter) SetLineCapStyle(style string) (prev string) { return "" }
-func (w *testWriter) Line(x, y, angle, length float64)           {}
-func (w *testWriter) LineTo(x, y float64)                        {}
-func (w *testWriter) Loc() (x, y float64)                        { return 0, 0 }
-func (w *testWriter) MoveTo(x, y float64)                        {}
-func (w *testWriter) CurvePoints(points []pdf.Location) error    { return nil }
-func (w *testWriter) NewPage()                                   {}
-func (w *testWriter) Print(text string) error                    { w.printed = append(w.printed, text); return nil }
-func (w *testWriter) PrintImage(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *testWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *testWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *testWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (actualWidth, actualHeight float64, err error) {
-	return 0, 0, nil
-}
-func (w *testWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
-	return nil
-}
-func (w *testWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                   { return nil }
-func (w *testWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                   { return nil }
-func (w *testWriter) PaintSweepBand(sb *pdf.SweepBand) error                             { return nil }
-func (w *testWriter) PrintParagraph(para []*rich_text.RichText, options options.Options) {}
-func (w *testWriter) PrintRichText(text *rich_text.RichText)                             {}
-func (w *testWriter) Path(fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
-	return nil
-}
-func (w *testWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *testWriter) Rectangle(x, y, width, height float64, border bool, fill bool) {}
-func (w *testWriter) Rectangle2(x, y, width, height float64, border bool, fill bool, corners []float64, path, reverse bool) {
-	w.rectCount++
-}
-func (w *testWriter) Rotate(angle, x, y float64, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) AddFont(family string, options options.Options) ([]*font.Font, error) {
-	return nil, nil
-}
-func (w *testWriter) SetFont(name string, size float64, options options.Options) ([]*font.Font, error) {
-	return nil, nil
-}
-func (w *testWriter) SetFillColor(value any) (prev colors.Color)          { return colors.Black }
-func (w *testWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error  { return nil }
-func (w *testWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error  { return nil }
-func (w *testWriter) ClearFillGradient()                                  {}
-func (w *testWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error  { return nil }
-func (w *testWriter) SetLineRadialGradient(rg *pdf.RadialGradient) error  { return nil }
-func (w *testWriter) ClearLineGradient()                                  {}
-func (w *testWriter) SetLineColor(value colors.Color) (prev colors.Color) { return colors.Black }
-func (w *testWriter) SetLineDashPattern(pattern string) (prev string)     { return "" }
-func (w *testWriter) SetLineSpacing(lineSpacing float64) (prev float64)   { return 1.0 }
-func (w *testWriter) SetLineWidth(width float64)                          {}
-func (w *testWriter) SetLanguage(language string)                         {}
-func (w *testWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
-	return pdf.SVGBlendModeRespect
-}
-func (w *testWriter) SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
-	return pdf.SVGGradientStopOpacityModeSoftMask
-}
-func (w *testWriter) SetStrikeout(strikeout bool) (prev bool) { return false }
-func (w *testWriter) SetUnderline(underline bool) (prev bool) { return false }
-func (w *testWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-func (w *testWriter) Stroke() error { return nil }
-func (w *testWriter) Strikeout() bool {
-	return false
-}
-func (w *testWriter) TaggedPDFEnabled() bool { return false }
-func (w *testWriter) Underline() bool        { return false }
-func (w *testWriter) WithAccessibilityArtifact(fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-func (w *testWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
-	if fn == nil {
-		return nil
-	}
-	return fn()
 }
 
+func (w *testWriter) Rectangle2(float64, float64, float64, float64, bool, bool, []float64, bool, bool) {
+	w.rectCount++
+}
 func TestLookupStock_CanonicalAndAlias(t *testing.T) {
 	canonical, ok := LookupStock("avery5160")
 	if !ok {

@@ -10,12 +10,12 @@ import (
 	"github.com/rowland/leadtype/colors"
 	"github.com/rowland/leadtype/font"
 	"github.com/rowland/leadtype/options"
-	"github.com/rowland/leadtype/pdf"
 	"github.com/rowland/leadtype/rich_text"
 )
 
 // mockWriter records SetFont and AddFont calls for inspection.
 type mockWriter struct {
+	NoopWriter
 	setFontName   string
 	setFontSize   float64
 	addFontNames  []string
@@ -161,79 +161,6 @@ func (m *mockWriter) AddFont(family string, opts options.Options) ([]*font.Font,
 	return m.Fonts(), nil
 }
 
-func (m *mockWriter) Arch(x, y, r1, r2, startAngle, endAngle float64, border, fill, reverse bool) error {
-	return nil
-}
-
-func (m *mockWriter) AppendArchPath(x, y, r1, r2, startAngle, endAngle float64, reverse bool) error {
-	return nil
-}
-
-func (m *mockWriter) AppendClosedShapePath(shape pdf.ClosedShape) error { return nil }
-
-func (m *mockWriter) AppendPiePath(x, y, r, startAngle, endAngle float64, reverse bool) error {
-	return nil
-}
-
-func (m *mockWriter) Arc(x, y, r, startAngle, endAngle float64, moveToStart bool) error {
-	return nil
-}
-
-func (m *mockWriter) Clip(fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) ClipClosedShape(shape pdf.ClosedShape, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) ClipRichText(text *rich_text.RichText, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) ClipText(text string, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) Circle(x, y, r float64, border, fill, reverse bool) error { return nil }
-func (m *mockWriter) ClosedShapeBounds(shape pdf.ClosedShape) (pdf.Bounds, error) {
-	return shape.Bounds()
-}
-func (m *mockWriter) CompressEmbeddedFonts(bool) *pdf.DocWriter { return nil }
-func (m *mockWriter) CompressPages(bool) *pdf.DocWriter         { return nil }
-func (m *mockWriter) CompressToUnicode(bool) *pdf.DocWriter     { return nil }
-
-func (m *mockWriter) DrawRichTextOnCircle(text *rich_text.RichText, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
-	return nil
-}
-
-func (m *mockWriter) DrawTextOnCircle(text string, x, y, r, startAngle float64, opts pdf.CurvedTextOptions) error {
-	return nil
-}
-
-func (m *mockWriter) DrawClosedShape(shape pdf.ClosedShape, border, fill bool) error {
-	return nil
-}
-
-func (m *mockWriter) Ellipse(x, y, rx, ry float64, border, fill, reverse bool) error {
-	return nil
-}
-
-func (m *mockWriter) Fill() error          { return nil }
-func (m *mockWriter) FillAndStroke() error { return nil }
-
 func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([]*font.Font, error) {
 	m.setFontCalls = append(m.setFontCalls, name)
 	m.setFontOpts = append(m.setFontOpts, opts)
@@ -255,8 +182,6 @@ func (m *mockWriter) SetFont(name string, size float64, opts options.Options) ([
 	return m.Fonts(), nil
 }
 
-func (m *mockWriter) FontColor() colors.Color { return 0 }
-
 func (m *mockWriter) Fonts() []*font.Font {
 	if len(m.fonts) == 0 && m.t != nil {
 		m.fonts = defaultTestFonts(m.t)
@@ -266,131 +191,9 @@ func (m *mockWriter) Fonts() []*font.Font {
 
 func (m *mockWriter) FontSize() float64 { return m.setFontSize }
 
-func (m *mockWriter) ImageDimensions(data []byte) (int, int, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) SVGDimensions(data []byte) (int, int, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) SVGDimensionsFromFile(filename string) (int, int, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) ImageDimensionsFromFile(filename string) (int, int, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) LineSpacing() float64                { return 1.0 }
-func (m *mockWriter) SetLineCapStyle(style string) string { return "" }
-func (m *mockWriter) Line(x, y, angle, length float64)    {}
-func (m *mockWriter) LineTo(x, y float64)                 {}
-func (m *mockWriter) Loc() (float64, float64)             { return 0, 0 }
-func (m *mockWriter) MoveTo(x, y float64)                 {}
-func (m *mockWriter) NewPage()                            {}
-func (m *mockWriter) Print(text string) error             { return nil }
-
-func (m *mockWriter) PrintImage(data []byte, x, y float64, width, height *float64) (float64, float64, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) PrintSVG(data []byte, x, y float64, width, height *float64) (float64, float64, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) PrintSVGFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) PrintImageFile(filename string, x, y float64, width, height *float64) (float64, float64, error) {
-	return 0, 0, nil
-}
-
-func (m *mockWriter) PaintImageFile(filename string, x, y, width, height, opacity float64) error {
-	return nil
-}
-func (m *mockWriter) PaintLinearGradient(lg *pdf.LinearGradient) error                { return nil }
-func (m *mockWriter) PaintRadialGradient(rg *pdf.RadialGradient) error                { return nil }
-func (m *mockWriter) PaintSweepBand(sb *pdf.SweepBand) error                          { return nil }
-func (m *mockWriter) PrintParagraph(para []*rich_text.RichText, opts options.Options) {}
-func (m *mockWriter) PrintRichText(text *rich_text.RichText)                          {}
-
-func (m *mockWriter) Pie(x, y, r, startAngle, endAngle float64, border, fill, reverse bool) error {
-	return nil
-}
-
-func (m *mockWriter) Path(fn func()) error {
-	fn()
-	return nil
-}
-
-func (m *mockWriter) CurvePoints(points []pdf.Location) error { return nil }
-
-func (m *mockWriter) Rotate(angle, x, y float64, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) Polygon(x, y, r float64, sides int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-
-func (m *mockWriter) Rectangle(x, y, w, h float64, b, f bool)                          {}
-func (m *mockWriter) Rectangle2(x, y, w, h float64, b, f bool, c []float64, p, r bool) {}
-func (m *mockWriter) SetFillColor(v any) colors.Color                                  { return 0 }
-func (m *mockWriter) SetFillLinearGradient(lg *pdf.LinearGradient) error               { return nil }
-func (m *mockWriter) SetFillRadialGradient(rg *pdf.RadialGradient) error               { return nil }
-func (m *mockWriter) ClearFillGradient()                                               {}
-func (m *mockWriter) SetLineLinearGradient(lg *pdf.LinearGradient) error               { return nil }
-func (m *mockWriter) SetLineRadialGradient(rg *pdf.RadialGradient) error               { return nil }
-func (m *mockWriter) ClearLineGradient()                                               {}
-func (m *mockWriter) SetLineColor(v colors.Color) colors.Color                         { return 0 }
-func (m *mockWriter) SetLineDashPattern(p string) string                               { return "" }
-func (m *mockWriter) SetLineSpacing(ls float64) float64                                { return 0 }
-func (m *mockWriter) SetLineWidth(w float64)                                           {}
-func (m *mockWriter) SetLanguage(language string)                                      {}
-func (m *mockWriter) SetSVGBlendMode(pdf.SVGBlendMode) pdf.SVGBlendMode {
-	return pdf.SVGBlendModeRespect
-}
-func (m *mockWriter) SetSVGGradientStopOpacityMode(pdf.SVGGradientStopOpacityMode) pdf.SVGGradientStopOpacityMode {
-	return pdf.SVGGradientStopOpacityModeSoftMask
-}
-func (m *mockWriter) SetStrikeout(s bool) bool { return false }
-func (m *mockWriter) SetUnderline(u bool) bool { return false }
-
-func (m *mockWriter) Star(x, y, r1, r2 float64, points int, border, fill, reverse bool, rotation float64) error {
-	return nil
-}
-
-func (m *mockWriter) Stroke() error              { return nil }
-func (m *mockWriter) Strikeout() bool            { return false }
-func (m *mockWriter) Underline() bool            { return false }
-func (m *mockWriter) EnableTaggedPDF(value bool) {}
-func (m *mockWriter) TaggedPDFEnabled() bool     { return false }
-
-func (m *mockWriter) WithAccessibilityArtifact(fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) WithAccessibilityTag(tag string, opts pdf.AccessibilityOptions, fn func()) error {
-	if fn != nil {
-		fn()
-	}
-	return nil
-}
-
-func (m *mockWriter) WithTextDirection(direction pdf.TextDirection, fn func() error) error {
-	if fn == nil {
-		return nil
-	}
-	return fn()
-}
+// Preserve the historical mock behavior for callers that inspect the previous
+// line spacing returned by SetLineSpacing.
+func (m *mockWriter) SetLineSpacing(float64) float64 { return 0 }
 
 func TestFontStyle_SetAttrs_SingleName(t *testing.T) {
 	var fs FontStyle
