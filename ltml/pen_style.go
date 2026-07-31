@@ -26,6 +26,8 @@ type PenStyle struct {
 	width          float64
 	pattern        string
 	cap            string
+	markerStart    string
+	markerEnd      string
 	linearGradient *pdf.LinearGradient
 	linearPct      *linearGradientPct
 	radialGradient *pdf.RadialGradient
@@ -144,6 +146,12 @@ func (ps *PenStyle) SetAttrs(attrs map[string]string) {
 			ps.cap = cap
 		}
 	}
+	if marker, ok := attrs["marker-start"]; ok {
+		ps.markerStart = strings.TrimSpace(marker)
+	}
+	if marker, ok := attrs["marker-end"]; ok {
+		ps.markerEnd = strings.TrimSpace(marker)
+	}
 	if stops, ok := attrs["stops"]; ok {
 		parsedStops := parseGradientStops(stops)
 		if ps.Kind() == PenKindRadialGradient {
@@ -209,6 +217,27 @@ func (ps *PenStyle) Width() float64 {
 		return 0
 	}
 	return ps.width
+}
+
+func (ps *PenStyle) Color() colors.Color {
+	if ps == nil {
+		return 0
+	}
+	return ps.color
+}
+
+func (ps *PenStyle) MarkerStart() string {
+	if ps == nil {
+		return ""
+	}
+	return ps.markerStart
+}
+
+func (ps *PenStyle) MarkerEnd() string {
+	if ps == nil {
+		return ""
+	}
+	return ps.markerEnd
 }
 
 func PenStyleFor(id string, scope HasScope) *PenStyle {

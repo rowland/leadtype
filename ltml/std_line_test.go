@@ -69,6 +69,19 @@ func TestStdLine_CalcLength_UsesHeightOnlyForVerticalLine(t *testing.T) {
 	}
 }
 
+func TestStdLine_VerticalAutoHeightDoesNotDeriveLengthFromWidth(t *testing.T) {
+	line := &StdLine{angle: 90, angleSet: true}
+	line.SetWidth(100)
+	line.SetHeightAuto()
+
+	if got := line.Length(); got != 0 {
+		t.Fatalf("Length() = %v, want 0 before vbox allocates auto height", got)
+	}
+	if got := mustPreferredHeight(t, line, nil); got != 0 {
+		t.Fatalf("PreferredHeight() = %v, want 0 before vbox allocates auto height", got)
+	}
+}
+
 func TestStdLine_DrawContent_UsesStyleAndCenteredOrigin(t *testing.T) {
 	line := &StdLine{angle: 0}
 	line.SetLeft(10)

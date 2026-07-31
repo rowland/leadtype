@@ -2993,7 +2993,7 @@ func TestStdSector_ParagraphUsesShapedBandInsteadOfRectangularFlowWidth(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 1 || !items[0].fullBand || items[0].width != 0 {
+	if len(items) != 1 || !items[0].occupiesFullBand || items[0].width != 0 {
 		t.Fatalf("paragraph flow item = %#v, want a zero-width full band", items)
 	}
 }

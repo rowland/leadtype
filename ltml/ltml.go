@@ -255,7 +255,12 @@ func (doc *Doc) startElement(elem xml.StartElement) (any, bool) {
 		}
 		parent = parentCurrent
 		if widget, ok := e.(Widget); ok {
-			if canvas, ok := widget.(*StdCanvas); ok {
+			if marker, ok := widget.(*StdMarker); ok {
+				if err = setWidgetContainer(parentCurrent, marker); err != nil {
+					doc.parseErr = err
+					return e, capturesBody
+				}
+			} else if canvas, ok := widget.(*StdCanvas); ok {
 				if _, ok := doc.current().(*StdDocument); !ok {
 					doc.parseErr = fmt.Errorf("<canvas> must be direct child of <ltml>")
 					return e, capturesBody
@@ -623,6 +628,13 @@ func applyPseudoRuleAttrs(scope HasScope, target Widget, resolver *selectorStruc
 }
 
 func (doc *Doc) endElement(_ xml.EndElement) {
+	if marker, ok := doc.current().(*StdMarker); ok && doc.parseErr == nil {
+		if err := marker.validateDefinition(); err != nil {
+			doc.parseErr = err
+		} else if err := doc.scope().AddMarker(marker); err != nil {
+			doc.parseErr = err
+		}
+	}
 	if rules, ok := doc.current().(*Rules); ok && rules.parseErr != nil {
 		doc.parseErr = rules.parseErr
 	}

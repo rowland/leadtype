@@ -1,0 +1,75 @@
+<ltml>
+  <pen id="wheel-axis" width="2pt" color="#c8c8c8" cap="round_cap" />
+
+  <page units="pt" margin="48" layout="vbox" layout.vpadding="12">
+    <label font.size="20" font.weight="Bold">Flexible Marked Sector Lines</label>
+    <p>
+      Each sector has a fixed angular span. Translated labels retain their intrinsic
+      curved width while auto-width lines divide the remaining arc on either side.
+    </p>
+
+    <style>
+      sector { padding-left: 6pt; padding-right: 6pt; layout.hpadding: 6pt; border: red; }
+      sector label { text-valign: cap-middle; }
+    </style>
+
+    <!-- The outer ring carries the horizontal-axis labels. -->
+    <div center-x="50%" center-y="50%" layout="radial" rows="1" r0="2700dp" r1="2900dp">
+      <sector>
+        <line width="auto" style="wheel-axis" marker-start="arrow" />
+        <label font.size="10" font.weight="Bold">TASK ORIENTED</label>
+        <line width="auto" style="wheel-axis" marker-end="arrow" />
+      </sector>
+      <sector>
+        <line width="auto" style="wheel-axis" marker-start="arrow" />
+        <label font.size="10" font.weight="Bold">PEOPLE ORIENTED</label>
+        <line width="auto" style="wheel-axis" marker-end="arrow" />
+      </sector>
+    </div>
+
+    <!-- The inner ring is rotated a quarter turn for the pace labels. -->
+    <div center-x="50%" center-y="50%" layout="radial" rows="1" r0="2500dp" r1="2700dp" row-angle-offsets="90">
+      <sector>
+        <line width="auto" style="wheel-axis" marker-start="arrow" />
+        <label font.size="9" font.weight="Bold">SLOWER PACED</label>
+        <line width="auto" style="wheel-axis" marker-end="arrow" />
+      </sector>
+      <sector>
+        <line width="auto" style="wheel-axis" marker-start="arrow" />
+        <label font.size="9" font.weight="Bold">FASTER PACED</label>
+        <line width="auto" style="wheel-axis" marker-end="arrow" />
+      </sector>
+    </div>
+
+    <style>
+      .top-bottom { width: 100%; height: 100; padding: 6pt; layout.vpadding: 6pt; border: red; }
+      .top-bottom line { width: 100%; height: auto; style: wheel-axis; marker-start: arrow; marker-end: arrow; }
+      .top-bottom label { font.size: 10pt; font.weight: Bold; align-self: center; }
+    </style>
+
+    <vbox class="top-bottom" align="bottom">
+      <label>TASK ORIENTED</label>
+      <line angle="90" />
+      <label>PEOPLE ORIENTED</label>
+    </vbox>
+
+    <style>
+      .left-right hbox { padding-left: 6pt; padding-right: 6pt; layout.hpadding: 6pt; border: red; }
+      .left-right hbox line { height: 100%; }
+      .left-right hbox label { text-valign: cap-middle; }
+    </style>
+
+    <table class="left-right" align="bottom" cols="2" width="100%">
+      <hbox>
+        <line width="auto" style="wheel-axis" marker-start="arrow" />
+        <label font.size="10" font.weight="Bold">SLOWER PACED</label>
+        <line width="auto" style="wheel-axis" marker-end="arrow" />
+      </hbox>
+      <hbox>
+        <line width="auto" style="wheel-axis" marker-start="arrow" />
+        <label font.size="10" font.weight="Bold">FASTER PACED</label>
+        <line width="auto" style="wheel-axis" marker-end="arrow" />
+      </hbox>
+    </table>
+  </page>
+</ltml>

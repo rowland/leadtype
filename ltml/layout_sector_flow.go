@@ -8,15 +8,30 @@ import (
 )
 
 type sectorFlowItem struct {
-	widget   Widget
-	width    float64
-	height   float64
-	fullBand bool
+	widget Widget
+
+	// width is the intrinsic or explicit inline width reserved before leftover
+	// arc space is distributed. It is zero for sharesRemainder items.
+	width float64
+
+	// height contributes to the curved row's radial thickness.
+	height float64
+
+	// occupiesFullBand marks an item that owns the complete available sector
+	// band and resolves its usable width internally. Curved paragraphs use this
+	// because each of their baselines can have a different available arc width.
+	occupiesFullBand bool
+
+	// sharesRemainder marks an item whose inline width is an equal share of the
+	// arc left after fixed-width items and gaps have been reserved. In the
+	// current model this is a curved line with width="auto".
+	sharesRemainder bool
 }
 
 type sectorFlowRow struct {
-	start  int
-	end    int
+	start int
+	end   int
+	// width includes fixed item widths and gaps, but not remainder shares.
 	width  float64
 	height float64
 }
@@ -97,6 +112,11 @@ func (s *StdSector) layoutStaticFlowPass(w Writer) (bool, error) {
 			}
 			continue
 		}
+		if line, ok := item.widget.(*StdLine); ok && !line.angleSet {
+			line.ResolveWidth(max(slot.MaxX-slot.MinX, 0))
+			line.ResolveHeight(item.height)
+			continue
+		}
 		paragraph, isParagraph := item.widget.(*StdParagraph)
 		if isParagraph {
 			item.widget.SetLeft(s.geometry.AnchorX + slot.MinX)
@@ -151,7 +171,7 @@ func (s *StdSector) sectorFlowItems(widgets []Widget, w Writer) ([]sectorFlowIte
 			}
 		}
 		if paragraph, ok := child.(*StdParagraph); ok {
-			item.fullBand = true
+			item.occupiesFullBand = true
 			if paragraph.curvedInSector() {
 				s.paragraphLayouts = nil
 				layout := s.sectorParagraphLayoutFor(paragraph, w)
@@ -176,6 +196,30 @@ func (s *StdSector) sectorFlowItems(widgets []Widget, w Writer) ([]sectorFlowIte
 			if child.HeightMode() == DimUnspecified || child.HeightMode() == DimAuto {
 				child.ClearResolvedHeight()
 			}
+		}
+		if line, ok := child.(*StdLine); ok && !line.angleSet {
+			item.sharesRemainder = child.WidthMode() == DimAuto
+			if !item.sharesRemainder {
+				if child.WidthIsSet() {
+					item.width = child.Width()
+				} else {
+					width, err := child.PreferredWidth(w)
+					if err != nil {
+						return nil, err
+					}
+					item.width = width
+				}
+			}
+			height, err := line.markerCrossSize()
+			if err != nil {
+				return nil, err
+			}
+			if child.HeightIsSet() {
+				height = max(height, child.Height())
+			}
+			item.height = height
+			items = append(items, item)
+			continue
 		}
 		if child.WidthIsSet() {
 			item.width = child.Width()
@@ -205,7 +249,7 @@ func (s *StdSector) sectorFlowItems(widgets []Widget, w Writer) ([]sectorFlowIte
 		// the paragraph's seed width. Keeping a rectangular width here makes the
 		// row scorer move paragraphs toward whichever chord happens to contain
 		// that rectangle, even though drawing never uses that rectangle.
-		if item.fullBand {
+		if item.occupiesFullBand {
 			item.width = 0
 		}
 		items = append(items, item)
@@ -225,7 +269,7 @@ func sectorFlowPartitions(items []sectorFlowItem, gap, maxWidth float64) [][]sec
 			}
 			width += items[end].width
 			thresholds = append(thresholds, width)
-			if items[start].fullBand || items[end].fullBand {
+			if items[start].occupiesFullBand || items[end].occupiesFullBand {
 				break
 			}
 		}
@@ -241,6 +285,25 @@ func sectorFlowPartitions(items []sectorFlowItem, gap, maxWidth float64) [][]sec
 			seen[signature] = true
 			result = append(result, rows)
 		}
+	}
+	// Remainder-sharing items must stay in one row with the fixed content they
+	// surround; otherwise each line would be allocated against a different arc.
+	hasRemainderShares := false
+	singleRow := sectorFlowRow{start: 0, end: len(items)}
+	for i, item := range items {
+		if item.occupiesFullBand {
+			hasRemainderShares = false
+			break
+		}
+		if i > 0 {
+			singleRow.width += gap
+		}
+		singleRow.width += item.width
+		singleRow.height = max(singleRow.height, item.height)
+		hasRemainderShares = hasRemainderShares || item.sharesRemainder
+	}
+	if hasRemainderShares {
+		return [][]sectorFlowRow{{singleRow}}
 	}
 	return result
 }
@@ -261,7 +324,7 @@ func sectorFlowPartitionForWidth(items []sectorFlowItem, gap, target float64) []
 		for end := start + 1; end <= len(items); end++ {
 			item := items[end-1]
 			if end-start > 1 {
-				if item.fullBand || items[start].fullBand {
+				if item.occupiesFullBand || items[start].occupiesFullBand {
 					break
 				}
 				width += gap
@@ -285,7 +348,7 @@ func sectorFlowPartitionForWidth(items []sectorFlowItem, gap, target float64) []
 					(math.Abs(state.height-current.height) < 0.001 && state.unused < current.unused))) {
 				dp[start] = state
 			}
-			if item.fullBand {
+			if item.occupiesFullBand {
 				break
 			}
 		}
@@ -339,7 +402,7 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 		for rowIndex, row := range rows {
 			rowTop := top + rowOffsets[rowIndex]
 			curvedRow := sectorFlowRowIsCurved(items, row)
-			fullBandRow := row.end == row.start+1 && items[row.start].fullBand
+			fullBandRow := row.end == row.start+1 && items[row.start].occupiesFullBand
 			band := s.contentBandForHeight(rowTop, row.height)
 			if fullBandRow {
 				// Paragraph lines resolve their own width at each baseline. For flow
@@ -353,32 +416,59 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 				band = radialInterval{MinX: -arcWidth / 2, MaxX: arcWidth / 2}
 			}
 			bandWidth := max(band.MaxX-band.MinX, 0)
+			remainderShareCount := 0
+			for itemIndex := row.start; itemIndex < row.end; itemIndex++ {
+				if items[itemIndex].sharesRemainder {
+					remainderShareCount++
+				}
+			}
+			remainderShareWidth := 0.0
+			if curvedRow && remainderShareCount > 0 {
+				remainderShareWidth = max(bandWidth-row.width, 0) / float64(remainderShareCount)
+			}
+			allocatedItemWidth := func(item sectorFlowItem) float64 {
+				if item.sharesRemainder {
+					return remainderShareWidth
+				}
+				return item.width
+			}
+			actualRowWidth := row.width + remainderShareWidth*float64(remainderShareCount)
 			rowCenterX := centerX
 			if curvedRow {
 				rowCenterX = 0
 			}
 			envelopeLeft := rowCenterX - maxWidth/2
-			if maxWidth <= bandWidth {
+			if curvedRow && remainderShareCount > 0 {
+				envelopeLeft = band.MinX
+			} else if maxWidth <= bandWidth {
 				envelopeLeft = clampFloat(envelopeLeft, band.MinX, band.MaxX-maxWidth)
 			} else {
 				envelopeLeft = band.MinX
 			}
 			rowLeft := envelopeLeft
-			if IsRTL(s) {
+			if IsRTL(s) && !curvedRow {
 				rowLeft += maxWidth - row.width
 			}
 			x := rowLeft
 			rowAxisX := envelopeLeft + maxWidth/2
+			if curvedRow {
+				rowAxisX = 0
+			}
 			for itemIndex := row.start; itemIndex < row.end; itemIndex++ {
 				item := items[itemIndex]
+				width := allocatedItemWidth(item)
 				if IsRTL(s) {
-					x = rowLeft + row.width - item.width
+					x = rowLeft + actualRowWidth - width
 					for preceding := row.start; preceding < itemIndex; preceding++ {
-						x -= items[preceding].width + hgap
+						x -= allocatedItemWidth(items[preceding]) + hgap
 					}
 				}
-				slot := radialBounds{MinX: x, MinY: rowTop, MaxX: x + item.width, MaxY: rowTop + item.height}
-				if item.fullBand {
+				slotTop := rowTop
+				if curvedRow {
+					slotTop += (row.height - item.height) / 2
+				}
+				slot := radialBounds{MinX: x, MinY: slotTop, MaxX: x + width, MaxY: slotTop + item.height}
+				if item.occupiesFullBand {
 					slot.MinX, slot.MaxX = band.MinX, band.MaxX
 				}
 				slots[item.widget] = slot
@@ -398,14 +488,14 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 						case VAlignBottom:
 							yFactor = 1
 						}
-						arcOffset := slot.MinX + item.width*factor - rowAxisX
-						anchor := s.flowLabelAnchorAt(rowTop+item.height*yFactor, arcOffset)
+						arcOffset := slot.MinX + width*factor - rowAxisX
+						anchor := s.flowLabelAnchorAt(slot.MinY+item.height*yFactor, arcOffset)
 						anchor.arcWidth = max(min(slot.MaxX, band.MaxX)-max(slot.MinX, band.MinX), 0)
 						labelAnchors[label] = anchor
 					}
 				}
 				itemOverflow := max(s.contentBounds.MinY-slot.MinY, 0) + max(slot.MaxY-s.contentBounds.MaxY, 0)
-				if !item.fullBand {
+				if !item.occupiesFullBand {
 					itemOverflow += max(band.MinX-slot.MinX, 0) + max(slot.MaxX-band.MaxX, 0)
 				}
 				if itemOverflow <= 0.001 {
@@ -417,11 +507,11 @@ func (s *StdSector) placeSectorFlowRows(items []sectorFlowItem, rows []sectorFlo
 				centroidY += ((slot.MinY + slot.MaxY) / 2) * weight
 				centroidWeight += weight
 				if !IsRTL(s) {
-					x += item.width + hgap
+					x += width + hgap
 				}
 			}
 			if !fullBandRow {
-				unused += max(bandWidth-row.width, 0)
+				unused += max(bandWidth-actualRowWidth, 0)
 			}
 		}
 		if centroidWeight > 0 {
@@ -463,6 +553,8 @@ func sectorFlowItemIsCurved(item sectorFlowItem) bool {
 		return !straight
 	case *StdParagraph:
 		return widget.curvedInSector()
+	case *StdLine:
+		return !widget.angleSet
 	default:
 		return false
 	}
@@ -485,6 +577,16 @@ func (s *StdSector) flowLabelAnchorAt(localY, arcOffset float64) sectorFlowLabel
 		return sectorFlowLabelAnchor{x: baseX, y: baseY}
 	}
 	baseAngle := math.Atan2(s.geometry.CenterY-baseY, baseX-s.geometry.CenterX) * 180 / math.Pi
+	direction := s.flowArcDirection(localY)
+	angle := baseAngle + direction*arcOffset/radius*180/math.Pi
+	x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, angle)
+	return sectorFlowLabelAnchor{x: x, y: y}
+}
+
+func (s *StdSector) flowArcDirection(localY float64) float64 {
+	baseX, baseY := rotatePagePoint(s.geometry.AnchorX, s.geometry.AnchorY+localY,
+		s.geometry.AnchorX, s.geometry.AnchorY, s.flowRotation)
+	baseAngle := math.Atan2(s.geometry.CenterY-baseY, baseX-s.geometry.CenterX) * 180 / math.Pi
 	testX, testY := rotatePagePoint(s.geometry.AnchorX+1, s.geometry.AnchorY+localY,
 		s.geometry.AnchorX, s.geometry.AnchorY, s.flowRotation)
 	testAngle := math.Atan2(s.geometry.CenterY-testY, testX-s.geometry.CenterX) * 180 / math.Pi
@@ -495,13 +597,10 @@ func (s *StdSector) flowLabelAnchorAt(localY, arcOffset float64) sectorFlowLabel
 	for delta < -180 {
 		delta += 360
 	}
-	direction := 1.0
 	if delta < 0 {
-		direction = -1
+		return -1
 	}
-	angle := baseAngle + direction*arcOffset/radius*180/math.Pi
-	x, y := radialPointAt(s.geometry.CenterX, s.geometry.CenterY, radius, angle)
-	return sectorFlowLabelAnchor{x: x, y: y}
+	return 1
 }
 
 func (s *StdSector) contentBandForHeight(top, height float64) radialInterval {

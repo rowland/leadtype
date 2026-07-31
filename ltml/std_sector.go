@@ -619,7 +619,10 @@ func (s *StdSector) drawSectorLabel(label *StdLabel, w Writer) error {
 				rt = rt.Scale(arcWidth/rt.Width(), 6.0)
 			}
 		}
-		direction, facing := sectorCurvedTextOrientation(label.sectorTextFacing(), placement.anchorY > s.geometry.CenterY)
+		direction, facing := sectorCurvedTextOrientation(
+			label.sectorTextFacing(),
+			placement.anchorY > s.geometry.CenterY+radialAngleEpsilon,
+		)
 		opts := pdf.CurvedTextOptions{
 			Align:       s.labelCurvedTextAlign(label),
 			VAlign:      s.labelCurvedTextVAlign(label),
@@ -629,6 +632,99 @@ func (s *StdSector) drawSectorLabel(label *StdLabel, w Writer) error {
 		}
 		return w.DrawRichTextOnCircle(rt, s.geometry.CenterX, s.geometry.CenterY, placement.radius, placement.angle, opts)
 	})
+}
+
+func (s *StdSector) drawSectorLine(line *StdLine, w Writer) error {
+	slot, ok := s.flowSlots[line]
+	if !ok {
+		return nil
+	}
+	style := line.Style()
+	startMarker, endMarker, err := line.resolvedMarkers(style)
+	if err != nil {
+		return err
+	}
+	localY := (slot.MinY + slot.MaxY) / 2
+	logicalStart, logicalEnd := slot.MinX, slot.MaxX
+	direction := 1.0
+	if IsRTL(s) {
+		logicalStart, logicalEnd = logicalEnd, logicalStart
+		direction = -1
+	}
+	startMarker, endMarker = fitResolvedMarkers(startMarker, endMarker, math.Abs(logicalEnd-logicalStart))
+	startRefOffset, endRefOffset := logicalStart, logicalEnd
+	if startMarker != nil {
+		startRefOffset += direction * startMarker.referenceInset()
+	}
+	if endMarker != nil {
+		endRefOffset -= direction * endMarker.referenceInset()
+	}
+	shaftStartOffset, shaftEndOffset := startRefOffset, endRefOffset
+	if startMarker != nil {
+		shaftStartOffset += direction * startMarker.cutback
+	}
+	if endMarker != nil {
+		shaftEndOffset -= direction * endMarker.cutback
+	}
+
+	base := s.flowLabelAnchorAt(localY, 0)
+	radius := math.Hypot(base.x-s.geometry.CenterX, base.y-s.geometry.CenterY)
+	if radius <= radialAngleEpsilon {
+		return nil
+	}
+	x := s.geometry.CenterX - radius
+	y := s.geometry.CenterY - radius
+	if err := style.ApplyInRect(w, x, y, radius*2, radius*2); err != nil {
+		return err
+	}
+	if direction*(shaftEndOffset-shaftStartOffset) > radialAngleEpsilon {
+		startAngle := s.arcOffsetAngle(localY, shaftStartOffset)
+		// Do not derive both angles independently with atan2. A line that
+		// crosses the -180/180 seam would otherwise acquire the complementary
+		// sweep and can lose an entire quadrant. Preserve the signed angular
+		// distance represented by the allocated arc interval.
+		endAngle := startAngle +
+			s.flowArcDirection(localY)*(shaftEndOffset-shaftStartOffset)/radius*180/math.Pi
+		var strokeErr error
+		if err := w.Path(func() {
+			if strokeErr = w.Arc(s.geometry.CenterX, s.geometry.CenterY, radius, startAngle, endAngle, true); strokeErr != nil {
+				return
+			}
+			strokeErr = w.Stroke()
+		}); err != nil {
+			return err
+		}
+		if strokeErr != nil {
+			return strokeErr
+		}
+	}
+	startPoint := s.flowLabelAnchorAt(localY, startRefOffset)
+	endPoint := s.flowLabelAnchorAt(localY, endRefOffset)
+	startTangent := s.arcTangentAngle(localY, startRefOffset, direction)
+	endTangent := s.arcTangentAngle(localY, endRefOffset, direction)
+	if startMarker != nil {
+		if err := startMarker.draw(w, startPoint.x, startPoint.y, startTangent+180, style.Color()); err != nil {
+			return err
+		}
+	}
+	if endMarker != nil {
+		if err := endMarker.draw(w, endPoint.x, endPoint.y, endTangent, style.Color()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *StdSector) arcOffsetAngle(localY, offset float64) float64 {
+	point := s.flowLabelAnchorAt(localY, offset)
+	return math.Atan2(s.geometry.CenterY-point.y, point.x-s.geometry.CenterX) * 180 / math.Pi
+}
+
+func (s *StdSector) arcTangentAngle(localY, offset, direction float64) float64 {
+	delta := direction * 0.01
+	from := s.flowLabelAnchorAt(localY, offset)
+	to := s.flowLabelAnchorAt(localY, offset+delta)
+	return math.Atan2(-(to.y-from.y), to.x-from.x) * 180 / math.Pi
 }
 
 func (s *StdSector) availableArcWidth(radius, anchorAngle float64, align HAlign) float64 {

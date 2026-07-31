@@ -14,9 +14,24 @@ type Scope struct {
 	aliases         map[string]*Alias
 	styles          map[string]Styler
 	layouts         map[string]*LayoutStyle
+	markers         map[string]*StdMarker
 	pageStyles      map[string]*PageStyle
 	rules           []*Rules
 	defaultRuleTier int
+}
+
+func (scope *Scope) AddMarker(marker *StdMarker) error {
+	if marker == nil || marker.ID == "" {
+		return fmt.Errorf("id required for marker")
+	}
+	if scope.markers == nil {
+		scope.markers = make(map[string]*StdMarker)
+	}
+	if _, exists := scope.markers[marker.ID]; exists {
+		return fmt.Errorf("duplicate marker id %q", marker.ID)
+	}
+	scope.markers[marker.ID] = marker
+	return nil
 }
 
 func (scope *Scope) AddAlias(alias *Alias) error {
@@ -160,6 +175,17 @@ func (scope *Scope) LayoutFor(id string) (style *LayoutStyle, ok bool) {
 	style, ok = scope.layouts[id]
 	if !ok && scope.parent != nil {
 		style, ok = scope.parent.LayoutFor(id)
+	}
+	return
+}
+
+func (scope *Scope) MarkerFor(id string) (marker *StdMarker, ok bool) {
+	marker, ok = scope.markers[id]
+	if !ok && scope.parent != nil {
+		marker, ok = scope.parent.MarkerFor(id)
+	}
+	if !ok {
+		marker, ok = builtinMarker(id)
 	}
 	return
 }
