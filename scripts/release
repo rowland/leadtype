@@ -28,8 +28,8 @@ if ! printf '%s\n' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|
 fi
 tag=v$version
 
-if [ -n "$(git status --porcelain)" ]; then
-	echo "release: working tree is not clean" >&2
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+	echo "release: tracked changes must be committed" >&2
 	exit 1
 fi
 
@@ -79,8 +79,8 @@ if [ "$serve_version" != "serve-ltml $version" ]; then
 	echo "release: serve-ltml reported unexpected version: $serve_version" >&2
 	exit 1
 fi
-if [ -n "$(git status --porcelain)" ]; then
-	echo "release: checks left the working tree dirty" >&2
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+	echo "release: checks modified tracked files" >&2
 	exit 1
 fi
 

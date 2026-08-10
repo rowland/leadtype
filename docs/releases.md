@@ -26,12 +26,13 @@ Tag and publish the release:
 make release
 ```
 
-The `release` target requires a clean working tree and an attached branch. It
-validates `VERSION`, ensures the corresponding tag does not exist locally or on
-`origin`, builds and tests the module, and verifies the versions reported by
-`render-ltml` and `serve-ltml`. It then creates an annotated `vVERSION` tag and
-atomically pushes the current branch and tag to `origin`. If the push fails, the
-new local tag is removed.
+The `release` target requires all tracked changes to be committed and requires
+an attached branch. Untracked files are allowed and are not included in the
+release tag. The target validates `VERSION`, ensures the corresponding tag does
+not exist locally or on `origin`, builds and tests the module, and verifies the
+versions reported by `render-ltml` and `serve-ltml`. It then creates an
+annotated `vVERSION` tag and atomically pushes the current branch and tag to
+`origin`. If the push fails, the new local tag is removed.
 
 ## Depending on a release
 
