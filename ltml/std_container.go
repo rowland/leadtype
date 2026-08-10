@@ -284,9 +284,13 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 			c.baseAngle = value
 		}
 	}
-	c.radialSweep = radialSweepCCW
-	if sweep, ok := attrs["sweep"]; ok && strings.EqualFold(strings.TrimSpace(sweep), "cw") {
-		c.radialSweep = radialSweepCW
+	if sweep, ok := attrs["sweep"]; ok {
+		switch strings.ToLower(strings.TrimSpace(sweep)) {
+		case "cw":
+			c.radialSweep = radialSweepCW
+		case "ccw":
+			c.radialSweep = radialSweepCCW
+		}
 	}
 	if angles, ok := attrs["angles"]; ok {
 		c.angles = c.angles[:0]

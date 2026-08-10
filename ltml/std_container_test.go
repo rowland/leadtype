@@ -62,6 +62,26 @@ func TestStdContainer_SetAttrs_ParagraphStyleOverridesWithoutParent(t *testing.T
 	}
 }
 
+func TestStdContainer_SetAttrs_PreservesRadialSweepAcrossAttributeLayers(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{"sweep": "cw"})
+	container.SetAttrs(map[string]string{"rows": "2"})
+
+	if got := container.RadialSweep(); got != radialSweepCW {
+		t.Fatalf("radial sweep = %v, want clockwise value from previous attribute layer", got)
+	}
+
+	container.SetAttrs(map[string]string{"sweep": "sideways"})
+	if got := container.RadialSweep(); got != radialSweepCW {
+		t.Fatalf("radial sweep = %v after invalid value, want previous clockwise value", got)
+	}
+
+	container.SetAttrs(map[string]string{"sweep": "ccw"})
+	if got := container.RadialSweep(); got != radialSweepCCW {
+		t.Fatalf("radial sweep = %v, want explicit counterclockwise override", got)
+	}
+}
+
 func TestStdParagraph_SetAttrs_StyleOverridesWithoutParent(t *testing.T) {
 	paragraph := &StdParagraph{}
 	paragraph.SetAttrs(map[string]string{
