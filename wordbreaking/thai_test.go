@@ -6,6 +6,7 @@ package wordbreaking
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestSegmentThai_noThai(t *testing.T) {
@@ -53,7 +54,7 @@ func TestSegmentThai_markRuneAttributes(t *testing.T) {
 	flags := make([]Flags, len(segmented))
 	MarkRuneAttributes(segmented, flags)
 
-	// Find the ZWS byte offset in the segmented string.
+	// UAX #14 places the break after ZWS, at the following rune's byte offset.
 	zwsOffset := -1
 	for i, r := range segmented {
 		if r == ZeroWidthSpace {
@@ -64,8 +65,9 @@ func TestSegmentThai_markRuneAttributes(t *testing.T) {
 	if zwsOffset < 0 {
 		t.Fatal("expected ZWS in segmented Thai text, found none")
 	}
-	if flags[zwsOffset]&SoftBreak == 0 {
-		t.Errorf("ZWS at offset %d missing SoftBreak flag, got %08b", zwsOffset, flags[zwsOffset])
+	breakOffset := zwsOffset + utf8.RuneLen(ZeroWidthSpace)
+	if flags[breakOffset]&SoftBreak == 0 {
+		t.Errorf("boundary after ZWS at offset %d missing SoftBreak flag, got %08b", breakOffset, flags[breakOffset])
 	}
 }
 
