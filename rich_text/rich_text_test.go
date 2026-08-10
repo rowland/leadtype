@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"unicode"
@@ -937,6 +938,13 @@ func TestRichText_TrimSpace(t *testing.T) {
 	st.Equal(leadingAndTrailingWhitespaceTextTrimmed, t2.String())
 }
 
+func TestRichText_TrimSpace_IncludesZeroWidthSpace(t *testing.T) {
+	t1 := &RichText{Text: "\u200bcontent\u200b"}
+	if got := t1.TrimSpace().String(); got != "content" {
+		t.Fatalf("TrimSpace() = %q, want %q", got, "content")
+	}
+}
+
 func TestRichText_TrimRightFunc_complex(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
@@ -1048,7 +1056,7 @@ func TestRichText_WordsToWidth_mixed(t *testing.T) {
 	}
 }
 
-func TestRichText_WordsToWidth_hardbreak(t *testing.T) {
+func TestRichText_WordsToWidth_emergencyBreak(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 	p := arialText("Supercalifragilisticexpialidocious")
@@ -1074,6 +1082,69 @@ func TestRichText_WordsToWidth_zero(t *testing.T) {
 	st.MustNot(remainder == nil, "There should be text left over.")
 	st.Equal("upercalifragilisticexpialidocious", remainder.String())
 	st.Equal(33, len(remainderFlags))
+}
+
+func TestRichText_WordsToWidthAndWrapToWidth_WhitespaceContract(t *testing.T) {
+	font := minimalFixtureFont(t)
+	rt := (&RichText{Text: "alpha beta", Font: font, FontSize: 12}).measure()
+	prefix := (&RichText{Text: "alpha", Font: font, FontSize: 12}).measure()
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+
+	line, remainder, _ := rt.WordsToWidth(prefix.Width()+0.01, flags, false)
+	if got := line.String(); got != "alpha " {
+		t.Fatalf("WordsToWidth line = %q, want %q", got, "alpha ")
+	}
+	if remainder == nil {
+		t.Fatal("WordsToWidth remainder is nil")
+	}
+	if got := remainder.String(); got != "beta" {
+		t.Fatalf("WordsToWidth remainder = %q, want %q", got, "beta")
+	}
+
+	lines := rt.WrapToWidth(prefix.Width()+0.01, flags, false)
+	if len(lines) != 2 || lines[0].String() != "alpha" || lines[1].String() != "beta" {
+		got := make([]string, len(lines))
+		for i, wrapped := range lines {
+			got[i] = wrapped.String()
+		}
+		t.Fatalf("WrapToWidth lines = %q, want [\"alpha\" \"beta\"]", got)
+	}
+}
+
+func TestRichText_WrapToWidth_TrailingSpaceDoesNotCauseEarlyWrap(t *testing.T) {
+	font := minimalFixtureFont(t)
+	tests := []struct {
+		name        string
+		text        string
+		firstLine   string
+		separator   string
+		wordSpacing float64
+	}{
+		{name: "single space", text: "alpha beta gamma", firstLine: "alpha beta", separator: " "},
+		{name: "consecutive spaces", text: "alpha  beta  gamma", firstLine: "alpha  beta", separator: "  "},
+		{name: "word spacing", text: "alpha beta gamma", firstLine: "alpha beta", separator: " ", wordSpacing: 4},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := &RichText{Text: tt.text, Font: font, FontSize: 12, WordSpacing: tt.wordSpacing}
+			prefix := &RichText{Text: tt.firstLine, Font: font, FontSize: 12, WordSpacing: tt.wordSpacing}
+			trailing := &RichText{Text: tt.separator, Font: font, FontSize: 12, WordSpacing: tt.wordSpacing}
+			width := prefix.Width() + trailing.Width()/2
+			flags := make([]wordbreaking.Flags, rt.Len())
+			wordbreaking.MarkRuneAttributes(rt.String(), flags)
+
+			lines := rt.WrapToWidth(width, flags, false)
+			got := make([]string, len(lines))
+			for i, line := range lines {
+				got[i] = line.String()
+			}
+			if want := []string{tt.firstLine, "gamma"}; !slices.Equal(got, want) {
+				t.Fatalf("lines = %q, want %q (width %.3f)", got, want, width)
+			}
+		})
+	}
 }
 
 func TestRichText_WordsToWidth_LogsShapingFailure(t *testing.T) {
@@ -1247,7 +1318,104 @@ func TestRichText_WrapToWidth_thai(t *testing.T) {
 	}
 }
 
-func TestRichText_WrapToWidth_hardBreak(t *testing.T) {
+func TestRichText_WrapToWidth_MandatoryBreaks(t *testing.T) {
+	font := minimalFixtureFont(t)
+	tests := []struct {
+		name string
+		text string
+		want []string
+	}{
+		{name: "LF", text: "alpha\nbeta", want: []string{"alpha", "beta"}},
+		{name: "CRLF", text: "alpha\r\nbeta", want: []string{"alpha", "beta"}},
+		{name: "NEL", text: "alpha\u0085beta", want: []string{"alpha", "beta"}},
+		{name: "line separator", text: "alpha\u2028beta", want: []string{"alpha", "beta"}},
+		{name: "paragraph separator", text: "alpha\u2029beta", want: []string{"alpha", "beta"}},
+		{name: "leading", text: "\nalpha", want: []string{"", "alpha"}},
+		{name: "consecutive", text: "alpha\n\nbeta", want: []string{"alpha", "", "beta"}},
+		{name: "trailing", text: "alpha\n", want: []string{"alpha"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := (&RichText{Text: tt.text, Font: font, FontSize: 12}).measure()
+			flags := make([]wordbreaking.Flags, rt.Len())
+			wordbreaking.MarkRuneAttributes(rt.String(), flags)
+
+			lines := rt.WrapToWidth(rt.Width()+100, flags, false)
+			got := make([]string, len(lines))
+			for i, line := range lines {
+				got[i] = line.String()
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Fatalf("mandatory-break lines = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRichText_WrapToWidth_MandatoryBreakOverridesNoBreak(t *testing.T) {
+	font := minimalFixtureFont(t)
+	rt := (&RichText{Text: "alpha\nbeta", Font: font, FontSize: 12, NoBreak: true}).measure()
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+	rt.MarkNoBreak(flags)
+
+	lines := rt.WrapToWidth(rt.Width()+100, flags, false)
+	got := make([]string, len(lines))
+	for i, line := range lines {
+		got[i] = line.String()
+	}
+	if want := []string{"alpha", "beta"}; !slices.Equal(got, want) {
+		t.Fatalf("mandatory-break lines = %q, want %q", got, want)
+	}
+}
+
+func TestRichText_WrapToWidth_TrimsSelectedZeroWidthSpace(t *testing.T) {
+	font := minimalFixtureFont(t)
+	rt := (&RichText{Text: "alpha\u200bbeta", Font: font, FontSize: 12}).measure()
+	prefix := (&RichText{Text: "alpha", Font: font, FontSize: 12}).measure()
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+
+	lines := rt.WrapToWidth(prefix.Width()+0.01, flags, false)
+	got := make([]string, len(lines))
+	for i, line := range lines {
+		got[i] = line.String()
+	}
+	if want := []string{"alpha", "beta"}; !slices.Equal(got, want) {
+		t.Fatalf("zero-width-space lines = %q, want %q", got, want)
+	}
+}
+
+func TestRichText_WrapToWidth_RespectsCJKPunctuation(t *testing.T) {
+	font := minimalFixtureFont(t)
+	const text = "中文，中文々中文（中文）中文"
+	rt := (&RichText{Text: text, Font: font, FontSize: 12}).measure()
+	twoIdeographs := (&RichText{Text: "中文", Font: font, FontSize: 12}).measure()
+	flags := make([]wordbreaking.Flags, rt.Len())
+	wordbreaking.MarkRuneAttributes(rt.String(), flags)
+
+	lines := rt.WrapToWidth(twoIdeographs.Width()+0.01, flags, false)
+	if len(lines) < 2 {
+		t.Fatalf("CJK text produced %d line, want multiple lines", len(lines))
+	}
+	for _, line := range lines {
+		lineText := line.String()
+		lineRunes := []rune(lineText)
+		if len(lineRunes) == 0 {
+			t.Error("CJK wrapping produced an empty line")
+			continue
+		}
+		if strings.ContainsRune("，、。！？）】」』》〉々", lineRunes[0]) {
+			t.Errorf("line begins with prohibited punctuation: %q", lineText)
+		}
+		if strings.ContainsRune("（【「『《〈", lineRunes[len(lineRunes)-1]) {
+			t.Errorf("line ends with opening punctuation: %q", lineText)
+		}
+	}
+}
+
+func TestRichText_WrapToWidth_emergencyBreak(t *testing.T) {
 	skipIfNoTTFFonts(t)
 	st := SuperTest{t}
 	expected := []string{

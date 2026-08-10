@@ -6,10 +6,11 @@ package wordbreaking
 type Flags byte
 
 const (
-	SoftBreak  = Flags(1 << iota) // potential linebreak point
-	WhiteSpace = Flags(1 << iota) // a unicode whitespace character, except NBSP
-	CharStop   = Flags(1 << iota) // valid cursor position
-	WordStop   = Flags(1 << iota) // start of a word
-	Invalid    = Flags(1 << iota) // invalid character sequence
-	NoBreak    = Flags(1 << iota) // do not break here
+	SoftBreak      = Flags(1 << iota) // potential linebreak point
+	WhiteSpace     = Flags(1 << iota) // a unicode whitespace character, except NBSP
+	CharStop       = Flags(1 << iota) // valid cursor position
+	WordStop       = Flags(1 << iota) // start of a word
+	Invalid        = Flags(1 << iota) // invalid character sequence
+	NoBreak        = Flags(1 << iota) // do not break here
+	MandatoryBreak = Flags(1 << iota) // break here regardless of available width
 )

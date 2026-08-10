@@ -6,6 +6,8 @@ package wordbreaking
 import (
 	"fmt"
 	"unicode"
+
+	"github.com/go-text/typesetting/segmenter"
 )
 
 const (
@@ -58,30 +60,62 @@ func isCJKBreakRune(r rune) bool {
 	)
 }
 
+// MarkRuneAttributes augments flags with UTF-8 byte-indexed text attributes.
+// Default line opportunities follow Unicode 17 UAX #14; Thai dictionary
+// boundaries are added as a language-specific tailoring.
 func MarkRuneAttributes(text string, flags []Flags) {
 	if len(flags) < len(text) {
 		panic(fmt.Sprintf("flags (len: %d) is smaller than text (len: %d)", len(flags), len(text)))
 	}
+	if text == "" {
+		return
+	}
+
+	runes := make([]rune, 0, len(text))
+	byteOffsets := make([]int, 0, len(text)+1)
 	thaiBreaks := thaiBreakOffsets(text)
 	var rc, last runeClass
 	for i, r := range text {
+		runes = append(runes, r)
+		byteOffsets = append(byteOffsets, i)
 		flags[i] |= CharStop
 		rc = classifyRune(r)
 		if i == 0 {
 			flags[i] |= WordStop
 		} else if _, ok := thaiBreaks[i]; ok {
-			flags[i] |= SoftBreak | WordStop
+			flags[i] |= WordStop
 		} else if rc == rcWhiteSpace {
-			flags[i] |= SoftBreak | WhiteSpace
+			flags[i] |= WhiteSpace
 		} else if last == rcWhiteSpace && (rc == rcHyphen || rc == rcOther || rc == rcCJK) {
-			flags[i] |= SoftBreak | WordStop
+			flags[i] |= WordStop
 		} else if last == rcHyphen && (rc == rcOther || rc == rcCJK) {
-			flags[i] |= SoftBreak | WordStop
+			flags[i] |= WordStop
 		} else if last == rcCJK && rc == rcCJK {
-			flags[i] |= SoftBreak | WordStop
+			flags[i] |= WordStop
 		} else if (last == rcOther && rc == rcCJK) || (last == rcCJK && rc == rcOther) {
-			flags[i] |= SoftBreak | WordStop
+			flags[i] |= WordStop
 		}
 		last = rc
+	}
+	byteOffsets = append(byteOffsets, len(text))
+
+	var seg segmenter.Segmenter
+	seg.Init(runes)
+	iter := seg.LineIterator()
+	for iter.Next() {
+		line := iter.Line()
+		runeOffset := line.Offset + len(line.Text)
+		if runeOffset >= len(runes) {
+			continue
+		}
+		byteOffset := byteOffsets[runeOffset]
+		flags[byteOffset] |= SoftBreak
+		if line.IsMandatoryBreak {
+			flags[byteOffset] |= MandatoryBreak
+		}
+	}
+
+	for byteOffset := range thaiBreaks {
+		flags[byteOffset] |= SoftBreak | WordStop
 	}
 }

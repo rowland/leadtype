@@ -677,10 +677,14 @@ func (piece *RichText) TrimRightSpace() *RichText {
 	return piece.TrimRightFunc(unicode.IsSpace)
 }
 
-// TrimSpace trims the runes from both ends of the text where unicode.IsSpace returns true,
+// TrimSpace trims Unicode whitespace and zero-width spaces from both ends of the text,
 // returning a new structure and leaving the original unchanged.
 func (piece *RichText) TrimSpace() *RichText {
-	return piece.TrimFunc(unicode.IsSpace)
+	return piece.TrimFunc(isLineEdgeSpace)
+}
+
+func isLineEdgeSpace(r rune) bool {
+	return unicode.IsSpace(r) || r == wordbreaking.ZeroWidthSpace
 }
 
 // VisitAll invokes the callback function for each piece of text within the structure, in order.
@@ -779,10 +783,10 @@ func decorationOverridesOption(opts options.Options, key string) *DecorationOver
 
 // WordsToWidth splits the text at the last breaking point before width is exceeded, making use of the previously-allocated and marked flags
 // and returning new structures representing both halves and the remaining flags. The original structure is unchanged.
-// A minimum of one word is split off, even if width is exceeded, unless hardBreak is true, in which case the text is split along character
-// boundaries.
+// A minimum of one word is split off, even if width is exceeded, unless emergencyBreak is true, in which case the text is split along
+// character boundaries.
 func (piece *RichText) WordsToWidth(
-	width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (
+	width float64, wordFlags []wordbreaking.Flags, emergencyBreak bool) (
 	line, remainder *RichText, remainderFlags []wordbreaking.Flags) {
 	if width < 0.0 {
 		width = 0.0
@@ -791,6 +795,7 @@ func (piece *RichText) WordsToWidth(
 	currentWidth := 0.0
 	words := 0
 	wordWidth := 0.0
+	trailingSpaceWidth := 0.0
 	extra := 0.0
 	lastOffset := 0
 
@@ -804,9 +809,20 @@ func (piece *RichText) WordsToWidth(
 	var leafRuneIdx int
 
 	fn := func(r rune, p *RichText, offset int) bool {
-		if words > 0 && currentWidth+extra+wordWidth > width {
+		if offset > 0 && (wordFlags[offset]&wordbreaking.MandatoryBreak) == wordbreaking.MandatoryBreak {
+			current = offset
 			return true
-		} else if words == 0 && hardBreak && wordWidth > width {
+		}
+		softBreak := offset > 0 &&
+			wordFlags[offset]&wordbreaking.SoftBreak == wordbreaking.SoftBreak &&
+			wordFlags[offset]&wordbreaking.NoBreak != wordbreaking.NoBreak
+		candidateWidth := currentWidth + extra + wordWidth
+		if softBreak {
+			candidateWidth -= trailingSpaceWidth
+		}
+		if words > 0 && candidateWidth > width {
+			return true
+		} else if words == 0 && emergencyBreak && wordWidth > width {
 			if lastOffset > 0 {
 				current = lastOffset
 			} else {
@@ -814,9 +830,7 @@ func (piece *RichText) WordsToWidth(
 			}
 			return true
 		}
-		if offset > 0 &&
-			wordFlags[offset]&wordbreaking.SoftBreak == wordbreaking.SoftBreak &&
-			wordFlags[offset]&wordbreaking.NoBreak != wordbreaking.NoBreak {
+		if softBreak {
 			current = offset
 			currentWidth += wordWidth
 			wordWidth = 0.0
@@ -852,16 +866,23 @@ func (piece *RichText) WordsToWidth(
 				shapedAdv = nil
 			}
 		}
+		runeWidth := 0.0
 		if r != wordbreaking.SoftHyphen {
 			if shapedAdv != nil && leafRuneIdx < len(shapedAdv) {
-				wordWidth += shapedAdv[leafRuneIdx] + p.CharSpacing
+				runeWidth = shapedAdv[leafRuneIdx] + p.CharSpacing
 			} else {
-				runeWidth, _ := metrics.AdvanceWidth(r)
-				wordWidth += (fsize * float64(runeWidth)) + p.CharSpacing
+				advanceWidth, _ := metrics.AdvanceWidth(r)
+				runeWidth = (fsize * float64(advanceWidth)) + p.CharSpacing
 			}
 			if unicode.IsSpace(r) {
-				wordWidth += p.WordSpacing
+				runeWidth += p.WordSpacing
 			}
+		}
+		wordWidth += runeWidth
+		if isLineEdgeSpace(r) {
+			trailingSpaceWidth += runeWidth
+		} else {
+			trailingSpaceWidth = 0.0
 		}
 		leafRuneIdx++
 		lastRune = r
@@ -884,11 +905,11 @@ func (piece *RichText) WordsToWidth(
 }
 
 // WrapToWidth returns one or more lines of text resulting from repeatedly invoking WordsToWidth.
-func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, hardBreak bool) (lines []*RichText) {
-	line, remainder, remainderFlags := piece.WordsToWidth(width, wordFlags, hardBreak)
+func (piece *RichText) WrapToWidth(width float64, wordFlags []wordbreaking.Flags, emergencyBreak bool) (lines []*RichText) {
+	line, remainder, remainderFlags := piece.WordsToWidth(width, wordFlags, emergencyBreak)
 	for remainder != nil {
 		lines = append(lines, line.TrimSpace())
-		line, remainder, remainderFlags = remainder.WordsToWidth(width, remainderFlags, hardBreak)
+		line, remainder, remainderFlags = remainder.WordsToWidth(width, remainderFlags, emergencyBreak)
 	}
 	lines = append(lines, line.TrimSpace())
 	return
