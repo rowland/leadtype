@@ -6,6 +6,7 @@ package ltml
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"strconv"
@@ -347,7 +348,19 @@ func (c *StdContainer) SetAttrs(attrs map[string]string) {
 			c.footerRows = value
 		}
 	}
-	c.setContainerResourceAttrs(attrs, c.Units())
+	layoutAttrs := attrs
+	hpadding, hasHPadding := attrs["hpadding"]
+	vpadding, hasVPadding := attrs["vpadding"]
+	if hasHPadding || hasVPadding {
+		layoutAttrs = maps.Clone(attrs)
+		if hasHPadding {
+			layoutAttrs["layout.hpadding"] = hpadding
+		}
+		if hasVPadding {
+			layoutAttrs["layout.vpadding"] = vpadding
+		}
+	}
+	c.setContainerResourceAttrs(layoutAttrs, c.Units())
 	if _, positionSet := attrs["position"]; !positionSet &&
 		isRadialLayoutStyle(c.layout) &&
 		MapHasAnyKey(attrs, "center-x", "center-y") {

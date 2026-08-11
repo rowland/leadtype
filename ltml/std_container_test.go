@@ -48,6 +48,49 @@ func TestStdContainer_SetAttrs_ClonesLayoutForLayoutPrefixOverrides(t *testing.T
 	}
 }
 
+func TestStdContainer_SetAttrs_DirectPaddingAttributesAliasLayoutOverrides(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{
+		"layout":   "vbox",
+		"hpadding": "7pt",
+		"vpadding": "9pt",
+	})
+
+	if container.LayoutStyle() == defaultLayouts["vbox"] {
+		t.Fatal("layout style reused shared vbox layout, want clone")
+	}
+	if got := container.LayoutStyle().HPadding(); got != 7 {
+		t.Fatalf("layout hpadding = %v, want 7", got)
+	}
+	if got := container.LayoutStyle().VPadding(); got != 9 {
+		t.Fatalf("layout vpadding = %v, want 9", got)
+	}
+	if got := defaultLayouts["vbox"].HPadding(); got != 0 {
+		t.Fatalf("shared vbox hpadding = %v, want 0", got)
+	}
+	if got := defaultLayouts["vbox"].VPadding(); got != 0 {
+		t.Fatalf("shared vbox vpadding = %v, want 0", got)
+	}
+}
+
+func TestStdContainer_SetAttrs_DirectPaddingAliasesOverrideCanonicalAttributes(t *testing.T) {
+	container := &StdContainer{}
+	container.SetAttrs(map[string]string{
+		"layout":          "vbox",
+		"hpadding":        "7pt",
+		"vpadding":        "9pt",
+		"layout.hpadding": "17pt",
+		"layout.vpadding": "19pt",
+	})
+
+	if got := container.LayoutStyle().HPadding(); got != 7 {
+		t.Fatalf("layout hpadding = %v, want direct alias value 7", got)
+	}
+	if got := container.LayoutStyle().VPadding(); got != 9 {
+		t.Fatalf("layout vpadding = %v, want direct alias value 9", got)
+	}
+}
+
 func TestStdContainer_SetAttrs_ParagraphStyleOverridesWithoutParent(t *testing.T) {
 	container := &StdContainer{}
 	container.SetAttrs(map[string]string{

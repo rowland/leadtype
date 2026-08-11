@@ -249,6 +249,8 @@ Defines a single page in the document. Pages must be direct children of `<ltml>`
 | `margin-top`, `margin-right`, `margin-bottom`, `margin-left` | Per-side margins. |
 | `style`       | Reference to a named `<page>` style. |
 | `layout`      | Layout manager to use (`vbox`, `hbox`, `table`, `flow`, `absolute`, `relative`, `radial`, `radial-out`). Default: `vbox`. Use `layout.*` for inline overrides such as `layout.vpadding="9pt"`. |
+| `hpadding`    | Direct alias for `layout.hpadding`. |
+| `vpadding`    | Direct alias for `layout.vpadding`. |
 | `dir`         | Layout direction: `ltr` (default) or `rtl`. Inherited by child containers. Invalid values fall back to `ltr`. |
 | `grid`        | Optional debug grid. Use `true` for the default `0.25in` grid or supply a measurement such as `0.5in`. Add a comma-delimited count such as `0.25in,4` or `true,4` to draw every fourth line bolder. |
 | `overflow`    | `true` or `false`. If `true`, allow the page to retry unprinted direct children on additional physical pages. Defaults to `true` for page `layout="flow"`, `layout="table"`, and `layout="vbox"`. |
@@ -411,6 +413,8 @@ Supports the same layout and styling attributes as `<p>`, plus:
 | Attribute        | Description |
 |------------------|-------------|
 | `layout`         | Layout manager name (see [Layout Managers](#layout-managers)). Use `layout.*` for inline overrides. |
+| `hpadding`       | Direct alias for `layout.hpadding`. |
+| `vpadding`       | Direct alias for `layout.vpadding`. |
 | `dir`            | Layout direction: `ltr` (default) or `rtl`. Inherited from parent container when not set. Reverses horizontal placement in `flow`, `vbox`, `hbox`, and `table` layouts. Invalid values fall back to `ltr`. |
 | `cols`           | Number of columns. Required for row-major `table` layout unless `rows` is used instead. Optional for `radial` and `radial-out` when `angles` determines the angular slots. |
 | `rows`           | Number of rows. Required for column-major `table` layout unless `cols` is used instead. In `radial`, rows are concentric tracks from outermost to innermost. In `radial-out`, row `0` is innermost and higher rows move outward. |
