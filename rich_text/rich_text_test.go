@@ -208,8 +208,25 @@ func TestRichText_CloneAndScale_PreserveDecorationPointer(t *testing.T) {
 	if piece.Clone().Decoration != decoration {
 		t.Fatalf("Clone should preserve decoration pointer")
 	}
-	if piece.Scale(0.5, 6).Decoration != decoration {
+	scaled := piece.Scale(0.5, 6)
+	if scaled.Decoration != decoration {
 		t.Fatalf("Scale should preserve decoration pointer")
+	}
+	if scaled.FontSize != 6 || scaled.Decoration.Underline.Width != 1 {
+		t.Fatalf("scaled font/decorations = %v/%#v, want 6pt font with fixed 1pt underline", scaled.FontSize, scaled.Decoration.Underline)
+	}
+}
+
+func TestRichText_ScaleRecomputesMetricDecorationThickness(t *testing.T) {
+	skipIfNoTTFFonts(t)
+	piece := arialText("Lorem")
+	piece.measure()
+	originalThickness := piece.UnderlineThickness
+
+	scaled := piece.Scale(0.5, 0)
+	scaled.measure()
+	if got, want := scaled.UnderlineThickness, originalThickness*0.5; got != want {
+		t.Fatalf("scaled underline thickness = %v, want %v", got, want)
 	}
 }
 

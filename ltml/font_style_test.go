@@ -406,6 +406,85 @@ func TestFontStyle_SetAttrs_DecorationOverrides(t *testing.T) {
 	}
 }
 
+func TestFontStyle_SetAttrs_AdHocDecorationPenUsesDeclarationUnits(t *testing.T) {
+	var fs FontStyle
+	fs.SetScope(&Scope{})
+	fs.SetAttrs(map[string]string{
+		"units":         "mm",
+		"underline-pen": "2 dashed #08f",
+	})
+	// A later layer changing units must not reinterpret the earlier pen value.
+	fs.SetAttrs(map[string]string{"units": "in", "weight": "Bold"})
+
+	decoration := fs.RichTextOptions()["decoration"].(*rich_text.DecorationOverrides)
+	line := decoration.Underline
+	if !line.HasWidth || line.Width != FromUnits(2, "mm") || !line.HasPattern || line.Pattern != "dashed" || !line.HasColor || line.Color != NamedColor("#0088ff") {
+		t.Fatalf("underline = %#v, want 2mm dashed #0088ff", line)
+	}
+}
+
+func TestFontStyle_AdHocDecorationPenWithoutWidthPreservesMetricThickness(t *testing.T) {
+	var fs FontStyle
+	fs.SetScope(&Scope{})
+	fs.SetAttrs(map[string]string{
+		"underline-pen": "dashed #08f",
+		"strikeout-pen": "#c33",
+	})
+
+	decoration := fs.RichTextOptions()["decoration"].(*rich_text.DecorationOverrides)
+	if decoration.Underline.HasWidth || decoration.Strikeout.HasWidth {
+		t.Fatalf("decoration = %#v, omitted widths must preserve metric-derived thickness", decoration)
+	}
+	if !decoration.Underline.HasColor || !decoration.Underline.HasPattern || !decoration.Strikeout.HasColor {
+		t.Fatalf("decoration = %#v, want non-width pen overrides", decoration)
+	}
+}
+
+func TestFontStyle_AdHocDecorationPenExplicitZeroWidthOverridesMetricThickness(t *testing.T) {
+	var fs FontStyle
+	fs.SetScope(&Scope{})
+	fs.SetAttrs(map[string]string{"underline-pen": "0 solid #08f"})
+
+	line := fs.RichTextOptions()["decoration"].(*rich_text.DecorationOverrides).Underline
+	if !line.HasWidth || line.Width != 0 {
+		t.Fatalf("underline = %#v, explicit zero width must request PDF hairline", line)
+	}
+}
+
+func TestFontStyle_NamedDecorationPenWithoutWidthPreservesMetricThickness(t *testing.T) {
+	scope := &Scope{}
+	named := &PenStyle{id: "color-only", color: NamedColor("Gold"), pattern: "dotted"}
+	if err := scope.AddStyle(named); err != nil {
+		t.Fatal(err)
+	}
+	var fs FontStyle
+	fs.SetScope(scope)
+	fs.SetAttrs(map[string]string{"underline-pen": "color-only"})
+
+	line := fs.RichTextOptions()["decoration"].(*rich_text.DecorationOverrides).Underline
+	if line.HasWidth {
+		t.Fatalf("underline = %#v, named pen without width must preserve metric-derived thickness", line)
+	}
+}
+
+func TestFontStyle_DecorationPenPreservesForwardNamedReference(t *testing.T) {
+	scope := &Scope{}
+	var fs FontStyle
+	fs.SetScope(scope)
+	fs.SetAttrs(map[string]string{"underline-pen": "later"})
+
+	named := &PenStyle{id: "later", width: 3, pattern: "dotted", color: NamedColor("Gold")}
+	if err := scope.AddStyle(named); err != nil {
+		t.Fatal(err)
+	}
+
+	decoration := fs.RichTextOptions()["decoration"].(*rich_text.DecorationOverrides)
+	line := decoration.Underline
+	if !line.HasWidth || line.Width != 3 || !line.HasPattern || line.Pattern != "dotted" || !line.HasColor || line.Color != NamedColor("Gold") {
+		t.Fatalf("underline = %#v, want forward named pen", line)
+	}
+}
+
 func TestFontStyle_RichTextOptions_IncludesTextStroke(t *testing.T) {
 	var fs FontStyle
 	fs.SetAttrs(map[string]string{

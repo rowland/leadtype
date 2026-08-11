@@ -139,7 +139,7 @@ func (l *StdLine) SetAttrs(attrs map[string]string) {
 		l.length = ParseMeasurement(length, l.Units())
 	}
 	if style, ok := attrs["style"]; ok {
-		l.style = PenStyleFor(style, l.scope)
+		l.style = penStyleForValue(style, l.scope, l.Units())
 	}
 	if MapHasKeyPrefix(attrs, "style.") {
 		switch {

@@ -41,10 +41,12 @@ type FontStyle struct {
 	strokeColor colors.Color
 	strokeWidth *float64
 
-	underlinePenID string
-	strikeoutPenID string
-	underlinePos   *float64
-	strikeoutPos   *float64
+	underlinePenID    string
+	strikeoutPenID    string
+	underlinePenUnits Units
+	strikeoutPenUnits Units
+	underlinePos      *float64
+	strikeoutPos      *float64
 
 	decorationPayload *rich_text.DecorationOverrides
 	decorationCached  bool
@@ -348,9 +350,11 @@ func (fs *FontStyle) SetAttrs(attrs map[string]string) {
 	}
 	if underlinePenID, ok := attrs["underline-pen"]; ok {
 		fs.underlinePenID = strings.TrimSpace(underlinePenID)
+		fs.underlinePenUnits = units
 	}
 	if strikeoutPenID, ok := attrs["strikeout-pen"]; ok {
 		fs.strikeoutPenID = strings.TrimSpace(strikeoutPenID)
+		fs.strikeoutPenUnits = units
 	}
 	if underlinePos, ok := attrs["underline-pos"]; ok {
 		fs.underlinePos = ParseOptionalMeasurement(strings.TrimSpace(underlinePos), units)
@@ -429,11 +433,11 @@ func (fs *FontStyle) decorationOverrides() *rich_text.DecorationOverrides {
 	fs.decorationCached = true
 	var payload rich_text.DecorationOverrides
 	hasAny := false
-	if line, ok := fs.decorationLineOverrides(fs.underlinePenID, fs.underlinePos); ok {
+	if line, ok := fs.decorationLineOverrides(fs.underlinePenID, fs.underlinePenUnits, fs.underlinePos); ok {
 		payload.Underline = line
 		hasAny = true
 	}
-	if line, ok := fs.decorationLineOverrides(fs.strikeoutPenID, fs.strikeoutPos); ok {
+	if line, ok := fs.decorationLineOverrides(fs.strikeoutPenID, fs.strikeoutPenUnits, fs.strikeoutPos); ok {
 		payload.Strikeout = line
 		hasAny = true
 	}
@@ -447,14 +451,16 @@ func (fs *FontStyle) decorationOverrides() *rich_text.DecorationOverrides {
 	return fs.decorationPayload
 }
 
-func (fs *FontStyle) decorationLineOverrides(penID string, pos *float64) (rich_text.DecorationLineOverrides, bool) {
+func (fs *FontStyle) decorationLineOverrides(penID string, penUnits Units, pos *float64) (rich_text.DecorationLineOverrides, bool) {
 	var line rich_text.DecorationLineOverrides
 	hasAny := false
-	if pen := fs.resolveDecorationPen(penID); pen != nil {
+	if pen := fs.resolveDecorationPen(penID, penUnits); pen != nil {
 		line.Color = pen.color
 		line.HasColor = true
-		line.Width = pen.width
-		line.HasWidth = true
+		if pen.hasWidth() {
+			line.Width = pen.width
+			line.HasWidth = true
+		}
 		line.Pattern = pen.pattern
 		if line.Pattern == "" {
 			line.Pattern = defaultPenPattern
@@ -484,19 +490,12 @@ func (fs *FontStyle) decorationStrokeOverrides() (rich_text.DecorationStrokeOver
 	return stroke, hasAny
 }
 
-func (fs *FontStyle) resolveDecorationPen(id string) *PenStyle {
-	if fs.scope == nil || strings.TrimSpace(id) == "" {
+func (fs *FontStyle) resolveDecorationPen(value string, units Units) *PenStyle {
+	if strings.TrimSpace(value) == "" {
 		return nil
 	}
-	if style, ok := fs.scope.StyleFor(id); ok {
-		pen, _ := style.(*PenStyle)
-		return pen
-	}
-	if style, ok := fs.scope.StyleFor("pen_" + id); ok {
-		pen, _ := style.(*PenStyle)
-		return pen
-	}
-	return nil
+	pen, _, _ := resolvePenStyleValue(value, fs.scope, units)
+	return pen
 }
 
 func formatOptionalFloat(value *float64) string {

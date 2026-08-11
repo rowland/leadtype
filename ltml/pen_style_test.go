@@ -85,6 +85,122 @@ func TestSetPenStyleLeavesFieldUnchangedWithoutMatchingAttrs(t *testing.T) {
 	}
 }
 
+func TestPenStyleForValueParsesOrderIndependentShorthand(t *testing.T) {
+	values := []string{
+		"2pt dashed #c33",
+		"dashed #c33 2pt",
+		"#c33 2pt dashed",
+	}
+	for _, value := range values {
+		t.Run(value, func(t *testing.T) {
+			pen := penStyleForValue(value, &Scope{}, "in")
+			if pen == nil {
+				t.Fatal("pen is nil")
+			}
+			if pen.id != "" || pen.width != 2 || pen.pattern != "dashed" || pen.Cap() != defaultPenCap || pen.color != NamedColor("#cc3333") {
+				t.Fatalf("pen = %#v, want anonymous 2pt dashed #cc3333", pen)
+			}
+		})
+	}
+}
+
+func TestPenStyleForValueShorthandDefaultsAndUnits(t *testing.T) {
+	tests := []struct {
+		value    string
+		units    Units
+		width    float64
+		widthSet bool
+		pattern  string
+		color    string
+	}{
+		{value: "2", units: "mm", width: FromUnits(2, "mm"), widthSet: true, pattern: "solid", color: "black"},
+		{value: "+.5cm dotted", units: "pt", width: FromUnits(.5, "cm"), widthSet: true, pattern: "dotted", color: "black"},
+		{value: "dashed SteelBlue", units: "pt", width: 0, widthSet: false, pattern: "dashed", color: "SteelBlue"},
+		{value: "0 solid #08f", units: "in", width: 0, widthSet: true, pattern: "solid", color: "#0088ff"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.value, func(t *testing.T) {
+			pen := penStyleForValue(tc.value, &Scope{}, tc.units)
+			if pen.width != tc.width || pen.widthSet != tc.widthSet || pen.pattern != tc.pattern || pen.color != NamedColor(tc.color) || pen.Cap() != defaultPenCap {
+				t.Fatalf("pen = %#v, want width=%v pattern=%s color=%s", pen, tc.width, tc.pattern, tc.color)
+			}
+		})
+	}
+}
+
+func TestPenStyleForValuePrefersExactNamedPen(t *testing.T) {
+	scope := &Scope{}
+	named := &PenStyle{id: "2pt dashed red", width: 7, pattern: "dotted", color: NamedColor("Gold")}
+	if err := scope.AddStyle(named); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := penStyleForValue(named.id, scope, "pt"); got != named {
+		t.Fatalf("pen = %p, want exact named pen %p", got, named)
+	}
+}
+
+func TestPenStyleForValueUsesLegacyFallbackForInvalidShorthand(t *testing.T) {
+	for _, value := range []string{"2pt 3pt red", "2px red", "-2pt dashed", "2..0pt red", "red blue"} {
+		t.Run(value, func(t *testing.T) {
+			scope := &Scope{}
+			pen := penStyleForValue(value, scope, "pt")
+			if pen == nil || pen.id != "pen_"+value {
+				t.Fatalf("pen = %#v, want legacy fallback id %q", pen, "pen_"+value)
+			}
+			if got, ok := scope.StyleFor("pen_" + value); !ok || got != pen {
+				t.Fatalf("fallback style = %#v, %v; want registered pen", got, ok)
+			}
+		})
+	}
+}
+
+func TestPenStyleForValueDoesNotRegisterAnonymousShorthand(t *testing.T) {
+	scope := &Scope{}
+	value := "2pt dashed red"
+	pen := penStyleForValue(value, scope, "pt")
+	if pen == nil || pen.id != "" {
+		t.Fatalf("pen = %#v, want anonymous shorthand", pen)
+	}
+	if _, ok := scope.StyleFor(value); ok {
+		t.Fatalf("scope contains shorthand value %q", value)
+	}
+	if _, ok := scope.StyleFor("pen_" + value); ok {
+		t.Fatalf("scope contains generated shorthand value %q", "pen_"+value)
+	}
+}
+
+func TestSetPenStyleAppliesOverridesAfterShorthand(t *testing.T) {
+	var field *PenStyle
+	SetPenStyle(&field, "border", map[string]string{
+		"border":       "2pt dashed #c33",
+		"border.width": "3pt",
+	}, &Scope{}, "pt")
+
+	if field == nil || field.width != 3 || field.pattern != "dashed" || field.color != NamedColor("#cc3333") {
+		t.Fatalf("border = %#v, want overridden shorthand", field)
+	}
+}
+
+func TestSetOptionalPenStyleParsesSideShorthandAndPreservesNone(t *testing.T) {
+	var field *PenStyle
+	set := false
+	setOptionalPenStyle(&field, &set, "border-top", map[string]string{
+		"border-top": "0.5mm dotted SteelBlue",
+	}, &Scope{}, "pt", nil)
+	if !set || field == nil || field.width != FromUnits(.5, "mm") || field.pattern != "dotted" || field.color != NamedColor("SteelBlue") {
+		t.Fatalf("border-top = %#v set=%v, want parsed shorthand", field, set)
+	}
+
+	setOptionalPenStyle(&field, &set, "border-top", map[string]string{
+		"border-top":       "none",
+		"border-top.width": "4pt",
+	}, &Scope{}, "pt", nil)
+	if !set || field != nil {
+		t.Fatalf("border-top = %#v set=%v, want explicit none", field, set)
+	}
+}
+
 func TestPenStyleSetAttrsLinearGradient(t *testing.T) {
 	var ps PenStyle
 	ps.SetAttrs(map[string]string{

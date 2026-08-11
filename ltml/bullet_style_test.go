@@ -132,6 +132,15 @@ func TestBulletStyle_SetAttrs_FontOverridesCloneDefaultWithBulletUnits(t *testin
 	}
 }
 
+func TestBulletStyle_SetAttrs_AdHocPenShorthand(t *testing.T) {
+	style := &BulletStyle{scope: &Scope{}, units: "mm"}
+	style.SetAttrs(map[string]string{"pen": "1.5 dashed #08f"})
+
+	if style.pen == nil || style.pen.id != "" || style.pen.width != FromUnits(1.5, "mm") || style.pen.pattern != "dashed" || style.pen.color != NamedColor("#0088ff") {
+		t.Fatalf("bullet pen = %#v, want ad hoc shorthand", style.pen)
+	}
+}
+
 func TestBulletStyleFor_BuiltInListMarkers(t *testing.T) {
 	ordered := BulletStyleFor("ordered", &defaultScope)
 	if ordered == nil || ordered.Format() != "%d." {

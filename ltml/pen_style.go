@@ -5,6 +5,8 @@ package ltml
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/rowland/leadtype/colors"
@@ -24,6 +26,7 @@ type PenStyle struct {
 	kind           PenKind
 	color          colors.Color
 	width          float64
+	widthSet       bool
 	pattern        string
 	cap            string
 	markerStart    string
@@ -136,6 +139,7 @@ func (ps *PenStyle) SetAttrs(attrs map[string]string) {
 	units.SetAttrs(attrs)
 	if width, ok := attrs["width"]; ok {
 		ps.width = ParseMeasurement(width, units)
+		ps.widthSet = true
 	}
 	if pattern, ok := attrs["pattern"]; ok {
 		ps.pattern = pattern
@@ -204,6 +208,8 @@ func (ps *PenStyle) String() string {
 const defaultPenPattern = "solid"
 const defaultPenCap = "butt_cap"
 
+var rePenWidth = regexp.MustCompile(`^\+?(?:\d+(?:\.\d*)?|\.\d+)([a-z]+)?$`)
+
 func (ps *PenStyle) Cap() string {
 	if ps.cap == "" {
 		return defaultPenCap
@@ -217,6 +223,10 @@ func (ps *PenStyle) Width() float64 {
 		return 0
 	}
 	return ps.width
+}
+
+func (ps *PenStyle) hasWidth() bool {
+	return ps != nil && (ps.widthSet || ps.width != 0)
 }
 
 func (ps *PenStyle) Color() colors.Color {
@@ -257,6 +267,111 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 	return ps
 }
 
+// penStyleForValue resolves a named pen or color, or parses an ad hoc
+// [width] [pattern] [color] description. Ad hoc pens are not added to scope.
+func penStyleForValue(value string, scope HasScope, units Units) *PenStyle {
+	pen, colorOnly, ok := resolvePenStyleValue(value, scope, units)
+	if ok {
+		if colorOnly {
+			return PenStyleFor(strings.TrimSpace(value), scope)
+		}
+		return pen
+	}
+	return PenStyleFor(strings.TrimSpace(value), scope)
+}
+
+func resolvePenStyleValue(value string, scope HasScope, units Units) (*PenStyle, bool, bool) {
+	value = strings.TrimSpace(value)
+	if style, ok := namedPenStyleFor(value, scope); ok {
+		return style, false, true
+	}
+
+	if pen, colorOnly, ok := parsePenShorthand(value, units); ok {
+		return pen, colorOnly, true
+	}
+	return nil, false, false
+}
+
+func namedPenStyleFor(id string, scope HasScope) (*PenStyle, bool) {
+	if scope == nil {
+		return nil, false
+	}
+	if style, ok := scope.StyleFor(id); ok {
+		pen, isPen := style.(*PenStyle)
+		return pen, isPen
+	}
+	if style, ok := scope.StyleFor("pen_" + id); ok {
+		pen, isPen := style.(*PenStyle)
+		return pen, isPen
+	}
+	return nil, false
+}
+
+func parsePenShorthand(value string, units Units) (*PenStyle, bool, bool) {
+	tokens := strings.Fields(value)
+	if len(tokens) == 0 {
+		return nil, false, false
+	}
+
+	pen := &PenStyle{
+		color:   NamedColor("black"),
+		pattern: defaultPenPattern,
+		cap:     defaultPenCap,
+	}
+	hasWidth, hasPattern, hasColor := false, false, false
+	for _, token := range tokens {
+		if width, ok := parsePenWidth(token, units); ok {
+			if hasWidth {
+				return nil, false, false
+			}
+			pen.width = width
+			pen.widthSet = true
+			hasWidth = true
+			continue
+		}
+		switch token {
+		case "solid", "dashed", "dotted":
+			if hasPattern {
+				return nil, false, false
+			}
+			pen.pattern = token
+			hasPattern = true
+			continue
+		}
+		if color, ok := parseLTMLColor(token); ok {
+			if hasColor {
+				return nil, false, false
+			}
+			pen.color = color
+			hasColor = true
+			continue
+		}
+		return nil, false, false
+	}
+
+	return pen, hasColor && !hasWidth && !hasPattern && len(tokens) == 1, true
+}
+
+func parsePenWidth(value string, units Units) (float64, bool) {
+	matches := rePenWidth.FindStringSubmatch(value)
+	if len(matches) != 2 {
+		return 0, false
+	}
+	measurementUnits := units
+	if matches[1] != "" {
+		measurementUnits = Units(matches[1])
+		if _, ok := UnitConversions[measurementUnits]; !ok {
+			return 0, false
+		}
+	}
+	number := strings.TrimSuffix(value, matches[1])
+	width, err := strconv.ParseFloat(number, 64)
+	if err != nil || width < 0 {
+		return 0, false
+	}
+	return FromUnits(width, measurementUnits), true
+}
+
 // SetPenStyle sets a pen style field from attrName and any prefixed overrides
 // in attrs. Overrides are applied to a clone so a style resolved from scope is
 // not mutated.
@@ -266,7 +381,7 @@ func PenStyleFor(id string, scope HasScope) *PenStyle {
 //	SetPenStyle(&w.outline, "outline", attrs, w.Scope(), w.Units())
 func SetPenStyle(field **PenStyle, attrName string, attrs map[string]string, scope HasScope, units Units) {
 	if id, ok := attrs[attrName]; ok {
-		*field = PenStyleFor(id, scope)
+		*field = penStyleForValue(id, scope, units)
 	}
 	prefix := attrName + "."
 	if !MapHasKeyPrefix(attrs, prefix) {
@@ -290,7 +405,7 @@ func setOptionalPenStyle(field **PenStyle, explicitlySet *bool, attrName string,
 		if strings.TrimSpace(id) == "none" {
 			*field = nil
 		} else {
-			*field = PenStyleFor(id, scope)
+			*field = penStyleForValue(id, scope, units)
 		}
 	}
 	prefix := attrName + "."

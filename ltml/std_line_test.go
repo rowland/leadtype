@@ -218,6 +218,23 @@ func TestParse_LineTag(t *testing.T) {
 	}
 }
 
+func TestParse_LineTag_AdHocPenShorthand(t *testing.T) {
+	doc, err := Parse([]byte(`
+<ltml>
+  <page>
+    <line width="100%" style="dotted 0.5mm SteelBlue" />
+  </page>
+</ltml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	line := doc.Root().Page(0).children[0].(*StdLine)
+	if line.style == nil || line.style.id != "" || line.style.width != FromUnits(.5, "mm") || line.style.pattern != "dotted" || line.style.color != NamedColor("SteelBlue") {
+		t.Fatalf("line style = %#v, want ad hoc shorthand", line.style)
+	}
+}
+
 func TestParse_LineTag_ClonesStyleForPrefixOverrides(t *testing.T) {
 	doc, err := Parse([]byte(`
 <ltml>

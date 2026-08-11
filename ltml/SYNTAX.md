@@ -1114,6 +1114,36 @@ auto-generated solid pen for that color:
 <rect border="red" />
 ```
 
+Pen-valued attributes also accept an ad hoc shorthand containing a width,
+pattern, and color in any order. Each component is optional and may appear at
+most once:
+
+```xml
+<rect border="2pt dashed #c33" />
+<line style="dotted 0.5mm SteelBlue" />
+<bullet id="blue-dot" shape="circle" pen="1pt solid #08f" />
+<span font.underline="true" font.underline-pen="2pt #08f dashed">Text</span>
+```
+
+Bare widths use the declaring element's units. Omitted width, pattern, and
+color components default to hairline, `solid`, and black respectively; the
+default cap is `butt_cap`. An exact named pen wins if its ID also looks like a
+shorthand. Ad hoc pens are local to the attribute and are not registered as
+named styles. Prefixed attributes are applied afterward, so
+`border="2pt dashed red" border.width="3pt"` produces a 3pt border without
+changing any named pen.
+
+Caps, markers, and gradients are not part of the compact grammar. Express them
+with prefixed attributes or a named `<pen>`. Invalid or conflicting shorthand
+continues through the legacy named-pen/color fallback.
+
+For borders and shapes, an omitted shorthand width renders as a PDF hairline.
+For `underline-pen` and `strikeout-pen`, an omitted width preserves the
+font-metric-derived decoration thickness, so a color- or pattern-only pen still
+scales naturally with font size. Once a width is supplied—even an explicit
+zero requesting a hairline—it is an absolute LTML measurement and remains fixed
+when text is shrink-to-fit.
+
 The exact lowercase value `none` disables a standard widget border. Surrounding
 whitespace is ignored, but differently cased values are ordinary pen names.
 Individual sides override the aggregate border, so this draws three connected
@@ -1947,7 +1977,10 @@ size="...">`; LTML does not accept `rem` for general geometric measurements.
 
 Colors can be specified by name wherever a color attribute is accepted. Standard
 CSS color names are supported (e.g., `red`, `blue`, `LightYellow`, `navy`).
-Hexadecimal color notation (e.g., `#ff0000`) is also accepted.
+Three- and six-digit hexadecimal color notation (e.g., `#f00` and `#ff0000`)
+is also accepted. In the three-digit form, each digit is duplicated, so `#c3a`
+means `#cc33aa`. Alpha-bearing forms (`#RGBA` and `#RRGGBBAA`) and functional
+CSS colors are not supported.
 
 ---
 

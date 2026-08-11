@@ -92,7 +92,7 @@ func (bs *BulletStyle) SetAttrs(attrs map[string]string) {
 		bs.shape = strings.TrimSpace(shape)
 	}
 	if pen, ok := attrs["pen"]; ok {
-		bs.pen = PenStyleFor(pen, bs.scope)
+		bs.pen = penStyleForValue(pen, bs.scope, bs.units)
 	}
 	if brush, ok := attrs["brush"]; ok {
 		bs.brush = BrushStyleFor(brush, bs.scope)
