@@ -6,12 +6,11 @@ published.
 
 ## Creating a release
 
-Choose and commit the next version:
+Choose the next version. The bump target updates `VERSION` and commits it with
+a message such as `Bump version to 0.9.1.`:
 
 ```sh
 make bump-patch # or bump-minor / bump-major
-git add VERSION
-git commit -m "Bump version to 0.9.1"
 ```
 
 Verify the release without changing Git or publishing anything:

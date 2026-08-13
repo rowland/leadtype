@@ -16,14 +16,21 @@ version:
 	@tr -d '[:space:]' < $(VERSION_FILE)
 	@printf '\n'
 
+define bump-version
+	@./scripts/bump-version $(1) $(VERSION_FILE)
+	@version=$$(tr -d '[:space:]' < $(VERSION_FILE)); \
+		git add -- $(VERSION_FILE); \
+		git commit --only -m "Bump version to $$version." -- $(VERSION_FILE)
+endef
+
 bump-major:
-	@./scripts/bump-version major $(VERSION_FILE)
+	$(call bump-version,major)
 
 bump-minor:
-	@./scripts/bump-version minor $(VERSION_FILE)
+	$(call bump-version,minor)
 
 bump-patch:
-	@./scripts/bump-version patch $(VERSION_FILE)
+	$(call bump-version,patch)
 
 release-check:
 	@./scripts/release check
