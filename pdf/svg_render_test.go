@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rowland/leadtype/afm_fonts"
 	"github.com/rowland/leadtype/options"
 )
 
@@ -53,6 +54,51 @@ func TestPageWriter_PrintSVG_TextFontFamilyFallbackWarns(t *testing.T) {
 	}
 	if strings.Contains(msg, "fonts unavailable: tried") {
 		t.Fatalf("expected successful fallback, got %q", msg)
+	}
+}
+
+func TestPageWriter_PrintSVG_TextFontUsesNearestFace(t *testing.T) {
+	msg := captureStderr(t, func() {
+		dw := NewDocWriter()
+		dw.AddFontSource(testFontSource(t, "../ttf/testdata/minimal.ttf"))
+		pw := newPageWriter(dw, options.Options{"units": "pt"})
+		data := []byte(`<svg width="80" height="20" xmlns="http://www.w3.org/2000/svg"><text x="10" y="12" font-family="Minimal" font-size="12" font-weight="bold">tiny</text></svg>`)
+		width := 80.0
+		if _, _, err := pw.PrintSVG(data, 0, 0, &width, nil); err != nil {
+			t.Fatal(err)
+		}
+		pw.close()
+		var buf bytes.Buffer
+		if _, err := dw.WriteTo(&buf); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if strings.Contains(msg, "font-family") {
+		t.Fatalf("expected nearest face in the requested family to resolve without warnings, got %q", msg)
+	}
+}
+
+func TestPageWriter_PrintSVG_TextPrefersLaterExactFaceOverEarlierNearestFace(t *testing.T) {
+	dw := NewDocWriter()
+	dw.AddFontSource(testFontSource(t, "../ttf/testdata/minimal.ttf"))
+	afms, err := afm_fonts.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dw.AddFontSource(afms)
+	var trace bytes.Buffer
+	dw.SetFontTrace(&trace)
+	pw := newPageWriter(dw, options.Options{"units": "pt"})
+	data := []byte(`<svg width="80" height="20" xmlns="http://www.w3.org/2000/svg"><text x="10" y="12" font-family="Minimal, Helvetica" font-size="12" font-weight="bold">tiny</text></svg>`)
+	width := 80.0
+	if _, _, err := pw.PrintSVG(data, 0, 0, &width, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(trace.String(), `font selected match=exact family="Helvetica" weight="bold"`) {
+		t.Fatalf("expected exact face from later family to win, trace:\n%s", trace.String())
+	}
+	if strings.Contains(trace.String(), `font selected match=nearest family="Minimal"`) {
+		t.Fatalf("nearest face displaced a later exact face, trace:\n%s", trace.String())
 	}
 }
 

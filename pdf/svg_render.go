@@ -1426,13 +1426,23 @@ func (r *svgRenderer) withPreparedTextState(style svg.Style, fn func() error) er
 	}
 	candidates := svgFontFamilyCandidates(style)
 	var lastErr error
-	for i, candidate := range candidates {
-		if _, err := r.pw.SetFont(candidate.family, style.FontSize*r.scaleY, opts); err != nil {
-			lastErr = err
-			continue
+	selectedIndex := -1
+	for pass := 0; pass < 2 && selectedIndex < 0; pass++ {
+		if pass == 1 {
+			opts["match"] = "nearest"
 		}
-		if i > 0 {
-			logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("font %q unavailable; using fallback %q", candidates[0].label, candidate.label)}})
+		for i, candidate := range candidates {
+			if _, err := r.pw.SetFont(candidate.family, style.FontSize*r.scaleY, opts); err != nil {
+				lastErr = err
+				continue
+			}
+			selectedIndex = i
+			break
+		}
+	}
+	if selectedIndex >= 0 {
+		if selectedIndex > 0 {
+			logSVGWarnings([]svg.Warning{{Element: "text", Attribute: "font-family", Message: fmt.Sprintf("font %q unavailable; using fallback %q", candidates[0].label, candidates[selectedIndex].label)}})
 		}
 		if fn == nil {
 			return nil
